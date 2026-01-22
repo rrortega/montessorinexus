@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
-import logoCeiba from '@/assets/logo-ceiba.svg';
+import logoIcon from '@/assets/logo-icon.png';
 
 const navItems = [
   { label: 'Nuestro Método', href: '#metodo' },
@@ -37,10 +37,18 @@ export function Header() {
           {/* Logo */}
           <a href="#" className="flex items-center gap-3">
             <img
-              src={logoCeiba}
+              src={logoIcon}
               alt="Ceiba Montessori"
-              className="h-14 w-auto"
+              className="h-12 w-auto"
             />
+            <div className="hidden sm:block">
+              <span className={`font-display text-xl font-semibold transition-colors ${isScrolled ? 'text-foreground' : 'text-white'}`}>
+                Ceiba
+              </span>
+              <span className={`font-display text-sm block -mt-1 transition-colors ${isScrolled ? 'text-muted-foreground' : 'text-white/80'}`}>
+                Montessori International
+              </span>
+            </div>
           </a>
 
           {/* Desktop Navigation */}
