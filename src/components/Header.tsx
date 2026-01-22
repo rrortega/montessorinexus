@@ -42,10 +42,10 @@ export function Header() {
               className="h-12 w-auto"
             />
             <div className="hidden sm:block">
-              <span className={`font-display text-xl font-semibold transition-colors ${isScrolled ? 'text-foreground' : 'text-white'}`}>
+              <span className={`font-display text-xl font-semibold transition-colors ${isScrolled ? 'text-forest' : 'text-white'}`}>
                 Ceiba
               </span>
-              <span className={`font-display text-sm block -mt-1 transition-colors ${isScrolled ? 'text-muted-foreground' : 'text-white/80'}`}>
+              <span className={`font-display text-sm block -mt-1 transition-colors ${isScrolled ? 'text-forest/70' : 'text-white/80'}`}>
                 Montessori International
               </span>
             </div>
@@ -59,7 +59,7 @@ export function Header() {
                 href={item.href}
                 className={`text-sm font-medium transition-colors ${
                   isScrolled 
-                    ? 'text-foreground/80 hover:text-foreground' 
+                    ? 'text-forest/80 hover:text-forest' 
                     : 'text-white/90 hover:text-white'
                 }`}
               >
