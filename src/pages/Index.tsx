@@ -6,13 +6,15 @@ import { MetricsSection } from '@/components/MetricsSection';
 import { HistorySection } from '@/components/HistorySection';
 import { ProgramsSection } from '@/components/ProgramsSection';
 import { AdmissionsSection } from '@/components/AdmissionsSection';
+import { GallerySection } from '@/components/GallerySection';
+import { GuidesSection } from '@/components/GuidesSection';
 import { ContactSection } from '@/components/ContactSection';
 import { CTASection } from '@/components/CTASection';
 import { Footer } from '@/components/Footer';
 
 const Index = () => {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen overflow-x-hidden">
       <Header />
       <main>
         <HeroSection />
@@ -22,6 +24,8 @@ const Index = () => {
         <HistorySection />
         <ProgramsSection />
         <AdmissionsSection />
+        <GallerySection />
+        <GuidesSection />
         <ContactSection />
         <CTASection />
       </main>

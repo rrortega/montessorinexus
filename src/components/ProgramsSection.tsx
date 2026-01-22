@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
+import { useI18n } from '@/context/I18nContext';
 import comunidadInfantil from '@/assets/comunidad-infantil.jpg';
 import casaNinos from '@/assets/casa-ninos.jpg';
 import taller from '@/assets/taller.jpg';
@@ -9,25 +10,26 @@ const programs = [
     title: 'Comunidad Infantil',
     age: '1.5 – 3 años',
     description: 'Enfoque en autonomía temprana y adaptación al ambiente escolar.',
-    image: comunidadInfantil,
+    image: comunidadInfantil
   },
   {
     title: 'Casa de Niños',
     age: '3 – 6 años',
     description: 'Bases académicas, emocionales y sociales fundamentales.',
-    image: casaNinos,
+    image: casaNinos
   },
   {
     title: 'Taller / Elementary',
     age: '6 – 12 años',
     description: 'Pensamiento crítico, responsabilidad y liderazgo.',
-    image: taller,
+    image: taller
   },
 ];
 
 export function ProgramsSection() {
+  const { t } = useI18n();
   return (
-    <section id="programas" className="section-padding bg-secondary">
+    <section id="programas" className="section-padding bg-secondary overflow-hidden">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -37,14 +39,13 @@ export function ProgramsSection() {
           className="text-center mb-16"
         >
           <span className="text-accent font-medium text-sm uppercase tracking-wider">
-            Programas Educativos
+            {t('Programas Educativos')}
           </span>
           <h2 className="heading-section text-foreground mt-2 mb-4">
-            Un camino para cada etapa
+            {t('Un camino para cada etapa')}
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Ofrecemos programas diseñados específicamente para cada etapa del 
-            desarrollo, respetando las necesidades únicas de cada edad.
+            {t('Ofrecemos programas diseñados específicamente para cada etapa del desarrollo, respetando las necesidades únicas de cada edad.')}
           </p>
         </motion.div>
 
@@ -56,27 +57,28 @@ export function ProgramsSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: index * 0.1 }}
-              className="group bg-card rounded-2xl overflow-hidden shadow-card hover:shadow-card-hover transition-all duration-300"
+              className="group bg-card rounded-[2rem] overflow-hidden shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all duration-500"
             >
-              <div className="aspect-[4/3] overflow-hidden">
+              <div className="aspect-[4/3] overflow-hidden relative">
                 <img
                   src={program.image}
-                  alt={program.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  alt={t(program.title)}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                 />
+                <div className="absolute inset-0 bg-forest/20 group-hover:bg-transparent transition-colors duration-500" />
               </div>
               <div className="p-6">
                 <span className="text-accent text-sm font-medium">
-                  {program.age}
+                  {t(program.age)}
                 </span>
                 <h3 className="font-display text-xl font-medium text-foreground mt-1 mb-3">
-                  {program.title}
+                  {t(program.title)}
                 </h3>
                 <p className="text-muted-foreground text-sm mb-4">
-                  {program.description}
+                  {t(program.description)}
                 </p>
-                <Button variant="outline" size="sm" className="w-full">
-                  Descubrir Programa
+                <Button variant="outline" size="sm" className="w-full rounded-full border-2 hover:bg-forest hover:text-white transition-all">
+                  {t('Descubrir Programa')}
                 </Button>
               </div>
             </motion.div>
