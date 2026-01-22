@@ -43,10 +43,10 @@ export function Header() {
             />
             <div className="hidden sm:block">
               <span className={`font-display text-xl font-semibold transition-colors ${isScrolled ? 'text-forest' : 'text-white'}`}>
-                Ceiba
+                Ceiba Montessori
               </span>
-              <span className={`font-display text-sm block -mt-1 transition-colors ${isScrolled ? 'text-forest/70' : 'text-white/80'}`}>
-                Montessori International
+              <span className={`font-display text-xs tracking-widest uppercase block transition-colors ${isScrolled ? 'text-forest/70' : 'text-white/80'}`}>
+                International
               </span>
             </div>
           </a>
