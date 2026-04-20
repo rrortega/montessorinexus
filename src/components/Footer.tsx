@@ -10,9 +10,9 @@ const quickLinks = [
 ];
 
 const socialLinks = [
-  { icon: Facebook, href: import.meta.env.VITE_SOCIAL_FACEBOOK || '#', label: 'Facebook' },
-  { icon: Instagram, href: import.meta.env.VITE_SOCIAL_INSTAGRAM || '#', label: 'Instagram' },
-  { icon: Mail, href: `mailto:${import.meta.env.VITE_CONTACT_EMAIL || 'info@ceibamontessori.mx'}`, label: 'Email' },
+  ...(import.meta.env.VITE_SOCIAL_FACEBOOK ? [{ icon: Facebook, href: import.meta.env.VITE_SOCIAL_FACEBOOK, label: 'Facebook' }] : []),
+  ...(import.meta.env.VITE_SOCIAL_INSTAGRAM ? [{ icon: Instagram, href: import.meta.env.VITE_SOCIAL_INSTAGRAM, label: 'Instagram' }] : []),
+  ...(import.meta.env.VITE_CONTACT_EMAIL ? [{ icon: Mail, href: `mailto:${import.meta.env.VITE_CONTACT_EMAIL}`, label: 'Email' }] : []),
 ];
 
 export function Footer() {

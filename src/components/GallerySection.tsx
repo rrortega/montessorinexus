@@ -1,70 +1,44 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutGrid, Settings, Hand, Trees, Palette } from 'lucide-react';
+import { LayoutGrid, Settings, Hand, Trees, Palette, LucideIcon } from 'lucide-react';
 import { useI18n } from '@/context/I18nContext';
+import galleryData from '@/data/gallery.json';
 
-const categories = [
-    { id: 'all', label: 'All Moments', icon: LayoutGrid },
-    { id: 'practical', label: 'Practical Life', icon: Settings },
-    { id: 'sensory', label: 'Sensory Play', icon: Hand },
-    { id: 'outdoors', label: 'Outdoors', icon: Trees },
-    { id: 'arts', label: 'Arts & Expression', icon: Palette },
-];
+interface GalleryImage {
+    id: number;
+    category: string;
+    src: string;
+    alt: string;
+}
 
-const galleryImages = [
-    {
-        id: 1,
-        category: 'sensory',
-        src: 'https://images.unsplash.com/photo-1587654780291-39ca9a7a39b7?auto=format&fit=crop&w=800&q=80',
-        alt: 'Sensory water play',
-    },
-    {
-        id: 2,
-        category: 'practical',
-        src: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=800&q=80',
-        alt: 'Practical life activity',
-    },
-    {
-        id: 3,
-        category: 'outdoors',
-        src: 'https://images.unsplash.com/photo-1516627145497-ae6968895b74?auto=format&fit=crop&w=800&q=80',
-        alt: 'Outdoors garden time',
-    },
-    {
-        id: 4,
-        category: 'arts',
-        src: 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&w=800&q=80',
-        alt: 'Creative arts session',
-    },
-    {
-        id: 5,
-        category: 'sensory',
-        src: 'https://images.unsplash.com/photo-1544367567-0f2101e9d35f?auto=format&fit=crop&w=800&q=80',
-        alt: 'Sensory play exploration',
-    },
-    {
-        id: 6,
-        category: 'outdoors',
-        src: 'https://images.unsplash.com/photo-1472162072942-cd5147eb3902?auto=format&fit=crop&w=800&q=80',
-        alt: 'Outdoor group activity',
-    },
-    {
-        id: 7,
-        category: 'practical',
-        src: 'https://images.unsplash.com/photo-1484981138541-3d074aa97716?auto=format&fit=crop&w=800&q=80',
-        alt: 'Concentrated work',
-    },
-    {
-        id: 8,
-        category: 'arts',
-        src: 'https://images.unsplash.com/photo-1456735190827-d1262f71b8a3?auto=format&fit=crop&w=800&q=80',
-        alt: 'Music and expression',
-    },
-];
+interface Category {
+    id: string;
+    label: string;
+    icon: LucideIcon;
+}
+
+const ICON_MAP: Record<string, LucideIcon> = {
+    all: LayoutGrid,
+    practical: Settings,
+    sensory: Hand,
+    outdoors: Trees,
+    arts: Palette,
+};
 
 export function GallerySection() {
     const { t } = useI18n();
+    const showSection = import.meta.env.VITE_SHOW_GALLERY_SECTION === 'true';
+
+    if (!showSection) return null;
+
     const [activeCategory, setActiveCategory] = useState('all');
+
+    const categories: Category[] = galleryData.categories.map(cat => ({
+        ...cat,
+        icon: ICON_MAP[cat.id] || LayoutGrid
+    }));
+
+    const galleryImages = galleryData.images as GalleryImage[];
 
     const filteredImages = activeCategory === 'all'
         ? galleryImages

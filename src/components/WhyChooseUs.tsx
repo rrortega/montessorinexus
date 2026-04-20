@@ -5,23 +5,23 @@ import { useI18n } from '@/context/I18nContext';
 const features = [
   {
     icon: Award,
-    title: 'Método Montessori Auténtico',
-    description: 'Filosofía educativa aplicada con fidelidad a los principios de Maria Montessori.'
+    title: 'Directivos y Docentes certificados AMI',
+    description: 'La Filosofía Montessori con Directivos y Docentes certificados AMI (Association Montessori Internationale).'
   },
   {
     icon: Globe,
-    title: 'Enfoque Bilingüe e Internacional',
-    description: 'Inmersión en inglés y español con perspectiva global y multicultural.'
+    title: 'Bilingüe 100%',
+    description: 'Acompañamos la intención con una educación bilingüe, viva y consciente.'
   },
   {
     icon: Leaf,
-    title: 'Ambientes Naturales y Preparados',
-    description: 'Espacios diseñados para fomentar la exploración y el aprendizaje autónomo.'
+    title: 'Educación biocéntrica',
+    description: 'Honramos la niñez desarrollando atención y pensamiento flexible en un entorno preparado.'
   },
   {
     icon: Users,
-    title: 'Guías Certificados',
-    description: 'Profesionales formados internacionalmente en pedagogía Montessori.'
+    title: 'Comunidad Montessori',
+    description: 'Como extensión de la familia, acompañamos emociones y fortalecemos vínculos.'
   },
 ];
 
@@ -38,11 +38,12 @@ export function WhyChooseUs() {
           className="text-center mb-16"
         >
           <h2 className="heading-section text-foreground mb-4">
-            {t('¿Por qué elegir Ceiba?')}
+            {t('Somos un equipo de fundadoras y expertas en colegios Montessori.')}
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            {t('Nuestra propuesta educativa combina lo mejor de la pedagogía Montessori con un enfoque internacional adaptado al contexto de Cancún.')}
+            {t('Acompañamos a cada niño en la construcción de su ser con una educación bilingüe, viva y consciente, basada en Montessori y en las necesidades del mundo actual.')}
           </p>
+
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">

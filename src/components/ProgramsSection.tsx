@@ -3,27 +3,22 @@ import { Button } from '@/components/ui/button';
 import { useI18n } from '@/context/I18nContext';
 import comunidadInfantil from '@/assets/comunidad-infantil.jpg';
 import casaNinos from '@/assets/casa-ninos.jpg';
-import taller from '@/assets/taller.jpg';
+import taller1 from '@/assets/taller-1.jpeg';
+import taller2 from '@/assets/taller-2.jpeg';
 
 const programs = [
   {
-    title: 'Comunidad Infantil',
-    age: '1.5 – 3 años',
-    description: 'Enfoque en autonomía temprana y adaptación al ambiente escolar.',
-    image: comunidadInfantil
+    title: 'Taller 1',
+    age: '6 – 9 años',
+    description: 'Enfoque educativo centrado en la actividad dirigida por el alumno para desarrollar habilidades cognitivas y motoras de manera científica y efectiva.',
+    image: taller1
   },
   {
-    title: 'Casa de Niños',
-    age: '3 – 6 años',
-    description: 'Bases académicas, emocionales y sociales fundamentales.',
-    image: casaNinos
-  },
-  {
-    title: 'Taller / Elementary',
-    age: '6 – 12 años',
-    description: 'Pensamiento crítico, responsabilidad y liderazgo.',
-    image: taller
-  },
+    title: 'Taller 2',
+    age: '9 – 12 años',
+    description: 'Consolidación del aprendizaje autónomo, desarrollo de la mente razonadora y pensamiento abstracto para explorar el mundo.',
+    image: taller2
+  }
 ];
 
 export function ProgramsSection() {
@@ -49,7 +44,7 @@ export function ProgramsSection() {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
           {programs.map((program, index) => (
             <motion.div
               key={program.title}

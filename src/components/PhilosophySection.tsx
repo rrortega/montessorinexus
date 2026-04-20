@@ -44,14 +44,19 @@ export function PhilosophySection() {
             transition={{ duration: 0.6 }}
           >
             <span className="text-accent font-medium text-sm uppercase tracking-wider">
-              {t('Filosofía Educativa')}
+              {t('Acompañamos la intención, guiando su dirección.')}
             </span>
-            <h2 className="heading-section text-foreground mt-2 mb-6">
-              {t('El aprendizaje nace de la curiosidad')}
+            <h2 className="heading-section text-foreground mt-2 mb-6 text-2xl md:text-3xl">
+              {t('Aspiramos a que cada niño crezca como un ser autónomo, consciente y comprometido con su comunidad y el planeta.')}
             </h2>
-            <p className="text-muted-foreground mb-8 leading-relaxed">
-              {t('En Ceiba Montessori creemos que cada niño posee un potencial único. Nuestra metodología respeta su naturaleza curiosa y le ofrece las herramientas para desarrollar su máximo potencial en un ambiente de respeto, libertad y responsabilidad.')}
-            </p>
+            <div className="space-y-4 text-muted-foreground mb-8 leading-relaxed text-balance">
+              <p>
+                {t('En Ceiba, como extensión de la familia, acompañamos emociones y fortalecemos vínculos.')}
+              </p>
+              <p>
+                {t('Construimos una comunidad para caminar con seguridad y contribuir a un futuro más justo, sostenible y humano.')}
+              </p>
+            </div>
 
             <ul className="space-y-4 mb-8">
               {points.map((point, index) => (

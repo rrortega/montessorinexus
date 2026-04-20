@@ -6,12 +6,15 @@ import { useI18n } from '@/context/I18nContext';
 import logoIcon from '@/assets/ceiba-montessori-logo.svg';
 import logoLetras from '@/assets/ceiba-letras.svg';
 
+const showGallery = import.meta.env.VITE_SHOW_GALLERY_SECTION === 'true';
+const showTeachers = import.meta.env.VITE_SHOW_TEACHERS_SECTION === 'true';
+
 const navItems = [
   { label: 'Nuestro Método', href: '#metodo' },
   { label: 'Programas', href: '#programas' },
   { label: 'Admisiones', href: '#admisiones' },
-  { label: 'Galería', href: '#galeria' },
-  { label: 'Guías', href: '#guias' },
+  ...(showGallery ? [{ label: 'Galería', href: '#galeria' }] : []),
+  ...(showTeachers ? [{ label: 'Guías', href: '#guias' }] : []),
   { label: 'Comunidad', href: '#comunidad' },
   { label: 'Contacto', href: '#contacto' },
 ];

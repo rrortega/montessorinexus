@@ -3,42 +3,22 @@ import { motion } from 'framer-motion';
 import { useI18n } from '@/context/I18nContext';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useCallback } from 'react';
+import guidesData from '@/data/guides.json';
 
-const guides = [
-    {
-        name: 'Ms. Emily Thompson',
-        role: 'Outdoor Education Specialist',
-        image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80',
-    },
-    {
-        name: 'Ms. Sarah Miller',
-        role: 'Animal Interaction Educator',
-        image: 'https://images.unsplash.com/photo-1554151228-14d9def656e4?auto=format&fit=crop&w=400&q=80',
-    },
-    {
-        name: 'Dr. Emma Roberts',
-        role: 'STEM Facilitator',
-        image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80',
-    },
-    {
-        name: 'Ms. Laura Garcia',
-        role: 'Arts & Expression Guide',
-        image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=400&q=80',
-    },
-    {
-        name: 'Ms. Jessica Lee',
-        role: 'Language and Literacy Teacher',
-        image: 'https://images.unsplash.com/photo-1598550874175-4d0fe4a2c7dd?auto=format&fit=crop&w=400&q=80',
-    },
-    {
-        name: 'Mr. David Wilson',
-        role: 'Music & Expression Guide',
-        image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
-    },
-];
+interface Guide {
+    name: string;
+    role: string;
+    image: string;
+}
+
+const guides = guidesData as Guide[];
 
 export function GuidesSection() {
     const { t } = useI18n();
+    const showSection = import.meta.env.VITE_SHOW_TEACHERS_SECTION === 'true';
+
+    if (!showSection) return null;
+
     const [emblaRef, emblaApi] = useEmblaCarousel({
         align: 'start',
         loop: true,

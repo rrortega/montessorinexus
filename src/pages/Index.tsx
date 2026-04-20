@@ -11,6 +11,8 @@ import { GuidesSection } from '@/components/GuidesSection';
 import { ContactSection } from '@/components/ContactSection';
 import { CTASection } from '@/components/CTASection';
 import { Footer } from '@/components/Footer';
+import { FeaturedQuote } from '@/components/FeaturedQuote';
+import tallerImg from '@/assets/taller-old.jpg';
 
 const Index = () => {
   return (
@@ -19,8 +21,19 @@ const Index = () => {
       <main>
         <HeroSection />
         <WhyChooseUs />
+        <FeaturedQuote
+          quoteKey="Libres para pensar, capaces de transformar."
+          image={tallerImg}
+          ctaText="Conoce Nuestro Método"
+          ctaHref="#metodo"
+        />
         <PhilosophySection />
         <MetricsSection />
+        <FeaturedQuote
+          quoteKey="Creciendo con propósito, liderando con empatía."
+          className="bg-terracotta"
+          curveVariant={4}
+        />
         <HistorySection />
         <ProgramsSection />
         <AdmissionsSection />

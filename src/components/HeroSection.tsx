@@ -58,7 +58,7 @@ export function HeroSection() {
             transition={{ duration: 0.6 }}
             className="inline-block text-primary-foreground/80 text-sm font-medium tracking-wider uppercase mb-4"
           >
-            📍 {t('Cancún · Av. Huayacán')}
+            {t('Colegio Montessori Bilingüe 100%')}
           </motion.span>
 
           <motion.h1
@@ -74,19 +74,24 @@ export function HeroSection() {
             <span className="inline-block px-4 py-1 rounded-[2rem] bg-terracotta/80 text-white rotate-6 shadow-lg translate-y-2 transform hover:rotate-0 transition-all duration-300 -ml-2">
               {t('conscientes')}
             </span>{' '}
-            <span className="inline-block px-4 py-1 rounded-full bg-sky bg-forest/80 -rotate-2 shadow-lg -translate-y-3 transform hover:rotate-0 transition-all duration-300 -ml-2">
+            <span className="inline-block px-4 py-1 rounded-full bg-sky text-forest -rotate-2 shadow-lg -translate-y-3 transform hover:rotate-0 transition-all duration-300 -ml-2">
               {t('seguros')}
             </span>
           </motion.h1>
 
-          <motion.p
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
             className="text-lg sm:text-xl text-primary-foreground/90 max-w-2xl mb-8 leading-relaxed"
           >
-            {t('Educación Montessori Bilingüe en Cancún')}
-          </motion.p>
+            <p className="font-display font-medium text-2xl mb-2">
+              {t('Raíces profundas, visión alta, un sinfín de posibilidades por delante.')}
+            </p>
+            <p className="italic">
+              {t('Cada niño crece y deja una huella única, cuando aprende desde su libertad.')}
+            </p>
+          </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
