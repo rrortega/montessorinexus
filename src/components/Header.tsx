@@ -22,6 +22,7 @@ const navItems = [
 
 export function Header() {
   const { t, locale, setLocale } = useI18n();
+  const { handleCTA } = useCTA();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 

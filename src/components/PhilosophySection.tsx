@@ -16,6 +16,7 @@ const points = [
 
 export function PhilosophySection() {
   const { t } = useI18n();
+  const { handleCTA } = useCTA();
   const { x: mouseX, y: mouseY } = useMouseParallax(15);
   
   return (
@@ -82,7 +83,12 @@ export function PhilosophySection() {
 
             <FadeInScroll delay={0.4} direction="up">
               <Magnetic strength={0.15}>
-                <Button variant="default" size="lg" className="rounded-full px-8 overflow-hidden shadow-lg hover:shadow-primary/20 transition-all">
+                <Button 
+                  variant="default" 
+                  size="lg" 
+                  onClick={() => handleCTA('method')}
+                  className="rounded-full px-8 overflow-hidden shadow-lg hover:shadow-primary/20 transition-all"
+                >
                   {t('Nuestro Método Montessori')}
                 </Button>
               </Magnetic>
