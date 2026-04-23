@@ -6,6 +6,7 @@ import { FadeInScroll } from './ui/fade-in-scroll';
 import { Magnetic } from './ui/magnetic';
 import { useMouseParallax } from '@/hooks/use-mouse-parallax';
 import casaNinosImage from '@/assets/casa-ninos.png';
+import { useCTA } from '@/hooks/use-cta';
 
 const points = [
   'Respeto por el ritmo individual',
