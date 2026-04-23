@@ -1,8 +1,10 @@
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/context/I18nContext';
-import comunidadInfantil from '@/assets/comunidad-infantil.jpg';
-import casaNinos from '@/assets/casa-ninos.jpg';
+import { FadeInScroll } from './ui/fade-in-scroll';
+import { Magnetic } from './ui/magnetic';
+import { useCTA } from '@/hooks/use-cta';
+
 import taller1 from '@/assets/taller-1.jpeg';
 import taller2 from '@/assets/taller-2.jpeg';
 
@@ -23,16 +25,11 @@ const programs = [
 
 export function ProgramsSection() {
   const { t } = useI18n();
+  const { handleCTA } = useCTA();
   return (
     <section id="programas" className="section-padding bg-secondary overflow-hidden">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16"
-        >
+        <FadeInScroll className="text-center mb-16">
           <span className="text-accent font-medium text-sm uppercase tracking-wider">
             {t('Programas Educativos')}
           </span>
@@ -42,41 +39,49 @@ export function ProgramsSection() {
           <p className="text-muted-foreground max-w-2xl mx-auto">
             {t('Ofrecemos programas diseñados específicamente para cada etapa del desarrollo, respetando las necesidades únicas de cada edad.')}
           </p>
-        </motion.div>
+        </FadeInScroll>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
           {programs.map((program, index) => (
-            <motion.div
-              key={program.title}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-              className="group bg-card rounded-[2rem] overflow-hidden shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all duration-500"
+            <FadeInScroll 
+              key={program.title} 
+              delay={index * 0.15}
+              direction={index === 0 ? 'left' : 'right'}
             >
-              <div className="aspect-[4/3] overflow-hidden relative">
-                <img
-                  src={program.image}
-                  alt={t(program.title)}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                />
-                <div className="absolute inset-0 bg-forest/20 group-hover:bg-transparent transition-colors duration-500" />
+              <div className="group bg-card rounded-[2rem] overflow-hidden shadow-card hover:shadow-card-hover border border-transparent hover:border-primary/5 transition-all duration-500 h-full">
+                <div className="aspect-[4/3] overflow-hidden relative">
+                  <motion.img
+                    whileHover={{ scale: 1.1 }}
+                    transition={{ duration: 0.8 }}
+                    src={program.image}
+                    alt={t(program.title)}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-forest/20 group-hover:bg-transparent transition-colors duration-500 pointer-events-none" />
+                </div>
+                <div className="p-8">
+                  <span className="text-accent text-sm font-medium">
+                    {t(program.age)}
+                  </span>
+                  <h3 className="font-display text-2xl font-medium text-foreground mt-1 mb-3">
+                    {t(program.title)}
+                  </h3>
+                  <p className="text-muted-foreground text-sm mb-6 leading-relaxed">
+                    {t(program.description)}
+                  </p>
+                  <Magnetic strength={0.1}>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => handleCTA('program', program.title)}
+                      className="rounded-full border-2 hover:bg-forest hover:text-white transition-all px-6"
+                    >
+                      {t('Descubrir Programa')}
+                    </Button>
+                  </Magnetic>
+                </div>
               </div>
-              <div className="p-6">
-                <span className="text-accent text-sm font-medium">
-                  {t(program.age)}
-                </span>
-                <h3 className="font-display text-xl font-medium text-foreground mt-1 mb-3">
-                  {t(program.title)}
-                </h3>
-                <p className="text-muted-foreground text-sm mb-4">
-                  {t(program.description)}
-                </p>
-                <Button variant="outline" size="sm" className="w-full rounded-full border-2 hover:bg-forest hover:text-white transition-all">
-                  {t('Descubrir Programa')}
-                </Button>
-              </div>
-            </motion.div>
+            </FadeInScroll>
           ))}
         </div>
       </div>

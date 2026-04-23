@@ -10,16 +10,29 @@
     <meta property="og:title" content="Ceiba Montessori International | Cancún" />
     <meta property="og:description" content="Educación Montessori Internacional en Cancún. Formamos niños independientes, conscientes y preparados para un mundo global." />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta property="og:image" content="/og-image.png" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@CeibaMontessori" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="twitter:image" content="/og-image.png" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- Analytics Tracking -->
+    <script>
+      if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+        const script = document.createElement('script');
+        script.src = "https://analytics.chamba.pro/script.js";
+        script.defer = true;
+        script.setAttribute('data-website-id', '20f1eaa1-8a78-40bc-b428-615572fc96e1');
+        document.head.appendChild(script);
+      }
+    </script>
   </head>
 
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <!-- Asistenxa Widget -->
+    <script aid="69ea4192bccfa50c14e2" src="https://asistenxa.com/widget.js" async></script>
   </body>
 </html>

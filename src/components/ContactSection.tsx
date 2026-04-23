@@ -1,13 +1,91 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { MapPin, Phone, Mail } from 'lucide-react';
+import { MapPin, Phone, Mail, Send, Loader2 } from 'lucide-react';
 import { useI18n } from '@/context/I18nContext';
 import { Map } from './Map';
+import { toast } from 'sonner';
+
+const ctaMode = import.meta.env.VITE_CTA_MODE;
+
+function openAsistenxaWithLead(data: { name: string; email: string; phone: string; message: string }, locale: string) {
+  try {
+    const asistenxa = (window as any).Asistenxa;
+    if (!asistenxa || typeof asistenxa.open !== 'function') return;
+
+    const startMessage = locale === 'en'
+      ? `Hello! I just filled out the contact form. My name is ${data.name} and I would like to receive more information.`
+      : `¡Hola! Acabo de completar el formulario de contacto. Mi nombre es ${data.name} y me gustaría recibir más información.`;
+
+    asistenxa.open({
+      data: {
+        full_name: data.name,
+        email: data.email,
+        phone: data.phone,
+      },
+      start_message: startMessage,
+    });
+  } catch (err) {
+    console.warn('[Asistenxa] Could not open widget after form submit:', err);
+  }
+}
 
 export function ContactSection() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    message: ''
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { id, value } = e.target;
+    setFormData(prev => ({ ...prev, [id]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const endpoint = import.meta.env.VITE_CONTACT_EMAIL_ENDPOINT;
+    
+    if (!endpoint) {
+      toast.error(t('Configuración incompleta: Endpoint de contacto no definido.'));
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) throw new Error('Error al enviar el mensaje');
+
+      toast.success(t('¡Mensaje enviado con éxito! Nos pondremos en contacto pronto.'));
+
+      // When in widget mode, hand off the lead to Asistenxa chat
+      if (ctaMode === 'widget') {
+        openAsistenxaWithLead(formData, locale);
+      }
+
+      setFormData({ name: '', email: '', phone: '', message: '' });
+    } catch (error) {
+      console.error('Contact form error:', error);
+      toast.error(t('Hubo un error al enviar el mensaje. Por favor, inténtalo de nuevo.'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <section id="contacto" className="section-padding bg-secondary overflow-hidden">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -29,30 +107,62 @@ export function ContactSection() {
               {t('Estamos aquí para ayudarte. Completa el formulario y nos pondremos en contacto contigo.')}
             </p>
 
-            <form className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={handleChange}
                   placeholder={t('Nombre')}
                   className="bg-background"
+                  required
                 />
                 <Input
+                  id="email"
                   type="email"
+                  value={formData.email}
+                  onChange={handleChange}
                   placeholder={t('Email')}
                   className="bg-background"
+                  required
                 />
               </div>
               <Input
+                id="phone"
                 type="tel"
+                value={formData.phone}
+                onChange={handleChange}
                 placeholder={t('Teléfono')}
                 className="bg-background"
+                required
               />
               <Textarea
+                id="message"
+                value={formData.message}
+                onChange={handleChange}
                 placeholder={t('Mensaje')}
                 rows={4}
                 className="bg-background resize-none"
+                required
               />
-              <Button variant="default" size="lg" className="w-full sm:w-auto rounded-full shadow-lg hover:shadow-primary/30 transition-all">
-                {t('Enviar Mensaje')}
+              <Button 
+                type="submit" 
+                disabled={isSubmitting}
+                variant="default" 
+                size="lg" 
+                className="w-full sm:w-auto rounded-full shadow-lg hover:shadow-primary/30 transition-all flex items-center gap-2"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    {t('Enviando...')}
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    {t('Enviar Mensaje')}
+                  </>
+                )}
               </Button>
             </form>
           </motion.div>

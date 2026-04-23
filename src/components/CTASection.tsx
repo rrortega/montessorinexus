@@ -1,9 +1,11 @@
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/context/I18nContext';
+import { useCTA } from '@/hooks/use-cta';
 
 export function CTASection() {
   const { t } = useI18n();
+  const { handleCTA } = useCTA();
   return (
     <section className="py-24 bg-primary relative overflow-hidden">
       {/* Decorative elements */}
@@ -25,10 +27,20 @@ export function CTASection() {
             {t('Únete a una comunidad que valora el desarrollo integral, el respeto por la individualidad y la conexión con la naturaleza.')}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button variant="accent" size="lg" className="rounded-full px-10 py-7 text-lg shadow-xl hover:shadow-accent/40 transition-all">
+            <Button 
+              variant="accent" 
+              size="lg" 
+              onClick={() => handleCTA('visit')}
+              className="rounded-full px-10 py-7 text-lg shadow-xl hover:shadow-accent/40 transition-all"
+            >
               {t('Agenda una Visita')}
             </Button>
-            <Button variant="hero-outline" size="lg" className="rounded-full px-10 py-7 text-lg border-2 hover:bg-white/10 transition-all">
+            <Button 
+              variant="hero-outline" 
+              size="lg" 
+              onClick={() => handleCTA('info')}
+              className="rounded-full px-10 py-7 text-lg border-2 hover:bg-white/10 transition-all"
+            >
               {t('Contáctanos')}
             </Button>
           </div>

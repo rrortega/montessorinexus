@@ -2,6 +2,8 @@ import { motion } from 'framer-motion';
 import { FileText, Home, MessageSquare, UserCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/context/I18nContext';
+import { useCTA } from '@/hooks/use-cta';
+
 
 const steps = [
   {
@@ -28,6 +30,7 @@ const steps = [
 
 export function AdmissionsSection() {
   const { t } = useI18n();
+  const { handleCTA } = useCTA();
   return (
     <section id="admisiones" className="section-padding bg-background overflow-hidden">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -91,7 +94,12 @@ export function AdmissionsSection() {
           transition={{ duration: 0.6, delay: 0.4 }}
           className="text-center"
         >
-          <Button variant="default" size="lg" className="rounded-full px-10 py-7 text-lg shadow-xl hover:shadow-primary/30 transition-all">
+          <Button 
+            variant="default" 
+            size="lg" 
+            onClick={() => handleCTA('admission')}
+            className="rounded-full px-10 py-7 text-lg shadow-xl hover:shadow-primary/30 transition-all"
+          >
             {t('Inicia tu Proceso de Admisión')}
           </Button>
         </motion.div>

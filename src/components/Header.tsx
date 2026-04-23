@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useI18n } from '@/context/I18nContext';
 import logoIcon from '@/assets/ceiba-montessori-logo.svg';
 import logoLetras from '@/assets/ceiba-letras.svg';
+import { useCTA } from '@/hooks/use-cta';
 
 const showGallery = import.meta.env.VITE_SHOW_GALLERY_SECTION === 'true';
 const showTeachers = import.meta.env.VITE_SHOW_TEACHERS_SECTION === 'true';
@@ -114,7 +115,12 @@ export function Header() {
               {locale === 'es' ? 'EN' : 'ES'}
             </Button>
 
-            <Button variant="secondary" size="sm" className="rounded-full px-6 text-xs font-bold tracking-wide shadow-lg border-b-4 border-black/10 hover:translate-y-0.5 active:border-b-0 transition-all">
+            <Button 
+              variant="secondary" 
+              size="sm" 
+              onClick={() => handleCTA('visit')}
+              className="rounded-full px-6 text-xs font-bold tracking-wide shadow-lg border-b-4 border-black/10 hover:translate-y-0.5 active:border-b-0 transition-all"
+            >
               {t('Agenda una Visita')}
             </Button>
           </div>
@@ -176,7 +182,14 @@ export function Header() {
                     {t(item.label)}
                   </a>
                 ))}
-                <Button variant="secondary" className="mt-4 w-full rounded-full py-6 text-lg font-bold">
+                <Button 
+                  variant="secondary" 
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    handleCTA('visit');
+                  }}
+                  className="mt-4 w-full rounded-full py-6 text-lg font-bold"
+                >
                   {t('Agenda una Visita')}
                 </Button>
               </nav>

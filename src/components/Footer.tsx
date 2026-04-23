@@ -77,10 +77,19 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-primary-foreground/10 mt-8 pt-8 text-center">
+        <div className="border-t border-primary-foreground/10 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center gap-6">
           <p className="text-primary-foreground/50 text-sm">
             © {new Date().getFullYear()} Ceiba Montessori International. {t('Todos los derechos reservados.')}
           </p>
+          <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 text-[10px] sm:text-xs text-primary-foreground/40 font-bold tracking-[0.15em] uppercase">
+            <a href="https://chamba.pro" target="_blank" rel="noopener noreferrer" className="hover:text-primary-foreground/80 transition-colors">
+              Powered by ChambaPRO S.A.P.I de C.V
+            </a>
+            <span className="hidden sm:block opacity-20 h-3 w-px bg-white/50" />
+            <a href="https://asistenxa.com" target="_blank" rel="noopener noreferrer" className="hover:text-primary-foreground/80 transition-colors">
+              Potenciado por Asistenxa.com
+            </a>
+          </div>
         </div>
       </div>
     </footer>

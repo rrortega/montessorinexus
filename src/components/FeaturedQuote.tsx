@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { useI18n } from '@/context/I18nContext';
 import { Button } from '@/components/ui/button';
+import { useCTA, CTAIntent } from '@/hooks/use-cta';
 
 interface FeaturedQuoteProps {
   quoteKey: string;
@@ -9,6 +10,7 @@ interface FeaturedQuoteProps {
   image?: string;
   ctaText?: string;
   ctaHref?: string;
+  intent?: CTAIntent;
   curveVariant?: 0 | 1 | 2 | 3 | 4;
 }
 
@@ -19,9 +21,17 @@ const curves = {
   4: "M0,120H1200V0C800,60,400,60,0,0V120Z"
 };
 
-export function FeaturedQuote({ quoteKey, authorKey, className = "", image, ctaText, ctaHref, curveVariant = 0 }: FeaturedQuoteProps) {
+export function FeaturedQuote({ quoteKey, authorKey, className = "", image, ctaText, ctaHref, intent, curveVariant = 0 }: FeaturedQuoteProps) {
   const { t } = useI18n();
+  const { handleCTA } = useCTA();
   const selectedCurve = curveVariant !== 0 ? curves[curveVariant] : null;
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (intent) {
+      e.preventDefault();
+      handleCTA(intent);
+    }
+  };
 
   return (
     <section className={`py-12 md:py-16 lg:py-20 bg-forest relative overflow-hidden ${className}`}>
@@ -69,7 +79,7 @@ export function FeaturedQuote({ quoteKey, authorKey, className = "", image, ctaT
             </motion.p>
           )}
 
-          {ctaText && ctaHref && (
+          {ctaText && (ctaHref || intent) && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -77,11 +87,19 @@ export function FeaturedQuote({ quoteKey, authorKey, className = "", image, ctaT
               transition={{ delay: 0.6 }}
               className="mt-8"
             >
-              <a href={ctaHref}>
-                <Button variant="accent" size="lg" className="rounded-full px-8 py-6 text-[15px] sm:text-lg shadow-xl shadow-accent/20 hover:shadow-accent/40 hover:-translate-y-1 transition-all font-bold">
-                  {t(ctaText)}
-                </Button>
-              </a>
+              <Button 
+                variant="accent" 
+                size="lg" 
+                onClick={handleClick}
+                asChild={!!ctaHref && !intent}
+                className="rounded-full px-8 py-6 text-[15px] sm:text-lg shadow-xl shadow-accent/20 hover:shadow-accent/40 hover:-translate-y-1 transition-all font-bold"
+              >
+                {ctaHref && !intent ? (
+                  <a href={ctaHref}>{t(ctaText)}</a>
+                ) : (
+                  t(ctaText)
+                )}
+              </Button>
             </motion.div>
           )}
         </motion.div>

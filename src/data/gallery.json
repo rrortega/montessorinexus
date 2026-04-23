@@ -1,59 +1,115 @@
 {
   "categories": [
-    { "id": "all", "label": "All Moments" },
-    { "id": "practical", "label": "Practical Life" },
-    { "id": "sensory", "label": "Sensory Play" },
-    { "id": "outdoors", "label": "Outdoors" },
-    { "id": "arts", "label": "Arts & Expression" }
+    { "id": "all", "label": "Todos los Momentos", "label_en": "All Moments" },
+    { "id": "practical", "label": "Vida Práctica", "label_en": "Practical Life" },
+    { "id": "sensory", "label": "Juegos Sensoriales", "label_en": "Sensory Play" },
+    { "id": "outdoors", "label": "Outdoors", "label_en": "Outdoors" },
+    { "id": "arts", "label": "Arte y Expresión", "label_en": "Arts & Expression" }
   ],
   "images": [
     {
       "id": 1,
-      "category": "sensory",
-      "src": "https://images.unsplash.com/photo-1587654780291-39ca9a7a39b7?auto=format&fit=crop&w=800&q=80",
-      "alt": "Sensory water play"
+      "category": "outdoors",
+      "src": "/gallery/ceiba-roots-hamaca-exterior-ninos.jpeg",
+      "title": { "es": "Diversión en la Hamaca", "en": "Hammock Fun" },
+      "alt": { "es": "Niños jugando en hamaca exterior", "en": "Children playing in outdoor hammock" },
+      "description": { "es": "Momento de relajación y juego compartido en nuestra zona de hamacas bajo la sombra de los árboles.", "en": "Moment of relaxation and shared play in our hammock area under the shade of trees." }
     },
     {
       "id": 2,
       "category": "practical",
-      "src": "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=800&q=80",
-      "alt": "Practical life activity"
+      "src": "/gallery/ceiba-roots-montessori-bloques-construccion.jpeg",
+      "title": { "es": "Construcción Creativa", "en": "Creative Construction" },
+      "alt": { "es": "Niño trabajando con bloques de madera Montessori", "en": "Child working with Montessori wooden blocks" },
+      "description": { "es": "Fomentando la concentración y la coordinación ojo-mano a través de actividades de construcción.", "en": "Fostering concentration and eye-hand coordination through building activities." }
     },
     {
       "id": 3,
-      "category": "outdoors",
-      "src": "https://images.unsplash.com/photo-1516627145497-ae6968895b74?auto=format&fit=crop&w=800&q=80",
-      "alt": "Outdoors garden time"
+      "category": "practical",
+      "src": "/gallery/ceiba-roots-vida-practica-clase.jpeg",
+      "title": { "es": "Vida Práctica en el Aula", "en": "Practical Life in the Classroom" },
+      "alt": { "es": "Niños realizando actividades de vida práctica", "en": "Children performing practical life activities" },
+      "description": { "es": "Desarrollo de la autonomía y habilidades motrices finas en nuestro ambiente preparado.", "en": "Development of autonomy and fine motor skills in our prepared environment." }
     },
     {
       "id": 4,
-      "category": "arts",
-      "src": "https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&w=800&q=80",
-      "alt": "Creative arts session"
+      "category": "outdoors",
+      "src": "/gallery/ceiba-roots-conejos-mascotas.jpeg",
+      "title": { "es": "Cuidado de Animales", "en": "Animal Care" },
+      "alt": { "es": "Niños interactuando con conejitos", "en": "Children interacting with bunnies" },
+      "description": { "es": "Conexión directa con la naturaleza y aprendizaje sobre el cuidado responsable de nuestras mascotas.", "en": "Direct connection with nature and learning about responsible pet care." }
     },
     {
       "id": 5,
-      "category": "sensory",
-      "src": "https://images.unsplash.com/photo-1544367567-0f2101e9d35f?auto=format&fit=crop&w=800&q=80",
-      "alt": "Sensory play exploration"
+      "category": "outdoors",
+      "src": "/gallery/ceiba-roots-nina-conejo-jardin.jpeg",
+      "title": { "es": "Amistad con la Naturaleza", "en": "Friendship with Nature" },
+      "alt": { "es": "Niña sosteniendo un conejo con ternura", "en": "Girl tenderly holding a rabbit" },
+      "description": { "es": "Momentos mágicos de empatía y respeto por los seres vivos en nuestro jardín.", "en": "Magical moments of empathy and respect for living beings in our garden." }
     },
     {
       "id": 6,
-      "category": "outdoors",
-      "src": "https://images.unsplash.com/photo-1472162072942-cd5147eb3902?auto=format&fit=crop&w=800&q=80",
-      "alt": "Outdoor group activity"
+      "category": "arts",
+      "src": "/gallery/ceiba-roots-guia-montessori-arte.jpeg",
+      "title": { "es": "Expresión Artística Guiada", "en": "Guided Artistic Expression" },
+      "alt": { "es": "Guía acompañando a niña en dibujo", "en": "Guide accompanying a girl in drawing" },
+      "description": { "es": "El arte como medio de expresión personal bajo la observación y apoyo de nuestras guías.", "en": "Art as a means of personal expression under the observation and support of our guides." }
     },
     {
       "id": 7,
-      "category": "practical",
-      "src": "https://images.unsplash.com/photo-1484981138541-3d074aa97716?auto=format&fit=crop&w=800&q=80",
-      "alt": "Concentrated work"
+      "category": "sensory",
+      "src": "/gallery/ceiba-roots-geometria-montessori-azul.jpeg",
+      "title": { "es": "Geometría Sensorial", "en": "Sensory Geometry" },
+      "alt": { "es": "Sólidos geométricos azules Montessori", "en": "Montessori blue geometric solids" },
+      "description": { "es": "Exploración de formas y volúmenes a través del material sensorial clásico de Montessori.", "en": "Exploration of shapes and volumes through classic Montessori sensory material." }
     },
     {
       "id": 8,
+      "category": "practical",
+      "src": "/gallery/ceiba-roots-abaco-matematicas.jpeg",
+      "title": { "es": "Matemáticas Concretas", "en": "Concrete Mathematics" },
+      "alt": { "es": "Niña usando ábaco de madera", "en": "Girl using wooden abacus" },
+      "description": { "es": "Aprendizaje de conceptos matemáticos complejos de forma tangible y comprensible.", "en": "Learning complex mathematical concepts in a tangible and understandable way." }
+    },
+    {
+      "id": 9,
       "category": "arts",
-      "src": "https://images.unsplash.com/photo-1456735190827-d1262f71b8a3?auto=format&fit=crop&w=800&q=80",
-      "alt": "Music and expression"
+      "src": "/gallery/ceiba-roots-escritura-creativa.jpeg",
+      "title": { "es": "Iniciación a la Escritura", "en": "Introduction to Writing" },
+      "alt": { "es": "Niña practicando trazos en pizarra", "en": "Girl practicing strokes on chalkboard" },
+      "description": { "es": "Desarrollo de la lectoescritura respetando el ritmo y los intereses de cada niño.", "en": "Literacy development respecting the pace and interests of each child." }
+    },
+    {
+      "id": 10,
+      "category": "practical",
+      "src": "/gallery/ceiba-roots-material-didactico-madera.jpeg",
+      "title": { "es": "Materiales de Aprendizaje", "en": "Learning Materials" },
+      "alt": { "es": "Niña trabajando con material Montessori de madera", "en": "Girl working with wooden Montessori material" },
+      "description": { "es": "Ambientes diseñados para invitar al trabajo enfocado y la exploración autodirigida.", "en": "Environments designed to invite focused work and self-directed exploration." }
+    },
+    {
+      "id": 11,
+      "category": "outdoors",
+      "src": "/gallery/ceiba-roots-herramientas-jardineria.jpeg",
+      "title": { "es": "Herramientas de Pequeño Jardinero", "en": "Little Gardener's Tools" },
+      "alt": { "es": "Kit de jardinería infantil sobre madera", "en": "Children's gardening kit on wood" },
+      "description": { "es": "Preparando las herramientas para nuestra próxima siembra en el huerto escolar.", "en": "Preparing tools for our next planting in the school garden." }
+    },
+    {
+      "id": 12,
+      "category": "sensory",
+      "src": "/gallery/ceiba-roots-semillas-exposicion.jpeg",
+      "title": { "es": "Tesoros de la Tierra", "en": "Earth's Treasures" },
+      "alt": { "es": "Semillas y frutos en caja de cristal", "en": "Seeds and fruits in a glass box" },
+      "description": { "es": "Observación detallada de la biodiversidad que nos rodea en Ceiba Roots.", "en": "Detailed observation of the biodiversity surrounding us at Ceiba Roots." }
+    },
+    {
+      "id": 13,
+      "category": "practical",
+      "src": "/gallery/ceiba-roots-ambiente-preparado-guia.jpeg",
+      "title": { "es": "Nuestro Ambiente Preparado", "en": "Our Prepared Environment" },
+      "alt": { "es": "Guía organizando materiales en el suelo", "en": "Guide organizing materials on the floor" },
+      "description": { "es": "Un espacio ordenado y estético que invita a la calma y al aprendizaje profundo.", "en": "An orderly and aesthetic space that invites calm and deep learning." }
     }
   ]
 }
