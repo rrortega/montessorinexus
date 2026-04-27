@@ -7,7 +7,7 @@ import { Magnetic } from '@/components/ui/magnetic';
 import heroImage from '@/assets/hero-montessori.jpeg';
 import { useEffect } from 'react';
 import { useCTA } from '@/hooks/use-cta';
-import { Typewriter } from '@/components/ui/typewriter';
+
 
 export function HeroSection() {
   const { t } = useI18n();
@@ -120,16 +120,7 @@ export function HeroSection() {
 
             <div className="mb-8 min-h-[160px] sm:min-h-[120px] md:min-h-[180px] lg:min-h-[220px]">
               <h1 className="font-display text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold text-white leading-[1.1] tracking-tight drop-shadow-2xl">
-                <Typewriter
-                  phrases={[
-                    t("Honramos la intención guiando su dirección."),
-                    t("Creciendo con propósito, liderando con empatía."),
-                    t("Raíces abajo, visión arriba, infinitas posibilidades adelante."),
-                    t("Libres para pensar, capaces de transformar.")
-                  ]}
-                  className="text-white"
-                  pauseTime={3500}
-                />
+                {t("Cada niño deja una huella única cuando aprende desde su libertad.")}
               </h1>
             </div>
 

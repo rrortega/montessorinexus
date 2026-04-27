@@ -5,7 +5,7 @@ import { useI18n } from '@/context/I18nContext';
 import { FadeInScroll } from './ui/fade-in-scroll';
 import { Magnetic } from './ui/magnetic';
 import { useMouseParallax } from '@/hooks/use-mouse-parallax';
-import casaNinosImage from '@/assets/casa-ninos.png';
+import casaNinosImage from '@/assets/salon.jpeg';
 import { useCTA } from '@/hooks/use-cta';
 
 const points = [
@@ -19,7 +19,7 @@ export function PhilosophySection() {
   const { t } = useI18n();
   const { handleCTA } = useCTA();
   const { x: mouseX, y: mouseY } = useMouseParallax(15);
-  
+
   return (
     <section id="metodo" className="section-padding bg-secondary overflow-hidden">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -37,13 +37,13 @@ export function PhilosophySection() {
                 />
               </div>
             </FadeInScroll>
-            <motion.div 
+            <motion.div
               style={{ x: useTransform(mouseX, (v) => v * 1.2), y: useTransform(mouseY, (v) => v * 1.2) }}
-              className="absolute -bottom-10 -right-10 w-48 h-48 bg-accent/20 blob-shape -z-0 animate-pulse" 
+              className="absolute -bottom-10 -right-10 w-48 h-48 bg-accent/20 blob-shape -z-0 animate-pulse"
             />
-            <motion.div 
+            <motion.div
               style={{ x: useTransform(mouseX, (v) => -v * 0.8), y: useTransform(mouseY, (v) => -v * 0.8) }}
-              className="absolute -top-10 -left-10 w-32 h-32 bg-forest/10 blob-shape-alt -z-0" 
+              className="absolute -top-10 -left-10 w-32 h-32 bg-forest/10 blob-shape-alt -z-0"
             />
           </div>
 
@@ -68,9 +68,9 @@ export function PhilosophySection() {
 
             <ul className="space-y-4 mb-8">
               {points.map((point, index) => (
-                <FadeInScroll 
-                  key={point} 
-                  delay={index * 0.1} 
+                <FadeInScroll
+                  key={point}
+                  delay={index * 0.1}
                   direction="right"
                   className="flex items-center gap-3"
                 >
@@ -84,9 +84,9 @@ export function PhilosophySection() {
 
             <FadeInScroll delay={0.4} direction="up">
               <Magnetic strength={0.15}>
-                <Button 
-                  variant="default" 
-                  size="lg" 
+                <Button
+                  variant="default"
+                  size="lg"
                   onClick={() => handleCTA('method')}
                   className="rounded-full px-8 overflow-hidden shadow-lg hover:shadow-primary/20 transition-all"
                 >
