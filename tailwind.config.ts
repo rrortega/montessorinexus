@@ -16,6 +16,7 @@ export default {
       fontFamily: {
         display: ['Outfit', 'system-ui', 'sans-serif'],
         body: ['Lexend', 'system-ui', 'sans-serif'],
+        handwriting: ['Caveat', 'cursive'],
       },
       colors: {
         border: "hsl(var(--border))",

@@ -17,6 +17,8 @@ import { FeaturedQuote } from '@/components/FeaturedQuote';
 import { SEO } from '@/components/SEO';
 import tallerImg from '@/assets/taller-old.jpg';
 
+import mariaCharcoal from '@/assets/maria-charcoal.png';
+
 const Index = () => {
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
@@ -59,9 +61,14 @@ const Index = () => {
         <PhilosophySection />
         <MetricsSection />
         <FeaturedQuote
-          quoteKey="Creciendo con propósito, liderando con empatía."
-          className="bg-terracotta"
-          curveVariant={4}
+          quoteKeys={[
+            "Sigue al niño.",
+            "Libera el potencial del niño y lo transformarás en el mundo.",
+            "Ayúdame a hacerlo por mí mismo.",
+            "El niño es la esperanza y la promesa para la humanidad."
+          ]}
+          authorKey="Maria Montessori"
+          image={mariaCharcoal}
         />
         <HistorySection />
         <ProgramsSection />

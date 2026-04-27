@@ -7,6 +7,7 @@ import { Magnetic } from '@/components/ui/magnetic';
 import heroImage from '@/assets/hero-montessori.png';
 import { useEffect } from 'react';
 import { useCTA } from '@/hooks/use-cta';
+import { Typewriter } from '@/components/ui/typewriter';
 
 export function HeroSection() {
   const { t } = useI18n();
@@ -45,6 +46,7 @@ export function HeroSection() {
             alt="Ambiente Montessori"
             className="w-full h-full object-cover"
           />
+          <div className="absolute inset-0 bg-forest/40 backdrop-blur-[2px]" />
         </motion.div>
         
         {/* Spotlight Overlay */}
@@ -52,129 +54,123 @@ export function HeroSection() {
           style={{ 
             background: useTransform(
               [springSpotX, springSpotY],
-              ([x, y]) => `radial-gradient(circle 400px at ${x}px ${y}px, rgba(255,255,255,0.05), transparent)`
+              ([x, y]) => `radial-gradient(circle 450px at ${x}px ${y}px, rgba(255,255,255,0.08), transparent)`
             )
           }}
           className="absolute inset-0 z-[1] pointer-events-none"
         />
 
-        <div className="absolute inset-0 bg-gradient-to-r from-forest/90 via-forest/70 to-transparent z-[2]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-forest/60 via-transparent to-forest/80 z-[2]" />
+        <div className="absolute inset-0 bg-gradient-to-r from-forest/90 via-forest/40 to-transparent z-[2]" />
 
         {/* Playful Doodles with Parallax */}
         <motion.div
           style={{ x: useTransform(mouseX, (v) => v * 1.5), y: useTransform(mouseY, (v) => v * 1.5) }}
-          animate={{ rotate: [0, 5, 0] }}
+          animate={{ rotate: [0, 5, 0], scale: [1, 1.05, 1] }}
           transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-1/4 right-10 md:right-20 pointer-events-none opacity-40 z-[3]"
+          className="absolute top-1/4 right-10 md:right-32 pointer-events-none opacity-50 z-[3]"
         >
-          <svg width="120" height="120" viewBox="0 0 100 100" className="text-sunshine fill-current">
+          <svg width="140" height="140" viewBox="0 0 100 100" className="text-sunshine fill-current filter drop-shadow-xl">
             <path d="M50 20 L60 40 L80 40 L65 55 L75 75 L50 65 L25 75 L35 55 L20 40 L40 40 Z" />
           </svg>
         </motion.div>
 
         <motion.div
           style={{ x: useTransform(mouseX, (v) => -v * 1.2), y: useTransform(mouseY, (v) => -v * 1.2) }}
-          animate={{ x: [0, 10, 0] }}
-          transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute bottom-1/3 left-10 pointer-events-none opacity-30 z-[3]"
+          animate={{ x: [0, 15, 0], y: [0, -10, 0] }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute bottom-1/4 left-10 md:left-20 pointer-events-none opacity-40 z-[3]"
         >
-          <svg width="150" height="100" viewBox="0 0 200 100" className="text-sky fill-current">
+          <svg width="180" height="120" viewBox="0 0 200 100" className="text-sky fill-current filter drop-shadow-lg">
             <path d="M40 80 Q10 80 10 50 Q10 20 40 20 Q50 20 60 30 Q70 10 100 10 Q140 10 140 40 Q170 40 170 70 Q170 95 140 95 L40 95 Z" />
           </svg>
         </motion.div>
 
         {/* Organic Blobs with subtle floating */}
         <motion.div 
-          style={{ x: useTransform(mouseX, (v) => v * 0.8), y: useTransform(mouseY, (v) => v * 0.8) }}
-          className="absolute top-1/4 -left-20 w-64 h-64 bg-sunshine/10 blob-shape animate-pulse z-[2]" 
+          style={{ x: useTransform(mouseX, (v) => v * 0.6), y: useTransform(mouseY, (v) => v * 0.6) }}
+          className="absolute top-1/3 -left-32 w-96 h-96 bg-sunshine/15 blur-3xl blob-shape z-[2]" 
         />
         <motion.div 
-          style={{ x: useTransform(mouseX, (v) => -v * 0.5), y: useTransform(mouseY, (v) => -v * 0.5) }}
-          className="absolute bottom-1/4 -right-20 w-80 h-80 bg-leaf/20 blob-shape-alt animate-bounce-slow z-[2]" 
+          style={{ x: useTransform(mouseX, (v) => -v * 0.4), y: useTransform(mouseY, (v) => -v * 0.4) }}
+          className="absolute bottom-1/4 -right-32 w-[30rem] h-[30rem] bg-leaf/20 blur-3xl blob-shape-alt z-[2]" 
         />
       </div>
 
       {/* Content */}
-      <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 py-32">
-        <div className="max-w-3xl">
-          <motion.span
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="inline-block text-primary-foreground/80 text-sm font-medium tracking-wider uppercase mb-4"
-          >
-            {t('Colegio Montessori Bilingüe 100%')}
-          </motion.span>
-
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-primary-foreground leading-[1.2] mb-8"
-          >
-            {t('Apasionados por la formación de niños')}{' '}
-            <motion.span 
-              whileHover={{ scale: 1.05, rotate: 0 }}
-              className="inline-block px-4 py-1 rounded-3xl bg-white/80 text-forest -rotate-3 shadow-lg -translate-y-1 transform transition-all duration-300 cursor-default"
-            >
-              {t('autónomos')}
-            </motion.span>{' '}
-            <motion.span 
-              whileHover={{ scale: 1.05, rotate: 0 }}
-              className="inline-block px-4 py-1 rounded-[2rem] bg-terracotta/80 text-white rotate-6 shadow-lg translate-y-2 transform transition-all duration-300 -ml-2 cursor-default"
-            >
-              {t('conscientes')}
-            </motion.span>{' '}
-            <motion.span 
-              whileHover={{ scale: 1.05, rotate: 0 }}
-              className="inline-block px-4 py-1 rounded-full bg-forest border border-white/50 pb-2 text-whote -rotate-2 shadow-lg -translate-y-3 transform transition-all duration-300 -ml-2 cursor-default"
-            >
-              {t('seguros')}
-            </motion.span>
-          </motion.h1>
-
+      <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-start min-h-screen pt-20">
+        <div className="max-w-4xl">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-lg sm:text-xl text-primary-foreground/90 max-w-2xl mb-8 leading-relaxed"
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="relative"
           >
-            <p className="font-display font-medium text-2xl mb-2">
-              {t('Raíces profundas, visión alta, un sinfín de posibilidades por delante.')}
-            </p>
-            <p className="italic">
-              {t('Cada niño crece y deja una huella única, cuando aprende desde su libertad.')}
-            </p>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="flex flex-col sm:flex-row gap-6 items-center"
-          >
-            <Magnetic strength={0.2}>
-              <Button 
-                variant="accent" 
-                size="lg" 
-                onClick={() => handleCTA('visit')}
-                className="rounded-full px-8 py-6 text-lg shadow-lg hover:shadow-accent/40 transition-all"
-              >
-                {t('Agenda una Visita')}
-              </Button>
-            </Magnetic>
-            
-            <Magnetic strength={0.2}>
-              <Button
-                variant="hero-outline"
-                size="lg"
-                className="rounded-full px-8 py-6 text-lg border-2 hover:bg-white/10 transition-all flex items-center gap-2 group"
-                onClick={() => handleCTA('info')}
-              >
-                <MessageCircle className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                {t('Informes')}
-              </Button>
-            </Magnetic>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="flex items-center gap-3 mb-8 w-fit bg-forest/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 shadow-lg"
+            >
+              <div className="h-[2px] w-8 bg-sunshine" />
+              <span className="text-white text-[10px] sm:text-xs md:text-sm font-bold tracking-[0.3em] uppercase">
+                {t('Colegio Montessori Bilingüe 100%')}
+              </span>
+            </motion.div>
+ 
+            <div className="mb-8 min-h-[160px] sm:min-h-[120px] md:min-h-[180px] lg:min-h-[220px]">
+              <h1 className="font-display text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold text-white leading-[1.1] tracking-tight drop-shadow-2xl">
+                <Typewriter 
+                  phrases={[
+                    t("Honramos la intención guiando su dirección."),
+                    t("Creciendo con propósito, liderando con empatía."),
+                    t("Raíces abajo, visión arriba, infinitas posibilidades adelante."),
+                    t("Libres para pensar, capaces de transformar.")
+                  ]}
+                  className="text-white"
+                  pauseTime={3500}
+                />
+              </h1>
+            </div>
+ 
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+              className="text-xl sm:text-2xl text-white max-w-2xl mb-12 font-display font-medium leading-relaxed drop-shadow-xl"
+            >
+              {t('Apasionados por la formación de niños autónomos, conscientes y seguros')}
+            </motion.p>
+ 
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.7 }}
+              className="flex flex-wrap gap-6 items-center"
+            >
+              <Magnetic strength={0.1}>
+                <Button 
+                  variant="accent" 
+                  size="lg" 
+                  onClick={() => handleCTA('visit')}
+                  className="rounded-full px-10 py-7 text-lg font-bold shadow-xl transition-all hover:-translate-y-1"
+                >
+                  {t('Agenda una Visita')}
+                </Button>
+              </Magnetic>
+              
+              <Magnetic strength={0.1}>
+                <Button
+                  variant="hero-outline"
+                  size="lg"
+                  className="rounded-full px-10 py-7 text-lg border-white/40 hover:bg-white/10 backdrop-blur-sm transition-all flex items-center gap-3 group"
+                  onClick={() => handleCTA('info')}
+                >
+                  <MessageCircle className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+                  {t('Informes')}
+                </Button>
+              </Magnetic>
+            </motion.div>
           </motion.div>
         </div>
       </div>
@@ -184,7 +180,7 @@ export function HeroSection() {
         <svg
           viewBox="0 0 1200 120"
           preserveAspectRatio="none"
-          className="relative block w-[calc(100%+1.3px)] h-[100px]"
+          className="relative block w-[calc(100%+1.3px)] h-[80px] md:h-[120px]"
           fill="currentColor"
         >
           <path
