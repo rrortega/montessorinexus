@@ -1,9 +1,25 @@
-import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useI18n } from '@/context/I18nContext';
-import ceibaTree from '@/assets/ceiba-tree.jpg';
+import raicesCeiba from '@/assets/raices-ceiba.webp';
+import vistaDesdeAbajo from '@/assets/ceiba-vista-desde-abajo.jpeg';
 
 export function HistorySection() {
   const { t } = useI18n();
+  const [currentImage, setCurrentImage] = useState(0);
+
+  const images = [
+    { src: raicesCeiba, alt: t('Raíces profundas de Ceiba') },
+    { src: vistaDesdeAbajo, alt: t('Majestuosa vista desde abajo de Ceiba') }
+  ];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentImage((prev) => (prev + 1) % images.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [images.length]);
+
   return (
     <section id="comunidad" className="section-padding bg-background overflow-hidden">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -32,7 +48,7 @@ export function HistorySection() {
             </p>
           </motion.div>
 
-          {/* Image */}
+          {/* Image Succession */}
           <motion.div
             initial={{ opacity: 0, x: 30 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -40,12 +56,36 @@ export function HistorySection() {
             transition={{ duration: 0.6 }}
             className="relative"
           >
-            <div className="aspect-square rounded-[4rem] overflow-hidden shadow-card relative z-10">
-              <img
-                src={ceibaTree}
-                alt={t('Árbol Ceiba - símbolo de crecimiento')}
-                className="w-full h-full object-cover"
-              />
+            <div className="aspect-square rounded-[4rem] overflow-hidden shadow-card relative z-10 bg-muted">
+              <AnimatePresence mode="wait">
+                <motion.img
+                  key={currentImage}
+                  src={images[currentImage].src}
+                  alt={images[currentImage].alt}
+                  initial={{ opacity: 0, scale: 1.05 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.8, ease: "easeInOut" }}
+                  className="w-full h-full object-cover absolute inset-0"
+                />
+              </AnimatePresence>
+              
+              {/* Overlay gradient for dots visibility */}
+              <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/40 to-transparent z-10 pointer-events-none" />
+              
+              {/* Dots indicator */}
+              <div className="absolute bottom-6 left-0 right-0 z-20 flex justify-center gap-2">
+                {images.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentImage(idx)}
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      currentImage === idx ? 'bg-white w-6' : 'bg-white/50 w-2 hover:bg-white/80'
+                    }`}
+                    aria-label={`Ver imagen ${idx + 1}`}
+                  />
+                ))}
+              </div>
             </div>
             <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-secondary blob-shape -z-0 animate-bounce-slow" />
             <div className="absolute -top-10 -right-10 w-32 h-32 bg-forest/10 blob-shape-alt -z-0" />

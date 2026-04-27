@@ -4,7 +4,7 @@ import { useI18n } from '@/context/I18nContext';
 import { MessageCircle } from 'lucide-react';
 import { useMouseParallax } from '@/hooks/use-mouse-parallax';
 import { Magnetic } from '@/components/ui/magnetic';
-import heroImage from '@/assets/hero-montessori.png';
+import heroImage from '@/assets/hero-montessori.jpeg';
 import { useEffect } from 'react';
 import { useCTA } from '@/hooks/use-cta';
 import { Typewriter } from '@/components/ui/typewriter';
@@ -17,7 +17,7 @@ export function HeroSection() {
   const { x: mouseX, y: mouseY } = useMouseParallax(30);
   const bgX = useTransform(mouseX, (v) => -v * 0.5);
   const bgY = useTransform(mouseY, (v) => -v * 0.5);
-  
+
   // Spotlight effect logic
   const spotX = useMotionValue(0);
   const spotY = useMotionValue(0);
@@ -37,7 +37,7 @@ export function HeroSection() {
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Image and Overlays */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <motion.div 
+        <motion.div
           style={{ x: bgX, y: bgY, scale: 1.1 }}
           className="absolute inset-[-5%] w-[110%] h-[110%]"
         >
@@ -48,10 +48,10 @@ export function HeroSection() {
           />
           <div className="absolute inset-0 bg-forest/40 backdrop-blur-[2px]" />
         </motion.div>
-        
+
         {/* Spotlight Overlay */}
-        <motion.div 
-          style={{ 
+        <motion.div
+          style={{
             background: useTransform(
               [springSpotX, springSpotY],
               ([x, y]) => `radial-gradient(circle 450px at ${x}px ${y}px, rgba(255,255,255,0.08), transparent)`
@@ -87,13 +87,13 @@ export function HeroSection() {
         </motion.div>
 
         {/* Organic Blobs with subtle floating */}
-        <motion.div 
+        <motion.div
           style={{ x: useTransform(mouseX, (v) => v * 0.6), y: useTransform(mouseY, (v) => v * 0.6) }}
-          className="absolute top-1/3 -left-32 w-96 h-96 bg-sunshine/15 blur-3xl blob-shape z-[2]" 
+          className="absolute top-1/3 -left-32 w-96 h-96 bg-sunshine/15 blur-3xl blob-shape z-[2]"
         />
-        <motion.div 
+        <motion.div
           style={{ x: useTransform(mouseX, (v) => -v * 0.4), y: useTransform(mouseY, (v) => -v * 0.4) }}
-          className="absolute bottom-1/4 -right-32 w-[30rem] h-[30rem] bg-leaf/20 blur-3xl blob-shape-alt z-[2]" 
+          className="absolute bottom-1/4 -right-32 w-[30rem] h-[30rem] bg-leaf/20 blur-3xl blob-shape-alt z-[2]"
         />
       </div>
 
@@ -117,10 +117,10 @@ export function HeroSection() {
                 {t('Colegio Montessori Bilingüe 100%')}
               </span>
             </motion.div>
- 
+
             <div className="mb-8 min-h-[160px] sm:min-h-[120px] md:min-h-[180px] lg:min-h-[220px]">
               <h1 className="font-display text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold text-white leading-[1.1] tracking-tight drop-shadow-2xl">
-                <Typewriter 
+                <Typewriter
                   phrases={[
                     t("Honramos la intención guiando su dirección."),
                     t("Creciendo con propósito, liderando con empatía."),
@@ -132,7 +132,7 @@ export function HeroSection() {
                 />
               </h1>
             </div>
- 
+
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -141,7 +141,7 @@ export function HeroSection() {
             >
               {t('Apasionados por la formación de niños autónomos, conscientes y seguros')}
             </motion.p>
- 
+
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -149,16 +149,16 @@ export function HeroSection() {
               className="flex flex-wrap gap-6 items-center"
             >
               <Magnetic strength={0.1}>
-                <Button 
-                  variant="accent" 
-                  size="lg" 
+                <Button
+                  variant="accent"
+                  size="lg"
                   onClick={() => handleCTA('visit')}
                   className="rounded-full px-10 py-7 text-lg font-bold shadow-xl transition-all hover:-translate-y-1"
                 >
                   {t('Agenda una Visita')}
                 </Button>
               </Magnetic>
-              
+
               <Magnetic strength={0.1}>
                 <Button
                   variant="hero-outline"
