@@ -52,6 +52,11 @@ const Index = () => {
       <main>
         <HeroSection />
         <WhyChooseUs />
+
+        <PhilosophySection />
+
+
+
         <FeaturedQuote
           quoteKeys={[
             "Sigue al niño.",
@@ -65,18 +70,9 @@ const Index = () => {
           variant="artistic"
           borderPosition="both"
         />
-        <PhilosophySection />
-        <MetricsSection />
-
-        <FeaturedQuote
-          quoteKey="Libres para pensar, capaces de transformar."
-          image={tallerImg}
-          ctaText="Conoce Nuestro Método"
-          intent="method"
-          variant="classic"
-        />
-
         <HistorySection />
+
+        <MetricsSection />
         <ProgramsSection />
         <AdmissionsSection />
         <GallerySection />
