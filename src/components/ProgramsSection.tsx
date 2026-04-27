@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/context/I18nContext';
 import { FadeInScroll } from './ui/fade-in-scroll';
 import { Magnetic } from './ui/magnetic';
 import { useCTA } from '@/hooks/use-cta';
+import { ProgramModal } from './ProgramModal';
 
 import taller1 from '@/assets/taller-1.jpeg';
 import taller2 from '@/assets/taller-2.jpeg';
@@ -26,6 +28,8 @@ const programs = [
 export function ProgramsSection() {
   const { t } = useI18n();
   const { handleCTA } = useCTA();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   return (
     <section id="programas" className="section-padding bg-secondary overflow-hidden">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -73,7 +77,7 @@ export function ProgramsSection() {
                     <Button 
                       variant="outline" 
                       size="sm" 
-                      onClick={() => handleCTA('program', program.title)}
+                      onClick={() => setIsModalOpen(true)}
                       className="rounded-full border-2 hover:bg-forest hover:text-white transition-all px-6"
                     >
                       {t('Descubrir Programa')}
@@ -85,6 +89,11 @@ export function ProgramsSection() {
           ))}
         </div>
       </div>
+      
+      <ProgramModal 
+        isOpen={isModalOpen} 
+        onOpenChange={setIsModalOpen} 
+      />
     </section>
   );
 }

@@ -47,19 +47,11 @@ const Index = () => {
         }}
         className="fixed top-0 left-0 w-8 h-8 rounded-full border border-primary/20 pointer-events-none z-[9999] hidden lg:block"
       />
-      
+
       <Header />
       <main>
         <HeroSection />
         <WhyChooseUs />
-        <FeaturedQuote
-          quoteKey="Libres para pensar, capaces de transformar."
-          image={tallerImg}
-          ctaText="Conoce Nuestro Método"
-          intent="method"
-        />
-        <PhilosophySection />
-        <MetricsSection />
         <FeaturedQuote
           quoteKeys={[
             "Sigue al niño.",
@@ -69,7 +61,21 @@ const Index = () => {
           ]}
           authorKey="Maria Montessori"
           image={mariaCharcoal}
+          ctaText="Conoce Nuestro Método"
+          variant="artistic"
+          borderPosition="both"
         />
+        <PhilosophySection />
+        <MetricsSection />
+
+        <FeaturedQuote
+          quoteKey="Libres para pensar, capaces de transformar."
+          image={tallerImg}
+          ctaText="Conoce Nuestro Método"
+          intent="method"
+          variant="classic"
+        />
+
         <HistorySection />
         <ProgramsSection />
         <AdmissionsSection />
