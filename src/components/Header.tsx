@@ -3,8 +3,7 @@ import { Menu, X, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useI18n } from '@/context/I18nContext';
-import logoIcon from '@/assets/ceiba-montessori-logo.svg';
-import logoLetras from '@/assets/ceiba-letras.svg';
+import logoCeiba from '@/assets/logo-ceiba.svg';
 import { useCTA } from '@/hooks/use-cta';
 
 const showGallery = import.meta.env.VITE_SHOW_GALLERY_SECTION === 'true';
@@ -60,35 +59,18 @@ export function Header() {
       <div className="container h-full mx-auto px-6">
         <div className="flex items-center justify-between h-full">
           {/* Logo */}
-          <a href="#" className="flex flex-col items-center lg:items-start group pt-1">
+          <a href="#" className="-mt-2 flex flex-col items-center lg:items-start group pt-1">
             <motion.div
               whileHover={{ scale: 1.05, rotate: [-1, 1, -1, 1, 0] }}
               transition={{ duration: 0.3 }}
               className="flex items-center gap-1.5 sm:gap-2"
             >
               <img
-                src={logoIcon}
-                alt="Ceiba Icon"
-                className={`h-8 sm:h-10 w-auto transition-all ${isScrolled ? 'brightness-0 invert' : ''}`}
-              />
-              <img
-                src={logoLetras}
+                src={logoCeiba}
                 alt="Ceiba"
-                className={`h-6 sm:h-8 w-auto transition-all ${isScrolled ? 'brightness-0 invert' : ''}`}
+                className={`h-10 w-auto transition-all ${isScrolled ? 'brightness-0 invert' : ''}`}
               />
             </motion.div>
-            <AnimatePresence>
-              {!isScrolled && (
-                <motion.span
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="font-display text-[7.5px] sm:text-[10px] tracking-[0.2em] uppercase text-white/90 group-hover:text-white transition-all mt-0.5 whitespace-nowrap overflow-hidden px-1"
-                >
-                  Montessori International
-                </motion.span>
-              )}
-            </AnimatePresence>
           </a>
 
           {/* Desktop Navigation */}
@@ -116,9 +98,9 @@ export function Header() {
               {locale === 'es' ? 'EN' : 'ES'}
             </Button>
 
-            <Button 
-              variant="secondary" 
-              size="sm" 
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={() => handleCTA('visit')}
               className="rounded-full px-6 text-xs font-bold tracking-wide shadow-lg border-b-4 border-black/10 hover:translate-y-0.5 active:border-b-0 transition-all"
             >
@@ -183,8 +165,8 @@ export function Header() {
                     {t(item.label)}
                   </a>
                 ))}
-                <Button 
-                  variant="secondary" 
+                <Button
+                  variant="secondary"
                   onClick={() => {
                     setIsMobileMenuOpen(false);
                     handleCTA('visit');

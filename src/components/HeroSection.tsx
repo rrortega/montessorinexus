@@ -46,7 +46,7 @@ export function HeroSection() {
             alt="Ambiente Montessori"
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-forest/40 backdrop-blur-[2px]" />
+          <div className="absolute inset-0 bg-gradient-to-r from-forest/35 via-transparent to-transparent backdrop-blur-[2px]" />
         </motion.div>
 
         {/* Spotlight Overlay */}
@@ -61,19 +61,9 @@ export function HeroSection() {
         />
 
         <div className="absolute inset-0 bg-gradient-to-b from-forest/60 via-transparent to-forest/80 z-[2]" />
-        <div className="absolute inset-0 bg-gradient-to-r from-forest/90 via-forest/40 to-transparent z-[2]" />
+        <div className="absolute inset-0 bg-gradient-to-r from-forest/80 via-forest/15 to-transparent z-[2]" />
 
         {/* Playful Doodles with Parallax */}
-        <motion.div
-          style={{ x: useTransform(mouseX, (v) => v * 1.5), y: useTransform(mouseY, (v) => v * 1.5) }}
-          animate={{ rotate: [0, 5, 0], scale: [1, 1.05, 1] }}
-          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-1/4 right-10 md:right-32 pointer-events-none opacity-50 z-[3]"
-        >
-          <svg width="140" height="140" viewBox="0 0 100 100" className="text-sunshine fill-current filter drop-shadow-xl">
-            <path d="M50 20 L60 40 L80 40 L65 55 L75 75 L50 65 L25 75 L35 55 L20 40 L40 40 Z" />
-          </svg>
-        </motion.div>
 
         <motion.div
           style={{ x: useTransform(mouseX, (v) => -v * 1.2), y: useTransform(mouseY, (v) => -v * 1.2) }}
@@ -106,23 +96,22 @@ export function HeroSection() {
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="relative"
           >
+
+
+            <div className="mb-8 min-h-[160px] sm:min-h-[120px] md:min-h-[180px] lg:min-h-[220px]">
+              <h1 className="font-display text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold text-white leading-[1.1] tracking-tight [text-shadow:_0_4px_16px_rgba(14,38,23,0.95),_0_2px_6px_rgba(14,38,23,0.8)]">
+                {t("Cada niño deja una huella única cuando aprende desde su libertad.")}
+              </h1>
+            </div>
+
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="flex items-center gap-3 mb-8 w-fit bg-forest/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 shadow-lg"
+              className="flex items-center gap-3 mb-8 w-fit  text-white px-0 py-2 uppercase"
             >
-              <div className="h-[2px] w-8 bg-sunshine" />
-              <span className="text-white text-[10px] sm:text-xs md:text-sm font-bold tracking-[0.3em] uppercase">
-                {t('Colegio Montessori Bilingüe 100%')}
-              </span>
+              {t('Colegio Montessori 100% Bilingüe')}
             </motion.div>
-
-            <div className="mb-8 min-h-[160px] sm:min-h-[120px] md:min-h-[180px] lg:min-h-[220px]">
-              <h1 className="font-display text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold text-white leading-[1.1] tracking-tight drop-shadow-2xl">
-                {t("Cada niño deja una huella única cuando aprende desde su libertad.")}
-              </h1>
-            </div>
 
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -130,7 +119,8 @@ export function HeroSection() {
               transition={{ duration: 0.6, delay: 0.5 }}
               className="text-xl sm:text-2xl text-white max-w-2xl mb-12 font-display font-medium leading-relaxed drop-shadow-xl"
             >
-              {t('Apasionados por la formación de niños autónomos, conscientes y seguros')}
+
+              {t('Fundada con conciencia educativa y responsabilidad hacia los niños de 6 a 12 años de edad.')}
             </motion.p>
 
             <motion.div

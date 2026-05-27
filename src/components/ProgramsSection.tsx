@@ -43,6 +43,9 @@ export function ProgramsSection() {
           <p className="text-muted-foreground max-w-2xl mx-auto">
             {t('Ofrecemos programas diseñados específicamente para cada etapa del desarrollo, respetando las necesidades únicas de cada edad.')}
           </p>
+          <p className="font-handwriting text-2xl md:text-3xl text-primary mt-6 tracking-wide select-none">
+            “{t('Libres para pensar, capaces de transformar.')}”
+          </p>
         </FadeInScroll>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">

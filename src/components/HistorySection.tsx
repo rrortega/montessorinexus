@@ -2,15 +2,16 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useI18n } from '@/context/I18nContext';
 import raicesCeiba from '@/assets/raices-ceiba.webp';
-import vistaDesdeAbajo from '@/assets/ceiba-vista-desde-abajo.jpeg';
+import camaDeMalla from '@/assets/amaca-en-la-ceiba.jpeg'
+import camaDeMalla2 from '@/assets/camma-malla2.jpg';
 
 export function HistorySection() {
   const { t } = useI18n();
   const [currentImage, setCurrentImage] = useState(0);
 
   const images = [
-    { src: raicesCeiba, alt: t('Raíces profundas de Ceiba') },
-    { src: vistaDesdeAbajo, alt: t('Majestuosa vista desde abajo de Ceiba') }
+    { src: camaDeMalla, alt: t('Nińos disfrutando de la cama hamaca en la Ceiba') },
+    { src: camaDeMalla2, alt: t('Dos niñós disfrutando de la hamaca en la Ceiba') }
   ];
 
   useEffect(() => {
@@ -69,19 +70,18 @@ export function HistorySection() {
                   className="w-full h-full object-cover absolute inset-0"
                 />
               </AnimatePresence>
-              
+
               {/* Overlay gradient for dots visibility */}
               <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/40 to-transparent z-10 pointer-events-none" />
-              
+
               {/* Dots indicator */}
               <div className="absolute bottom-6 left-0 right-0 z-20 flex justify-center gap-2">
                 {images.map((_, idx) => (
                   <button
                     key={idx}
                     onClick={() => setCurrentImage(idx)}
-                    className={`h-2 rounded-full transition-all duration-300 ${
-                      currentImage === idx ? 'bg-white w-6' : 'bg-white/50 w-2 hover:bg-white/80'
-                    }`}
+                    className={`h-2 rounded-full transition-all duration-300 ${currentImage === idx ? 'bg-white w-6' : 'bg-white/50 w-2 hover:bg-white/80'
+                      }`}
                     aria-label={`Ver imagen ${idx + 1}`}
                   />
                 ))}

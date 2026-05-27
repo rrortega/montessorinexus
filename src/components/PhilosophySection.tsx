@@ -1,4 +1,5 @@
-import { motion, useTransform } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion, useTransform, AnimatePresence } from 'framer-motion';
 import { Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/context/I18nContext';
@@ -19,6 +20,21 @@ export function PhilosophySection() {
   const { t } = useI18n();
   const { handleCTA } = useCTA();
   const { x: mouseX, y: mouseY } = useMouseParallax(15);
+
+  const slides = [
+    'Acompañamos a cada niño en la construcción de su ser con una educación bilingüe, viva y consciente, basada en Montessori y en las necesidades del mundo actual.',
+    'Honramos la niñez con un entorno preparado que impulsa curiosidad, autonomía y decisiones con propósito, desarrollando atención, autorregulación y pensamiento flexible.',
+    'Crecemos en conexión con la naturaleza, cultivando conciencia ecológica, y formamos líderes empáticos que colaboran con respeto y contribuyen con responsabilidad.'
+  ];
+
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    }, 7000);
+    return () => clearInterval(timer);
+  }, []);
 
   return (
     <section id="metodo" className="section-padding bg-secondary overflow-hidden">
@@ -50,19 +66,37 @@ export function PhilosophySection() {
           {/* Content */}
           <div className="space-y-6">
             <FadeInScroll direction="right">
-              <span className="text-accent font-medium text-sm uppercase tracking-wider">
+              <span className="text-accent font-medium text-sm uppercase tracking-wider block mb-6">
                 {t('Acompañamos la intención, guiando su dirección.')}
               </span>
-              <h2 className="heading-section text-foreground mt-2 mb-6 text-2xl md:text-3xl">
-                {t('Aspiramos a que cada niño crezca como un ser autónomo, consciente y comprometido con su comunidad y el planeta.')}
-              </h2>
-              <div className="space-y-4 text-muted-foreground mb-8 leading-relaxed text-balance">
-                <p>
-                  {t('En Ceiba, como extensión de la familia, acompañamos emociones y fortalecemos vínculos.')}
-                </p>
-                <p>
-                  {t('Construimos una comunidad para caminar con seguridad y contribuir a un futuro más justo, sostenible y humano.')}
-                </p>
+              
+              <div className="relative min-h-[160px] sm:min-h-[140px] md:min-h-[120px] mb-4 overflow-hidden flex items-center">
+                <AnimatePresence mode="wait">
+                  <motion.p
+                    key={currentSlide}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.5, ease: "easeInOut" }}
+                    className="font-display text-xl md:text-2xl font-medium text-foreground leading-relaxed text-balance"
+                  >
+                    {t(slides[currentSlide])}
+                  </motion.p>
+                </AnimatePresence>
+              </div>
+
+              {/* Carousel Indicators */}
+              <div className="flex gap-2 mb-8 justify-start">
+                {slides.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentSlide(idx)}
+                    className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+                      currentSlide === idx ? 'bg-accent w-6' : 'bg-accent/30 hover:bg-accent/50'
+                    }`}
+                    aria-label={`Go to slide ${idx + 1}`}
+                  />
+                ))}
               </div>
             </FadeInScroll>
 
