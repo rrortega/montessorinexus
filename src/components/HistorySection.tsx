@@ -10,8 +10,8 @@ export function HistorySection() {
   const [currentImage, setCurrentImage] = useState(0);
 
   const images = [
-    { src: camaDeMalla, alt: t('Nińos disfrutando de la cama hamaca en la Ceiba') },
-    { src: camaDeMalla2, alt: t('Dos niñós disfrutando de la hamaca en la Ceiba') }
+    { src: camaDeMalla, alt: t('Niños disfrutando de la cama hamaca en la Ceiba') },
+    { src: camaDeMalla2, alt: t('Niños disfrutando de la cama hamaca en la Ceiba') }
   ];
 
   useEffect(() => {
