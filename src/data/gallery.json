@@ -1,195 +1,422 @@
 {
   "categories": [
-    { "id": "all", "label": "Todos los Momentos", "label_en": "All Moments" },
-    { "id": "practical", "label": "Vida Práctica", "label_en": "Practical Life" },
-    { "id": "sensory", "label": "Juegos Sensoriales", "label_en": "Sensory Play" },
-    { "id": "outdoors", "label": "Outdoors", "label_en": "Outdoors" },
-    { "id": "arts", "label": "Arte y Expresión", "label_en": "Arts & Expression" }
+    {
+      "id": "all",
+      "label": "Todos los Momentos",
+      "label_en": "All Moments"
+    },
+    {
+      "id": "practical",
+      "label": "Vida Práctica",
+      "label_en": "Practical Life"
+    },
+    {
+      "id": "sensory",
+      "label": "Juegos Sensoriales",
+      "label_en": "Sensory Play"
+    },
+    {
+      "id": "outdoors",
+      "label": "Outdoors",
+      "label_en": "Outdoors"
+    },
+    {
+      "id": "arts",
+      "label": "Arte",
+      "label_en": "Arts"
+    }
   ],
   "images": [
     {
       "id": 1,
       "category": "outdoors",
       "src": "/gallery/ceiba-roots-hamaca-exterior-ninos.jpeg",
-      "title": { "es": "Diversión en la Hamaca", "en": "Hammock Fun" },
-      "alt": { "es": "Niños jugando en hamaca exterior", "en": "Children playing in outdoor hammock" },
-      "description": { "es": "Momento de relajación y juego compartido en nuestra zona de hamacas bajo la sombra de los árboles.", "en": "Moment of relaxation and shared play in our hammock area under the shade of trees." }
+      "title": {
+        "es": "Diversión en la Hamaca",
+        "en": "Hammock Fun"
+      },
+      "alt": {
+        "es": "Niños jugando en hamaca exterior",
+        "en": "Children playing in outdoor hammock"
+      },
+      "description": {
+        "es": "Momento de relajación y juego compartido en nuestra zona de hamacas bajo la sombra de los árboles.",
+        "en": "Moment of relaxation and shared play in our hammock area under the shade of trees."
+      }
     },
     {
       "id": 2,
       "category": "practical",
       "src": "/gallery/ceiba-roots-montessori-bloques-construccion.jpeg",
-      "title": { "es": "Construcción Creativa", "en": "Creative Construction" },
-      "alt": { "es": "Niño trabajando con bloques de madera Montessori", "en": "Child working with Montessori wooden blocks" },
-      "description": { "es": "Fomentando la concentración y la coordinación ojo-mano a través de actividades de construcción.", "en": "Fostering concentration and eye-hand coordination through building activities." }
+      "title": {
+        "es": "Construcción Creativa",
+        "en": "Creative Construction"
+      },
+      "alt": {
+        "es": "Niño trabajando con bloques de madera Montessori",
+        "en": "Child working with Montessori wooden blocks"
+      },
+      "description": {
+        "es": "Fomentando la concentración y la coordinación ojo-mano a través de actividades de construcción.",
+        "en": "Fostering concentration and eye-hand coordination through building activities."
+      }
     },
     {
       "id": 3,
       "category": "practical",
       "src": "/gallery/ceiba-roots-vida-practica-clase.jpeg",
-      "title": { "es": "Vida Práctica en el Aula", "en": "Practical Life in the Classroom" },
-      "alt": { "es": "Niños realizando actividades de vida práctica", "en": "Children performing practical life activities" },
-      "description": { "es": "Desarrollo de la autonomía y habilidades motrices finas en nuestro ambiente preparado.", "en": "Development of autonomy and fine motor skills in our prepared environment." }
+      "title": {
+        "es": "Vida Práctica en el Aula",
+        "en": "Practical Life in the Classroom"
+      },
+      "alt": {
+        "es": "Niños realizando actividades de vida práctica",
+        "en": "Children performing practical life activities"
+      },
+      "description": {
+        "es": "Desarrollo de la autonomía y habilidades motrices finas en nuestro ambiente preparado.",
+        "en": "Development of autonomy and fine motor skills in our prepared environment."
+      }
     },
     {
       "id": 4,
       "category": "outdoors",
       "src": "/gallery/ceiba-roots-conejos-mascotas.jpeg",
-      "title": { "es": "Cuidado de Animales", "en": "Animal Care" },
-      "alt": { "es": "Niños interactuando con conejitos", "en": "Children interacting with bunnies" },
-      "description": { "es": "Conexión directa con la naturaleza y aprendizaje sobre el cuidado responsable de nuestras mascotas.", "en": "Direct connection with nature and learning about responsible pet care." }
+      "title": {
+        "es": "Cuidado de Animales",
+        "en": "Animal Care"
+      },
+      "alt": {
+        "es": "Niños interactuando con conejitos",
+        "en": "Children interacting with bunnies"
+      },
+      "description": {
+        "es": "Conexión directa con la naturaleza y aprendizaje sobre el cuidado responsable de nuestras mascotas.",
+        "en": "Direct connection with nature and learning about responsible pet care."
+      }
     },
     {
       "id": 5,
       "category": "outdoors",
       "src": "/gallery/ceiba-roots-nina-conejo-jardin.jpeg",
-      "title": { "es": "Amistad con la Naturaleza", "en": "Friendship with Nature" },
-      "alt": { "es": "Niña sosteniendo un conejo con ternura", "en": "Girl tenderly holding a rabbit" },
-      "description": { "es": "Momentos mágicos de empatía y respeto por los seres vivos en nuestro jardín.", "en": "Magical moments of empathy and respect for living beings in our garden." }
+      "title": {
+        "es": "Amistad con la Naturaleza",
+        "en": "Friendship with Nature"
+      },
+      "alt": {
+        "es": "Niña sosteniendo un conejo con ternura",
+        "en": "Girl tenderly holding a rabbit"
+      },
+      "description": {
+        "es": "Momentos mágicos de empatía y respeto por los seres vivos en nuestro jardín.",
+        "en": "Magical moments of empathy and respect for living beings in our garden."
+      }
     },
     {
       "id": 6,
       "category": "arts",
       "src": "/gallery/ceiba-roots-guia-montessori-arte.jpeg",
-      "title": { "es": "Expresión Artística Guiada", "en": "Guided Artistic Expression" },
-      "alt": { "es": "Guía acompañando a niña en dibujo", "en": "Guide accompanying a girl in drawing" },
-      "description": { "es": "El arte como medio de expresión personal bajo la observación y apoyo de nuestras guías.", "en": "Art as a means of personal expression under the observation and support of our guides." }
+      "title": {
+        "es": "Expresión Artística Guiada",
+        "en": "Guided Artistic Expression"
+      },
+      "alt": {
+        "es": "Guía acompañando a niña en dibujo",
+        "en": "Guide accompanying a girl in drawing"
+      },
+      "description": {
+        "es": "El arte como medio de expresión personal bajo la observación y apoyo de nuestras guías.",
+        "en": "Art as a means of personal expression under the observation and support of our guides."
+      }
     },
     {
       "id": 7,
       "category": "sensory",
       "src": "/gallery/ceiba-roots-geometria-montessori-azul.jpeg",
-      "title": { "es": "Geometría Sensorial", "en": "Sensory Geometry" },
-      "alt": { "es": "Sólidos geométricos azules Montessori", "en": "Montessori blue geometric solids" },
-      "description": { "es": "Exploración de formas y volúmenes a través del material sensorial clásico de Montessori.", "en": "Exploration of shapes and volumes through classic Montessori sensory material." }
+      "title": {
+        "es": "Geometría Sensorial",
+        "en": "Sensory Geometry"
+      },
+      "alt": {
+        "es": "Sólidos geométricos azules Montessori",
+        "en": "Montessori blue geometric solids"
+      },
+      "description": {
+        "es": "Exploración de formas y volúmenes a través del material sensorial clásico de Montessori.",
+        "en": "Exploration of shapes and volumes through classic Montessori sensory material."
+      }
     },
     {
       "id": 8,
       "category": "practical",
       "src": "/gallery/ceiba-roots-abaco-matematicas.jpeg",
-      "title": { "es": "Matemáticas Concretas", "en": "Concrete Mathematics" },
-      "alt": { "es": "Niña usando ábaco de madera", "en": "Girl using wooden abacus" },
-      "description": { "es": "Aprendizaje de conceptos matemáticos complejos de forma tangible y comprensible.", "en": "Learning complex mathematical concepts in a tangible and understandable way." }
+      "title": {
+        "es": "Matemáticas Concretas",
+        "en": "Concrete Mathematics"
+      },
+      "alt": {
+        "es": "Niña usando ábaco de madera",
+        "en": "Girl using wooden abacus"
+      },
+      "description": {
+        "es": "Aprendizaje de conceptos matemáticos complejos de forma tangible y comprensible.",
+        "en": "Learning complex mathematical concepts in a tangible and understandable way."
+      }
     },
     {
       "id": 9,
       "category": "arts",
       "src": "/gallery/ceiba-roots-escritura-creativa.jpeg",
-      "title": { "es": "Iniciación a la Escritura", "en": "Introduction to Writing" },
-      "alt": { "es": "Niña practicando trazos en pizarra", "en": "Girl practicing strokes on chalkboard" },
-      "description": { "es": "Desarrollo de la lectoescritura respetando el ritmo y los intereses de cada niño.", "en": "Literacy development respecting the pace and interests of each child." }
+      "title": {
+        "es": "Iniciación a la Escritura",
+        "en": "Introduction to Writing"
+      },
+      "alt": {
+        "es": "Niña practicando trazos en pizarra",
+        "en": "Girl practicing strokes on chalkboard"
+      },
+      "description": {
+        "es": "Desarrollo de la lectoescritura respetando el ritmo y los intereses de cada niño.",
+        "en": "Literacy development respecting the pace and interests of each child."
+      }
     },
     {
       "id": 10,
       "category": "practical",
       "src": "/gallery/ceiba-roots-material-didactico-madera.jpeg",
-      "title": { "es": "Materiales de Aprendizaje", "en": "Learning Materials" },
-      "alt": { "es": "Niña trabajando con material Montessori de madera", "en": "Girl working with wooden Montessori material" },
-      "description": { "es": "Ambientes diseñados para invitar al trabajo enfocado y la exploración autodirigida.", "en": "Environments designed to invite focused work and self-directed exploration." }
+      "title": {
+        "es": "Materiales de Aprendizaje",
+        "en": "Learning Materials"
+      },
+      "alt": {
+        "es": "Niña trabajando con material Montessori de madera",
+        "en": "Girl working with wooden Montessori material"
+      },
+      "description": {
+        "es": "Ambientes diseñados para invitar al trabajo enfocado y la exploración autodirigida.",
+        "en": "Environments designed to invite focused work and self-directed exploration."
+      }
     },
     {
       "id": 11,
       "category": "outdoors",
       "src": "/gallery/ceiba-roots-herramientas-jardineria.jpeg",
-      "title": { "es": "Herramientas de Pequeño Jardinero", "en": "Little Gardener's Tools" },
-      "alt": { "es": "Kit de jardinería infantil sobre madera", "en": "Children's gardening kit on wood" },
-      "description": { "es": "Preparando las herramientas para nuestra próxima siembra en el huerto escolar.", "en": "Preparing tools for our next planting in the school garden." }
+      "title": {
+        "es": "Herramientas de Pequeño Jardinero",
+        "en": "Little Gardener's Tools"
+      },
+      "alt": {
+        "es": "Kit de jardinería infantil sobre madera",
+        "en": "Children's gardening kit on wood"
+      },
+      "description": {
+        "es": "Preparando las herramientas para nuestra próxima siembra en el huerto escolar.",
+        "en": "Preparing tools for our next planting in the school garden."
+      }
     },
     {
       "id": 12,
       "category": "sensory",
       "src": "/gallery/ceiba-roots-semillas-exposicion.jpeg",
-      "title": { "es": "Tesoros de la Tierra", "en": "Earth's Treasures" },
-      "alt": { "es": "Semillas y frutos en caja de cristal", "en": "Seeds and fruits in a glass box" },
-      "description": { "es": "Observación detallada de la biodiversidad que nos rodea en Ceiba Roots.", "en": "Detailed observation of the biodiversity surrounding us at Ceiba Roots." }
+      "title": {
+        "es": "Tesoros de la Tierra",
+        "en": "Earth's Treasures"
+      },
+      "alt": {
+        "es": "Semillas y frutos en caja de cristal",
+        "en": "Seeds and fruits in a glass box"
+      },
+      "description": {
+        "es": "Observación detallada de la biodiversidad que nos rodea en Ceiba Roots.",
+        "en": "Detailed observation of the biodiversity surrounding us at Ceiba Roots."
+      }
     },
     {
       "id": 13,
       "category": "practical",
       "src": "/gallery/ceiba-roots-ambiente-preparado-guia.jpeg",
-      "title": { "es": "Nuestro Ambiente Preparado", "en": "Our Prepared Environment" },
-      "alt": { "es": "Guía organizando materiales en el suelo", "en": "Guide organizing materials on the floor" },
-      "description": { "es": "Un espacio ordenado y estético que invita a la calma y al aprendizaje profundo.", "en": "An orderly and aesthetic space that invites calm and deep learning." }
+      "title": {
+        "es": "Nuestro Ambiente Preparado",
+        "en": "Our Prepared Environment"
+      },
+      "alt": {
+        "es": "Guía organizando materiales en el suelo",
+        "en": "Guide organizing materials on the floor"
+      },
+      "description": {
+        "es": "Un espacio ordenado y estético que invita a la calma y al aprendizaje profundo.",
+        "en": "An orderly and aesthetic space that invites calm and deep learning."
+      }
     },
     {
       "id": 14,
       "category": "outdoors",
       "src": "/gallery/ceiba-roots-montessori-hamaca-juego-exterior.jpeg",
-      "title": { "es": "Movimiento y Colaboración en el Exterior", "en": "Movement and Collaboration Outdoors" },
-      "alt": { "es": "Niños experimentando el control y equilibrio corporal en una hamaca exterior de cuerda", "en": "Children experiencing body control and balance in an outdoor rope hammock" },
-      "description": { "es": "El juego libre en la naturaleza promueve el control del movimiento, la autogestión y el fortalecimiento de los lazos comunitarios.", "en": "Free play in nature promotes movement control, self-regulation, and the strengthening of community bonds." }
+      "title": {
+        "es": "Movimiento y Colaboración en el Exterior",
+        "en": "Movement and Collaboration Outdoors"
+      },
+      "alt": {
+        "es": "Niños experimentando el control y equilibrio corporal en una hamaca exterior de cuerda",
+        "en": "Children experiencing body control and balance in an outdoor rope hammock"
+      },
+      "description": {
+        "es": "El juego libre en la naturaleza promueve el control del movimiento, la autogestión y el fortalecimiento de los lazos comunitarios.",
+        "en": "Free play in nature promotes movement control, self-regulation, and the strengthening of community bonds."
+      }
     },
     {
       "id": 15,
       "category": "practical",
       "src": "/gallery/ceiba-roots-vida-practica-cuidado-plantas.jpeg",
-      "title": { "es": "Cuidado del Ambiente Planta", "en": "Care of the Plant Environment" },
-      "alt": { "es": "Niño concentrado en la actividad de Vida Práctica limpiando con precisión las hojas de una planta", "en": "Child concentrated in a Practical Life activity precisely wiping plant leaves" },
-      "description": { "es": "A través del cuidado de las plantas, el niño perfecciona su coordinación motora fina y desarrolla un profundo respeto por los seres vivos.", "en": "Through caring for plants, the child refines fine motor coordination and develops a deep respect for living things." }
+      "title": {
+        "es": "Cuidado del Ambiente Planta",
+        "en": "Care of the Plant Environment"
+      },
+      "alt": {
+        "es": "Niño concentrado en la actividad de Vida Práctica limpiando con precisión las hojas de una planta",
+        "en": "Child concentrated in a Practical Life activity precisely wiping plant leaves"
+      },
+      "description": {
+        "es": "A través del cuidado de las plantas, el niño perfecciona su coordinación motora fina y desarrolla un profundo respeto por los seres vivos.",
+        "en": "Through caring for plants, the child refines fine motor coordination and develops a deep respect for living things."
+      }
     },
     {
       "id": 16,
       "category": "sensory",
       "src": "/gallery/ceiba-roots-montessori-rompecabezas-zoologia.jpeg",
-      "title": { "es": "Exploración Científica y Sensorial", "en": "Scientific and Sensory Exploration" },
-      "alt": { "es": "Niño utilizando el rompecabezas de zoología de la rana para discriminar sensoriamente las partes del animal", "en": "Child using the frog zoology puzzle to sensorially discriminate the parts of the animal" },
-      "description": { "es": "Los materiales del área cultural y científica invitan al niño a explorar el mundo natural de lo concreto a lo abstracto mediante la manipulación.", "en": "Cultural and scientific area materials invite the child to explore the natural world from concrete to abstract through manipulation." }
+      "title": {
+        "es": "Exploración Científica y Sensorial",
+        "en": "Scientific and Sensory Exploration"
+      },
+      "alt": {
+        "es": "Niño utilizando el rompecabezas de zoología de la rana para discriminar sensoriamente las partes del animal",
+        "en": "Child using the frog zoology puzzle to sensorially discriminate the parts of the animal"
+      },
+      "description": {
+        "es": "Los materiales del área cultural y científica invitan al niño a explorar el mundo natural de lo concreto a lo abstracto mediante la manipulación.",
+        "en": "Cultural and scientific area materials invite the child to explore the natural world from concrete to abstract through manipulation."
+      }
     },
     {
       "id": 17,
       "category": "sensory",
       "src": "/gallery/ceiba-roots-montessori-geografia-globo-terraqueo.jpeg",
-      "title": { "es": "Educación Cósmica y Geografía", "en": "Cosmic Education and Geography" },
-      "alt": { "es": "Niña explorando activamente el globo de lija y continentes en un ambiente preparado Montessori", "en": "Girl actively exploring the sandpaper globe of continents in a prepared Montessori environment" },
-      "description": { "es": "El globo terráqueo Montessori permite al niño internalizar sensorialmente la estructura del planeta, despertando su mente razonadora y su curiosidad por la diversidad cultural.", "en": "The Montessori globe allows the child to sensorially internalize the earth's structure, awakening their reasoning mind and curiosity about cultural diversity." }
+      "title": {
+        "es": "Educación Cósmica y Geografía",
+        "en": "Cosmic Education and Geography"
+      },
+      "alt": {
+        "es": "Niña explorando activamente el globo de lija y continentes en un ambiente preparado Montessori",
+        "en": "Girl actively exploring the sandpaper globe of continents in a prepared Montessori environment"
+      },
+      "description": {
+        "es": "El globo terráqueo Montessori permite al niño internalizar sensorialmente la estructura del planeta, despertando su mente razonadora y su curiosidad por la diversidad cultural.",
+        "en": "The Montessori globe allows the child to sensorially internalize the earth's structure, awakening their reasoning mind and curiosity about cultural diversity."
+      }
     },
     {
       "id": 18,
       "category": "practical",
       "src": "/gallery/ceiba-roots-montessori-matematicas-abaco-madera.jpeg",
-      "title": { "es": "Mente Matemática Concreta", "en": "Concrete Mathematical Mind" },
-      "alt": { "es": "Niña deslizando las perlas del ábaco de madera para abstraer conceptos matemáticos en su trabajo", "en": "Girl sliding beads on the wooden abacus to abstract mathematical concepts during her work" },
-      "description": { "es": "El paso de la mente matemática concreta a la abstracción aritmética se facilita enormemente mediante la libre manipulación del ábaco de madera.", "en": "The passage from the concrete mathematical mind to arithmetic abstraction is greatly facilitated through free manipulation of the wooden abacus." }
+      "title": {
+        "es": "Mente Matemática Concreta",
+        "en": "Concrete Mathematical Mind"
+      },
+      "alt": {
+        "es": "Niña deslizando las perlas del ábaco de madera para abstraer conceptos matemáticos en su trabajo",
+        "en": "Girl sliding beads on the wooden abacus to abstract mathematical concepts during her work"
+      },
+      "description": {
+        "es": "El paso de la mente matemática concreta a la abstracción aritmética se facilita enormemente mediante la libre manipulación del ábaco de madera.",
+        "en": "The passage from the concrete mathematical mind to arithmetic abstraction is greatly facilitated through free manipulation of the wooden abacus."
+      }
     },
     {
       "id": 19,
       "category": "sensory",
       "src": "/gallery/ceiba-roots-montessori-cubo-binomial-sensorial.jpeg",
-      "title": { "es": "Exploración del Cubo Binomial", "en": "Binomial Cube Exploration" },
-      "alt": { "es": "Manos de un niño ensamblando el cubo binomial Montessori para discriminar formas y colores", "en": "Child's hands assembling the Montessori binomial cube to discriminate shapes and colors" },
-      "description": { "es": "El cubo binomial introduce al niño a la discriminación tridimensional de formas y colores, preparando indirectamente su mente para conceptos algebraicos abstractos.", "en": "The binomial cube introduces the child to three-dimensional discrimination of shapes and colors, indirectly preparing their mind for abstract algebraic concepts." }
+      "title": {
+        "es": "Exploración del Cubo Binomial",
+        "en": "Binomial Cube Exploration"
+      },
+      "alt": {
+        "es": "Manos de un niño ensamblando el cubo binomial Montessori para discriminar formas y colores",
+        "en": "Child's hands assembling the Montessori binomial cube to discriminate shapes and colors"
+      },
+      "description": {
+        "es": "El cubo binomial introduce al niño a la discriminación tridimensional de formas y colores, preparando indirectamente su mente para conceptos algebraicos abstractos.",
+        "en": "The binomial cube introduces the child to three-dimensional discrimination of shapes and colors, indirectly preparing their mind for abstract algebraic concepts."
+      }
     },
     {
       "id": 20,
       "category": "sensory",
       "src": "/gallery/ceiba-roots-montessori-geografia-mapa-globo.jpeg",
-      "title": { "es": "Geografía y Descubrimiento del Mundo", "en": "Geography and World Discovery" },
-      "alt": { "es": "Niña relacionando el globo terráqueo Montessori con un atlas geográfico en su trabajo individual", "en": "Girl relating the Montessori globe to a geographical atlas during her individual work" },
-      "description": { "es": "La libre manipulación de globos y atlas permite al niño conectar la tridimensionalidad terrestre con representaciones planas, expandiendo su visión del cosmos.", "en": "Free manipulation of globes and atlases allows the child to connect earth's three-dimensionality with flat representations, expanding their vision of the cosmos." }
+      "title": {
+        "es": "Geografía y Descubrimiento del Mundo",
+        "en": "Geography and World Discovery"
+      },
+      "alt": {
+        "es": "Niña relacionando el globo terráqueo Montessori con un atlas geográfico en su trabajo individual",
+        "en": "Girl relating the Montessori globe to a geographical atlas during her individual work"
+      },
+      "description": {
+        "es": "La libre manipulación de globos y atlas permite al niño conectar la tridimensionalidad terrestre con representaciones planas, expandiendo su visión del cosmos.",
+        "en": "Free manipulation of globes and atlases allows the child to connect earth's three-dimensionality with flat representations, expanding their vision of the cosmos."
+      }
     },
     {
       "id": 21,
       "category": "practical",
       "src": "/gallery/ceiba-roots-vida-practica-barrer-limpieza.jpeg",
-      "title": { "es": "Cuidado del Ambiente Barrer", "en": "Care of the Environment Sweeping" },
-      "alt": { "es": "Niña barriendo el suelo con un recogedor y escobilla en una actividad de Vida Práctica", "en": "Girl sweeping the floor with a dustpan and small broom in a Practical Life activity" },
-      "description": { "es": "El barrido y cuidado del aula promueve la independencia física, la coordinación de movimientos gruesos y el sentido de responsabilidad comunitaria.", "en": "Sweeping and classroom care promotes physical independence, gross movement coordination, and a sense of community responsibility." }
+      "title": {
+        "es": "Cuidado del Ambiente Barrer",
+        "en": "Care of the Environment Sweeping"
+      },
+      "alt": {
+        "es": "Niña barriendo el suelo con un recogedor y escobilla en una actividad de Vida Práctica",
+        "en": "Girl sweeping the floor with a dustpan and small broom in a Practical Life activity"
+      },
+      "description": {
+        "es": "El barrido y cuidado del aula promueve la independencia física, la coordinación de movimientos gruesos y el sentido de responsabilidad comunitaria.",
+        "en": "Sweeping and classroom care promotes physical independence, gross movement coordination, and a sense of community responsibility."
+      }
     },
     {
       "id": 22,
       "category": "sensory",
       "src": "/gallery/ceiba-roots-montessori-cubo-trinomial-colaboracion.jpeg",
-      "title": { "es": "Construcción Colaborativa Sensorial", "en": "Sensory Collaborative Construction" },
-      "alt": { "es": "Dos niñas colaborando activamente en el armado tridimensional del material sensorial Montessori", "en": "Two girls actively collaborating in the three-dimensional assembly of Montessori sensory material" },
-      "description": { "es": "A través del trabajo colaborativo con materiales de desarrollo, las niñas perfeccionan la concentración, la empatía y la resolución conjunta de retos.", "en": "Through collaborative work with development materials, girls refine concentration, empathy, and joint challenge resolution." }
+      "title": {
+        "es": "Construcción Colaborativa Sensorial",
+        "en": "Sensory Collaborative Construction"
+      },
+      "alt": {
+        "es": "Dos niñas colaborando activamente en el armado tridimensional del material sensorial Montessori",
+        "en": "Two girls actively collaborating in the three-dimensional assembly of Montessori sensory material"
+      },
+      "description": {
+        "es": "A través del trabajo colaborativo con materiales de desarrollo, las niñas perfeccionan la concentración, la empatía y la resolución conjunta de retos.",
+        "en": "Through collaborative work with development materials, girls refine concentration, empathy, and joint challenge resolution."
+      }
     },
     {
       "id": 23,
       "category": "arts",
       "src": "/gallery/ceiba-roots-montessori-socializacion-escritura-dibujo.jpeg",
-      "title": { "es": "Concentración y Expresión Plástica", "en": "Concentration and Plastic Expression" },
-      "alt": { "es": "Niño y niña compartiendo mesa en un ambiente de trabajo libre y concentrado de escritura y dibujo", "en": "Boy and girl sharing a table in a free and concentrated writing and drawing work environment" },
-      "description": { "es": "La libre elección de actividades de expresión promueve la motricidad fina, el diálogo social respetuoso y la plasmación creativa de sus pensamientos.", "en": "Free choice of expression activities promotes fine motor skills, respectful social dialogue, and the creative expression of their thoughts." }
+      "title": {
+        "es": "Concentración y Expresión Plástica",
+        "en": "Concentration and Plastic Expression"
+      },
+      "alt": {
+        "es": "Niño y niña compartiendo mesa en un ambiente de trabajo libre y concentrado de escritura y dibujo",
+        "en": "Boy and girl sharing a table in a free and concentrated writing and drawing work environment"
+      },
+      "description": {
+        "es": "La libre elección de actividades de expresión promueve la motricidad fina, el diálogo social respetuoso y la plasmación creativa de sus pensamientos.",
+        "en": "Free choice of expression activities promotes fine motor skills, respectful social dialogue, and the creative expression of their thoughts."
+      }
     }
   ]
 }

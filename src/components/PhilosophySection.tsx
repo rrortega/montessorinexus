@@ -22,7 +22,7 @@ export function PhilosophySection() {
   const { x: mouseX, y: mouseY } = useMouseParallax(15);
 
   const slides = [
-    'Acompañamos a cada niño en la construcción de su ser con una educación bilingüe, viva y consciente, basada en Montessori y en las necesidades del mundo actual.',
+    'Guiamos a cada niño en la construcción de su ser con una educación bilingüe, viva y consciente, basada en Montessori y en las necesidades del mundo actual.',
     'Honramos la niñez con un entorno preparado que impulsa curiosidad, autonomía y decisiones con propósito, desarrollando atención, autorregulación y pensamiento flexible.',
     'Crecemos en conexión con la naturaleza, cultivando conciencia ecológica, y formamos líderes empáticos que colaboran con respeto y contribuyen con responsabilidad.'
   ];

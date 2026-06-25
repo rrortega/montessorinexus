@@ -40,9 +40,7 @@ export function ProgramsSection() {
           <h2 className="heading-section text-foreground mt-2 mb-4">
             {t('Un camino para cada etapa')}
           </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            {t('Ofrecemos programas diseñados específicamente para cada etapa del desarrollo, respetando las necesidades únicas de cada edad.')}
-          </p>
+
           <p className="font-handwriting text-2xl md:text-3xl text-primary mt-6 tracking-wide select-none">
             “{t('Libres para pensar, capaces de transformar.')}”
           </p>
@@ -50,8 +48,8 @@ export function ProgramsSection() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
           {programs.map((program, index) => (
-            <FadeInScroll 
-              key={program.title} 
+            <FadeInScroll
+              key={program.title}
               delay={index * 0.15}
               direction={index === 0 ? 'left' : 'right'}
             >
@@ -77,9 +75,9 @@ export function ProgramsSection() {
                     {t(program.description)}
                   </p>
                   <Magnetic strength={0.1}>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => setIsModalOpen(true)}
                       className="rounded-full border-2 hover:bg-forest hover:text-white transition-all px-6"
                     >
@@ -92,10 +90,10 @@ export function ProgramsSection() {
           ))}
         </div>
       </div>
-      
-      <ProgramModal 
-        isOpen={isModalOpen} 
-        onOpenChange={setIsModalOpen} 
+
+      <ProgramModal
+        isOpen={isModalOpen}
+        onOpenChange={setIsModalOpen}
       />
     </section>
   );

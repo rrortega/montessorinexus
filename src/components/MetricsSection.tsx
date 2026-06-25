@@ -3,7 +3,7 @@ import { useI18n } from '@/context/I18nContext';
 
 const metrics = [
   { value: '10+', label: 'Años de experiencia' },
-  { value: '12', label: 'Alumnos por grupo' },
+  { value: '15+', label: 'Alumnos por grupo' },
   { value: '100%', label: 'Guías Certificados' },
   { value: '15+', label: 'Nacionalidades' },
 ];

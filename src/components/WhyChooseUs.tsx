@@ -14,7 +14,7 @@ const features = [
   },
   {
     icon: Leaf,
-    text: 'Aprendizaje activo y experiencial. Enfoque en autonomía, responsabilidad y paz interior.'
+    text: 'Aprendizaje activo y experiencial. Enfoque en autonomía, responsabilidad, respeto al niño y autonomía emocional.'
   },
   {
     icon: Users,

@@ -163,7 +163,6 @@ export function FeaturedQuote({
 
       <div className="container mx-auto px-4 relative z-10 flex flex-col items-center text-center">
         <div className="relative inline-block w-full max-w-4xl">
-          <span className="text-forest/10 text-7xl md:text-9xl font-serif absolute -left-4 md:-left-12 -top-10 select-none z-0">“</span>
           
           <div className="min-h-[140px] md:min-h-[180px] flex items-center justify-center relative">
             <AnimatePresence mode="wait">
@@ -175,12 +174,11 @@ export function FeaturedQuote({
                 transition={{ duration: 0.8, ease: "easeOut" }}
                 className="font-handwriting text-3xl md:text-4xl lg:text-5xl font-medium text-forest leading-tight text-balance relative z-10"
               >
-                {quoteKeys ? t(quoteKeys[currentIndex]) : (quoteKey && t(quoteKey))}
+                “{quoteKeys ? t(quoteKeys[currentIndex]) : (quoteKey && t(quoteKey))}”
               </motion.h3>
             </AnimatePresence>
           </div>
 
-          <span className="text-forest/10 text-7xl md:text-9xl font-serif absolute -right-4 md:-right-12 -bottom-10 select-none z-0">”</span>
         </div>
 
         {authorKey && (
