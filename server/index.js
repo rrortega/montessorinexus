@@ -36,7 +36,10 @@ import {
   testStorageWebhookConfig,
   streamPrivateAsset,
   exportAdmissionZip,
-  storageLocalRoot
+  storageLocalRoot,
+  saveGenericFile,
+  deleteGenericFile,
+  deleteGenericFolder
 } from './storage-service.js';
 import { extractDocumentDataWithOpenAI } from './document-ocr-service.js';
 import { generateFormSubmissionPdf } from './form-pdf-service.js';
@@ -638,70 +641,9 @@ const getUniqueFilename = (dir, prefix, slug, ext) => {
   return fileName;
 };
 
-// Configure Multer storage
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const folderType = req.body.folder || req.query.folder || 'gallery';
-    let targetDir = folderType === 'documents' ? documentsDir : galleryDir;
-
-    const employeeId = req.body.employeeId || req.query.employeeId;
-    if (folderType === 'documents' && employeeId) {
-      targetDir = path.join(documentsDir, 'rrhh', employeeId);
-    }
-
-    if (!fs.existsSync(targetDir)) {
-      fs.mkdirSync(targetDir, { recursive: true });
-    }
-    cb(null, targetDir);
-  },
-  filename: (req, file, cb) => {
-    const folderType = req.body.folder || req.query.folder || 'gallery';
-    let targetDir = folderType === 'documents' ? documentsDir : galleryDir;
-
-    const employeeId = req.body.employeeId || req.query.employeeId;
-    if (folderType === 'documents' && employeeId) {
-      targetDir = path.join(documentsDir, 'rrhh', employeeId);
-    }
-    const prefix = folderType === 'documents' ? 'ceiba-doc' : 'ceiba-gallery';
-
-    const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
-    const rawTitle = req.body.title || path.basename(file.originalname, ext);
-    const slug = slugify(rawTitle) || 'foto';
-
-    const finalFilename = getUniqueFilename(targetDir, prefix, slug, ext);
-    cb(null, finalFilename);
-  }
-});
-
 const upload = multer({ 
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024 }
-});
-
-// UNIFIED UPLOAD ROUTE (FOR IMAGES & ASSETS)
-app.post('/api/upload', upload.single('file'), (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No se subió ningún archivo' });
-    }
-    const folderType = req.body.folder || req.query.folder || 'gallery';
-    const employeeId = req.body.employeeId || req.query.employeeId;
-    const relativeUrl = folderType === 'documents' 
-      ? (employeeId ? `/documents/rrhh/${employeeId}/${req.file.filename}` : `/documents/${req.file.filename}`)
-      : `/gallery/${req.file.filename}`;
-
-    res.json({
-      success: true,
-      url: relativeUrl,
-      fileName: req.file.originalname,
-      storedName: req.file.filename,
-      size: req.file.size,
-      mimetype: req.file.mimetype,
-    });
-  } catch (err) {
-    console.error('Error in /api/upload:', err);
-    res.status(500).json({ error: err.message });
-  }
 });
 
 // KYC FACE DETECTION ASYNC QUEUE ENDPOINT
@@ -790,7 +732,49 @@ async function resolveSchool(req, res, next) {
 
 app.use('/api', resolveSchool);
 
-// REST API ENDPOINTS
+// UNIFIED UPLOAD ROUTE (FOR IMAGES & ASSETS)
+app.post('/api/upload', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No se subió ningún archivo' });
+    }
+    const folderType = req.body.folder || req.query.folder || 'gallery';
+    const employeeId = req.body.employeeId || req.query.employeeId;
+    const schoolId = req.school?.id || 'school_ceiba';
+
+    const ext = path.extname(req.file.originalname).toLowerCase() || '.jpg';
+    const rawTitle = req.body.title || path.basename(req.file.originalname, ext);
+    const slug = slugify(rawTitle) || 'archivo';
+    const cleanFilename = `${slug}${ext}`;
+
+    let relativePath = '';
+    if (folderType === 'documents' && employeeId) {
+      relativePath = `schools/${schoolId}/rrhh/${employeeId}/${cleanFilename}`;
+    } else {
+      relativePath = `schools/${schoolId}/gallery/${cleanFilename}`;
+    }
+
+    const result = await saveGenericFile({
+      schoolId,
+      relativePath,
+      buffer: req.file.buffer,
+      mimeType: req.file.mimetype,
+      prisma
+    });
+
+    res.json({
+      success: true,
+      url: result.url,
+      fileName: req.file.originalname,
+      storedName: path.basename(result.relativePath),
+      size: req.file.size,
+      mimetype: req.file.mimetype,
+    });
+  } catch (err) {
+    console.error('Error in /api/upload:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // SCHOOLS (WORKSPACES) ENDPOINTS
 app.get('/api/schools', async (req, res) => {
@@ -7764,10 +7748,22 @@ app.delete('/api/guides/:id/documents/:docId', async (req, res) => {
     });
 
     if (doc && doc.url) {
-      const cleanPath = doc.url.replace(/^\//, '');
-      const absolutePath = path.join(publicDir, cleanPath);
-      if (fs.existsSync(absolutePath)) {
-        fs.unlinkSync(absolutePath);
+      let relativePath = '';
+      if (doc.url.startsWith('/api/storage/stream')) {
+        const parts = doc.url.split('file=');
+        if (parts.length > 1) {
+          relativePath = decodeURIComponent(parts[1]);
+        }
+      } else {
+        relativePath = doc.url.replace(/^\//, '');
+      }
+
+      if (relativePath) {
+        await deleteGenericFile({
+          schoolId: req.school.id,
+          relativePath,
+          prisma
+        });
       }
     }
 
@@ -7805,10 +7801,14 @@ app.delete('/api/guides/:id', async (req, res) => {
       where: { userId }
     });
 
-    // Delete their dynamic folder from disk
-    const employeeDir = path.join(documentsDir, 'rrhh', userId);
-    if (fs.existsSync(employeeDir)) {
-      fs.rmSync(employeeDir, { recursive: true, force: true });
+    // 1. Delete their dynamic folder from private storage (new abstracted engine)
+    const relativeDir = `schools/${req.school.id}/rrhh/${userId}`;
+    await deleteGenericFolder({ schoolId: req.school.id, relativePath: relativeDir, prisma });
+
+    // 2. Delete old dynamic folder from public/documents/rrhh/ (old disk engine fallback)
+    const oldEmployeeDir = path.join(documentsDir, 'rrhh', userId);
+    if (fs.existsSync(oldEmployeeDir)) {
+      fs.rmSync(oldEmployeeDir, { recursive: true, force: true });
     }
 
     res.json({ success: true });
