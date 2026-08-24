@@ -642,12 +642,26 @@ const getUniqueFilename = (dir, prefix, slug, ext) => {
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const folderType = req.body.folder || req.query.folder || 'gallery';
-    const targetDir = folderType === 'documents' ? documentsDir : galleryDir;
+    let targetDir = folderType === 'documents' ? documentsDir : galleryDir;
+
+    const employeeId = req.body.employeeId || req.query.employeeId;
+    if (folderType === 'documents' && employeeId) {
+      targetDir = path.join(documentsDir, 'rrhh', employeeId);
+    }
+
+    if (!fs.existsSync(targetDir)) {
+      fs.mkdirSync(targetDir, { recursive: true });
+    }
     cb(null, targetDir);
   },
   filename: (req, file, cb) => {
     const folderType = req.body.folder || req.query.folder || 'gallery';
-    const targetDir = folderType === 'documents' ? documentsDir : galleryDir;
+    let targetDir = folderType === 'documents' ? documentsDir : galleryDir;
+
+    const employeeId = req.body.employeeId || req.query.employeeId;
+    if (folderType === 'documents' && employeeId) {
+      targetDir = path.join(documentsDir, 'rrhh', employeeId);
+    }
     const prefix = folderType === 'documents' ? 'ceiba-doc' : 'ceiba-gallery';
 
     const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
@@ -671,8 +685,9 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
       return res.status(400).json({ error: 'No se subió ningún archivo' });
     }
     const folderType = req.body.folder || req.query.folder || 'gallery';
+    const employeeId = req.body.employeeId || req.query.employeeId;
     const relativeUrl = folderType === 'documents' 
-      ? `/documents/${req.file.filename}` 
+      ? (employeeId ? `/documents/rrhh/${employeeId}/${req.file.filename}` : `/documents/${req.file.filename}`)
       : `/gallery/${req.file.filename}`;
 
     res.json({
@@ -7744,6 +7759,18 @@ app.post('/api/guides/:id/documents', async (req, res) => {
 app.delete('/api/guides/:id/documents/:docId', async (req, res) => {
   try {
     const { docId } = req.params;
+    const doc = await prisma.userDocument.findUnique({
+      where: { id: docId }
+    });
+
+    if (doc && doc.url) {
+      const cleanPath = doc.url.replace(/^\//, '');
+      const absolutePath = path.join(publicDir, cleanPath);
+      if (fs.existsSync(absolutePath)) {
+        fs.unlinkSync(absolutePath);
+      }
+    }
+
     await prisma.userDocument.delete({
       where: { id: docId }
     });
@@ -7772,6 +7799,17 @@ app.delete('/api/guides/:id', async (req, res) => {
         environmentId: { in: schoolEnvIds }
       }
     });
+
+    // Delete all their documents from database
+    await prisma.userDocument.deleteMany({
+      where: { userId }
+    });
+
+    // Delete their dynamic folder from disk
+    const employeeDir = path.join(documentsDir, 'rrhh', userId);
+    if (fs.existsSync(employeeDir)) {
+      fs.rmSync(employeeDir, { recursive: true, force: true });
+    }
 
     res.json({ success: true });
   } catch (e) {

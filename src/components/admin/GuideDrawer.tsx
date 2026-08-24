@@ -173,13 +173,13 @@ export function stringifyCertifications(items: CertItem[]): string {
 
 const TikTokIcon = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M19.589 6.686a4.793 4.793 0 0 1-3.77-4.245V2h-3.445v13.672a2.896 2.896 0 1 1-2.896-2.896c.156 0 .308.016.457.045V9.347a6.34 6.34 0 0 0-.457-.016 6.341 6.341 0 1 0 6.341 6.341V8.98a8.214 8.214 0 0 0 4.77 1.526V7.06a4.78 4.78 0 0 1-1.000-.374z"/>
+    <path d="M19.589 6.686a4.793 4.793 0 0 1-3.77-4.245V2h-3.445v13.672a2.896 2.896 0 1 1-2.896-2.896c.156 0 .308.016.457.045V9.347a6.34 6.34 0 0 0-.457-.016 6.341 6.341 0 1 0 6.341 6.341V8.98a8.214 8.214 0 0 0 4.77 1.526V7.06a4.78 4.78 0 0 1-1.000-.374z" />
   </svg>
 );
 
 const XIcon = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
   </svg>
 );
 
@@ -258,12 +258,13 @@ export const GuideDrawer: React.FC<GuideDrawerProps> = ({
     if (!guide?.id) return;
 
     const docName = newDocName.trim() || file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
-    
+
     try {
       setUploadingDoc(true);
       const formData = new FormData();
       formData.append('file', file);
       formData.append('folder', 'documents');
+      formData.append('employeeId', guide.id);
 
       const uploadRes = await fetch('/api/upload', {
         method: 'POST',
@@ -821,7 +822,7 @@ export const GuideDrawer: React.FC<GuideDrawerProps> = ({
                   <span className="text-[11px] block truncate">Identidad</span>
                 </div>
               </button>
- 
+
               <button
                 type="button"
                 onClick={() => goToStep(2)}
@@ -838,7 +839,7 @@ export const GuideDrawer: React.FC<GuideDrawerProps> = ({
                   <span className="text-[11px] block truncate">Currículum</span>
                 </div>
               </button>
- 
+
               <button
                 type="button"
                 onClick={() => goToStep(3)}
@@ -1170,7 +1171,7 @@ export const GuideDrawer: React.FC<GuideDrawerProps> = ({
               <div className="space-y-5 animate-in fade-in duration-200">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-forest mb-1.5">Rol Pedagógico *</label>
+                    <label className="block text-xs font-bold text-forest mb-1.5">Rol*</label>
                     <select
                       value={staffRole}
                       onChange={(e) => setStaffRole(e.target.value as StaffRoleType)}
@@ -1207,11 +1208,10 @@ export const GuideDrawer: React.FC<GuideDrawerProps> = ({
                           return (
                             <label
                               key={g.id}
-                              className={`flex items-center gap-3 p-2 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${
-                                isChecked
+                              className={`flex items-center gap-3 p-2 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${isChecked
                                   ? 'bg-forest/5 border-forest/30 text-forest shadow-2xs'
                                   : 'bg-white border-slate-100 hover:bg-slate-50 text-slate-700'
-                              }`}
+                                }`}
                             >
                               <input
                                 type="checkbox"
@@ -1309,7 +1309,7 @@ export const GuideDrawer: React.FC<GuideDrawerProps> = ({
                   <span className="text-[11px] font-bold text-forest uppercase tracking-wider block">
                     Subir Nuevo Documento
                   </span>
-                  
+
                   <div>
                     <label className="block text-[10px] font-bold text-slate-600 mb-1.5">
                       Nombre descriptivo del documento
@@ -1358,8 +1358,8 @@ export const GuideDrawer: React.FC<GuideDrawerProps> = ({
                     <div className="space-y-2.5">
                       {documents.map(doc => {
                         const fileExt = doc.fileUrl.split('.').pop()?.toLowerCase() || '';
-                        const formattedSize = doc.fileSize 
-                          ? `${(doc.fileSize / 1024).toFixed(1)} KB` 
+                        const formattedSize = doc.fileSize
+                          ? `${(doc.fileSize / 1024).toFixed(1)} KB`
                           : 'Tamaño desconocido';
 
                         return (
@@ -1385,7 +1385,7 @@ export const GuideDrawer: React.FC<GuideDrawerProps> = ({
                                 </span>
                               </div>
                             </div>
-                            
+
                             <button
                               type="button"
                               onClick={() => handleDeleteDocument(doc.id)}
