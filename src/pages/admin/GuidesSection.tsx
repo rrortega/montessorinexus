@@ -87,6 +87,7 @@ export const GuidesSection: React.FC = () => {
   const [roleFilter, setRoleFilter] = useState<string>('ALL');
   const [envFilter, setEnvFilter] = useState<string>('ALL');
   const [openEnvPopover, setOpenEnvPopover] = useState(false);
+  const [openRolePopover, setOpenRolePopover] = useState(false);
 
   // Fullscreen Organigram Modal
   const [organigramModalOpen, setOrganigramModalOpen] = useState(false);
@@ -283,10 +284,7 @@ export const GuidesSection: React.FC = () => {
         g.environments.some(e => e.name.toLowerCase().includes(q));
 
       const matchRole =
-        roleFilter === 'ALL' ||
-        (roleFilter === 'OTHERS'
-          ? ['SPECIALIST', 'SUPPORT', 'OTHER'].includes(g.staffRole)
-          : (g.staffRole || 'LEAD_GUIDE') === roleFilter);
+        roleFilter === 'ALL' || (g.staffRole || 'LEAD_GUIDE') === roleFilter;
 
       const matchEnv =
         envFilter === 'ALL' || g.environments.some(e => e.id === envFilter);
@@ -295,11 +293,7 @@ export const GuidesSection: React.FC = () => {
     });
   }, [guides, search, roleFilter, envFilter, isTutor, myChildrenEnvIds]);
 
-  const leadGuidesCount = guides.filter(g => (g.staffRole || 'LEAD_GUIDE') === 'LEAD_GUIDE').length;
-  const assistantsCount = guides.filter(g => g.staffRole === 'ASSISTANT').length;
-  const coordinatorsCount = guides.filter(g => g.staffRole === 'COORDINATOR').length;
-  const executivesCount = guides.filter(g => g.staffRole === 'EXECUTIVE').length;
-  const othersCount = guides.filter(g => ['SPECIALIST', 'SUPPORT', 'OTHER'].includes(g.staffRole)).length;
+
 
   // Potential supervisors for select (exclude self)
   const availableSupervisors = useMemo(() => {
@@ -500,75 +494,66 @@ export const GuidesSection: React.FC = () => {
               </Popover>
             )}
 
-            {/* Role Segmented Tabs */}
-            <div className="flex items-center gap-1 bg-white p-1 rounded-2xl border border-forest/15 shadow-xs overflow-x-auto scrollbar-none">
-              <button
-                type="button"
-                onClick={() => setRoleFilter('ALL')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 ${roleFilter === 'ALL'
-                  ? 'bg-forest text-white shadow-2xs'
-                  : 'text-muted-foreground hover:text-forest hover:bg-white/60'
-                  }`}
-              >
-                Todos ({guides.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setRoleFilter('LEAD_GUIDE')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 ${roleFilter === 'LEAD_GUIDE'
-                  ? 'bg-emerald-700 text-white shadow-2xs'
-                  : 'text-muted-foreground hover:text-emerald-700 hover:bg-white/60'
-                  }`}
-              >
-                Guías ({leadGuidesCount})
-              </button>
-              <button
-                type="button"
-                onClick={() => setRoleFilter('ASSISTANT')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 ${roleFilter === 'ASSISTANT'
-                  ? 'bg-sky-700 text-white shadow-2xs'
-                  : 'text-muted-foreground hover:text-sky-700 hover:bg-white/60'
-                  }`}
-              >
-                Asistentes ({assistantsCount})
-              </button>
-              {coordinatorsCount > 0 && (
+            {/* Role Filter (Custom Searchable Combobox) */}
+            <Popover open={openRolePopover} onOpenChange={setOpenRolePopover}>
+              <PopoverTrigger asChild>
                 <button
                   type="button"
-                  onClick={() => setRoleFilter('COORDINATOR')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 ${roleFilter === 'COORDINATOR'
-                    ? 'bg-amber-800 text-white shadow-2xs'
-                    : 'text-muted-foreground hover:text-amber-800 hover:bg-white/60'
-                    }`}
+                  className="h-9 px-3.5 rounded-2xl border border-forest/15 text-xs bg-white text-forest font-semibold focus:outline-none focus:ring-1 focus:ring-forest cursor-pointer shadow-xs flex items-center justify-between gap-2 min-w-[170px]"
                 >
-                  Coordinación ({coordinatorsCount})
+                  <span className="truncate">
+                    {roleFilter === 'ALL'
+                      ? 'Todos los Roles'
+                      : STAFF_ROLES[roleFilter as StaffRoleType]?.label || roleFilter}
+                  </span>
+                  <ChevronsUpDown className="w-3.5 h-3.5 text-forest/50 shrink-0" />
                 </button>
-              )}
-              {executivesCount > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setRoleFilter('EXECUTIVE')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 ${roleFilter === 'EXECUTIVE'
-                    ? 'bg-purple-800 text-white shadow-2xs'
-                    : 'text-muted-foreground hover:text-purple-800 hover:bg-white/60'
-                    }`}
-                >
-                  Ejecutivos ({executivesCount})
-                </button>
-              )}
-              {othersCount > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setRoleFilter('OTHERS')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 ${roleFilter === 'OTHERS'
-                    ? 'bg-slate-700 text-white shadow-2xs'
-                    : 'text-muted-foreground hover:text-slate-700 hover:bg-white/60'
-                    }`}
-                >
-                  Otros ({othersCount})
-                </button>
-              )}
-            </div>
+              </PopoverTrigger>
+              <PopoverContent className="w-[230px] p-0 bg-white border border-forest/15 rounded-2xl shadow-xl z-50 overflow-hidden" align="start">
+                <Command className="bg-white">
+                  <CommandInput
+                    placeholder="Buscar rol..."
+                    className="h-9 text-xs border-b border-forest/10 focus:ring-0 focus:outline-none placeholder:text-muted-foreground bg-transparent w-full text-forest py-2 px-3 font-semibold"
+                  />
+                  <CommandList className="max-h-60 overflow-y-auto">
+                    <CommandEmpty className="py-4 text-center text-xs text-muted-foreground font-semibold">
+                      No se encontraron roles.
+                    </CommandEmpty>
+                    <CommandGroup className="p-1">
+                      <CommandItem
+                        value="ALL"
+                        onSelect={() => {
+                          setRoleFilter('ALL');
+                          setOpenRolePopover(false);
+                        }}
+                        className="flex items-center justify-between text-xs text-forest cursor-pointer rounded-xl font-semibold px-3 py-2 data-[selected='true']:bg-forest data-[selected='true']:text-white group transition-colors"
+                      >
+                        <span>Todos los Roles</span>
+                        {roleFilter === 'ALL' && (
+                          <Check className="h-3.5 w-3.5 font-bold text-forest group-data-[selected='true']:text-white" />
+                        )}
+                      </CommandItem>
+                      {Object.entries(STAFF_ROLES).map(([key, config]) => (
+                        <CommandItem
+                          key={key}
+                          value={config.label}
+                          onSelect={() => {
+                            setRoleFilter(key);
+                            setOpenRolePopover(false);
+                          }}
+                          className="flex items-center justify-between text-xs text-forest cursor-pointer rounded-xl font-semibold px-3 py-2 data-[selected='true']:bg-forest data-[selected='true']:text-white group transition-colors"
+                        >
+                          <span className="truncate">{config.label}</span>
+                          {roleFilter === key && (
+                            <Check className="h-3.5 w-3.5 font-bold text-forest group-data-[selected='true']:text-white" />
+                          )}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
         </div>
