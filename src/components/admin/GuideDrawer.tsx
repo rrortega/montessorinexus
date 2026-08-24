@@ -233,10 +233,7 @@ export const GuideDrawer: React.FC<GuideDrawerProps> = ({
   const [curp, setCurp] = useState('');
   const [saving, setSaving] = useState(false);
 
-  // Dynamic Processes States
-  const [staffProcesses, setStaffProcesses] = useState<any[]>([]);
-  const [activeApplications, setActiveApplications] = useState<any[]>([]);
-  const [loadingProcesses, setLoadingProcesses] = useState(false);
+
 
   // Documents States
   const [documents, setDocuments] = useState<UserDocumentItem[]>([]);
@@ -315,42 +312,6 @@ export const GuideDrawer: React.FC<GuideDrawerProps> = ({
     }
   };
 
-  useEffect(() => {
-    if (isOpen && guide?.id && currentStep === 5) {
-      setLoadingProcesses(true);
-      Promise.all([
-        getProcesses(),
-        getAdmissionApplications()
-      ]).then(([allProcesses, allApps]) => {
-        setStaffProcesses(allProcesses.filter(p => p.isActive && (p.originSource || '').split(',').includes('ACTIVE_STAFF')));
-        setActiveApplications(allApps.filter(a => a.membershipId === guide.id));
-      }).catch(err => {
-        console.error('Error loading processes/applications in GuideDrawer:', err);
-      }).finally(() => {
-        setLoadingProcesses(false);
-      });
-    }
-  }, [isOpen, guide?.id, currentStep]);
-
-  const handleStartStaffProcess = async (proc: any) => {
-    if (!guide?.id) return;
-    const ok = await confirm({
-      title: `¿Iniciar ${proc.label || proc.name}?`,
-      description: `¿Estás seguro de iniciar el proceso "${proc.label || proc.name}" para el docente/staff ${guide.fullName}?`,
-      confirmText: 'Sí, iniciar',
-      variant: 'default'
-    });
-    if (!ok) return;
-
-    try {
-      await startProcessApplication(proc.id, { membershipId: guide.id });
-      toast.success(`Proceso "${proc.label || proc.name}" iniciado con éxito`);
-      const basePath = window.location.pathname.startsWith('/admin') ? '/admin' : '/panel';
-      window.location.href = `${basePath}/process_${proc.slug}`;
-    } catch (err: any) {
-      toast.error(err.message || 'Error al iniciar el proceso');
-    }
-  };
 
   useEffect(() => {
     if (guide) {
@@ -540,15 +501,13 @@ export const GuideDrawer: React.FC<GuideDrawerProps> = ({
       description={
         !isOwnerOrAdmin
           ? (guide?.jobTitle ? `${guide.jobTitle} • Equipo Pedagógico` : 'Perfil pedagógico, trayectoria y salones')
-          : `Paso ${currentStep} de ${guide ? 5 : 3} • ${currentStep === 1
+          : `Paso ${currentStep} de ${guide ? 4 : 3} • ${currentStep === 1
             ? 'Identidad, personal, fiscal y redes sociales'
             : currentStep === 2
               ? 'Currículum y trayectoria'
               : currentStep === 3
                 ? 'Rol, cargo, supervisor y salones asignados'
-                : currentStep === 4
-                  ? 'Expediente de documentos oficiales'
-                  : 'Procesos de personal y trámites'
+                : 'Expediente de documentos oficiales'
           }`
       }
       footer={
@@ -652,40 +611,11 @@ export const GuideDrawer: React.FC<GuideDrawerProps> = ({
                   </button>
                 </div>
               </>
-            ) : currentStep === 4 && guide ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => goToStep(3)}
-                  className="px-5 py-2.5 text-xs font-bold text-forest hover:bg-forest/5 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  <span>Atrás</span>
-                </button>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => saveData(false)}
-                    disabled={saving}
-                    className="px-4 py-2.5 text-xs font-bold text-forest hover:bg-forest/5 border border-forest/10 rounded-xl transition-colors"
-                  >
-                    {saving ? 'Guardando...' : 'Guardar'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => goToStep(5)}
-                    className="px-6 py-2.5 text-xs font-bold bg-forest hover:bg-forest/90 text-white rounded-xl shadow-xs transition-all flex items-center gap-1.5 hover:scale-105 active:scale-95 cursor-pointer"
-                  >
-                    <span>Siguiente: Procesos</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </>
             ) : (
               <>
                 <button
                   type="button"
-                  onClick={() => goToStep(guide ? 4 : 2)}
+                  onClick={() => goToStep(guide ? 3 : 2)}
                   className="px-5 py-2.5 text-xs font-bold text-forest hover:bg-forest/5 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -874,7 +804,7 @@ export const GuideDrawer: React.FC<GuideDrawerProps> = ({
         /* ==================================================== */
         <div className="space-y-6">
           <div className="bg-forest/5 p-3 rounded-2xl border border-forest/10">
-            <div className={`grid gap-2 ${guide ? 'grid-cols-5' : 'grid-cols-3'}`}>
+            <div className={`grid gap-2 ${guide ? 'grid-cols-4' : 'grid-cols-3'}`}>
               <button
                 type="button"
                 onClick={() => goToStep(1)}
@@ -927,41 +857,22 @@ export const GuideDrawer: React.FC<GuideDrawerProps> = ({
               </button>
 
               {guide && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => goToStep(4)}
-                    className={`flex items-center gap-2 p-2 rounded-xl text-left transition-all ${currentStep === 4
-                      ? 'bg-white text-forest shadow-xs font-bold'
-                      : 'text-muted-foreground hover:text-forest hover:bg-white/50'
-                      }`}
-                  >
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${currentStep === 4 ? 'bg-forest text-white' : 'bg-forest/10 text-forest'
-                      }`}>
-                      4
-                    </div>
-                    <div className="hidden sm:block min-w-0">
-                      <span className="text-[11px] block truncate">Documentos</span>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => goToStep(5)}
-                    className={`flex items-center gap-2 p-2 rounded-xl text-left transition-all ${currentStep === 5
-                      ? 'bg-white text-forest shadow-xs font-bold'
-                      : 'text-muted-foreground hover:text-forest hover:bg-white/50'
-                      }`}
-                  >
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${currentStep === 5 ? 'bg-forest text-white' : 'bg-forest/10 text-forest'
-                      }`}>
-                      5
-                    </div>
-                    <div className="hidden sm:block min-w-0">
-                      <span className="text-[11px] block truncate">Procesos</span>
-                    </div>
-                  </button>
-                </>
+                <button
+                  type="button"
+                  onClick={() => goToStep(4)}
+                  className={`flex items-center gap-2 p-2 rounded-xl text-left transition-all ${currentStep === 4
+                    ? 'bg-white text-forest shadow-xs font-bold'
+                    : 'text-muted-foreground hover:text-forest hover:bg-white/50'
+                    }`}
+                >
+                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${currentStep === 4 ? 'bg-forest text-white' : 'bg-forest/10 text-forest'
+                    }`}>
+                    4
+                  </div>
+                  <div className="hidden sm:block min-w-0">
+                    <span className="text-[11px] block truncate">Documentos</span>
+                  </div>
+                </button>
               )}
             </div>
           </div>
@@ -1492,94 +1403,6 @@ export const GuideDrawer: React.FC<GuideDrawerProps> = ({
               </div>
             )}
 
-            {/* PASO 5: PROCESOS DINÁMICOS */}
-            {currentStep === 5 && guide && (
-              <div className="space-y-6 animate-in fade-in duration-200">
-                <div className="bg-forest/5 border border-forest/10 p-4 rounded-2xl">
-                  <h4 className="font-bold text-xs text-forest uppercase tracking-wider mb-1">
-                    Gestión de Procesos del Personal
-                  </h4>
-                  <p className="text-[11px] text-forest/70">
-                    Inicia flujos de trabajo personalizados como alta de contrato, bajas u otros trámites del equipo para {guide.fullName}.
-                  </p>
-                </div>
-
-                <div className="space-y-4">
-                  <h5 className="font-bold text-xs text-forest">Historial de Procesos Activos / Previos</h5>
-                  {loadingProcesses ? (
-                    <div className="py-6 text-center text-xs text-muted-foreground">Cargando historial de procesos...</div>
-                  ) : activeApplications.length === 0 ? (
-                    <p className="text-xs text-muted-foreground italic bg-white border border-forest/5 p-4 rounded-2xl">
-                      Este docente no se encuentra en ningún proceso activo o previo.
-                    </p>
-                  ) : (
-                    <div className="space-y-3">
-                      {activeApplications.map(app => (
-                        <div key={app.id} className="bg-white border border-forest/10 p-4 rounded-2xl flex items-center justify-between gap-4">
-                          <div>
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-forest/10 text-forest border border-forest/20 uppercase shrink-0">
-                              {app.process?.label || app.process?.name || 'Proceso'}
-                            </span>
-                            <div className="text-xs font-bold text-forest mt-1.5">
-                              Fase Actual: <span className="text-forest/80 font-semibold">{app.stage?.name || 'Desconocida'}</span>
-                            </div>
-                            <div className="text-[10px] text-muted-foreground mt-0.5">
-                              Iniciado el {new Date(app.createdAt).toLocaleDateString()}
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const basePath = window.location.pathname.startsWith('/admin') ? '/admin' : '/panel';
-                              window.location.href = `${basePath}/process_${app.process?.slug || 'admissions'}`;
-                            }}
-                            className="px-3.5 py-1.5 bg-forest/5 hover:bg-forest hover:text-white border border-forest/10 hover:border-forest text-forest font-bold text-xs rounded-xl transition-all cursor-pointer"
-                          >
-                            Ver Tablero
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-4 pt-4 border-t border-forest/10">
-                  <h5 className="font-bold text-xs text-forest">Procesos Disponibles para Iniciar</h5>
-                  {loadingProcesses ? (
-                    <div className="py-6 text-center text-xs text-muted-foreground">Cargando procesos disponibles...</div>
-                  ) : staffProcesses.length === 0 ? (
-                    <p className="text-xs text-muted-foreground italic">No hay procesos configurados para personal con origen "Docentes Activos".</p>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                      {staffProcesses.map(proc => (
-                        <div
-                          key={proc.id}
-                          className="bg-white border border-forest/10 hover:border-forest/30 p-3.5 rounded-2xl transition-all shadow-2xs flex flex-col justify-between gap-3 group"
-                        >
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="w-2 h-2 rounded-full bg-forest shrink-0" />
-                              <span className="font-bold text-xs text-forest">{proc.label || proc.name}</span>
-                            </div>
-                            <p className="text-[10px] text-muted-foreground mt-1 line-clamp-2">
-                              {proc.description || 'Sin descripción proporcionada.'}
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => handleStartStaffProcess(proc)}
-                            className="w-full py-2 bg-forest hover:bg-forest/90 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 active:scale-98 cursor-pointer"
-                          >
-                            <Plus className="w-3.5 h-3.5" />
-                            <span>Iniciar {proc.label || proc.name}</span>
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
           </form>
         </div>
       )}
