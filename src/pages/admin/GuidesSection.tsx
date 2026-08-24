@@ -364,9 +364,6 @@ export const GuidesSection: React.FC = () => {
                 <h1 className="text-xl sm:text-2xl md:text-3xl font-bold font-display tracking-tight text-white leading-tight">
                   {isTutor ? 'Equipo Docente (Guías de Mis Hijos)' : 'Equipo Docente'}
                 </h1>
-                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-white/15 text-white font-mono border border-white/20">
-                  {filtered.length} {filtered.length === 1 ? 'docente' : 'docentes'}
-                </span>
               </div>
               <p className="hidden sm:block text-xs sm:text-sm text-white/80 mt-1 max-w-2xl leading-relaxed">
                 {isTutor
