@@ -1,0 +1,1106 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  STAFF
+  TEACHER
+  TUTOR
+}
+
+enum Relationship {
+  FATHER
+  MOTHER
+  GUARDIAN
+  OTHER
+}
+
+model School {
+  id           String   @id @default(uuid())
+  slug         String   @unique
+  name         String
+  legalName    String?  @default("") @map("legal_name")
+  country      String?  @default("")
+  province     String?  @default("")
+  city         String?  @default("")
+  address      String?  @default("")
+  mapLat       Float?   @map("map_lat")
+  mapLng       Float?   @map("map_lng")
+  logoUrl      String?  @default("") @map("logo_url")
+  primaryColor String?  @default("#1b3b2b") @map("primary_color")
+  accentColor  String?  @default("#c86d51") @map("accent_color")
+  phone        String?  @default("")
+  email        String?  @default("")
+  currency     String?  @default("MXN")
+  currencySymbol String? @default("$") @map("currency_symbol")
+  timezone     String?  @default("America/Mexico_City")
+  locale           String?  @default("es-MX")
+  features         Json?    @default("{}")
+  consentTemplates String?  @default("[]") @map("consent_templates")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  memberships       SchoolMembership[]
+  environments      Environment[]
+  students          Student[]
+  folders           Folder[]
+  documents         Document[]
+  applications      Application[]
+  galleryCategories GalleryCategory[]
+  galleryImages     GalleryImage[]
+  globalAccessCodes GlobalAccessCode[]
+  siteSettings      SiteSetting[]
+  eventCategories   EventCategory[]
+  events            SchoolEvent[]
+  conferenceReports ProgressConferenceReport[]
+  characterizations StudentCharacterization[]
+  feeConcepts       FeeConcept[]
+  feePlanTemplates  FeePlanTemplate[]
+  studentFeePlans   StudentFeePlan[]
+  feeInstallments   FeeInstallment[]
+  waitlistEntries   WaitlistEntry[]
+  processes             Process[]
+  processStages         ProcessStage[]
+  processApplications   ProcessApplication[]
+  processFormTemplates  ProcessFormTemplate[]
+  newsletters       Newsletter[]
+
+  @@map("schools")
+}
+
+model Environment {
+  id           String    @id @default(uuid())
+  schoolId     String    @map("school_id")
+  name         String
+  stage        String?   @default("")
+  description  String?   @default("")
+  coverImage   String?   @default("") @map("cover_image")
+  minAgeYears  Float?    @map("min_age_years")
+  maxAgeYears  Float?    @map("max_age_years")
+  capacity     Int?      @default(25)
+  color        String?   @default("#1b3b2b")
+  startTime    String?   @default("08:00") @map("start_time")
+  endTime      String?   @default("13:30") @map("end_time")
+  scheduleDays String?   @default("[\"Lunes\",\"Martes\",\"Miércoles\",\"Jueves\",\"Viernes\"]") @map("schedule_days")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  school       School                  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  students     Student[]
+  guides       EnvironmentGuide[]
+  eventTargets EventTargetEnvironment[]
+  processApplications   ProcessApplication[]
+
+  @@map("environments")
+}
+
+model EnvironmentGuide {
+  id            String      @id @default(uuid())
+  environmentId String      @map("environment_id")
+  userId        String      @map("user_id")
+  isLead        Boolean     @default(true) @map("is_lead")
+  createdAt     DateTime    @default(now()) @map("created_at")
+
+  environment   Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([environmentId, userId])
+  @@map("environment_guides")
+}
+
+model User {
+  id                 String   @id @default(uuid())
+  email              String   @unique
+  passwordHash       String   @map("password_hash")
+  fullName           String?  @default("") @map("full_name")
+  avatarUrl          String?  @default("") @map("avatar_url")
+  phone              String?  @default("")
+  jobTitle           String?  @default("") @map("job_title")
+  staffRole          String?  @default("LEAD_GUIDE") @map("staff_role")
+  certifications     String?  @default("") @map("certifications")
+  practiceStartYear  Int?     @map("practice_start_year")
+  yearsOfExperience  Int?     @default(0) @map("years_of_experience")
+  bio                String?  @default("")
+  rfc                String?  @default("")
+  curp               String?  @default("")
+  socialLinkedin     String?  @default("") @map("social_linkedin")
+  socialX            String?  @default("") @map("social_x")
+  socialFacebook     String?  @default("") @map("social_facebook")
+  socialInstagram    String?  @default("") @map("social_instagram")
+  socialTiktok       String?  @default("") @map("social_tiktok")
+  socialYoutube      String?  @default("") @map("social_youtube")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  supervisors        User[]   @relation("StaffHierarchy")
+  subordinates       User[]   @relation("StaffHierarchy")
+
+  memberships              SchoolMembership[]
+  studentLinks             StudentTutor[]
+  assignedEnvironments     EnvironmentGuide[]
+  hostedEvents             EventHost[]
+  volunteerEvents          EventVolunteer[]
+  eventBookings            EventBooking[]
+  authoredConferenceReports ProgressConferenceReport[]
+  authoredCharacterizations StudentCharacterization[]
+  staffDocuments           UserDocument[]
+
+  @@map("users")
+}
+
+model UserDocument {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  name      String
+  fileUrl   String   @map("file_url")
+  fileType  String?  @default("") @map("file_type")
+  fileSize  Int?     @default(0) @map("file_size")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_documents")
+}
+
+model SchoolMembership {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  schoolId  String   @map("school_id")
+  role      Role     @default(STAFF)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  processApplications ProcessApplication[]
+
+  @@unique([userId, schoolId])
+  @@map("school_memberships")
+}
+
+model Student {
+  id                  String       @id @default(uuid())
+  schoolId            String       @map("school_id")
+  environmentId       String?      @map("environment_id")
+  fullName            String       @map("full_name")
+  avatarUrl           String?      @default("") @map("avatar_url")
+  gender              String?      @default("")
+  dateOfBirth         DateTime?    @map("date_of_birth")
+  nationalId          String?      @default("") @map("national_id")
+  idDocumentUrl       String?      @default("") @map("id_document_url")
+  grade               String?      @default("")
+  enrollmentCode      String?      @default("") @map("enrollment_code")
+  enrollmentDate      DateTime?    @map("enrollment_date")
+  previousSchool      String?      @default("") @map("previous_school")
+  previousMethodology String?      @default("") @map("previous_methodology")
+  bloodType           String?      @default("") @map("blood_type")
+  allergies           String?      @default("")
+  foodAllergies       String?      @default("[]") @map("food_allergies")
+  dietaryRestrictions String?      @default("") @map("dietary_restrictions")
+  medicalNotes        String?      @default("") @map("medical_notes")
+  internalNotes       String?      @default("") @map("internal_notes")
+  authorizedContacts  String?      @default("[]") @map("authorized_contacts")
+  consents            String?      @default("[]") @map("consents")
+  status              String       @default("active")
+  createdAt           DateTime     @default(now()) @map("created_at")
+  updatedAt           DateTime     @updatedAt @map("updated_at")
+
+  school            School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  environment       Environment? @relation(fields: [environmentId], references: [id], onDelete: SetNull)
+  tutors            StudentTutor[]
+  progress          StudentLessonProgress[]
+  observations      StudentObservation[]
+  attendances       StudentAttendance[]
+  eventTargets      EventTargetStudent[]
+  eventBookings     EventBooking[]
+  conferenceReports ProgressConferenceReport[]
+  characterizations StudentCharacterization[]
+  feePlans          StudentFeePlan[]
+  feeInstallments   FeeInstallment[]
+  processApplications ProcessApplication[]
+  waitlistEntries     WaitlistEntry[]
+
+  @@map("students")
+}
+
+model StudentTutor {
+  id               String       @id @default(uuid())
+  studentId        String       @map("student_id")
+  tutorUserId      String       @map("tutor_user_id")
+  relationship     Relationship @default(GUARDIAN)
+  isPrimaryContact Boolean      @default(false) @map("is_primary_contact")
+  authorizedPickUp Boolean      @default(true) @map("authorized_pick_up")
+  createdAt        DateTime     @default(now()) @map("created_at")
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  tutor   User    @relation(fields: [tutorUserId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, tutorUserId])
+  @@map("student_tutors")
+}
+
+model Folder {
+  id            String     @id @default(uuid())
+  schoolId      String     @map("school_id")
+  title         String
+  description   String?    @default("")
+  titleEn       String?    @default("") @map("title_en")
+  descriptionEn String?    @default("") @map("description_en")
+  accessType    String     @default("public") @map("access_type")
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+
+  school    School     @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  documents Document[]
+
+  @@map("folders")
+}
+
+model Document {
+  id            String   @id @default(uuid())
+  schoolId      String   @map("school_id")
+  folderId      String   @map("folder_id")
+  title         String
+  description   String?  @default("")
+  titleEn       String?  @default("") @map("title_en")
+  descriptionEn String?  @default("") @map("description_en")
+  accessType    String   @default("public") @map("access_type")
+  fileName      String   @map("file_name")
+  fileType      String   @map("file_type")
+  fileData      String   @map("file_data")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  folder Folder @relation(fields: [folderId], references: [id], onDelete: Cascade)
+
+  @@map("documents")
+}
+
+model Application {
+  id            String            @id @default(uuid())
+  schoolId      String            @map("school_id")
+  title         String
+  description   String?           @default("")
+  titleEn       String?           @default("") @map("title_en")
+  descriptionEn String?           @default("") @map("description_en")
+  iconUrl       String?           @default("") @map("icon_url")
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+
+  school School            @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  links  ApplicationLink[]
+
+  @@map("applications")
+}
+
+model ApplicationLink {
+  id        String   @id @default(uuid())
+  appId     String   @map("app_id")
+  label     String
+  labelEn   String?  @default("") @map("label_en")
+  url       String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  application Application @relation(fields: [appId], references: [id], onDelete: Cascade)
+
+  @@map("application_links")
+}
+
+model GalleryCategory {
+  id        String         @id
+  schoolId  String         @map("school_id")
+  label     String
+  labelEn   String?        @default("") @map("label_en")
+  createdAt DateTime       @default(now()) @map("created_at")
+
+  school School         @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  images GalleryImage[]
+
+  @@map("gallery_categories")
+}
+
+model GalleryImage {
+  id            String   @id @default(uuid())
+  schoolId      String   @map("school_id")
+  categoryId    String   @map("category_id")
+  src           String
+  title         String
+  titleEn       String?  @default("") @map("title_en")
+  description   String?  @default("")
+  descriptionEn String?  @default("") @map("description_en")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  school   School          @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  category GalleryCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@map("gallery_images")
+}
+
+model GlobalAccessCode {
+  id        Int      @id @default(autoincrement())
+  schoolId  String   @map("school_id")
+  code      String
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@map("global_access_code")
+}
+
+model SiteSetting {
+  id        String   @id @default(uuid())
+  schoolId  String   @map("school_id")
+  key       String
+  value     String
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@unique([schoolId, key])
+  @@map("site_settings")
+}
+
+// MONTESSORI SCOPE & SEQUENCE (CURRÍCULUM)
+model MontessoriArea {
+  id          String   @id @default(uuid())
+  schoolId    String?  @map("school_id")
+  name        String
+  slug        String
+  icon        String?  @default("BookOpen")
+  color       String?  @default("#1b3b2b")
+  description String?  @default("")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  categories MontessoriCategory[]
+
+  @@map("montessori_areas")
+}
+
+model MontessoriCategory {
+  id          String   @id @default(uuid())
+  areaId      String   @map("area_id")
+  name        String
+  description String?  @default("")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  area    MontessoriArea     @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  lessons MontessoriLesson[]
+
+  @@map("montessori_categories")
+}
+
+model MontessoriLesson {
+  id                 String   @id @default(uuid())
+  categoryId         String   @map("category_id")
+  name               String
+  description        String?  @default("")
+  pedagogicalPurpose String?  @default("") @map("pedagogical_purpose")
+  parentInfo         String?  @default("") @map("parent_info")
+  mediaAssets        String?  @default("[]") @map("media_assets")
+  minAgeYears        Float?   @map("min_age_years")
+  maxAgeYears        Float?   @map("max_age_years")
+  sortOrder          Int      @default(0) @map("sort_order")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  category        MontessoriCategory      @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  progressRecords StudentLessonProgress[]
+
+  @@map("montessori_lessons")
+}
+
+model TrackerCategory {
+  id          String   @id @default(uuid())
+  schoolId    String?  @map("school_id")
+  name        String
+  nameEn      String?  @map("name_en")
+  slug        String
+  icon        String?  @default("Activity")
+  color       String?  @default("#1b3b2b")
+  description String?  @default("")
+  isActive    Boolean  @default(true) @map("is_active")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  subcategories TrackerSubcategory[]
+
+  @@map("tracker_categories")
+}
+
+model TrackerSubcategory {
+  id          String   @id @default(uuid())
+  categoryId  String   @map("category_id")
+  name        String
+  nameEn      String?  @map("name_en")
+  description String?  @default("")
+  fields      String?  @default("[]")
+  isActive    Boolean  @default(true) @map("is_active")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  category TrackerCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  items    TrackerItem[]
+
+  @@map("tracker_subcategories")
+}
+
+model TrackerItem {
+  id            String   @id @default(uuid())
+  subcategoryId String   @map("subcategory_id")
+  name          String
+  nameEn        String?  @map("name_en")
+  description   String?  @default("")
+  icon          String?  @default("Sparkles")
+  color         String?  @default("#1b3b2b")
+  isActive      Boolean  @default(true) @map("is_active")
+  sortOrder     Int      @default(0) @map("sort_order")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  subcategory TrackerSubcategory @relation(fields: [subcategoryId], references: [id], onDelete: Cascade)
+
+  @@map("tracker_items")
+}
+
+model StudentLessonProgress {
+  id          String       @id @default(uuid())
+  studentId   String       @map("student_id")
+  lessonId    String       @map("lesson_id")
+  guideUserId String?      @map("guide_user_id")
+  status      String       @default("PRESENTED")
+  presentedAt DateTime?    @map("presented_at")
+  masteredAt  DateTime?    @map("mastered_at")
+  notes       String?      @default("")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  student Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  lesson  MontessoriLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, lessonId])
+  @@map("student_lesson_progress")
+}
+
+model StudentObservation {
+  id          String   @id @default(uuid())
+  schoolId    String   @map("school_id")
+  studentId   String   @map("student_id")
+  guideUserId String   @map("guide_user_id")
+  content     String
+  photoUrl    String?  @default("") @map("photo_url")
+  isPublic    Boolean  @default(false) @map("is_public")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("student_observations")
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  TARDY
+  EXCUSED
+}
+
+model StudentAttendance {
+  id        String           @id @default(uuid())
+  studentId String           @map("student_id")
+  date      DateTime         @map("date")
+  status    AttendanceStatus @default(PRESENT)
+  note      String?          @default("")
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, date])
+  @@map("student_attendances")
+}
+
+// ==========================================
+// SCHOOL EVENTS, CALENDAR & BOOKINGS MODELS
+// ==========================================
+
+enum EventType {
+  OPEN_MASSIVE    // Masivo / Libre acceso o confirmación RSVP
+  SLOT_BOOKING    // Por turnos / Citas sin solaparse (ej. 30/45/60 min)
+}
+
+enum EventTargetScope {
+  ALL_SCHOOL      // Toda la escuela
+  ENVIRONMENTS    // Salones / Ambientes específicos
+  STUDENTS        // Estudiantes específicos (incluso mezclados de varios salones)
+  EXTERNAL_GUESTS // Aspirantes / Invitados externos (solo para formularios de admisión / citas web)
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  COMPLETED
+  CANCELLED
+}
+
+enum BookingStatus {
+  CONFIRMED
+  DECLINED
+  ATTENDED
+  CANCELLED
+}
+
+model EventCategory {
+  id          String   @id @default(uuid())
+  schoolId    String?  @map("school_id")
+  name        String
+  slug        String
+  color       String   @default("#1b3b2b")
+  icon        String   @default("Calendar")
+  description String?  @default("")
+  isDefault   Boolean  @default(false) @map("is_default")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  school      School?       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  events      SchoolEvent[]
+
+  @@map("event_categories")
+}
+
+model SchoolEvent {
+  id                  String           @id @default(uuid())
+  schoolId            String           @map("school_id")
+  categoryId          String           @map("category_id")
+  title               String
+  description         String?          @default("")
+  location            String?          @default("")
+  coverImage          String?          @default("") @map("cover_image")
+  eventType           EventType        @default(OPEN_MASSIVE) @map("event_type")
+  targetScope         EventTargetScope @default(ALL_SCHOOL) @map("target_scope")
+  status              EventStatus      @default(PUBLISHED)
+  isClosed            Boolean          @default(false) @map("is_closed") // Si requiere invitación / restringido
+  startDateTime       DateTime         @map("start_date_time")
+  endDateTime         DateTime         @map("end_date_time")
+  
+  // Slot Booking Configuration
+  slotDurationMinutes Int?             @default(45) @map("slot_duration_minutes")
+  maxBookingsPerSlot  Int?             @default(1) @map("max_bookings_per_slot")
+  
+  // Post-Event & Resources
+  summaryNotes        String?          @default("") @map("summary_notes")
+  photoUrls           Json?            @default("[]") @map("photo_urls") // string[]
+  attachments         Json?            @default("[]") // Array<{ title, url, type, size }>
+  
+  createdAt           DateTime         @default(now()) @map("created_at")
+  updatedAt           DateTime         @updatedAt @map("updated_at")
+
+  school              School                   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  category            EventCategory            @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  hosts               EventHost[]
+  volunteers          EventVolunteer[]
+  targetEnvironments  EventTargetEnvironment[]
+  targetStudents      EventTargetStudent[]
+  slots               EventSlot[]
+  bookings            EventBooking[]
+
+  @@map("school_events")
+}
+
+model EventHost {
+  id        String      @id @default(uuid())
+  eventId   String      @map("event_id")
+  userId    String      @map("user_id")
+  roleTitle String?     @default("Anfitrión / Coordinador") @map("role_title")
+  createdAt DateTime    @default(now()) @map("created_at")
+
+  event     SchoolEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@map("event_hosts")
+}
+
+model EventVolunteer {
+  id              String      @id @default(uuid())
+  eventId         String      @map("event_id")
+  tutorUserId     String      @map("tutor_user_id")
+  roleDescription String?     @default("Tutor Voluntario") @map("role_description")
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  event           SchoolEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  tutor           User        @relation(fields: [tutorUserId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, tutorUserId])
+  @@map("event_volunteers")
+}
+
+model EventTargetEnvironment {
+  id            String      @id @default(uuid())
+  eventId       String      @map("event_id")
+  environmentId String      @map("environment_id")
+  createdAt     DateTime    @default(now()) @map("created_at")
+
+  event         SchoolEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  environment   Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, environmentId])
+  @@map("event_target_environments")
+}
+
+model EventTargetStudent {
+  id        String      @id @default(uuid())
+  eventId   String      @map("event_id")
+  studentId String      @map("student_id")
+  createdAt DateTime    @default(now()) @map("created_at")
+
+  event     SchoolEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  student   Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, studentId])
+  @@map("event_target_students")
+}
+
+model EventSlot {
+  id          String         @id @default(uuid())
+  eventId     String         @map("event_id")
+  name        String?        @default("")
+  startTime   DateTime       @map("start_time")
+  endTime     DateTime       @map("end_time")
+  maxCapacity Int            @default(1) @map("max_capacity")
+  isLocked    Boolean        @default(false) @map("is_locked")
+  createdAt   DateTime       @default(now()) @map("created_at")
+
+  event       SchoolEvent    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  bookings    EventBooking[]
+
+  @@map("event_slots")
+}
+
+model EventBooking {
+  id          String        @id @default(uuid())
+  eventId     String        @map("event_id")
+  slotId      String?       @map("slot_id")
+  studentId   String?       @map("student_id")
+  tutorUserId String?       @map("tutor_user_id")
+  guestName   String?       @default("") @map("guest_name")
+  guestEmail  String?       @default("") @map("guest_email")
+  guestPhone  String?       @default("") @map("guest_phone")
+  guestsCount Int           @default(1) @map("guests_count")
+  status      BookingStatus @default(CONFIRMED)
+  notes       String?       @default("")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  event       SchoolEvent   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  slot        EventSlot?    @relation(fields: [slotId], references: [id], onDelete: SetNull)
+  student     Student?      @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  tutor       User?         @relation(fields: [tutorUserId], references: [id], onDelete: SetNull)
+
+  @@map("event_bookings")
+}
+
+// ==========================================
+// PROGRESS CONFERENCE REPORTS & EVOLUTION TIMELINE
+// ==========================================
+
+model ProgressConferenceReport {
+  id                  String   @id @default(uuid())
+  schoolId            String   @map("school_id")
+  studentId           String   @map("student_id")
+  guideUserId         String?  @map("guide_user_id")
+  termName            String   @map("term_name") // ej. "Trimestre I 2025-2026", "Semestre Otoño", etc.
+  conferenceDate      DateTime @default(now()) @map("conference_date")
+  status              String   @default("PUBLISHED") // DRAFT, PUBLISHED
+  
+  // Core Structured Pillars
+  executiveSummary    String   @default("") @map("executive_summary")
+  strengths           String   @default("") // Fortalezas y logros observados
+  challenges          String   @default("") // Retos pedagógicos y áreas de oportunidad
+  recommendationsHome String   @default("") @map("recommendations_home") // Consejos y pautas para casa
+  agreements          String   @default("") // Acuerdos y compromisos guía-familia
+  
+  // Quantitative Snapshot (para comparación histórica y métricas de avance)
+  masterySnapshot     Json?    @default("{}") @map("mastery_snapshot")
+  
+  // Multimedia, Voice Dictation & Files
+  audioRecordingUrl   String?  @default("") @map("audio_recording_url")
+  audioTranscription  String?  @default("") @map("audio_transcription")
+  attachments         Json?    @default("[]") // Array<{ title, url, type, size }>
+  attendees           String?  @default("") // ej. "Guía Laura, Papá Carlos, Mamá María"
+  
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  school              School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  student             Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  guide               User?    @relation(fields: [guideUserId], references: [id], onDelete: SetNull)
+
+  @@map("progress_conference_reports")
+}
+
+// ==========================================
+// MULTI-PERSPECTIVE STUDENT 360° CHARACTERIZATION
+// ==========================================
+
+model StudentCharacterization {
+  id                      String   @id @default(uuid())
+  schoolId                String   @map("school_id")
+  studentId               String   @map("student_id")
+  authorUserId            String?  @map("author_user_id")
+  authorName              String   @map("author_name")
+  authorRole              String   @map("author_role") // 'LEAD_GUIDE', 'ASSISTANT_GUIDE', 'SUPPORT_STAFF', 'SPECIALIST', 'ADMIN'
+  contextArea             String   @default("GENERAL") @map("context_area") // 'SALON', 'COMEDOR', 'PATIO_JARDIN', 'TALLER_ESPECIAL', 'AREAS_COMUNES'
+  period                  String   @default("ACTUAL") // ej. "Ciclo 2025-2026", "Trimestre I"
+  observationDate         DateTime @default(now()) @map("observation_date")
+
+  // Quantitative Montessori Dimension Ratings (1-5)
+  independenceLevel       Int      @default(3) @map("independence_level") // Autonomía & Cuidado
+  socialGraceLevel        Int      @default(3) @map("social_grace_level") // Gracia, Cortesía y Empatía
+  focusRegulationLevel    Int      @default(3) @map("focus_regulation_level") // Concentración y Autorregulación
+  curiosityEngagementLevel Int     @default(3) @map("curiosity_engagement_level") // Curiosidad y Pasión por el Trabajo
+
+  // Qualitative Dimensions
+  autonomyCareNotes       String   @default("") @map("autonomy_care_notes") // ¿Cómo cuida los materiales, entorno y orden?
+  socialGraceNotes        String   @default("") @map("social_grace_notes") // Trato con compañeros, adultos y resolución de conflictos
+  focusRegulationNotes    String   @default("") @map("focus_regulation_notes") // Ciclos de trabajo, persistencia y regulación
+  interestsPassionsNotes  String   @default("") @map("interests_passions_notes") // Qué temas, áreas o elementos le apasionan
+  anecdoteHighlight       String   @default("") @map("anecdote_highlight") // Anécdota o momento revelador
+  
+  tags                    Json?    @default("[]") // Array<string> ej. ["Líder natural", "Sensible a la música", "Muy protector"]
+  
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
+
+  school                  School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  student                 Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  authorUser              User?    @relation(fields: [authorUserId], references: [id], onDelete: SetNull)
+
+  @@map("student_characterizations")
+}
+
+// ==========================================
+// SCHOOL FINANCES & CUSTOM TUITION PLANS
+// ==========================================
+
+model FeeConcept {
+  id            String   @id @default(uuid())
+  schoolId      String   @map("school_id")
+  name          String   // ej. "Matrícula Anual", "Colegiatura Mensual", "Materiales Montessori", "Comedor", "Taller de Arte"
+  code          String?  @default("") // ej. "MAT-01", "COL-01"
+  category      String   @default("TUITION") // 'ENROLLMENT', 'TUITION', 'MATERIALS', 'WORKSHOP', 'MEALS', 'TRANSPORT', 'OTHER'
+  frequency     String   @default("MONTHLY") // 'ONE_TIME', 'MONTHLY', 'ANNUAL', 'PER_EVENT'
+  defaultAmount Float    @default(0) @map("default_amount")
+  description   String?  @default("")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  school        School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@map("fee_concepts")
+}
+
+model FeePlanTemplate {
+  id                      String   @id @default(uuid())
+  schoolId                String   @map("school_id")
+  name                    String   // ej. "Plan General Casa de Niños 2025-2026"
+  description             String?  @default("")
+  schoolYear              String   @default("2025-2026") @map("school_year")
+  environmentStage        String?  @default("CASA") @map("environment_stage") // 'NIDO', 'TODDLER', 'CASA', 'TALLER_1', 'TALLER_2', 'GENERAL'
+  isActive                Boolean  @default(true) @map("is_active")
+  
+  // JSON array of default items: [{ conceptId, conceptName, baseAmount, quantity, frequency, dueMonthOffset }]
+  items                   Json     @default("[]")
+
+  // Default Incentive / Discount Rules
+  batchDiscountPct        Float    @default(10) @map("batch_discount_pct") // % descuento por pago anual anticipado
+  promptPaymentDiscountPct Float   @default(5) @map("prompt_payment_discount_pct") // % descuento pronto pago los primeros 5 días
+  promptPaymentDayLimit   Int      @default(5) @map("prompt_payment_day_limit") // Día límite del mes para pronto pago (ej. día 5)
+  
+  // Cutoff, Due dates & Late Fees
+  defaultInstallmentsCount Int     @default(10) @map("default_installments_count") // 10 mensualidades por defecto
+  invoiceCutDay           Int      @default(1) @map("invoice_cut_day") // Día del mes donde se genera / emite el cobro (ej. día 4)
+  dueDayLimit             Int      @default(7) @map("due_day_limit") // Día límite del mes para pagar a tiempo (ej. día 7)
+  lateFeePct              Float    @default(10) @map("late_fee_pct") // % recargo por mora / impuntualidad (ej. 10%)
+
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
+
+  school                  School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  studentPlans            StudentFeePlan[]
+
+  @@map("fee_plan_templates")
+}
+
+model StudentFeePlan {
+  id                 String   @id @default(uuid())
+  schoolId           String   @map("school_id")
+  studentId          String   @map("student_id")
+  templateId         String?  @map("template_id")
+  planName           String   @map("plan_name") // ej. "Plan Personalizado - Casa de Niños 2025-2026"
+  schoolYear         String   @default("2025-2026") @map("school_year")
+  paymentModality    String   @default("MONTHLY_10") @map("payment_modality") // 'ANNUAL_BATCH', 'SEMIANNUAL', 'MONTHLY_CUSTOM'
+  currency           String   @default("MXN")
+  
+  installmentsCount  Int      @default(10) @map("installments_count") // ej. 8, 10, 11, 12 mensualidades custom
+  invoiceCutDay      Int      @default(1) @map("invoice_cut_day") // Día de corte / facturación (ej. día 4)
+  dueDayLimit        Int      @default(7) @map("due_day_limit") // Día límite para pagar sin recargo (ej. día 7)
+  lateFeePct         Float    @default(0) @map("late_fee_pct") // % recargo por mora (ej. 10%, o 0% si tiene crédito/exención)
+  allowLateFeeExemption Boolean @default(false) @map("allow_late_fee_exemption") // Exención total / Crédito flexible otorgado por dirección
+  
+  totalGrossAmount   Float    @default(0) @map("total_gross_amount")
+  totalDiscountAmount Float   @default(0) @map("total_discount_amount")
+  totalNetAmount     Float    @default(0) @map("total_net_amount")
+  
+  // Notes on agreement (e.g. "Beca 15% por segundo hermano en Taller 1 aprobada por dirección")
+  notes              String?  @default("")
+  status             String   @default("ACTIVE") // 'ACTIVE', 'DRAFT', 'COMPLETED', 'CANCELLED'
+
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  school             School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  student            Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  template           FeePlanTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  installments       FeeInstallment[]
+
+  @@map("student_fee_plans")
+}
+
+model FeeInstallment {
+  id                 String    @id @default(uuid())
+  studentFeePlanId   String    @map("student_fee_plan_id")
+  studentId          String    @map("student_id")
+  schoolId           String    @map("school_id")
+  
+  conceptName        String    @map("concept_name") // ej. "Colegiatura Septiembre 2025", "Matrícula 2025-2026", "Materiales"
+  category           String    @default("TUITION") // 'ENROLLMENT', 'TUITION', 'MATERIALS', 'WORKSHOP', 'MEALS', 'OTHER'
+  installmentNumber  Int       @default(1) @map("installment_number") // 1, 2, ... 10
+  totalInstallments  Int       @default(10) @map("total_installments") // ej. 10
+  invoiceCutDate     DateTime? @map("invoice_cut_date") // Fecha en que se genera / corta la factura del mes
+  dueDate            DateTime  @map("due_date") // Fecha límite sin recargo
+  
+  originalAmount     Float     @default(0) @map("original_amount")
+  discountAmount     Float     @default(0) @map("discount_amount")
+  discountReason     String?   @default("") @map("discount_reason") // ej. "Descuento Hermano (15%)", "Beca Parcial", "Pronto Pago"
+  netAmount          Float     @default(0) @map("net_amount")
+  
+  // Late Fee / Recargo por Impuntualidad
+  lateFeePct         Float     @default(0) @map("late_fee_pct")
+  lateFeeAmount      Float     @default(0) @map("late_fee_amount")
+  isLateFeeApplied   Boolean   @default(false) @map("is_late_fee_applied")
+  isLateFeeWaived    Boolean   @default(false) @map("is_late_fee_waived") // Condonado o con crédito
+  
+  paidAmount         Float     @default(0) @map("paid_amount")
+  status             String    @default("PENDING") // 'PENDING', 'PAID', 'OVERDUE', 'PARTIAL', 'WAIVED'
+  paidAt             DateTime? @map("paid_at")
+  paymentMethod      String?   @default("") @map("payment_method") // 'TRANSFER', 'CASH', 'CARD', 'STRIPE', 'MERCADOPAGO'
+  paymentReference   String?   @default("") @map("payment_reference") // Folio bancario o número de transferencia
+  receiptUrl         String?   @default("") @map("receipt_url")
+  notes              String?   @default("")
+
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  studentFeePlan     StudentFeePlan @relation(fields: [studentFeePlanId], references: [id], onDelete: Cascade)
+  student            Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  school             School         @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@map("fee_installments")
+}
+
+enum WaitlistStatus {
+  WAITING
+  IN_ADMISSION
+  ENROLLED
+  CANCELLED
+}
+
+model WaitlistEntry {
+  id                     String                @id @default(uuid())
+  schoolId               String                @map("school_id")
+  childName              String                @map("child_name")
+  birthDate              DateTime?             @map("birth_date")
+  gender                 String?               @default("NOT_SPECIFIED")
+  targetEnvironmentIds   String[]              @default([]) @map("target_environment_ids")
+  parentName             String                @map("parent_name")
+  parentEmail            String?               @default("") @map("parent_email")
+  parentPhone            String?               @default("") @map("parent_phone")
+  relationship           String?               @default("MOTHER")
+  preferredStartDate     DateTime?             @map("preferred_start_date")
+  notes                  String?               @default("")
+  previousSchool         String?               @default("") @map("previous_school")
+  previousMethodology    String?               @default("") @map("previous_methodology")
+  status                 WaitlistStatus        @default(WAITING)
+  priority               Int                   @default(0)
+  enrolledStudentId      String?               @map("enrolled_student_id")
+  processApplicationId   String?               @map("process_application_id")
+  createdAt              DateTime              @default(now()) @map("created_at")
+  updatedAt              DateTime              @updatedAt @map("updated_at")
+
+  school                 School                @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  enrolledStudent        Student?              @relation(fields: [enrolledStudentId], references: [id], onDelete: SetNull)
+  processApplication     ProcessApplication?   @relation(fields: [processApplicationId], references: [id], onDelete: SetNull)
+
+  @@map("waitlist_entries")
+}
+
+model Process {
+  id          String   @id @default(uuid())
+  schoolId    String   @map("school_id")
+  name        String
+  slug        String
+  label       String
+  icon        String   @default("Layers")
+  description String?  @default("")
+  isActive    Boolean  @default(true) @map("is_active")
+  originSource String   @default("WAITLIST") @map("origin_source")
+  targetType  String   @default("STUDENT") @map("target_type")
+  resolutionAction String @default("NONE") @map("resolution_action")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  school      School               @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  stages      ProcessStage[]
+  applications ProcessApplication[]
+
+  @@unique([schoolId, slug])
+  @@map("processes")
+}
+
+model ProcessStage {
+  id                 String   @id @default(uuid())
+  schoolId           String   @map("school_id")
+  processId          String   @map("process_id")
+  slug               String?  @default("")
+  name               String
+  description        String?  @default("")
+  color              String?  @default("#1b3b2b")
+  orderIndex         Int      @default(0) @map("order_index")
+  isInitial          Boolean  @default(false) @map("is_initial")
+  isFinal            Boolean  @default(false) @map("is_final")
+  isTerminalRejected Boolean  @default(false) @map("is_terminal_rejected")
+  requiredDocuments  Json?    @default("[]") @map("required_documents")
+  requiredForms      Json?    @default("[]") @map("required_forms")
+  formQuestions      Json?    @default("[]") @map("form_questions")
+  hooksConfig        Json?    @default("{}") @map("hooks_config")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  school             School               @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  process            Process              @relation(fields: [processId], references: [id], onDelete: Cascade)
+  applications       ProcessApplication[]
+
+  @@map("process_stages")
+}
+
+model ProcessApplication {
+  id                   String    @id @default(uuid())
+  schoolId             String    @map("school_id")
+  processId            String    @map("process_id")
+  stageId              String    @map("stage_id")
+  portalToken          String?   @default(uuid()) @map("portal_token")
+  childFirstName       String?   @default("") @map("child_first_name")
+  childLastName        String?   @default("") @map("child_last_name")
+  childName            String    @map("child_name")
+  birthDate            DateTime? @map("birth_date")
+  gender               String?   @default("NOT_SPECIFIED")
+  targetEnvironmentId  String?   @map("target_environment_id")
+  targetEnvironmentIds String[]  @default([]) @map("target_environment_ids")
+  preferredStartDate   DateTime? @map("preferred_start_date")
+  previousSchool       String?   @default("") @map("previous_school")
+  previousMethodology  String?   @default("") @map("previous_methodology")
+  tutorName            String    @map("tutor_name")
+  tutorEmail           String?   @default("") @map("tutor_email")
+  tutorPhone           String?   @default("") @map("tutor_phone")
+  tutorRelationship    String?   @default("MOTHER") @map("tutor_relationship")
+  secondaryTutorName   String?   @default("") @map("secondary_tutor_name")
+  secondaryTutorPhone  String?   @default("") @map("secondary_tutor_phone")
+  address              String?   @default("")
+  status               String    @default("IN_PROGRESS")
+  submittedDocuments   Json?     @default("[]") @map("submitted_documents")
+  formSubmissions      Json?     @default("[]") @map("form_submissions")
+  customFormResponses  Json?     @default("{}") @map("custom_form_responses")
+  internalNotes        String?   @default("") @map("internal_notes")
+  enrolledStudentId    String?   @map("enrolled_student_id")
+  membershipId         String?   @map("membership_id")
+  history              Json?     @default("[]")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  school               School          @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  process              Process         @relation(fields: [processId], references: [id], onDelete: Cascade)
+  stage                ProcessStage    @relation(fields: [stageId], references: [id], onDelete: Restrict)
+  enrolledStudent      Student?        @relation(fields: [enrolledStudentId], references: [id], onDelete: SetNull)
+  targetEnvironment    Environment?    @relation(fields: [targetEnvironmentId], references: [id], onDelete: SetNull)
+  membership           SchoolMembership? @relation(fields: [membershipId], references: [id], onDelete: SetNull)
+  waitlistEntries      WaitlistEntry[]
+
+  @@map("process_applications")
+}
+
+model ProcessFormTemplate {
+  id          String   @id @default(uuid())
+  schoolId    String   @map("school_id")
+  title       String
+  description String?  @default("")
+  category    String?  @default("GENERAL")
+  schema      Json     @default("[]")
+  isPublished Boolean  @default(true) @map("is_published")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  school      School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@map("process_form_templates")
+}
+
+// NEWSLETTERS & COMUNICADOS (BOLETINES)
+model Newsletter {
+  id                    String    @id @default(uuid())
+  schoolId              String    @map("school_id")
+  title                 String
+  subject               String?
+  preheader             String?
+  contentHtml           String    @map("content_html")
+  contentJson           Json?     @map("content_json")
+  coverImageUrl         String?   @map("cover_image_url")
+  authorName            String?   @map("author_name")
+
+  // TARGET TYPES: 'ALL_SCHOOL', 'ENVIRONMENTS', 'STAFF_ONLY', 'SPECIFIC_CONTACTS'
+  targetType            String    @default("ALL_SCHOOL") @map("target_type")
+  targetAudience        String    @default("PARENTS_AND_STAFF") @map("target_audience") // 'PARENTS', 'STAFF', 'PARENTS_AND_STAFF'
+  targetEnvironmentIds  Json?     @map("target_environment_ids")
+  specificEmails        Json?     @map("specific_emails")
+
+  // STATUSES: 'DRAFT', 'SCHEDULED', 'SENDING', 'SENT', 'FAILED', 'ARCHIVED'
+  status                String    @default("DRAFT")
+  scheduledAt           DateTime? @map("scheduled_at")
+  sentAt                DateTime? @map("sent_at")
+
+  totalRecipients       Int       @default(0) @map("total_recipients")
+  deliveredCount        Int       @default(0) @map("delivered_count")
+  failedCount           Int       @default(0) @map("failed_count")
+  logs                  Json?     @default("[]")
+  attachments           Json?     @default("[]")
+
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  school                School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId, status])
+  @@index([scheduledAt])
+  @@map("newsletters")
+}
+
+
+
