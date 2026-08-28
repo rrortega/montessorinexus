@@ -273,7 +273,7 @@ const ALL_COUNTRIES = [
 ];
 
 export const AdminSettings: React.FC = () => {
-  const { role, user } = useAuth();
+  const { role, user, activeMembership } = useAuth();
   const isOwnerOrAdmin = role === 'OWNER' || role === 'ADMIN';
 
   const { settings, updateSettings, applyBrandingCss, loading } = useSiteSettings();
@@ -289,27 +289,27 @@ export const AdminSettings: React.FC = () => {
     if (settings) {
       setFormData({
         ...settings,
-        schoolName: settings.school_name || settings.schoolName || '',
-        schoolTagline: settings.school_tagline || settings.schoolTagline || '',
-        logoUrl: settings.school_logo || settings.logoUrl || '',
-        primaryColor: settings.brand_primary_color || settings.primaryColor || '#1b3b2b',
-        secondaryColor: settings.brand_secondary_color || settings.secondaryColor || '#2d5a3f',
-        accentColor: settings.brand_accent_color || settings.accentColor || '#c89550',
+        schoolName: settings.school_name || settings.schoolName || activeMembership?.school.name || '',
+        schoolTagline: settings.school_tagline || settings.schoolTagline || activeMembership?.school.legalName || '',
+        logoUrl: settings.school_logo || settings.logoUrl || activeMembership?.school.logoUrl || '',
+        primaryColor: settings.brand_primary_color || settings.primaryColor || activeMembership?.school.primaryColor || '#1b3b2b',
+        secondaryColor: settings.brand_secondary_color || settings.secondaryColor || activeMembership?.school.accentColor || '#2d5a3f',
+        accentColor: settings.brand_accent_color || settings.accentColor || activeMembership?.school.accentColor || '#c89550',
         buttonRadius: settings.button_radius || settings.buttonRadius || 'full',
         buttonHeight: settings.button_height || settings.buttonHeight || 'md',
-        school_country: settings.school_country || 'México',
-        school_province: settings.school_province || '',
-        school_city: settings.school_city || '',
-        school_address: settings.school_address || '',
+        school_country: settings.school_country || activeMembership?.school.country || 'México',
+        school_province: settings.school_province || activeMembership?.school.province || '',
+        school_city: settings.school_city || activeMembership?.school.city || '',
+        school_address: settings.school_address || activeMembership?.school.address || '',
         school_postal_code: settings.school_postal_code || '',
-        school_currency: settings.school_currency || 'MXN',
+        school_currency: settings.school_currency || activeMembership?.school.currency || 'MXN',
         school_currency_symbol: settings.school_currency_symbol || '$',
         school_timezone: settings.school_timezone || 'America/Cancun',
-        contact_phone: settings.contact_phone || settings.contactPhone || '',
-        contact_email: settings.contact_email || settings.contactEmail || '',
+        contact_phone: settings.contact_phone || settings.contactPhone || activeMembership?.school.phone || '',
+        contact_email: settings.contact_email || settings.contactEmail || activeMembership?.school.email || '',
       });
     }
-  }, [settings]);
+  }, [settings, activeMembership]);
 
   const handleTabChange = (tab: SettingsTab) => {
     setSearchParams({ tab });

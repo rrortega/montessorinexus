@@ -217,17 +217,18 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const hostname = window.location.hostname;
         const searchParams = new URLSearchParams(window.location.search);
         const schoolQuery = searchParams.get('school') || searchParams.get('colegio');
+        const isAdminRoute = window.location.pathname.startsWith('/admin');
 
         const hostRes = await fetch(`/api/schools/resolve-host?host=${encodeURIComponent(hostname)}`);
         if (hostRes.ok) {
           const hostData = await hostRes.json();
-          if (hostData.isPlatformRoot && !schoolQuery) {
+          if (hostData.isPlatformRoot && !schoolQuery && !activeMembership?.schoolId && !isAdminRoute) {
             setIsPlatformRoot(true);
             setIsSchoolNotFound(false);
             setLoading(false);
             return;
           }
-          if (hostData.notFound && !schoolQuery) {
+          if (hostData.notFound && !schoolQuery && !activeMembership?.schoolId && !isAdminRoute) {
             setIsSchoolNotFound(true);
             setIsPlatformRoot(false);
             setUnregisteredHost(hostData.attemptedHost || hostname);
