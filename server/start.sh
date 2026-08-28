@@ -21,7 +21,7 @@ trap cleanup SIGINT SIGTERM
 CHILD_PIDS=""
 
 # Ensure required directories exist
-mkdir -p /app/public/gallery /app/public/documents /app/server/data
+mkdir -p /app/storage /app/server/data
 
 # Run database migrations if DATABASE_URL is provided
 if [ -n "$DATABASE_URL" ]; then

@@ -19,7 +19,7 @@ if (!fs.existsSync(DEFAULT_LOCAL_ROOT)) {
  * All storages are 100% PRIVATE with zero public URLs.
  */
 export async function getStorageConfigForSchool(schoolId, prisma = null) {
-  let driver = (process.env.STORAGE_DRIVER || 'local').toLowerCase().trim();
+  let driver = (process.env.STORAGE_DRIVER || (process.env.S3_ACCESS_KEY_ID && process.env.S3_BUCKET ? 's3' : 'local')).toLowerCase().trim();
   let localRoot = process.env.STORAGE_LOCAL_ROOT || DEFAULT_LOCAL_ROOT;
   let s3Endpoint = process.env.S3_ENDPOINT || '';
   let s3Region = process.env.S3_REGION || 'us-east-1';
@@ -395,8 +395,8 @@ export async function streamPrivateAsset({ schoolId, relativePath, req = null, r
     return;
   }
 
-  // Prevent directory traversal
-  const cleanPath = path.normalize(relativePath).replace(/^(\.\.[\/\\])+/, '').replace(/\\/g, '/');
+  // Extract schoolId from path if not explicitly provided (e.g. schools/school_123/...)
+  const targetSchoolId = schoolId || (cleanPath.startsWith('schools/') ? cleanPath.split('/')[1] : null);
 
   // Verify school tenant isolation if schoolId provided
   if (schoolId && !cleanPath.startsWith(`schools/${schoolId}/`)) {
@@ -404,7 +404,7 @@ export async function streamPrivateAsset({ schoolId, relativePath, req = null, r
     return;
   }
 
-  const config = await getStorageConfigForSchool(schoolId, prisma);
+  const config = await getStorageConfigForSchool(targetSchoolId, prisma);
 
   const cleanFilename = path.basename(cleanPath).toLowerCase();
   const detectedMime = (

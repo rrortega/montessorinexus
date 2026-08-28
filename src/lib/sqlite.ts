@@ -2369,6 +2369,7 @@ export async function testSmtpConnection(data: {
   fromName?: string;
   fromEmail?: string;
   testEmail: string;
+  verificationCode?: string;
 }): Promise<{ success: boolean; message: string }> {
   const res = await fetch('/api/settings/test-smtp', {
     method: 'POST',
@@ -2398,8 +2399,42 @@ export async function testStorageConnection(data: {
     body: JSON.stringify(data)
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Error al probar conexión de almacenamiento' }));
-    throw new Error(err.error || 'Error al probar conexión de almacenamiento');
+    const err = await res.json().catch(() => ({ error: 'Error al probar almacenamiento' }));
+    throw new Error(err.error || 'Error al probar almacenamiento');
+  }
+  return await res.json();
+}
+
+export interface SchoolUsageStats {
+  emails: {
+    isByos: boolean;
+    smtpHost?: string;
+    limit: number;
+    used: number;
+    remaining: number;
+    percentage: number;
+    startOfMonth?: string;
+    endOfMonth?: string;
+  };
+  storage: {
+    isByos: boolean;
+    limitGb: number;
+    limitBytes: number;
+    usedBytes: number;
+    usedMb: number;
+    usedGb: number;
+    remainingGb: number;
+    percentage: number;
+  };
+}
+
+export async function getSchoolUsage(): Promise<SchoolUsageStats> {
+  const res = await fetch('/api/schools/current/usage', {
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Error al obtener consumo de recursos' }));
+    throw new Error(err.error || 'Error al obtener consumo de recursos');
   }
   return await res.json();
 }

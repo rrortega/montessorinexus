@@ -11,11 +11,42 @@ const publicDir = path.join(rootDir, 'public');
 const galleryDir = path.join(publicDir, 'gallery');
 const documentsDir = path.join(publicDir, 'documents');
 
+export function cleanSchoolSenderSlug(nameOrSlug) {
+  if (!nameOrSlug) return 'colegio';
+  let cleaned = String(nameOrSlug)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+  cleaned = cleaned.replace(/\b(montessori|school|college|escuela|colegio)\b/gi, '');
+  cleaned = cleaned.replace(/(montessori|school|college|escuela|colegio)/gi, '');
+  cleaned = cleaned.replace(/[^a-z0-9]/g, '');
+
+  return cleaned || 'colegio';
+}
+
 /**
  * Creates an SMTP nodemailer transporter for a specific school
  */
 export async function getSchoolSmtpTransporter(schoolId, prisma) {
+  let schoolSlug = 'colegio';
+  let schoolName = 'Comunidad Montessori';
+
   try {
+    if (schoolId && prisma) {
+      const sch = await prisma.school.findUnique({
+        where: { id: schoolId },
+        select: { slug: true, name: true }
+      });
+      if (sch) {
+        schoolSlug = cleanSchoolSenderSlug(sch.slug || sch.name);
+        schoolName = sch.name || 'Comunidad Montessori';
+      }
+    }
+
+    const emailDomain = process.env.EMAIL_SENDER_DOMAIN || process.env.DEFAULT_EMAIL_DOMAIN || 'montessorinexus.com';
+    const defaultFromEmail = `noreply-${schoolSlug}@${emailDomain}`;
+
     const settings = await prisma.siteSetting.findMany({
       where: {
         schoolId,
@@ -36,13 +67,22 @@ export async function getSchoolSmtpTransporter(schoolId, prisma) {
     const map = {};
     settings.forEach(s => { map[s.key] = s.value; });
 
-    const host = map.smtp_host || process.env.SMTP_HOST;
-    const port = parseInt(map.smtp_port || process.env.SMTP_PORT || '587', 10);
-    const user = map.smtp_user || process.env.SMTP_USER;
-    const pass = map.smtp_pass || process.env.SMTP_PASS;
-    const secure = (map.smtp_secure === 'true' || process.env.SMTP_SECURE === 'true' || port === 465);
-    const fromName = map.smtp_from_name || process.env.SMTP_FROM_NAME || 'Comunidad Montessori';
-    const fromEmail = map.smtp_from_email || process.env.SMTP_FROM_EMAIL || user || 'no-reply@ceiba.edu';
+    let host = map.smtp_host || process.env.SMTP_HOST;
+    let port = parseInt(map.smtp_port || process.env.SMTP_PORT || '587', 10);
+    let user = map.smtp_user || process.env.SMTP_USER;
+    let pass = map.smtp_pass || process.env.SMTP_PASS;
+    let secure = (map.smtp_secure === 'true' || process.env.SMTP_SECURE === 'true' || port === 465);
+    const fromName = map.smtp_from_name || process.env.SMTP_FROM_NAME || schoolName;
+    const fromEmail = map.smtp_from_email || process.env.SMTP_FROM_EMAIL || defaultFromEmail;
+
+    // Platform-wide fallback to Resend SMTP if school has not configured custom SMTP
+    if (!host && process.env.RESEND_API_KEY) {
+      host = 'smtp.resend.com';
+      port = 465;
+      secure = true;
+      user = 'resend';
+      pass = process.env.RESEND_API_KEY;
+    }
 
     if (host && user && pass) {
       const transporter = nodemailer.createTransport({
@@ -60,15 +100,25 @@ export async function getSchoolSmtpTransporter(schoolId, prisma) {
         isConfigured: true
       };
     }
+
+    return {
+      transporter: null,
+      from: `"${fromName}" <${defaultFromEmail}>`,
+      fromEmail: defaultFromEmail,
+      fromName,
+      isConfigured: false
+    };
   } catch (err) {
     console.error(`[EMAIL SERVICE] Error initializing SMTP for school ${schoolId}:`, err);
   }
 
+  const emailDomain = process.env.EMAIL_SENDER_DOMAIN || process.env.DEFAULT_EMAIL_DOMAIN || 'montessorinexus.com';
+  const defaultFromEmail = `noreply-${schoolSlug}@${emailDomain}`;
   return {
     transporter: null,
-    from: '"Comunidad Montessori" <no-reply@ceiba.edu>',
-    fromEmail: 'no-reply@ceiba.edu',
-    fromName: 'Comunidad Montessori',
+    from: `"${schoolName}" <${defaultFromEmail}>`,
+    fromEmail: defaultFromEmail,
+    fromName: schoolName,
     isConfigured: false
   };
 }
@@ -466,6 +516,38 @@ export async function processNewsletterDispatch(newsletterId, prisma) {
     targetEnvironmentIds: newsletter.targetEnvironmentIds,
     specificEmails: newsletter.specificEmails
   }, prisma);
+
+  // Monthly email quota enforcement for platform-managed SMTP (Non-BYOS)
+  const feat = (school && school.features && typeof school.features === 'object') ? school.features : {};
+  const isByos = Boolean((settingsMap.smtp_host && settingsMap.smtp_user) || (feat.emailPackage === '0'));
+
+  if (!isByos) {
+    const emailLimit = feat.newsletterEmailLimit ? Number(feat.newsletterEmailLimit) : (feat.emailPackage ? Number(feat.emailPackage) : 500);
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    const monthlyNewsletters = await prisma.newsletter.findMany({
+      where: {
+        schoolId: school.id,
+        sentAt: { gte: startOfMonth }
+      },
+      select: { deliveredCount: true }
+    });
+    const monthlyUsed = monthlyNewsletters.reduce((s, n) => s + (n.deliveredCount || 0), 0);
+    const availableQuota = Math.max(0, emailLimit - monthlyUsed);
+
+    if (availableQuota <= 0) {
+      console.warn(`[EMAIL SERVICE] Monthly email quota reached for school ${school.id} (${monthlyUsed}/${emailLimit})`);
+      await prisma.newsletter.update({
+        where: { id: newsletterId },
+        data: {
+          status: 'FAILED',
+          logs: [{ email: 'all', status: 'QUOTA_EXCEEDED', error: `Límite mensual alcanzado (${monthlyUsed}/${emailLimit} emails consumidos). Configura SMTP propio o amplía tu paquete de emails en /panel/pricing.`, timestamp: new Date().toISOString() }]
+        }
+      });
+      return { success: false, error: `Has alcanzado el límite mensual de ${emailLimit} correos de tu plan contratado (${monthlyUsed} consumidos).` };
+    }
+  }
 
   const { transporter, from, isConfigured } = await getSchoolSmtpTransporter(school.id, prisma);
   const logs = [];

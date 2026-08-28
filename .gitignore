@@ -26,6 +26,8 @@ dist-ssr
 # Environment & local config
 .env
 .env.*
+.env.local
+.env.*.local
 !.env.example
 
 # Local SQLite databases & uploads

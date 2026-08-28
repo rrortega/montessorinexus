@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import './env.js';
 import { Worker } from 'bullmq';
 import prismaPkg from '@prisma/client';
 const { PrismaClient } = prismaPkg;

@@ -9,28 +9,38 @@ import {
   Calendar, 
   TrendingUp, 
   Plus, 
-  ArrowRight,
-  Compass,
-  UserCheck,
-  CreditCard,
-  Mail,
-  Activity,
-  ChevronRight,
-  Sparkles,
-  LayoutDashboard
+  ArrowRight, 
+  Compass, 
+  UserCheck, 
+  CreditCard, 
+  Mail, 
+  Activity, 
+  ChevronRight, 
+  Sparkles, 
+  LayoutDashboard,
+  HardDrive,
+  Server,
+  Cloud,
+  ShieldCheck,
+  Gauge,
+  Zap,
+  Info,
+  CheckCircle2
 } from 'lucide-react';
 import { 
   getStudents, 
   getWaitlistEntries, 
   getAdmissionApplications, 
   getEnvironments, 
-  getGuides,
+  getGuides, 
   getSchoolEvents,
-  StudentItem,
-  EnvironmentItem,
-  GuideUserItem,
-  AdmissionApplicationItem,
-  SchoolEventItem
+  getSchoolUsage,
+  SchoolUsageStats,
+  StudentItem, 
+  EnvironmentItem, 
+  GuideUserItem, 
+  AdmissionApplicationItem, 
+  SchoolEventItem 
 } from '@/lib/sqlite';
 import { MobileMenuButton } from './AdminDashboard';
 import { useAuth } from '@/context/AuthContext';
@@ -48,6 +58,7 @@ export const MainDashboardSection: React.FC<MainDashboardSectionProps> = ({ onNa
   const [guides, setGuides] = useState<GuideUserItem[]>([]);
   const [applications, setApplications] = useState<AdmissionApplicationItem[]>([]);
   const [events, setEvents] = useState<SchoolEventItem[]>([]);
+  const [usageStats, setUsageStats] = useState<SchoolUsageStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -58,14 +69,16 @@ export const MainDashboardSection: React.FC<MainDashboardSectionProps> = ({ onNa
       getEnvironments(),
       getGuides(),
       getAdmissionApplications(),
-      getSchoolEvents({ limit: 4 })
-    ]).then(([st, wl, env, gd, app, ev]) => {
+      getSchoolEvents({ limit: 4 }),
+      getSchoolUsage().catch(() => null)
+    ]).then(([st, wl, env, gd, app, ev, usg]) => {
       setStudents(st);
       setWaitlistCount(wl);
       setEnvironments(env);
       setGuides(gd);
       setApplications(app);
       setEvents(ev);
+      if (usg) setUsageStats(usg);
     }).catch(err => {
       console.error('Error loading dashboard stats:', err);
     }).finally(() => {
@@ -194,6 +207,206 @@ export const MainDashboardSection: React.FC<MainDashboardSectionProps> = ({ onNa
           );
         })}
       </div>
+
+      {/* PLAN LIMITS & CONSUMPTION SECTION (EMAILS & STORAGE PROGRESS) */}
+      {usageStats && (
+        <div className="p-5 md:p-6 bg-white dark:bg-slate-900 border border-forest/15 dark:border-slate-800 rounded-3xl shadow-xs space-y-4">
+          <div className="flex items-center justify-between gap-4 border-b border-forest/10 dark:border-slate-800 pb-3 flex-wrap">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-forest/10 dark:bg-emerald-500/20 text-forest dark:text-emerald-400 flex items-center justify-center shrink-0">
+                <Gauge className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-900 dark:text-white text-base font-display">
+                  Cuotas y Consumo del Plan
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Monitoreo de despachos de correo mensuales y almacenamiento en la nube.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => onNavigateTab('pricing')}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-forest/10 hover:bg-forest/15 dark:bg-emerald-500/15 dark:hover:bg-emerald-500/25 text-forest dark:text-emerald-400 text-xs font-bold transition-all cursor-pointer"
+            >
+              <span>Administrar o Ampliar Plan</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-1">
+            {/* 1. EMAILS DISPATCH PROGRESS BAR */}
+            <div className="p-4 rounded-2xl bg-stone-50/70 dark:bg-slate-850/60 border border-stone-200/70 dark:border-slate-800 space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                    <Mail className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white">
+                      Despacho Mensual de Correos
+                    </h4>
+                    <span className="text-[10px] text-muted-foreground">
+                      Boletines, circulares y comunicados
+                    </span>
+                  </div>
+                </div>
+
+                {usageStats.emails.isByos ? (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 shrink-0">
+                    <Server className="w-3 h-3" />
+                    <span>Ilimitado • SMTP Propio</span>
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-forest/10 text-forest dark:text-emerald-400 border border-forest/20 shrink-0 font-mono">
+                    {usageStats.emails.limit.toLocaleString()} emails / mes
+                  </span>
+                )}
+              </div>
+
+              {usageStats.emails.isByos ? (
+                <div className="space-y-2">
+                  <div className="h-3.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 overflow-hidden flex items-center px-2">
+                    <div className="w-full h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-0.5">
+                    <span className="flex items-center gap-1 text-emerald-800 dark:text-emerald-300 font-semibold">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>{usageStats.emails.used.toLocaleString()} enviados este mes (Sin costo de plataforma)</span>
+                    </span>
+                    <span className="font-mono text-[10px] text-muted-foreground">{usageStats.emails.smtpHost || 'Servidor Personalizado'}</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {/* DUAL-COLOR PROGRESS BAR */}
+                  <div className="w-full h-3.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden flex shadow-inner">
+                    {/* Consumed Segment */}
+                    <div
+                      className={`h-full transition-all duration-500 ${
+                        usageStats.emails.percentage > 90
+                          ? 'bg-rose-500'
+                          : usageStats.emails.percentage > 75
+                          ? 'bg-amber-500'
+                          : 'bg-emerald-600 dark:bg-emerald-500'
+                      }`}
+                      style={{ width: `${Math.max(usageStats.emails.percentage > 0 ? 3 : 0, usageStats.emails.percentage)}%` }}
+                      title={`Consumidos: ${usageStats.emails.used} (${usageStats.emails.percentage}%)`}
+                    />
+                    {/* Remaining Segment */}
+                    <div
+                      className="h-full bg-emerald-100 dark:bg-emerald-950/70 transition-all duration-500"
+                      style={{ width: `${Math.max(0, 100 - usageStats.emails.percentage)}%` }}
+                      title={`Restantes: ${usageStats.emails.remaining} (${100 - usageStats.emails.percentage}%)`}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-0.5">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-600 dark:bg-emerald-500 shrink-0" />
+                      <span>
+                        Consumidos: <strong className="text-slate-900 dark:text-slate-100">{usageStats.emails.used.toLocaleString()}</strong> ({usageStats.emails.percentage}%)
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-200 dark:bg-emerald-800 shrink-0" />
+                      <span>
+                        Restantes: <strong className="text-emerald-700 dark:text-emerald-400">{usageStats.emails.remaining.toLocaleString()}</strong>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 2. STORAGE PROGRESS BAR */}
+            <div className="p-4 rounded-2xl bg-stone-50/70 dark:bg-slate-850/60 border border-stone-200/70 dark:border-slate-800 space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                    <HardDrive className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white">
+                      Almacenamiento en la Nube
+                    </h4>
+                    <span className="text-[10px] text-muted-foreground">
+                      Documentos, expedientes y galería fotográfica
+                    </span>
+                  </div>
+                </div>
+
+                {usageStats.storage.isByos ? (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/30 shrink-0">
+                    <Cloud className="w-3 h-3" />
+                    <span>Ilimitado • AWS S3 Propio</span>
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20 shrink-0 font-mono">
+                    {usageStats.storage.limitGb} GB asignados
+                  </span>
+                )}
+              </div>
+
+              {usageStats.storage.isByos ? (
+                <div className="space-y-2">
+                  <div className="h-3.5 rounded-full bg-blue-500/20 border border-blue-500/30 overflow-hidden flex items-center px-2">
+                    <div className="w-full h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-0.5">
+                    <span className="flex items-center gap-1 text-blue-800 dark:text-blue-300 font-semibold">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />
+                      <span>{usageStats.storage.usedMb < 1024 ? `${usageStats.storage.usedMb} MB` : `${usageStats.storage.usedGb} GB`} almacenados en tu Bucket S3</span>
+                    </span>
+                    <span className="font-mono text-[10px] text-muted-foreground">Infraestructura AWS</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {/* DUAL-COLOR PROGRESS BAR */}
+                  <div className="w-full h-3.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden flex shadow-inner">
+                    {/* Used Segment */}
+                    <div
+                      className={`h-full transition-all duration-500 ${
+                        usageStats.storage.percentage > 90
+                          ? 'bg-rose-500'
+                          : usageStats.storage.percentage > 75
+                          ? 'bg-amber-500'
+                          : 'bg-blue-600 dark:bg-blue-500'
+                      }`}
+                      style={{ width: `${Math.max(usageStats.storage.percentage > 0 ? 3 : 0, usageStats.storage.percentage)}%` }}
+                      title={`Usado: ${usageStats.storage.usedMb < 1024 ? `${usageStats.storage.usedMb} MB` : `${usageStats.storage.usedGb} GB`} (${usageStats.storage.percentage}%)`}
+                    />
+                    {/* Remaining Segment */}
+                    <div
+                      className="h-full bg-blue-100 dark:bg-blue-950/70 transition-all duration-500"
+                      style={{ width: `${Math.max(0, 100 - usageStats.storage.percentage)}%` }}
+                      title={`Disponible: ${usageStats.storage.remainingGb} GB (${100 - usageStats.storage.percentage}%)`}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-0.5">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-500 shrink-0" />
+                      <span>
+                        Usado: <strong className="text-slate-900 dark:text-slate-100">{usageStats.storage.usedMb < 1024 ? `${usageStats.storage.usedMb} MB` : `${usageStats.storage.usedGb} GB`}</strong> ({usageStats.storage.percentage}%)
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-blue-200 dark:bg-blue-800 shrink-0" />
+                      <span>
+                        Disponible: <strong className="text-blue-700 dark:text-blue-400">{usageStats.storage.remainingGb} GB</strong>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* TWO COLUMN CONTENT LAYOUT */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -50,22 +50,7 @@ ENV VITE_UMAMI_SITE_ID=$VITE_UMAMI_SITE_ID
 RUN pnpm build
 
 # =============================================================================
-# Stage 2: Generate Prisma Client
-# =============================================================================
-FROM node:22-slim AS prisma-build
-
-WORKDIR /app
-
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
-COPY package.json pnpm-lock.yaml* ./
-COPY prisma ./prisma/
-
-RUN pnpm install --frozen-lockfile || pnpm install
-RUN npx prisma generate
-
-# =============================================================================
-# Stage 3: Production runtime
+# Stage 2: Production runtime
 # =============================================================================
 FROM node:22-slim AS production
 
@@ -85,6 +70,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpango-1.0-0 \
     libasound2 \
     libxshmfence1 \
+    libxkbcommon0 \
+    libcairo2 \
     fonts-liberation \
     ca-certificates \
     procps \
@@ -93,20 +80,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Install production dependencies
+# Copy manifests and Prisma schema for dependency installation and generation
 COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --prod --frozen-lockfile || pnpm install --prod
-
-# Install Playwright Chromium binary
-ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
-RUN npx playwright install chromium
-
-# Copy generated Prisma client from prisma-build stage
-COPY --from=prisma-build /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=prisma-build /app/node_modules/@prisma ./node_modules/@prisma
-
-# Copy Prisma schema and migrations
 COPY prisma ./prisma/
+
+# Install dependencies, generate Prisma client, install Playwright, then prune to production only
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+RUN pnpm install --frozen-lockfile || pnpm install
+RUN pnpm exec prisma generate
+RUN pnpm exec playwright install chromium
+RUN pnpm prune --prod
 
 # Copy server code
 COPY server ./server/
@@ -114,14 +97,14 @@ COPY server ./server/
 # Copy built frontend bundle from frontend-build stage
 COPY --from=frontend-build /app/dist ./dist/
 
-# Copy gallery seed data
-COPY src/data/gallery.json ./src/data/gallery.json
+# Copy seed data
+COPY src/data ./src/data/
 
 # Set execute permissions on start script
 RUN chmod +x /app/server/start.sh
 
-# Create persistent directories for uploaded files and database
-RUN mkdir -p /app/public/gallery /app/public/documents /app/server/data /ms-playwright
+# Create persistent directory for storage, database, and browser binaries
+RUN mkdir -p /app/storage /app/server/data /ms-playwright
 
 # Expose the Express server port
 EXPOSE 3001

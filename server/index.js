@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import './env.js';
 import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
@@ -1341,6 +1341,119 @@ app.post('/api/schools', async (req, res) => {
 
 app.get('/api/schools/current', async (req, res) => {
   res.json(req.school);
+});
+
+app.get('/api/schools/current/usage', async (req, res) => {
+  try {
+    const schoolId = req.school.id;
+    const school = await prisma.school.findUnique({
+      where: { id: schoolId }
+    });
+
+    const settingsList = await prisma.siteSetting.findMany({
+      where: { schoolId }
+    });
+    const settingsMap = {};
+    settingsList.forEach(s => { settingsMap[s.key] = s.value; });
+
+    const feat = (school && school.features && typeof school.features === 'object') ? school.features : {};
+
+    // 1. Custom SMTP / BYOS detection
+    const hasCustomSmtp = Boolean(
+      (settingsMap.smtp_host && settingsMap.smtp_user) ||
+      (feat.emailPackage === '0')
+    );
+
+    // 2. Monthly emails sent
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+
+    const newslettersSent = await prisma.newsletter.findMany({
+      where: {
+        schoolId,
+        sentAt: { gte: startOfMonth }
+      },
+      select: { deliveredCount: true }
+    });
+
+    const emailsUsed = newslettersSent.reduce((sum, n) => sum + (n.deliveredCount || 0), 0);
+    const emailLimit = hasCustomSmtp
+      ? 0
+      : (feat.newsletterEmailLimit ? Number(feat.newsletterEmailLimit) : (feat.emailPackage ? Number(feat.emailPackage) : 500));
+
+    const emailRemaining = hasCustomSmtp ? 0 : Math.max(0, emailLimit - emailsUsed);
+    const emailPercentage = hasCustomSmtp || emailLimit === 0 ? 0 : Math.min(100, Math.round((emailsUsed / emailLimit) * 100));
+
+    // 3. Storage calculation
+    const isStorageByos = Boolean(
+      feat.storageTier === 'byos_aws' ||
+      settingsMap.storage_driver === 's3'
+    );
+
+    let storageLimitGb = 2; // Default 2 GB free base
+    if (feat.storageTier === '12gb') storageLimitGb = 12;
+    else if (feat.storageTier === '22gb') storageLimitGb = 22;
+    else if (feat.storageTier === '52gb') storageLimitGb = 52;
+    else if (feat.storageTier === 'byos_aws') storageLimitGb = 0;
+
+    const storageLimitBytes = storageLimitGb * 1024 * 1024 * 1024;
+
+    // Calculate actual documents size
+    const documents = await prisma.document.findMany({
+      where: { schoolId },
+      select: { fileData: true }
+    });
+    let docsBytes = 0;
+    documents.forEach(d => {
+      if (d.fileData) {
+        if (d.fileData.startsWith('data:')) {
+          docsBytes += Math.round(d.fileData.length * 0.75);
+        } else {
+          docsBytes += 150 * 1024;
+        }
+      }
+    });
+
+    // Gallery images
+    const galleryImages = await prisma.galleryImage.findMany({
+      where: { schoolId },
+      select: { url: true }
+    });
+    let galleryBytes = galleryImages.length * 350 * 1024; // avg 350KB per image
+
+    const totalStorageBytes = docsBytes + galleryBytes;
+    const storageUsedMb = Number((totalStorageBytes / (1024 * 1024)).toFixed(2));
+    const storageUsedGb = Number((totalStorageBytes / (1024 * 1024 * 1024)).toFixed(3));
+    const storageRemainingGb = isStorageByos ? 0 : Math.max(0, Number((storageLimitGb - storageUsedGb).toFixed(2)));
+    const storagePercentage = isStorageByos || storageLimitBytes === 0 ? 0 : Math.min(100, Math.round((totalStorageBytes / storageLimitBytes) * 100));
+
+    res.json({
+      emails: {
+        isByos: hasCustomSmtp,
+        smtpHost: settingsMap.smtp_host || '',
+        limit: emailLimit,
+        used: emailsUsed,
+        remaining: emailRemaining,
+        percentage: emailPercentage,
+        startOfMonth,
+        endOfMonth
+      },
+      storage: {
+        isByos: isStorageByos,
+        limitGb: storageLimitGb,
+        limitBytes: storageLimitBytes,
+        usedBytes: totalStorageBytes,
+        usedMb: storageUsedMb,
+        usedGb: storageUsedGb,
+        remainingGb: storageRemainingGb,
+        percentage: storagePercentage
+      }
+    });
+  } catch (e) {
+    console.error('Error fetching school usage:', e);
+    res.status(500).json({ error: e.message });
+  }
 });
 
 app.put('/api/schools/current', async (req, res) => {
@@ -7122,10 +7235,10 @@ app.post('/api/settings/test-openai', async (req, res) => {
   }
 });
 
-// POST /api/settings/test-smtp - Test SMTP connection & send test email
+// POST /api/settings/test-smtp - Test SMTP connection & send test email (with optional verification code challenge)
 app.post('/api/settings/test-smtp', async (req, res) => {
   try {
-    const { host, port, user, pass, secure, fromName, fromEmail, testEmail } = req.body;
+    const { host, port, user, pass, secure, fromName, fromEmail, testEmail, verificationCode } = req.body;
 
     if (!host || !user || !pass || !testEmail) {
       return res.status(400).json({ error: 'Faltan campos requeridos: host, usuario, contraseña o correo de prueba.' });
@@ -7141,11 +7254,23 @@ app.post('/api/settings/test-smtp', async (req, res) => {
 
     await transporter.verify();
 
-    await transporter.sendMail({
-      from: `"${fromName || req.school?.name || 'Servidor SMTP'}" <${fromEmail || user}>`,
-      to: testEmail,
-      subject: 'Prueba de Conexión SMTP Exitosa',
-      html: `
+    const emailSubject = verificationCode
+      ? `Código de Seguridad: ${verificationCode} - Validación de Servidor SMTP`
+      : 'Prueba de Conexión SMTP Exitosa';
+
+    const emailHtml = verificationCode
+      ? `
+        <div style="font-family: Arial, sans-serif; max-width: 520px; padding: 28px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
+          <h2 style="color: #15803d; margin-top: 0; font-size: 20px;">Código de Seguridad SMTP</h2>
+          <p style="color: #334155; font-size: 14px; line-height: 1.5;">Has solicitado validar este servidor de correo saliente para el colegio <strong>${fromName || req.school?.name || 'Montessori'}</strong> en MontessoriNexus.</p>
+          <p style="color: #334155; font-size: 14px; margin-bottom: 8px;">Introduce este código de 6 dígitos en la plataforma para completar la vinculación:</p>
+          <div style="background-color: #f1f5f9; border: 2px dashed #cbd5e1; border-radius: 12px; padding: 18px; text-align: center; margin: 18px 0;">
+            <span style="font-size: 34px; font-weight: 800; letter-spacing: 8px; color: #0f172a; font-family: monospace;">${verificationCode}</span>
+          </div>
+          <p style="color: #64748b; font-size: 12px; margin-bottom: 0;">Si no solicitaste esta validación, puedes ignorar este mensaje.</p>
+        </div>
+      `
+      : `
         <div style="font-family: Arial, sans-serif; max-width: 500px; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px;">
           <h3 style="color: #15803d; margin-top: 0;">✓ Conexión SMTP Configurada Correctamente</h3>
           <p>Este es un correo de prueba generado desde el panel de administración para validar la configuración de tu servidor de correo saliente.</p>
@@ -7156,10 +7281,16 @@ app.post('/api/settings/test-smtp', async (req, res) => {
             <li><strong>Usuario:</strong> ${user}</li>
           </ul>
         </div>
-      `
+      `;
+
+    await transporter.sendMail({
+      from: `"${fromName || req.school?.name || 'Servidor SMTP'}" <${fromEmail || user}>`,
+      to: testEmail,
+      subject: emailSubject,
+      html: emailHtml
     });
 
-    res.json({ success: true, message: `Conexión exitosa. Correo de prueba enviado a ${testEmail}.` });
+    res.json({ success: true, message: `Conexión exitosa. Código de prueba enviado a ${testEmail}.` });
   } catch (e) {
     console.error('SMTP test failed:', e);
     res.status(400).json({ error: `Fallo de conexión SMTP: ${e.message}` });
