@@ -139,6 +139,17 @@ export function Header({ forceScrolled = false }: HeaderProps) {
   };
 
   useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const checkDark = () => {
+      setIsDarkMode(document.documentElement.classList.contains('dark'));
+    };
+    checkDark();
+    const observer = new MutationObserver(checkDark);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
