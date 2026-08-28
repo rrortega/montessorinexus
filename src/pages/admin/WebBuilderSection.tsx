@@ -56,6 +56,7 @@ import { useSiteSettings, ButtonRadiusType, ButtonHeightType } from '@/context/S
 import { ImageUploadDropzone } from '@/components/ui/ImageUploadDropzone';
 import { SlideOverDrawer } from '@/components/ui/SlideOverDrawer';
 import { toast } from 'sonner';
+import { SectionsManagerTab, WebSectionItem, DEFAULT_PAGE_SECTIONS } from './web-builder/SectionsManagerTab';
 
 export interface TopBarItem {
   id: string;
@@ -70,7 +71,7 @@ export const DEFAULT_TOP_BAR_ITEMS: TopBarItem[] = [
 ];
 
 type ViewportMode = 'desktop' | 'tablet' | 'mobile';
-type DesignerTab = 'domain' | 'branding' | 'header' | 'hero' | 'navigation' | 'cta';
+type DesignerTab = 'domain' | 'branding' | 'header' | 'hero' | 'sections' | 'navigation' | 'cta';
 
 export function generateDefaultSubdomain(name: string): string {
   if (!name) return 'colegio';
@@ -839,6 +840,17 @@ export const WebBuilderSection: React.FC = () => {
   const [showDocs, setShowDocs] = useState(showDocumentsInMenu);
   const [showApps, setShowApps] = useState(showApplicationsInMenu);
 
+  // Dynamic Web Page Sections Order & Visibility
+  const [pageSections, setPageSections] = useState<WebSectionItem[]>(() => {
+    if (settings?.page_sections_order) {
+      try {
+        const parsed = JSON.parse(settings.page_sections_order);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {}
+    }
+    return DEFAULT_PAGE_SECTIONS;
+  });
+
   // Unified Domain State
   const [domainInput, setDomainInput] = useState('');
   const [domainVerified, setDomainVerified] = useState(false);
@@ -1513,6 +1525,7 @@ export const WebBuilderSection: React.FC = () => {
       contact_phone: phone.trim(),
       show_documents_in_menu: showDocs ? 'true' : 'false',
       show_applications_in_menu: showApps ? 'true' : 'false',
+      page_sections_order: JSON.stringify(pageSections),
       hero_template: heroTemplate,
       hero_align: heroAlign,
       hero_bottom_shape: heroBottomShape,
@@ -1666,7 +1679,7 @@ export const WebBuilderSection: React.FC = () => {
     headerShowLangSwitcher, headerEnabledLangs, headerShowThemeToggle, headerCtaText,
     headerCtaStyle, headerScrollEnabled, headerScrollType, headerScrollHeight, headerScrollRadius,
     headerScrollBg, headerScrollOpacity, headerScrollBlur, headerMobileLogoPosition, headerMobileShowCta,
-    radius, height, cta, phone, showDocs, showApps,
+    radius, height, cta, phone, showDocs, showApps, pageSections,
     heroTemplate, heroAlign, heroBottomShape, heroShapeHeight, heroShapeInverted,
     heroPatternOverlay, heroPatternOpacity, heroPatternSize, heroOverlayOpacity,
     heroStudentImageUrl, heroCircleY, heroCircleSize, heroWaveY, heroCurveIntensity, heroBorderWidth, heroLayoutInverted, heroShowSocial, heroCtaSubtext,
@@ -2297,6 +2310,21 @@ export const WebBuilderSection: React.FC = () => {
 
     setHeaderMobileLogoPosition((settings?.header_mobile_logo_pos as any) || 'left');
     setHeaderMobileShowCta(settings?.header_mobile_show_cta !== 'false');
+
+    if (settings?.page_sections_order) {
+      try {
+        const parsed = JSON.parse(settings.page_sections_order);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setPageSections(parsed);
+        } else {
+          setPageSections(DEFAULT_PAGE_SECTIONS);
+        }
+      } catch (e) {
+        setPageSections(DEFAULT_PAGE_SECTIONS);
+      }
+    } else {
+      setPageSections(DEFAULT_PAGE_SECTIONS);
+    }
   };
 
   const handleCloseDrawerWithoutSaving = () => {
@@ -2426,6 +2454,7 @@ export const WebBuilderSection: React.FC = () => {
         contact_phone: phone.trim(),
         show_documents_in_menu: showDocs ? 'true' : 'false',
         show_applications_in_menu: showApps ? 'true' : 'false',
+        page_sections_order: JSON.stringify(pageSections),
         hero_template: heroTemplate,
         hero_align: heroAlign,
         hero_bottom_shape: heroBottomShape,
@@ -4329,6 +4358,19 @@ export const WebBuilderSection: React.FC = () => {
 
           <button
             type="button"
+            onClick={() => handleOpenConfigTab('sections')}
+            className={`p-2.5 rounded-xl transition-all flex items-center justify-center cursor-pointer ${
+              drawerOpen && activeTab === 'sections'
+                ? 'bg-forest text-white shadow-md font-bold'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+            title="Estructura & Gestión de Secciones"
+          >
+            <Layers className="w-4 h-4" />
+          </button>
+
+          <button
+            type="button"
             onClick={() => handleOpenConfigTab('navigation')}
             className={`p-2.5 rounded-xl transition-all flex items-center justify-center cursor-pointer ${
               drawerOpen && activeTab === 'navigation'
@@ -4337,7 +4379,7 @@ export const WebBuilderSection: React.FC = () => {
             }`}
             title="Módulos de Navegación"
           >
-            <Layers className="w-4 h-4" />
+            <Compass className="w-4 h-4" />
           </button>
 
           <button
@@ -4360,13 +4402,13 @@ export const WebBuilderSection: React.FC = () => {
             viewport === 'mobile'
               ? 'w-[360px] max-w-[92%] h-[92%]'
               : viewport === 'tablet'
-              ? 'w-[680px] max-w-[92%] h-[92%]'
-              : 'w-full max-w-[92%] xl:max-w-[90%] 2xl:max-w-[88%] h-[92%]'
+              ? 'w-[768px] max-w-[92%] h-[92%]'
+              : 'w-full h-full'
           }`}
           style={{
-            transform: drawerOpen
-              ? (viewport === 'desktop'
-                  ? 'rotateY(12deg) scale(0.80) translateX(0px) translateZ(-30px)'
+            transform: is3DMode
+              ? (viewport === 'mobile'
+                  ? 'rotateY(10deg) scale(0.84) translateX(0px) translateZ(-30px)'
                   : viewport === 'tablet'
                   ? 'rotateY(8deg) scale(0.88) translateX(0px) translateZ(-20px)'
                   : 'rotateY(4deg) scale(0.92) translateX(0px) translateZ(-10px)')
@@ -4421,7 +4463,8 @@ export const WebBuilderSection: React.FC = () => {
           activeTab === 'branding' ? <Palette className="w-5 h-5 text-forest" /> :
           activeTab === 'header' ? <PanelTop className="w-5 h-5 text-forest" /> :
           activeTab === 'hero' ? <Layout className="w-5 h-5 text-forest" /> :
-          activeTab === 'navigation' ? <Layers className="w-5 h-5 text-forest" /> :
+          activeTab === 'sections' ? <Layers className="w-5 h-5 text-forest" /> :
+          activeTab === 'navigation' ? <Compass className="w-5 h-5 text-forest" /> :
           <MessageCircle className="w-5 h-5 text-forest" />
         }
         title={
@@ -4429,6 +4472,7 @@ export const WebBuilderSection: React.FC = () => {
           activeTab === 'branding' ? 'Marca, Paletas & Colores' :
           activeTab === 'header' ? 'Diseño del Header & Barra Superior' :
           activeTab === 'hero' ? 'Hero Banner' :
+          activeTab === 'sections' ? 'Estructura & Posición de Secciones' :
           activeTab === 'navigation' ? 'Menú & Navegación' :
           'Contacto & CTA'
         }
@@ -4437,6 +4481,7 @@ export const WebBuilderSection: React.FC = () => {
           activeTab === 'branding' ? 'Elegí entre 9 paletas armónicas Montessori o definí colores a medida en modo claro y oscuro.' :
           activeTab === 'header' ? 'Personalizá el header inicial, flotante, transformación en scroll y diseño móvil.' :
           activeTab === 'hero' ? 'Editá los textos de impacto e imagen principal de portada.' :
+          activeTab === 'sections' ? 'Reordená, encendé/apagá visibilidad y editá las secciones de la página entre el Hero y el Footer.' :
           activeTab === 'navigation' ? 'Gestioná la visibilidad de enlaces en la barra pública.' :
           'Configurá el modo de atención por WhatsApp o formulario.'
         }
@@ -8604,6 +8649,15 @@ export const WebBuilderSection: React.FC = () => {
 
               </div>
             </HeroAccordionContext.Provider>
+          )}
+
+          {/* TAB: SECTIONS MANAGER */}
+          {activeTab === 'sections' && (
+            <SectionsManagerTab
+              sections={pageSections}
+              onChangeSections={setPageSections}
+              onNavigateToTab={(tab) => handleOpenConfigTab(tab as any)}
+            />
           )}
 
           {/* TAB 4: NAVIGATION */}

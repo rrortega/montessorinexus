@@ -19,7 +19,11 @@ import tallerImg from '@/assets/taller-old.jpg';
 
 import mariaCharcoal from '@/assets/maria-charcoal.png';
 
+import { useSiteSettings } from '@/context/SettingsContext';
+import { WebSectionItem, DEFAULT_PAGE_SECTIONS } from '@/pages/admin/web-builder/SectionsManagerTab';
+
 const Index = () => {
+  const { settings } = useSiteSettings();
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
   const springX = useSpring(mouseX, { damping: 50, stiffness: 300 });
@@ -33,6 +37,67 @@ const Index = () => {
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, [mouseX, mouseY]);
+
+  // Parse dynamic section order from settings
+  const sections: WebSectionItem[] = (() => {
+    if (settings?.page_sections_order) {
+      try {
+        const parsed = JSON.parse(settings.page_sections_order);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {}
+    }
+    return DEFAULT_PAGE_SECTIONS;
+  })();
+
+  const renderSectionByType = (section: WebSectionItem) => {
+    switch (section.type) {
+      case 'split_media_benefits':
+        return <WhyChooseUs key={section.id} />;
+      case 'pillars_mosaic':
+        return <PhilosophySection key={section.id} />;
+      case 'feature_list_media':
+      case 'feature_cards_row':
+        return <WhyChooseUs key={section.id} />;
+      case 'quote_banner_artistic':
+        return (
+          <FeaturedQuote
+            key={section.id}
+            quoteKeys={[
+              section.title || "Sigue al niño.",
+              "Libera el potencial del niño y lo transformarás en el mundo.",
+              "Ayúdame a hacerlo por mí mismo.",
+              "El niño es la esperanza y la promesa para la humanidad."
+            ]}
+            authorKey={section.subtitle || "Maria Montessori"}
+            image={mariaCharcoal}
+            ctaText={section.ctaText || "Conoce Nuestro Método"}
+            variant="artistic"
+            borderPosition="both"
+          />
+        );
+      case 'story_split_slider':
+        return <HistorySection key={section.id} />;
+      case 'metrics_stats_banner':
+        return <MetricsSection key={section.id} />;
+      case 'programs_showcase':
+      case 'program_levels_cards':
+        return <ProgramsSection key={section.id} />;
+      case 'timeline_steps':
+        return <AdmissionsSection key={section.id} />;
+      case 'gallery_masonry_tabs':
+        return <GallerySection key={section.id} />;
+      case 'teachers_team':
+        return <GuidesSection key={section.id} />;
+      case 'location_map_cta':
+      case 'quick_contact_form':
+      case 'faq_categorized_accordion':
+        return <ContactSection key={section.id} />;
+      case 'cta_banner_contrast':
+        return <CTASection key={section.id} />;
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="min-h-screen overflow-x-clip selection:bg-primary/30">
@@ -51,34 +116,11 @@ const Index = () => {
       <Header />
       <main>
         <HeroSection />
-        <WhyChooseUs />
-
-        <PhilosophySection />
-
-
-
-        <FeaturedQuote
-          quoteKeys={[
-            "Sigue al niño.",
-            "Libera el potencial del niño y lo transformarás en el mundo.",
-            "Ayúdame a hacerlo por mí mismo.",
-            "El niño es la esperanza y la promesa para la humanidad."
-          ]}
-          authorKey="Maria Montessori"
-          image={mariaCharcoal}
-          ctaText="Conoce Nuestro Método"
-          variant="artistic"
-          borderPosition="both"
-        />
-        <HistorySection />
-
-        <MetricsSection />
-        <ProgramsSection />
-        <AdmissionsSection />
-        <GallerySection />
-        <GuidesSection />
-        <ContactSection />
-        <CTASection />
+        
+        {/* DYNAMIC SECTIONS RENDERED IN CONFIGURED ORDER */}
+        {sections
+          .filter(sec => sec.isEnabled !== false)
+          .map((section) => renderSectionByType(section))}
       </main>
       <Footer />
     </div>
