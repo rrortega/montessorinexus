@@ -179,7 +179,37 @@ export function Header({ forceScrolled = false }: HeaderProps) {
     return 'shadow-md';
   };
 
-  const isHeaderDarkBg = bgMode === 'solid' || bgMode === 'glass' || activeScrolled || isDarkMode;
+  // Navigation Text Colors for Transparent Header
+  const navTextColorMode = (settings?.header_nav_text_color_mode as 'auto' | 'brand' | 'custom' | 'white') || 'auto';
+  const navTextColorLight = settings?.header_nav_text_color_light || brandPrimaryColor || '#1b3b2b';
+  const navTextColorDark = settings?.header_nav_text_color_dark || '#ffffff';
+
+  const isTransparentHeader = bgMode === 'transparent' && !activeScrolled;
+
+  // Resolved text color for nav links and controls
+  const activeNavTextColor = (() => {
+    if (!isTransparentHeader) return '#ffffff';
+    if (isDarkMode) {
+      return navTextColorMode === 'custom' ? (navTextColorDark || '#ffffff') : '#ffffff';
+    }
+    // In Light mode:
+    if (navTextColorMode === 'white') return '#ffffff';
+    if (navTextColorMode === 'custom') return navTextColorLight || brandPrimaryColor || '#1b3b2b';
+    return navTextColorLight || brandPrimaryColor || '#1b3b2b';
+  })();
+
+  const activeNavMutedColor = (() => {
+    if (!isTransparentHeader) return 'rgba(255, 255, 255, 0.85)';
+    if (isDarkMode) return 'rgba(255, 255, 255, 0.85)';
+    if (navTextColorMode === 'white') return 'rgba(255, 255, 255, 0.85)';
+    return `color-mix(in srgb, ${activeNavTextColor} 80%, transparent)`;
+  })();
+
+  const defaultNameColor1 = isTransparentHeader && !isDarkMode && navTextColorMode !== 'white'
+    ? (nameColor1 || activeNavTextColor)
+    : (nameColor1 || '#ffffff');
+
+  const isHeaderDarkBg = bgMode === 'solid' || bgMode === 'glass' || activeScrolled || isDarkMode || navTextColorMode === 'white';
   const activeLogo = (isDarkMode || activeScrolled) && schoolLogoDark ? schoolLogoDark : (schoolLogo || logoCeibaDefault);
 
   return (
@@ -236,8 +266,8 @@ export function Header({ forceScrolled = false }: HeaderProps) {
               ? `w-[94%] max-w-7xl mt-3 ${scrollBlur ? 'backdrop-blur-xl' : ''} text-white border border-white/20 shadow-2xl ${getRadiusClass(scrollRadius)}`
               : `w-full mt-0 ${scrollBlur ? 'backdrop-blur-xl' : ''} text-white border-b border-white/20 shadow-lg rounded-none`
             : layoutType === 'floating'
-            ? `w-[94%] max-w-7xl ${bgMode === 'glass' ? 'bg-forest/85 backdrop-blur-xl border border-white/20 text-white' : bgMode === 'solid' ? 'bg-forest text-white' : 'bg-transparent text-white'} ${hasBorder ? 'border border-white/10' : 'border-transparent'} ${getShadowClass(shadow)} ${getRadiusClass(radius)}`
-            : `w-full ${bgMode === 'glass' ? 'bg-forest/90 backdrop-blur-xl border-b border-white/20 text-white' : bgMode === 'solid' ? 'bg-forest text-white' : 'bg-transparent text-white'} ${hasBorder ? 'border-b border-white/10' : 'border-transparent'} rounded-none ${getShadowClass(shadow)}`
+            ? `w-[94%] max-w-7xl ${bgMode === 'glass' ? 'bg-forest/85 backdrop-blur-xl border border-white/20 text-white' : bgMode === 'solid' ? 'bg-forest text-white' : 'bg-transparent'} ${hasBorder ? 'border border-white/10' : 'border-transparent'} ${getShadowClass(shadow)} ${getRadiusClass(radius)}`
+            : `w-full ${bgMode === 'glass' ? 'bg-forest/90 backdrop-blur-xl border-b border-white/20 text-white' : bgMode === 'solid' ? 'bg-forest text-white' : 'bg-transparent'} ${hasBorder ? 'border-b border-white/10' : 'border-transparent'} rounded-none ${getShadowClass(shadow)}`
         }`}
         style={{
           height: `${activeScrolled ? scrollHeight : initialHeight}px`,
@@ -273,7 +303,7 @@ export function Header({ forceScrolled = false }: HeaderProps) {
                     <div className="flex items-center gap-1 font-display font-bold text-sm sm:text-base tracking-tight leading-none">
                       {nameSplit ? (
                         <>
-                          <span style={{ color: nameColor1 || '#ffffff' }}>
+                          <span style={{ color: defaultNameColor1 }}>
                             {namePart1}
                           </span>
                           <span style={{ color: nameColor2 || brandAccentColor || '#fbbf24' }}>
@@ -281,7 +311,7 @@ export function Header({ forceScrolled = false }: HeaderProps) {
                           </span>
                         </>
                       ) : (
-                        <span className="text-white">{schoolName || 'Colegio'}</span>
+                        <span style={{ color: defaultNameColor1 }}>{schoolName || 'Colegio'}</span>
                       )}
                     </div>
                   )}
@@ -296,7 +326,10 @@ export function Header({ forceScrolled = false }: HeaderProps) {
               <a
                 key={item.href}
                 href={item.href}
-                className="text-xs sm:text-sm font-medium transition-all duration-200 text-white/90 hover:text-white hover:scale-105 active:scale-95 whitespace-nowrap"
+                className="text-xs sm:text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 whitespace-nowrap"
+                style={{ color: activeNavMutedColor }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = activeNavTextColor)}
+                onMouseLeave={(e) => (e.currentTarget.style.color = activeNavMutedColor)}
               >
                 {t(item.label)}
               </a>
@@ -311,10 +344,11 @@ export function Header({ forceScrolled = false }: HeaderProps) {
                 variant="ghost"
                 size="sm"
                 onClick={toggleLanguage}
-                className="rounded-full px-2.5 py-1 text-xs font-bold text-white hover:bg-white/10 transition-all"
+                className="rounded-full px-2.5 py-1 text-xs font-bold hover:bg-black/10 dark:hover:bg-white/10 transition-all"
+                style={{ color: activeNavTextColor }}
                 title="Cambiar Idioma"
               >
-                <Globe className="w-3.5 h-3.5 mr-1 text-amber-300" />
+                <Globe className="w-3.5 h-3.5 mr-1" style={{ color: brandAccentColor || '#fbbf24' }} />
                 <span>{locale === 'es' ? 'EN' : 'ES'}</span>
               </Button>
             )}
@@ -324,10 +358,11 @@ export function Header({ forceScrolled = false }: HeaderProps) {
               <button
                 type="button"
                 onClick={toggleTheme}
-                className="p-2 rounded-full text-white/90 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+                className="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-all cursor-pointer"
+                style={{ color: activeNavTextColor }}
                 title="Modo Claro / Oscuro"
               >
-                {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-200" />}
+                {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" style={{ color: activeNavTextColor }} />}
               </button>
             )}
 
@@ -359,7 +394,8 @@ export function Header({ forceScrolled = false }: HeaderProps) {
 
             <button
               type="button"
-              className="p-2 text-white hover:bg-white/10 rounded-full transition-colors cursor-pointer"
+              className="p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-full transition-colors cursor-pointer"
+              style={{ color: activeNavTextColor }}
               onClick={() => setIsMobileMenuOpen(true)}
               aria-label="Abrir menú"
             >

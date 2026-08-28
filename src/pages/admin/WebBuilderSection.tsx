@@ -736,6 +736,17 @@ export const WebBuilderSection: React.FC = () => {
     (settings?.header_shadow as 'none' | 'sm' | 'md' | 'lg' | 'xl') || 'md'
   );
 
+  // Header Transparent Menu Text Colors
+  const [headerNavTextColorMode, setHeaderNavTextColorMode] = useState<'auto' | 'brand' | 'custom' | 'white'>(
+    (settings?.header_nav_text_color_mode as 'auto' | 'brand' | 'custom' | 'white') || 'auto'
+  );
+  const [headerNavTextColorLight, setHeaderNavTextColorLight] = useState<string>(
+    settings?.header_nav_text_color_light || ''
+  );
+  const [headerNavTextColorDark, setHeaderNavTextColorDark] = useState<string>(
+    settings?.header_nav_text_color_dark || ''
+  );
+
   // Header Top Bar
   const [headerShowTopBar, setHeaderShowTopBar] = useState<boolean>(settings?.header_show_top_bar === 'true');
   const [headerTopBarText, setHeaderTopBarText] = useState<string>(
@@ -1458,6 +1469,10 @@ export const WebBuilderSection: React.FC = () => {
       header_has_border: headerHasBorder ? 'true' : 'false',
       header_border_color: headerBorderColor,
       header_shadow: headerShadow,
+
+      header_nav_text_color_mode: headerNavTextColorMode,
+      header_nav_text_color_light: headerNavTextColorLight.trim(),
+      header_nav_text_color_dark: headerNavTextColorDark.trim(),
 
       header_show_top_bar: headerShowTopBar ? 'true' : 'false',
       header_top_bar_text: headerTopBarText.trim(),
@@ -2229,6 +2244,10 @@ export const WebBuilderSection: React.FC = () => {
     setHeaderBorderColor(settings?.header_border_color || '');
     setHeaderShadow((settings?.header_shadow as any) || 'md');
 
+    setHeaderNavTextColorMode((settings?.header_nav_text_color_mode as any) || 'auto');
+    setHeaderNavTextColorLight(settings?.header_nav_text_color_light || '');
+    setHeaderNavTextColorDark(settings?.header_nav_text_color_dark || '');
+
     setHeaderShowTopBar(settings?.header_show_top_bar === 'true');
     setHeaderTopBarText(settings?.header_top_bar_text || '📍 Admisiones Ciclo 2026-2027 Abiertas • Cupos Limitados');
     setHeaderTopBarBg(settings?.header_top_bar_bg || '');
@@ -2362,6 +2381,10 @@ export const WebBuilderSection: React.FC = () => {
         header_has_border: headerHasBorder ? 'true' : 'false',
         header_border_color: headerBorderColor,
         header_shadow: headerShadow,
+
+        header_nav_text_color_mode: headerNavTextColorMode,
+        header_nav_text_color_light: headerNavTextColorLight.trim(),
+        header_nav_text_color_dark: headerNavTextColorDark.trim(),
 
         header_show_top_bar: headerShowTopBar ? 'true' : 'false',
         header_top_bar_text: headerTopBarText.trim(),
@@ -5451,6 +5474,125 @@ export const WebBuilderSection: React.FC = () => {
                         <span className="text-[9px] text-muted-foreground">Color de Marca</span>
                       </button>
                     </div>
+
+                    {/* CONFIGURACIÓN DE COLORES DE TEXTO PARA HEADER TRANSPARENTE */}
+                    {headerBgMode === 'transparent' && (
+                      <div className="p-4 rounded-xl bg-amber-50/80 border border-amber-200 space-y-3 animate-in fade-in duration-200">
+                        <div className="space-y-1">
+                          <label className="text-[11px] font-bold text-amber-950 flex items-center gap-1.5">
+                            <Palette className="w-3.5 h-3.5 text-amber-700" />
+                            <span>Color de Textos del Menú (Header Transparente)</span>
+                          </label>
+                          <p className="text-[10px] text-amber-800 leading-snug">
+                            Define el color de los enlaces, logotipo y controles del menú cuando el fondo es transparente, con adaptación automática según el modo claro u oscuro.
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setHeaderNavTextColorMode('auto')}
+                            className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col gap-0.5 ${
+                              headerNavTextColorMode === 'auto' || headerNavTextColorMode === 'brand'
+                                ? 'border-forest bg-white text-forest font-bold shadow-xs ring-2 ring-forest/20'
+                                : 'border-amber-200/80 text-slate-700 bg-white/70 hover:bg-white'
+                            }`}
+                          >
+                            <span className="text-[11px] flex items-center gap-1">
+                              <span>🌓</span>
+                              <span>Contraste Automático</span>
+                            </span>
+                            <span className="text-[9px] text-muted-foreground font-normal">
+                              Oscuro ({lightColors.primary}) en Claro / Blanco en Oscuro.
+                            </span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setHeaderNavTextColorMode('white')}
+                            className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col gap-0.5 ${
+                              headerNavTextColorMode === 'white'
+                                ? 'border-forest bg-white text-forest font-bold shadow-xs ring-2 ring-forest/20'
+                                : 'border-amber-200/80 text-slate-700 bg-white/70 hover:bg-white'
+                            }`}
+                          >
+                            <span className="text-[11px] flex items-center gap-1">
+                              <span>⚪</span>
+                              <span>Blanco Fijo</span>
+                            </span>
+                            <span className="text-[9px] text-muted-foreground font-normal">
+                              Siempre blanco (para fotos oscuras en el Hero).
+                            </span>
+                          </button>
+                        </div>
+
+                        <div className="pt-1">
+                          <button
+                            type="button"
+                            onClick={() => setHeaderNavTextColorMode(headerNavTextColorMode === 'custom' ? 'auto' : 'custom')}
+                            className={`w-full p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                              headerNavTextColorMode === 'custom'
+                                ? 'border-forest bg-white text-forest font-bold shadow-xs ring-2 ring-forest/20'
+                                : 'border-amber-200/80 text-slate-700 bg-white/70 hover:bg-white'
+                            }`}
+                          >
+                            <span className="text-[11px] flex items-center gap-1.5 font-bold">
+                              <span>🎨</span>
+                              <span>Personalizar Colores (Modo Claro & Modo Oscuro)</span>
+                            </span>
+                            <span className="text-[10px] text-forest font-mono font-bold">
+                              {headerNavTextColorMode === 'custom' ? 'Activo' : 'Elegir'}
+                            </span>
+                          </button>
+
+                          {headerNavTextColorMode === 'custom' && (
+                            <div className="grid grid-cols-2 gap-3 pt-3 mt-2 border-t border-amber-200 animate-in fade-in duration-200">
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-700 block">
+                                  ☀️ Modo Claro (Fondo Claro):
+                                </label>
+                                <div className="flex items-center gap-1.5">
+                                  <input
+                                    type="color"
+                                    value={headerNavTextColorLight || lightColors.primary}
+                                    onChange={(e) => setHeaderNavTextColorLight(e.target.value)}
+                                    className="w-7 h-7 rounded-lg border border-slate-300 p-0.5 bg-white cursor-pointer shrink-0"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={headerNavTextColorLight || lightColors.primary}
+                                    onChange={(e) => setHeaderNavTextColorLight(e.target.value)}
+                                    placeholder={lightColors.primary}
+                                    className="w-full px-2 py-1 text-[11px] font-mono font-bold text-slate-900 bg-white border border-slate-200 rounded-lg uppercase"
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-700 block">
+                                  🌙 Modo Oscuro (Fondo Oscuro):
+                                </label>
+                                <div className="flex items-center gap-1.5">
+                                  <input
+                                    type="color"
+                                    value={headerNavTextColorDark || '#ffffff'}
+                                    onChange={(e) => setHeaderNavTextColorDark(e.target.value)}
+                                    className="w-7 h-7 rounded-lg border border-slate-300 p-0.5 bg-white cursor-pointer shrink-0"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={headerNavTextColorDark || '#ffffff'}
+                                    onChange={(e) => setHeaderNavTextColorDark(e.target.value)}
+                                    placeholder="#ffffff"
+                                    className="w-full px-2 py-1 text-[11px] font-mono font-bold text-slate-900 bg-white border border-slate-200 rounded-lg uppercase"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
 
                     <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100">
                       <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
