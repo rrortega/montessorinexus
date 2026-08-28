@@ -115,8 +115,8 @@ ENV PORT=3001
 ENV SERVICE_ROLE=all
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-  CMD curl -f http://localhost:3001/api/settings || exit 1
+HEALTHCHECK --interval=20s --timeout=5s --start-period=10s --retries=3 \
+  CMD curl -f http://localhost:3001/api/health || exit 1
 
 # Start via start.sh (handles Express, BullMQ Queue Worker, Xvfb, and Prisma migrations)
 CMD ["/app/server/start.sh"]

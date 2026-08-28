@@ -93,6 +93,7 @@ interface SettingsContextType {
   loading: boolean;
   updateSettings: (newSettings: Record<string, string>) => Promise<void>;
   refreshSettings: () => Promise<void>;
+  applyBrandingCss: (primaryHex?: string, secondaryHex?: string, accentHex?: string, radius?: string) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -141,7 +142,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [unregisteredHost, setUnregisteredHost] = useState('');
   const [isPlatformRoot, setIsPlatformRoot] = useState(false);
 
-  const applyBrandingCss = (primaryHex?: string, secondaryHex?: string) => {
+  const applyBrandingCss = (primaryHex?: string, secondaryHex?: string, accentHex?: string, radius?: string) => {
     if (typeof document === 'undefined') return;
     const root = document.documentElement;
 
@@ -149,13 +150,26 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const primaryHsl = hexToHsl(primaryHex);
       if (primaryHsl) {
         const { h, s, l } = primaryHsl;
-        root.style.setProperty('--forest', `${h} ${s}% ${l}%`);
+
+        // Compute deep, high-contrast dark tones for text/menu items on light backgrounds
+        // Cap lightness at max 18% to guarantee crisp readability (WCAG AAA contrast)
+        const textL = Math.min(l, 18);
+        const textS = Math.min(Math.max(s, 30), 85);
+        const textLDeep = Math.min(l, 12);
+        const lightL = Math.min(Math.max(textL + 8, 22), 28);
+        const lightS = Math.max(0, textS - 5);
+
+        root.style.setProperty('--forest', `${h} ${textS}% ${textL}%`);
+        root.style.setProperty('--forest-dark', `${h} ${textS}% ${textLDeep}%`);
+        root.style.setProperty('--forest-light', `${h} ${lightS}% ${lightL}%`);
+        root.style.setProperty('--foreground', `${h} ${textS}% ${textLDeep}%`);
+        root.style.setProperty('--card-foreground', `${h} ${textS}% ${textLDeep}%`);
+        root.style.setProperty('--popover-foreground', `${h} ${textS}% ${textLDeep}%`);
+
+        // Set exact user primary for buttons/rings/accent highlights
         root.style.setProperty('--primary', `${h} ${s}% ${l}%`);
         root.style.setProperty('--ring', `${h} ${s}% ${l}%`);
-        const sLight = Math.max(0, s - 5);
-        const lLight = Math.min(100, l + 8);
-        root.style.setProperty('--forest-light', `${h} ${sLight}% ${lLight}%`);
-        root.style.setProperty('--sidebar-foreground', `${h} ${s}% ${l}%`);
+        root.style.setProperty('--sidebar-foreground', `${h} ${textS}% ${textL}%`);
         root.style.setProperty('--sidebar-primary', `${h} ${s}% ${l}%`);
         root.style.setProperty('--sidebar-ring', `${h} ${s}% ${l}%`);
       }
@@ -165,12 +179,35 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const secondaryHsl = hexToHsl(secondaryHex);
       if (secondaryHsl) {
         const { h, s, l } = secondaryHsl;
-        root.style.setProperty('--terracotta', `${h} ${s}% ${l}%`);
+        const textL = Math.min(l, 25);
+        const textS = Math.min(Math.max(s, 30), 85);
+        root.style.setProperty('--terracotta', `${h} ${textS}% ${textL}%`);
+        root.style.setProperty('--secondary', `${h} ${s}% ${l}%`);
         const sLight = Math.max(0, s - 5);
         const lLight = Math.min(100, l + 10);
         root.style.setProperty('--terracotta-light', `${h} ${sLight}% ${lLight}%`);
+      }
+    }
+
+    if (accentHex) {
+      const accentHsl = hexToHsl(accentHex);
+      if (accentHsl) {
+        const { h, s, l } = accentHsl;
         root.style.setProperty('--accent', `${h} ${s}% ${l}%`);
       }
+    }
+
+    if (radius) {
+      let rVal = '1rem';
+      if (radius === 'none') rVal = '0px';
+      if (radius === 'sm') rVal = '0.25rem';
+      if (radius === 'md') rVal = '0.5rem';
+      if (radius === 'lg') rVal = '0.75rem';
+      if (radius === 'xl') rVal = '1rem';
+      if (radius === '2xl') rVal = '1.25rem';
+      if (radius === '3xl') rVal = '1.5rem';
+      if (radius === 'full') rVal = '9999px';
+      root.style.setProperty('--radius', rVal);
     }
   };
 
@@ -211,7 +248,9 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       applyBrandingCss(
         dbData.brand_primary_color || activeMembership?.school.primaryColor || '#1b3b2b',
-        dbData.brand_secondary_color || activeMembership?.school.accentColor || '#10b981'
+        dbData.brand_secondary_color || activeMembership?.school.accentColor || '#10b981',
+        dbData.brand_accent_color || activeMembership?.school.accentColor || '#f59e0b',
+        dbData.button_radius || '2xl'
       );
     } catch (e) {
       console.error('Error initializing school settings', e);
@@ -225,11 +264,39 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [activeMembership?.schoolId]);
 
   const updateSettings = async (newSettings: Record<string, string>) => {
-    await updateDBSettings(newSettings);
-    setSettings(prev => ({ ...prev, ...newSettings }));
+    const normalized: Record<string, string> = { ...newSettings };
+    if (newSettings.primaryColor && !newSettings.brand_primary_color) {
+      normalized.brand_primary_color = newSettings.primaryColor;
+    }
+    if (newSettings.secondaryColor && !newSettings.brand_secondary_color) {
+      normalized.brand_secondary_color = newSettings.secondaryColor;
+    }
+    if (newSettings.accentColor && !newSettings.brand_accent_color) {
+      normalized.brand_accent_color = newSettings.accentColor;
+    }
+    if (newSettings.schoolName && !newSettings.school_name) {
+      normalized.school_name = newSettings.schoolName;
+    }
+    if (newSettings.schoolTagline && !newSettings.school_tagline) {
+      normalized.school_tagline = newSettings.schoolTagline;
+    }
+    if (newSettings.logoUrl && !newSettings.school_logo) {
+      normalized.school_logo = newSettings.logoUrl;
+    }
+    if (newSettings.buttonRadius && !newSettings.button_radius) {
+      normalized.button_radius = newSettings.buttonRadius;
+    }
+    if (newSettings.buttonHeight && !newSettings.button_height) {
+      normalized.button_height = newSettings.buttonHeight;
+    }
+
+    await updateDBSettings(normalized);
+    setSettings(prev => ({ ...prev, ...normalized }));
     applyBrandingCss(
-      newSettings.brand_primary_color || settings.brand_primary_color,
-      newSettings.brand_secondary_color || settings.brand_secondary_color
+      normalized.brand_primary_color || settings.brand_primary_color,
+      normalized.brand_secondary_color || settings.brand_secondary_color,
+      normalized.brand_accent_color || settings.brand_accent_color,
+      normalized.button_radius || settings.button_radius
     );
   };
 
@@ -376,6 +443,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         loading,
         updateSettings,
         refreshSettings: loadSettings,
+        applyBrandingCss,
       }}
     >
       {children}
@@ -425,6 +493,7 @@ export const useSiteSettings = (): SettingsContextType => {
       loading: false,
       updateSettings: async () => {},
       refreshSettings: async () => {},
+      applyBrandingCss: () => {},
     };
   }
   return context;

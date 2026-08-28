@@ -276,7 +276,7 @@ export const AdminSettings: React.FC = () => {
   const { role, user } = useAuth();
   const isOwnerOrAdmin = role === 'OWNER' || role === 'ADMIN';
 
-  const { settings, updateSettings, loading } = useSiteSettings();
+  const { settings, updateSettings, applyBrandingCss, loading } = useSiteSettings();
   const [formData, setFormData] = useState<any>(settings);
   const [saving, setSaving] = useState(false);
   const [openCountryPopover, setOpenCountryPopover] = useState(false);
@@ -286,19 +286,62 @@ export const AdminSettings: React.FC = () => {
   const activeTab = (searchParams.get('tab') as SettingsTab) || 'identity';
 
   useEffect(() => {
-    setFormData(settings);
+    if (settings) {
+      setFormData({
+        ...settings,
+        schoolName: settings.school_name || settings.schoolName || '',
+        schoolTagline: settings.school_tagline || settings.schoolTagline || '',
+        logoUrl: settings.school_logo || settings.logoUrl || '',
+        primaryColor: settings.brand_primary_color || settings.primaryColor || '#1b3b2b',
+        secondaryColor: settings.brand_secondary_color || settings.secondaryColor || '#2d5a3f',
+        accentColor: settings.brand_accent_color || settings.accentColor || '#c89550',
+        buttonRadius: settings.button_radius || settings.buttonRadius || 'full',
+        buttonHeight: settings.button_height || settings.buttonHeight || 'md',
+        school_country: settings.school_country || 'México',
+        school_province: settings.school_province || '',
+        school_city: settings.school_city || '',
+        school_address: settings.school_address || '',
+        school_postal_code: settings.school_postal_code || '',
+        school_currency: settings.school_currency || 'MXN',
+        school_currency_symbol: settings.school_currency_symbol || '$',
+        school_timezone: settings.school_timezone || 'America/Cancun',
+        contact_phone: settings.contact_phone || settings.contactPhone || '',
+        contact_email: settings.contact_email || settings.contactEmail || '',
+      });
+    }
   }, [settings]);
 
   const handleTabChange = (tab: SettingsTab) => {
     setSearchParams({ tab });
   };
 
-  const handleInputChange = (field: keyof SiteSettings, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleInputChange = (field: string, value: any) => {
+    setFormData((prev: any) => {
+      const next = { ...prev, [field]: value };
+      if (field === 'primaryColor') next.brand_primary_color = value;
+      if (field === 'secondaryColor') next.brand_secondary_color = value;
+      if (field === 'accentColor') next.brand_accent_color = value;
+      if (field === 'buttonRadius') next.button_radius = value;
+      if (field === 'buttonHeight') next.button_height = value;
+      if (field === 'schoolName') next.school_name = value;
+      if (field === 'schoolTagline') next.school_tagline = value;
+      if (field === 'logoUrl') next.school_logo = value;
+
+      // Real-time live styling feedback across the entire panel
+      if (['primaryColor', 'secondaryColor', 'accentColor', 'buttonRadius', 'brand_primary_color', 'brand_secondary_color', 'brand_accent_color', 'button_radius'].includes(field)) {
+        applyBrandingCss(
+          next.primaryColor || next.brand_primary_color,
+          next.secondaryColor || next.brand_secondary_color,
+          next.accentColor || next.brand_accent_color,
+          next.buttonRadius || next.button_radius
+        );
+      }
+      return next;
+    });
   };
 
-  const handleSocialChange = (network: keyof SiteSettings['socialLinks'], value: string) => {
-    setFormData(prev => ({
+  const handleSocialChange = (network: string, value: string) => {
+    setFormData((prev: any) => ({
       ...prev,
       socialLinks: {
         ...prev.socialLinks,
@@ -307,12 +350,12 @@ export const AdminSettings: React.FC = () => {
     }));
   };
 
-  const handlePublicMenuToggle = (menuKey: keyof SiteSettings['publicMenus']) => {
-    setFormData(prev => ({
+  const handlePublicMenuToggle = (menuKey: string) => {
+    setFormData((prev: any) => ({
       ...prev,
       publicMenus: {
         ...prev.publicMenus,
-        [menuKey]: !prev.publicMenus[menuKey]
+        [menuKey]: !prev.publicMenus?.[menuKey]
       }
     }));
   };
@@ -354,8 +397,19 @@ export const AdminSettings: React.FC = () => {
     if (!isOwnerOrAdmin) return;
     setSaving(true);
     try {
-      await updateSettings(formData);
-      toast.success('Configuración del colegio guardada exitosamente');
+      const payload: Record<string, string> = {
+        ...formData,
+        school_name: formData.schoolName || formData.school_name || '',
+        school_tagline: formData.schoolTagline || formData.school_tagline || '',
+        school_logo: formData.logoUrl || formData.school_logo || '',
+        brand_primary_color: formData.primaryColor || formData.brand_primary_color || '#1b3b2b',
+        brand_secondary_color: formData.secondaryColor || formData.brand_secondary_color || '#2d5a3f',
+        brand_accent_color: formData.accentColor || formData.brand_accent_color || '#c89550',
+        button_radius: formData.buttonRadius || formData.button_radius || 'full',
+        button_height: formData.buttonHeight || formData.button_height || 'md',
+      };
+      await updateSettings(payload);
+      toast.success('Configuración y estilos del colegio guardados exitosamente');
     } catch (error: any) {
       toast.error(error.message || 'Error al guardar configuración');
     } finally {

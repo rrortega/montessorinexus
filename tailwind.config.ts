@@ -27,6 +27,7 @@ export default {
         forest: {
           DEFAULT: "hsl(var(--forest))",
           light: "hsl(var(--forest-light))",
+          dark: "hsl(var(--forest-dark))",
         },
         terracotta: {
           DEFAULT: "hsl(var(--terracotta))",

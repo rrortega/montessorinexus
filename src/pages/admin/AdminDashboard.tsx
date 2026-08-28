@@ -169,7 +169,7 @@ export const AdminDashboard: React.FC = () => {
     switchSchool
   } = useAuth();
 
-  const { buttonRadius, buttonHeight } = useSiteSettings();
+  const { buttonRadius, buttonHeight, brandPrimaryColor, schoolName } = useSiteSettings();
   const btnRadiusClass = getButtonRadiusClass(buttonRadius);
   const avatarRadiusClass = getAvatarRadiusClass(buttonRadius);
   const btnHeightClass = getButtonHeightClass(buttonHeight);
@@ -800,8 +800,8 @@ export const AdminDashboard: React.FC = () => {
     }
   }, [activeTab, subscriptionInfo.enabledModules, isGlobalSuperAdmin, isGhostMode, basePath, navigate]);
 
-  const currentSchoolName = activeMembership?.school.name || 'Ceiba Montessori';
-  const primaryColor = activeMembership?.school.primaryColor || '#1b3b2b';
+  const currentSchoolName = schoolName || activeMembership?.school.name || 'Ceiba Montessori';
+  const primaryColor = brandPrimaryColor || activeMembership?.school.primaryColor || '#1b3b2b';
 
   return (
     <AdminDashboardContext.Provider
@@ -969,9 +969,9 @@ export const AdminDashboard: React.FC = () => {
                     <div className="flex items-center gap-2.5 overflow-hidden pr-1">
                       <div
                         className={`w-8 h-8 ${avatarRadiusClass} text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs`}
-                        style={{ backgroundColor: activeMembership?.school.primaryColor || '#1b3b2b' }}
+                        style={{ backgroundColor: primaryColor }}
                       >
-                        {activeMembership?.school.name.charAt(0) || 'C'}
+                        {currentSchoolName.charAt(0) || 'C'}
                       </div>
                       <div className={`overflow-hidden text-left ${isCollapsed ? 'md:hidden' : 'block'}`}>
                         <span className="font-bold text-forest text-xs block truncate leading-tight">

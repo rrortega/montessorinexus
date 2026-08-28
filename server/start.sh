@@ -26,7 +26,13 @@ mkdir -p /app/storage /app/server/data
 # Run database migrations if DATABASE_URL is provided
 if [ -n "$DATABASE_URL" ]; then
   echo "📦 Checking and applying database migrations..."
-  npx prisma db push --skip-generate || echo "⚠️ Warning: Prisma db push encountered an issue, proceeding..."
+  if [ -f "/app/node_modules/.bin/prisma" ]; then
+    /app/node_modules/.bin/prisma db push --skip-generate || echo "⚠️ Warning: Prisma db push encountered an issue, proceeding..."
+  elif command -v prisma >/dev/null 2>&1; then
+    prisma db push --skip-generate || echo "⚠️ Warning: Prisma db push encountered an issue, proceeding..."
+  else
+    echo "ℹ️ Local Prisma binary not found, skipping db push at boot."
+  fi
 fi
 
 # 1. Standalone Worker Role

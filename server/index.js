@@ -649,6 +649,15 @@ const documentsDir = path.join(publicDir, 'documents');
 app.use(cors());
 app.use(express.json({ limit: '100mb' }));
 
+// Healthcheck endpoint for Docker & Easypanel container liveness checks
+app.get('/api/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Serve static public assets from public/ (gallery, public docs) and dist/ (frontend)
 app.use('/gallery', express.static(galleryDir));
 app.use('/documents', express.static(documentsDir));
@@ -7001,9 +7010,11 @@ app.post('/api/settings', async (req, res) => {
     // Sync to school model if school regional fields are updated
     const schoolUpdates = {};
     if (req.body.school_name) schoolUpdates.name = String(req.body.school_name);
-    if (req.body.school_logo) schoolUpdates.logoUrl = String(req.body.school_logo);
-    if (req.body.brand_primary_color) schoolUpdates.primaryColor = String(req.body.brand_primary_color);
-    if (req.body.brand_accent_color) schoolUpdates.accentColor = String(req.body.brand_accent_color);
+    const primaryCol = req.body.brand_primary_color || req.body.primaryColor;
+    if (primaryCol) schoolUpdates.primaryColor = String(primaryCol);
+
+    const accentCol = req.body.brand_accent_color || req.body.accentColor || req.body.brand_secondary_color || req.body.secondaryColor;
+    if (accentCol) schoolUpdates.accentColor = String(accentCol);
     if (req.body.school_currency) schoolUpdates.currency = String(req.body.school_currency);
     if (req.body.school_currency_symbol) schoolUpdates.currencySymbol = String(req.body.school_currency_symbol);
     if (req.body.school_timezone) schoolUpdates.timezone = String(req.body.school_timezone);
