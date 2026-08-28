@@ -39,7 +39,7 @@ export function WhyChooseUs() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
           {features.map((feature, index) => (
             <FadeInScroll
-              key={feature.title}
+              key={feature.text || index}
               delay={index * 0.1}
               direction="up"
             >

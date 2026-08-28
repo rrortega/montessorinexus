@@ -1,10 +1,12 @@
 node_modules
 dist
 .git
-# .env (removed from ignore to allow build time injection if file exists)
+.gitignore
 README.md
 Dockerfile
 .dockerignore
-package-lock.json
-bun.lockb
-pnpm-lock.yaml
+*.lockb
+.DS_Store
+.env.local
+.env.development
+*.log

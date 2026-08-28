@@ -8,6 +8,24 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    proxy: {
+      "/api": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
+      "/gallery": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
+      "/documents": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
+      "/admin/queues": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
+    },
     hmr: {
       overlay: false,
     },

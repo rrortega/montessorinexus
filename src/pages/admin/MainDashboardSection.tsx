@@ -1,0 +1,404 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+  Users, 
+  Award, 
+  Clock, 
+  Workflow, 
+  Layers, 
+  GraduationCap, 
+  Calendar, 
+  TrendingUp, 
+  Plus, 
+  ArrowRight,
+  Compass,
+  UserCheck,
+  CreditCard,
+  Mail,
+  Activity,
+  ChevronRight,
+  Sparkles,
+  LayoutDashboard
+} from 'lucide-react';
+import { 
+  getStudents, 
+  getWaitlistEntries, 
+  getAdmissionApplications, 
+  getEnvironments, 
+  getGuides,
+  getSchoolEvents,
+  StudentItem,
+  EnvironmentItem,
+  GuideUserItem,
+  AdmissionApplicationItem,
+  SchoolEventItem
+} from '@/lib/sqlite';
+import { MobileMenuButton } from './AdminDashboard';
+import { useAuth } from '@/context/AuthContext';
+
+interface MainDashboardSectionProps {
+  onNavigateTab: (tabId: string) => void;
+}
+
+export const MainDashboardSection: React.FC<MainDashboardSectionProps> = ({ onNavigateTab }) => {
+  const { user } = useAuth();
+  
+  const [students, setStudents] = useState<StudentItem[]>([]);
+  const [waitlistCount, setWaitlistCount] = useState<number>(0);
+  const [environments, setEnvironments] = useState<EnvironmentItem[]>([]);
+  const [guides, setGuides] = useState<GuideUserItem[]>([]);
+  const [applications, setApplications] = useState<AdmissionApplicationItem[]>([]);
+  const [events, setEvents] = useState<SchoolEventItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    Promise.all([
+      getStudents(),
+      getWaitlistEntries().then(res => res.length).catch(() => 0),
+      getEnvironments(),
+      getGuides(),
+      getAdmissionApplications(),
+      getSchoolEvents({ limit: 4 })
+    ]).then(([st, wl, env, gd, app, ev]) => {
+      setStudents(st);
+      setWaitlistCount(wl);
+      setEnvironments(env);
+      setGuides(gd);
+      setApplications(app);
+      setEvents(ev);
+    }).catch(err => {
+      console.error('Error loading dashboard stats:', err);
+    }).finally(() => {
+      setLoading(false);
+    });
+  }, []);
+
+  // KPI Calculations
+  const activeStudentsCount = useMemo(() => students.filter(s => s.status === 'active').length, [students]);
+  const graduatedCount = useMemo(() => students.filter(s => s.status === 'graduated').length, [students]);
+  const activeAppsCount = useMemo(() => applications.filter(a => a.status === 'IN_PROGRESS').length, [applications]);
+
+  // Student Distribution by Environment
+  const envDistribution = useMemo(() => {
+    if (environments.length === 0 || students.length === 0) return [];
+    
+    return environments.map(env => {
+      const count = students.filter(s => s.status === 'active' && s.environmentId === env.id).length;
+      return {
+        id: env.id,
+        name: env.name,
+        color: env.color || '#1b3b2b',
+        count,
+        percentage: activeStudentsCount > 0 ? Math.round((count / activeStudentsCount) * 100) : 0
+      };
+    }).sort((a, b) => b.count - a.count);
+  }, [environments, students, activeStudentsCount]);
+
+  // Gender Distribution
+  const genderStats = useMemo(() => {
+    const activeSts = students.filter(s => s.status === 'active');
+    if (activeSts.length === 0) return { male: 0, female: 0, unspecified: 0 };
+    
+    let male = 0;
+    let female = 0;
+    let unspecified = 0;
+    
+    activeSts.forEach(s => {
+      const g = (s.gender || '').toUpperCase();
+      if (g.startsWith('M') || g.includes('MASC') || g.includes('BOY')) male++;
+      else if (g.startsWith('F') || g.includes('FEM') || g.includes('GIRL')) female++;
+      else unspecified++;
+    });
+
+    return {
+      male: Math.round((male / activeSts.length) * 100),
+      female: Math.round((female / activeSts.length) * 100),
+      unspecified: Math.round((unspecified / activeSts.length) * 100),
+    };
+  }, [students]);
+
+  // Recent applications (take first 5)
+  const recentApps = useMemo(() => {
+    return [...applications]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 5);
+  }, [applications]);
+
+  const quickActions = [
+    { id: 'students', label: 'Matrícula Activa', desc: 'Ver listado y fichas', icon: Users, color: 'text-forest bg-forest/10 hover:bg-forest/15' },
+    { id: 'waitlist', label: 'Lista de Espera', desc: 'Registrar nueva pre-matrícula', icon: Clock, color: 'text-amber-600 bg-amber-50 hover:bg-amber-100' },
+    { id: 'admissions', label: 'Admisiones', desc: 'Gestionar candidatos y etapas', icon: Workflow, color: 'text-blue-600 bg-blue-50 hover:bg-blue-100' },
+    { id: 'attendance', label: 'Asistencia Diaria', desc: 'Tomar asistencia de salones', icon: UserCheck, color: 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100' },
+    { id: 'newsletters', label: 'Enviar Boletín', desc: 'Escribir aviso o comunicación', icon: Mail, color: 'text-purple-600 bg-purple-50 hover:bg-purple-100' },
+    { id: 'events', label: 'Calendario', desc: 'Agendar eventos del colegio', icon: Calendar, color: 'text-pink-600 bg-pink-50 hover:bg-pink-100' }
+  ];
+
+  if (loading) {
+    return (
+      <div className="py-24 text-center text-xs text-muted-foreground flex flex-col items-center justify-center gap-3">
+        <div className="w-8 h-8 rounded-full border-4 border-forest border-t-transparent animate-spin" />
+        <span>Cargando panel de control Ceiba Roots...</span>
+      </div>
+    );
+  }
+
+  const welcomeMessage = () => {
+    const hr = new Date().getHours();
+    if (hr < 12) return '¡Buenos días!';
+    if (hr < 19) return '¡Buenas tardes!';
+    return '¡Buenas noches!';
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* HEADER HERO BANNER */}
+      <div className="-mx-4 sm:-mx-6 md:-mx-8 -mt-8 sm:-mt-6 md:-mt-8 rounded-none bg-gradient-to-r from-forest via-forest-light to-forest px-6 pt-8 pb-8 text-white shadow-md">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <MobileMenuButton />
+            <div>
+              <span className="text-xs font-bold text-white/70 uppercase tracking-wider block font-mono">
+                Panel de Control
+              </span>
+              <h1 className="text-2xl sm:text-3xl font-bold font-display tracking-tight text-white leading-tight">
+                {welcomeMessage()}, {user?.fullName || 'Administración'}
+              </h1>
+            </div>
+          </div>
+          <div className="hidden lg:flex items-center gap-2 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-2xl border border-white/15">
+            <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+            <span className="text-[11px] font-bold">Ceiba Roots Manager</span>
+          </div>
+        </div>
+      </div>
+
+      {/* KPI METRICS GRID */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        {[
+          { label: 'Matrícula Activa', val: activeStudentsCount, color: 'border-emerald-200/60 bg-emerald-50/20 text-emerald-800', icon: Users },
+          { label: 'Egresados / Graduados', val: graduatedCount, color: 'border-blue-200/60 bg-blue-50/20 text-blue-800', icon: Award },
+          { label: 'Lista de Espera', val: waitlistCount, color: 'border-amber-200/60 bg-amber-50/20 text-amber-800', icon: Clock },
+          { label: 'Expedientes Activos', val: activeAppsCount, color: 'border-indigo-200/60 bg-indigo-50/20 text-indigo-800', icon: Workflow },
+          { label: 'Ambientes / Salones', val: environments.length, color: 'border-teal-200/60 bg-teal-50/20 text-teal-800', icon: Layers },
+          { label: 'Equipo Docente', val: guides.length, color: 'border-purple-200/60 bg-purple-50/20 text-purple-800', icon: GraduationCap }
+        ].map((kpi, idx) => {
+          const Icon = kpi.icon;
+          return (
+            <div key={idx} className={`p-4 bg-white border rounded-2xl shadow-xs flex flex-col justify-between ${kpi.color}`}>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{kpi.label}</span>
+                <Icon className="w-4 h-4 opacity-80 shrink-0" />
+              </div>
+              <span className="text-2xl font-bold font-display tracking-tight mt-2 block">{kpi.val}</span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* TWO COLUMN CONTENT LAYOUT */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* LEFT & CENTER PANEL (COL-SPAN 2) */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* ENVIRONMENT DISTRIBUTION & DENSITY */}
+          <div className="p-5 md:p-6 bg-white border border-forest/10 rounded-3xl shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-forest/5 pb-3">
+              <div>
+                <h3 className="font-bold text-forest text-base font-display">Distribución de Matrícula</h3>
+                <p className="text-xs text-muted-foreground">Densidad de alumnos activos asignados por salón/ambiente.</p>
+              </div>
+              <span className="text-xs font-bold text-forest bg-forest/5 px-2.5 py-1 rounded-xl">
+                {activeStudentsCount} alumnos en total
+              </span>
+            </div>
+
+            <div className="space-y-3.5">
+              {envDistribution.length === 0 ? (
+                <p className="text-xs text-muted-foreground py-4 text-center">No hay alumnos matriculados en ningún ambiente.</p>
+              ) : (
+                envDistribution.map(dist => (
+                  <div key={dist.id} className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs font-semibold">
+                      <span className="text-foreground">{dist.name}</span>
+                      <span className="text-muted-foreground">
+                        <strong>{dist.count}</strong> alumnos ({dist.percentage}%)
+                      </span>
+                    </div>
+                    <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full rounded-full transition-all duration-500" 
+                        style={{ 
+                          width: `${dist.percentage}%`,
+                          backgroundColor: dist.color 
+                        }} 
+                      />
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* GENDER CHART BAR */}
+            <div className="pt-4 border-t border-forest/5">
+              <div className="flex items-center justify-between text-xs font-bold mb-2">
+                <span className="text-forest">Balance de Género (Matrícula Activa)</span>
+                <span className="text-muted-foreground">Niños: {genderStats.male}% • Niñas: {genderStats.female}%</span>
+              </div>
+              <div className="w-full h-3 rounded-full flex overflow-hidden">
+                {genderStats.male > 0 && <div className="h-full bg-blue-500 transition-all duration-300" style={{ width: `${genderStats.male}%` }} title={`Niños: ${genderStats.male}%`} />}
+                {genderStats.female > 0 && <div className="h-full bg-pink-500 transition-all duration-300" style={{ width: `${genderStats.female}%` }} title={`Niñas: ${genderStats.female}%`} />}
+                {genderStats.unspecified > 0 && <div className="h-full bg-slate-400 transition-all duration-300" style={{ width: `${genderStats.unspecified}%` }} title={`Sin especificar: ${genderStats.unspecified}%`} />}
+              </div>
+            </div>
+          </div>
+
+          {/* RECENT ADMISSIONS / PROCESS APPLICATIONS */}
+          <div className="p-5 md:p-6 bg-white border border-forest/10 rounded-3xl shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-forest/5 pb-3">
+              <div>
+                <h3 className="font-bold text-forest text-base font-display">Expedientes Recientes</h3>
+                <p className="text-xs text-muted-foreground">Últimos aplicantes registrados en los procesos institucionales.</p>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => onNavigateTab('admissions')}
+                className="text-xs font-bold text-forest hover:underline flex items-center gap-1"
+              >
+                <span>Ver todos</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-left">
+                <thead>
+                  <tr className="border-b border-slate-100 text-muted-foreground font-bold">
+                    <th className="py-2.5 pb-2">Alumno</th>
+                    <th className="py-2.5 pb-2">Proceso / Etapa</th>
+                    <th className="py-2.5 pb-2">Tutor</th>
+                    <th className="py-2.5 pb-2 text-right">Estado</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {recentApps.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="py-6 text-center text-muted-foreground">No hay expedientes registrados en el sistema.</td>
+                    </tr>
+                  ) : (
+                    recentApps.map(app => (
+                      <tr key={app.id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="py-3 font-semibold text-foreground">{app.childName}</td>
+                        <td className="py-3">
+                          <span className="block text-[11px] font-bold text-forest">{app.processName || 'Admisión'}</span>
+                          <span className="text-[10px] text-muted-foreground">{app.stageName || 'Etapa Inicial'}</span>
+                        </td>
+                        <td className="py-3">
+                          <span className="block text-[11px] font-semibold">{app.tutorName}</span>
+                          <span className="text-[10px] text-muted-foreground">{app.tutorEmail}</span>
+                        </td>
+                        <td className="py-3 text-right">
+                          <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            app.status === 'ENROLLED'
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              : app.status === 'REJECTED'
+                              ? 'bg-red-50 text-red-700 border border-red-200'
+                              : 'bg-amber-50 text-amber-700 border border-amber-200'
+                          }`}>
+                            {app.status === 'ENROLLED' ? 'Finalizado' : app.status === 'REJECTED' ? 'Declinado' : 'En progreso'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT PANEL (COL-SPAN 1) */}
+        <div className="space-y-6">
+          
+          {/* QUICK ACTIONS GRID */}
+          <div className="p-5 md:p-6 bg-white border border-forest/10 rounded-3xl shadow-xs space-y-4">
+            <h3 className="font-bold text-forest text-base font-display border-b border-forest/5 pb-3">
+              Acciones Rápidas
+            </h3>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2.5">
+              {quickActions.map((action, idx) => {
+                const Icon = action.icon;
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => onNavigateTab(action.id)}
+                    className="p-3 bg-slate-50/50 hover:bg-slate-50 border border-slate-100 rounded-2xl transition-all duration-200 flex items-center gap-3 text-left w-full group/act"
+                  >
+                    <div className={`p-2 rounded-xl shrink-0 transition-transform group-hover/act:scale-105 duration-200 ${action.color}`}>
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <div className="truncate flex-1">
+                      <span className="block text-xs font-bold text-foreground truncate group-hover/act:text-forest transition-colors">
+                        {action.label}
+                      </span>
+                      <span className="block text-[10px] text-muted-foreground truncate">
+                        {action.desc}
+                      </span>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/60 transition-transform group-hover/act:translate-x-0.5 duration-200 shrink-0" />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* UPCOMING CALENDER EVENTS */}
+          <div className="p-5 md:p-6 bg-white border border-forest/10 rounded-3xl shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-forest/5 pb-3">
+              <h3 className="font-bold text-forest text-base font-display">Próximos Eventos</h3>
+              <button 
+                type="button" 
+                onClick={() => onNavigateTab('events')}
+                className="text-xs font-bold text-forest hover:underline"
+              >
+                Ver agenda
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {events.length === 0 ? (
+                <p className="text-xs text-muted-foreground py-6 text-center">No hay eventos próximos agendados.</p>
+              ) : (
+                events.map(ev => {
+                  const evDate = new Date(ev.startDate);
+                  const day = evDate.getDate();
+                  const monthStr = evDate.toLocaleDateString('es-MX', { month: 'short' }).toUpperCase().replace('.', '');
+                  
+                  return (
+                    <div key={ev.id} className="flex gap-3.5 items-start">
+                      <div className="w-11 h-11 bg-forest/5 border border-forest/10 rounded-2xl shrink-0 flex flex-col items-center justify-center font-mono p-1">
+                        <span className="text-[10px] text-forest/80 font-bold leading-none">{monthStr}</span>
+                        <span className="text-sm text-forest font-bold leading-tight">{day}</span>
+                      </div>
+                      <div className="truncate flex-1">
+                        <h4 className="text-xs font-bold text-foreground truncate leading-tight">
+                          {ev.title}
+                        </h4>
+                        <span className="text-[10px] text-muted-foreground block truncate">
+                          {ev.location || 'Ceiba Roots'} • {ev.startTime || 'Todo el día'}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  );
+};

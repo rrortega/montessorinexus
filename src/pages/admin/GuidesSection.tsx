@@ -45,7 +45,14 @@ import {
 } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
-import { MobileMenuButton } from './AdminDashboard';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { MobileMenuButton, useAdminDashboard } from './AdminDashboard';
 import {
   GuideUserItem,
   EnvironmentItem,
@@ -68,13 +75,168 @@ import GuideDrawer, {
   parseCertifications
 } from '@/components/admin/GuideDrawer';
 
+interface PaginationControlProps {
+  currentPage: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (size: number) => void;
+  itemLabel: string;
+}
+
+const PaginationControl: React.FC<PaginationControlProps> = ({
+  currentPage,
+  pageSize,
+  totalItems,
+  totalPages,
+  onPageChange,
+  onPageSizeChange,
+  itemLabel
+}) => {
+  const start = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const end = Math.min(currentPage * pageSize, totalItems);
+
+  return (
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-forest">
+      {/* Items count */}
+      <div className="text-muted-foreground text-[11px] font-medium">
+        Mostrando <strong className="text-forest font-bold">{start}</strong> - <strong className="text-forest font-bold">{end}</strong> de <strong className="text-forest font-bold">{totalItems}</strong> {itemLabel}
+      </div>
+
+      {/* Controls: Page size selector + Page navigation */}
+      <div className="flex items-center gap-3 flex-wrap">
+        {/* Page Size Selector (Custom Choice) */}
+        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          <span>Por página:</span>
+          <Select
+            value={String(pageSize)}
+            onValueChange={(val) => {
+              onPageSizeChange(Number(val));
+              onPageChange(1);
+            }}
+          >
+            <SelectTrigger className="h-6 w-14 rounded-lg bg-forest/5 border border-forest/15 px-2 text-[11px] font-bold text-forest hover:bg-forest/10 focus:ring-0 focus:ring-offset-0 shadow-2xs gap-1">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="end" className="min-w-[4.5rem] rounded-xl border border-forest/15 bg-white shadow-lg p-1 text-xs z-50">
+              <SelectItem value="8" className="rounded-lg text-[11px] font-semibold text-forest focus:bg-forest/10 focus:text-forest cursor-pointer py-1">8</SelectItem>
+              <SelectItem value="15" className="rounded-lg text-[11px] font-semibold text-forest focus:bg-forest/10 focus:text-forest cursor-pointer py-1">15</SelectItem>
+              <SelectItem value="25" className="rounded-lg text-[11px] font-semibold text-forest focus:bg-forest/10 focus:text-forest cursor-pointer py-1">25</SelectItem>
+              <SelectItem value="50" className="rounded-lg text-[11px] font-semibold text-forest focus:bg-forest/10 focus:text-forest cursor-pointer py-1">50</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Page Nav Buttons */}
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            disabled={currentPage <= 1 || totalItems === 0}
+            onClick={() => onPageChange(currentPage - 1)}
+            className="p-1 rounded-lg border border-forest/15 bg-white text-forest hover:bg-forest/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed shadow-2xs cursor-pointer"
+            title="Página anterior"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />
+          </button>
+
+          <span className="px-2 py-0.5 text-[11px] font-bold bg-forest/5 rounded-lg border border-forest/10 text-forest">
+            {totalItems === 0 ? 1 : currentPage} / {totalPages}
+          </span>
+
+          <button
+            type="button"
+            disabled={currentPage >= totalPages || totalItems === 0}
+            onClick={() => onPageChange(currentPage + 1)}
+            className="p-1 rounded-lg border border-forest/15 bg-white text-forest hover:bg-forest/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed shadow-2xs cursor-pointer"
+            title="Página siguiente"
+          >
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const GuidesSection: React.FC = () => {
   const confirm = useConfirm();
   const { schoolName, schoolLogo, brandPrimaryColor, schoolTagline } = useSiteSettings();
+  const { isReadOnly, triggerBlockedAction } = useAdminDashboard();
   const currentYear = new Date().getFullYear();
-  const { role, user, userEmail } = useAuth();
-  const isOwnerOrAdmin = role === 'OWNER' || role === 'ADMIN';
+  const { role, user, userEmail, activeMembership } = useAuth();
+  const isOwnerOrAdmin = role === 'OWNER' || role === 'ADMIN' || activeMembership?.role === 'OWNER' || activeMembership?.role === 'ADMIN';
+  const permissions: string[] = (activeMembership as any)?.permissions || [];
+  const canManageGuides = isOwnerOrAdmin || permissions.includes('guides:write') || permissions.includes('guides:manage') || permissions.includes('guides');
   const isTutor = role === 'TUTOR';
+
+  const handleImpersonate = (guide: any) => {
+    try {
+      // 1. Safely back up current session details
+      let savedUser = null;
+      try {
+        const u = localStorage.getItem('ceiba_user_session');
+        savedUser = u ? JSON.parse(u) : null;
+      } catch (err) {
+        savedUser = { email: localStorage.getItem('ceiba_user_email') || '' };
+      }
+
+      let savedMemberships = [];
+      try {
+        const m = localStorage.getItem('ceiba_user_memberships');
+        savedMemberships = m ? JSON.parse(m) : [];
+      } catch (err) {}
+
+      let savedActiveMembership = null;
+      try {
+        const am = localStorage.getItem('ceiba_active_membership');
+        savedActiveMembership = am ? JSON.parse(am) : null;
+      } catch (err) {}
+
+      const backup = {
+        user: savedUser,
+        email: localStorage.getItem('ceiba_user_email') || '',
+        memberships: savedMemberships,
+        activeMembership: savedActiveMembership
+      };
+
+      localStorage.setItem('ceiba_impersonation_original_session', JSON.stringify(backup));
+
+      // 2. Build target employee session
+      const targetUser = {
+        id: guide.id,
+        email: guide.email,
+        fullName: guide.fullName,
+        phone: guide.phone
+      };
+
+      const targetMembership = {
+        id: `mem_employee_${guide.id}`,
+        userId: guide.id,
+        schoolId: activeMembership?.schoolId || 'school_ceiba',
+        role: guide.role || 'TEACHER',
+        permissions: guide.permissions || [],
+        hasActiveEnrollment: true,
+        school: activeMembership?.school || null
+      };
+
+      // 3. Set active session localStorage keys
+      localStorage.setItem('ceiba_user_session', JSON.stringify(targetUser));
+      localStorage.setItem('ceiba_user_email', guide.email);
+      localStorage.setItem('ceiba_user_memberships', JSON.stringify([targetMembership]));
+      localStorage.setItem('ceiba_active_membership', JSON.stringify(targetMembership));
+
+      toast.success(`Accediendo como ${guide.fullName}...`);
+
+      // 4. Reload window to initialize the new session
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } catch (e: any) {
+      console.error('Impersonation error:', e);
+      toast.error('Error al iniciar sesión como este usuario.');
+    }
+  };
 
   const [guides, setGuides] = useState<GuideUserItem[]>([]);
   const [environments, setEnvironments] = useState<EnvironmentItem[]>([]);
@@ -123,14 +285,6 @@ export const GuidesSection: React.FC = () => {
     fetchList();
   }, []);
 
-  // Close three-dots dropdown if clicking outside
-  useEffect(() => {
-    const handleClickOutside = () => {
-      setActiveDropdownGuideId(null);
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0) return;
@@ -233,18 +387,40 @@ export const GuidesSection: React.FC = () => {
   }, [myChildren, isTutor]);
 
   const handleOpenCreate = () => {
+    if (isReadOnly) {
+      triggerBlockedAction('Registrar nuevos docentes o miembros del equipo');
+      return;
+    }
+    if (!canManageGuides) {
+      toast.error('No tienes permisos para registrar nuevos docentes.');
+      return;
+    }
     setEditingGuide(null);
     setModalOpen(true);
   };
 
   const handleOpenEdit = (guide: GuideUserItem) => {
+    if (!canManageGuides) {
+      setSelectedGuideForFicha(guide);
+      return;
+    }
     setEditingGuide(guide);
     setModalOpen(true);
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (!isOwnerOrAdmin) {
-      toast.error('Solo los propietarios o administradores pueden desvincular docentes.');
+    if (isReadOnly) {
+      triggerBlockedAction('Desvincular o eliminar docentes');
+      return;
+    }
+    if (!canManageGuides) {
+      toast.error('No tienes permisos para desvincular docentes.');
+      return;
+    }
+
+    const targetGuide = guides.find(g => g.id === id);
+    if (targetGuide?.isOwner || targetGuide?.role === 'OWNER') {
+      toast.error('El propietario del colegio no puede ser desvinculado.');
       return;
     }
 
@@ -292,6 +468,23 @@ export const GuidesSection: React.FC = () => {
       return matchSearch && matchRole && matchEnv;
     });
   }, [guides, search, roleFilter, envFilter, isTutor, myChildrenEnvIds]);
+
+  // Pagination State & Logic
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(8);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, roleFilter, envFilter]);
+
+  const totalItems = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const validCurrentPage = Math.min(currentPage, totalPages);
+
+  const paginatedGuides = useMemo(() => {
+    const start = (validCurrentPage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, validCurrentPage, pageSize]);
 
 
 
@@ -345,63 +538,62 @@ export const GuidesSection: React.FC = () => {
   const schoolDisplayName = schoolName || currentSchool?.name || 'Ceiba Montessori International';
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
+    <div className="flex flex-col h-full w-full min-h-0 overflow-hidden bg-background">
 
-      {/* FULL-WIDTH GREEN HERO BANNER */}
-      <div className="-mx-4 sm:-mx-6 md:-mx-8 -mt-4 sm:-mt-6 md:-mt-8 rounded-none bg-gradient-to-r from-forest via-forest-light to-forest px-4 sm:px-6 md:px-8 py-6 text-white shadow-md space-y-2 relative overflow-hidden border-b border-forest-light/40">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-start sm:items-center gap-3.5">
-            <MobileMenuButton className="!bg-white/20 !border-white/20 !text-white hover:!bg-white/30" />
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold font-display tracking-tight text-white leading-tight">
-                  {isTutor ? 'Equipo Docente (Guías de Mis Hijos)' : 'Equipo Docente'}
-                </h1>
+      {/* 1. FIXED HEADER (HERO BANNER + SEARCH & FILTERS) */}
+      <div className="shrink-0 space-y-4 bg-background z-10">
+        {/* FULL-WIDTH GREEN HERO BANNER */}
+        <div className="bg-gradient-to-r from-forest via-forest-light to-forest px-4 sm:px-6 md:px-8 py-6 text-white shadow-md space-y-2 relative overflow-hidden border-b border-forest-light/40">
+          <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full blur-3xl pointer-events-none" />
+          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start sm:items-center gap-3.5">
+              <MobileMenuButton className="!bg-white/20 !border-white/20 !text-white hover:!bg-white/30" />
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="text-xl sm:text-2xl md:text-3xl font-bold font-display tracking-tight text-white leading-tight">
+                    {isTutor ? 'Equipo Docente (Guías de Mis Hijos)' : 'Equipo Docente'}
+                  </h1>
+                </div>
+                <p className="hidden sm:block text-xs sm:text-sm text-white/80 mt-1 max-w-2xl leading-relaxed">
+                  {isTutor
+                    ? 'Guías titulares y asistentes que acompañan el día a día y aprendizaje de tus hijos.'
+                    : 'Guías titulares, asistentes y perfiles con trayectoria y certificaciones.'}
+                </p>
               </div>
-              <p className="hidden sm:block text-xs sm:text-sm text-white/80 mt-1 max-w-2xl leading-relaxed">
-                {isTutor
-                  ? 'Guías titulares y asistentes que acompañan el día a día y aprendizaje de tus hijos.'
-                  : 'Guías titulares, asistentes y perfiles con trayectoria y certificaciones.'}
-              </p>
             </div>
-          </div>
 
-          {!isTutor && (
-            <div className="relative z-10 flex items-center gap-2 shrink-0">
-              {/* Organigram Fullscreen Trigger (Icon Only) */}
-              <button
-                type="button"
-                onClick={() => {
-                  setZoomLevel(1);
-                  setOrganigramModalOpen(true);
-                }}
-                className="w-10 h-10 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white flex items-center justify-center shadow-2xs hover:scale-105 active:scale-95 transition-all"
-                title="Ver Organigrama Institucional en Pantalla Completa"
-                aria-label="Ver Organigrama"
-              >
-                <GitFork className="w-4 h-4 text-white" />
-              </button>
-
-              {isOwnerOrAdmin && (
+            {!isTutor && (
+              <div className="relative z-10 flex items-center gap-2 shrink-0">
+                {/* Organigram Fullscreen Trigger (Icon Only) */}
                 <button
-                  onClick={handleOpenCreate}
-                  className="hidden sm:flex px-4 py-2.5 bg-white text-forest hover:bg-white/90 text-xs font-bold rounded-xl shadow-xs transition-all items-center gap-2 hover:scale-105 active:scale-95 shrink-0"
+                  type="button"
+                  onClick={() => {
+                    setZoomLevel(1);
+                    setOrganigramModalOpen(true);
+                  }}
+                  className="w-10 h-10 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white flex items-center justify-center shadow-2xs hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                  title="Ver Organigrama Institucional en Pantalla Completa"
+                  aria-label="Ver Organigrama"
                 >
-                  <UserPlus className="w-4 h-4 text-forest" />
-                  <span>+ Registrar Docente</span>
+                  <GitFork className="w-4 h-4 text-white" />
                 </button>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
 
-      {/* Main Catalog View */}
-      <div className="space-y-4 animate-in fade-in duration-200">
+                {canManageGuides && (
+                  <button
+                    onClick={handleOpenCreate}
+                    className="hidden sm:flex px-4 py-2.5 bg-white text-forest hover:bg-white/90 text-xs font-bold rounded-xl shadow-xs transition-all items-center gap-2 hover:scale-105 active:scale-95 shrink-0 cursor-pointer"
+                  >
+                    <UserPlus className="w-4 h-4 text-forest" />
+                    <span>+ Registrar Docente</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Modern Floating Filter Toolbar */}
-        <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+        <div className="px-4 sm:px-6 md:px-8 pb-1 flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
 
           {/* Search Input */}
           <div className="flex-1 bg-white rounded-2xl px-3.5 py-2 flex items-center gap-2.5 border border-forest/15 shadow-xs">
@@ -555,249 +747,329 @@ export const GuidesSection: React.FC = () => {
               </PopoverContent>
             </Popover>
           </div>
-
         </div>
+      </div>
 
-        {/* Cards Grid */}
-        {loading ? (
-          <div className="py-16 text-center text-xs text-muted-foreground">Cargando equipo docente...</div>
-        ) : filtered.length === 0 ? (
-          <div className="bg-white rounded-3xl p-12 text-center border border-forest/10 shadow-xs space-y-3">
-            <div className="w-14 h-14 rounded-2xl bg-forest/5 text-forest flex items-center justify-center mx-auto">
-              <GraduationCap className="w-7 h-7 text-forest/40" />
-            </div>
-            <h3 className="text-base font-bold text-forest">
-              {isTutor ? 'No hay docentes vinculados a los salones de tus hijos' : 'No se encontraron docentes'}
-            </h3>
-            <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-              {isTutor
-                ? 'Las guías y asistentes aparecerán aquí cuando estén asignadas al salón Montessori de tus hijos.'
-                : search || roleFilter !== 'ALL' || envFilter !== 'ALL'
-                  ? 'Prueba con otros términos de búsqueda o filtros.'
-                  : 'Registra a tus guías titulares y asistentes para asignarles salones y permisos.'}
-            </p>
-            {isOwnerOrAdmin && (
-              <button
-                onClick={handleOpenCreate}
-                className="px-5 py-2.5 bg-forest text-white text-xs font-bold rounded-xl inline-flex items-center gap-2 shadow-xs transition-all hover:scale-105"
-              >
-                <UserPlus className="w-4 h-4" /> Registrar Primer Docente
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {filtered.map(guide => {
-              const roleCfg = STAFF_ROLES[(guide.staffRole as StaffRoleType) || 'LEAD_GUIDE'] || STAFF_ROLES.LEAD_GUIDE;
-              const certs = parseCertifications(guide.certifications);
-
-              // Dynamic experience computation
-              const startYr = guide.practiceStartYear || (guide.yearsOfExperience ? currentYear - guide.yearsOfExperience : null);
-              const calculatedYears = startYr ? Math.max(0, currentYear - startYr) : (guide.yearsOfExperience || 0);
-
-              const primaryEnv = guide.environments[0];
-              const accentColor = primaryEnv?.color || (
-                roleCfg.badgeText.includes('amber') ? '#d97706' :
-                  roleCfg.badgeText.includes('emerald') ? '#059669' :
-                    roleCfg.badgeText.includes('sky') ? '#0284c7' :
-                      roleCfg.badgeText.includes('purple') ? '#7e22ce' :
-                        '#1b3b2b'
-              );
-
-              return (
-                <div
-                  key={guide.id}
-                  onClick={() => handleOpenEdit(guide)}
-                  className="bg-white rounded-2xl p-3.5 sm:p-4 border border-forest/10 shadow-2xs hover:border-forest/30 hover:shadow-xs transition-all cursor-pointer group flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 relative"
+      {/* 2. SCROLLABLE CARDS AREA (ONLY THIS AREA SCROLLS) */}
+      <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar px-4 sm:px-6 md:px-8 py-2">
+          {loading ? (
+            <div className="py-16 text-center text-xs text-muted-foreground">Cargando equipo docente...</div>
+          ) : filtered.length === 0 ? (
+            <div className="bg-white rounded-3xl p-12 text-center border border-forest/10 shadow-xs space-y-3 my-4">
+              <div className="w-14 h-14 rounded-2xl bg-forest/5 text-forest flex items-center justify-center mx-auto">
+                <GraduationCap className="w-7 h-7 text-forest/40" />
+              </div>
+              <h3 className="text-base font-bold text-forest">
+                {isTutor ? 'No hay docentes vinculados a los salones de tus hijos' : 'No se encontraron docentes'}
+              </h3>
+              <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                {isTutor
+                  ? 'Las guías y asistentes aparecerán aquí cuando estén asignadas al salón Montessori de tus hijos.'
+                  : search || roleFilter !== 'ALL' || envFilter !== 'ALL'
+                    ? 'Prueba con otros términos de búsqueda o filtros.'
+                    : 'Registra a tus guías titulares y asistentes para asignarles salones y permisos.'}
+              </p>
+              {canManageGuides && (
+                <button
+                  onClick={handleOpenCreate}
+                  className="px-5 py-2.5 bg-forest text-white text-xs font-bold rounded-xl inline-flex items-center gap-2 shadow-xs transition-all hover:scale-105 cursor-pointer"
                 >
-                  {/* Left Color Accent Bar */}
+                  <UserPlus className="w-4 h-4" /> Registrar Primer Docente
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-3 pb-2">
+              {paginatedGuides.map(guide => {
+                const roleCfg = STAFF_ROLES[(guide.staffRole as StaffRoleType) || 'LEAD_GUIDE'] || STAFF_ROLES.LEAD_GUIDE;
+                const certs = parseCertifications(guide.certifications);
+
+                // Dynamic experience computation
+                const startYr = guide.practiceStartYear || (guide.yearsOfExperience ? currentYear - guide.yearsOfExperience : null);
+                const calculatedYears = startYr ? Math.max(0, currentYear - startYr) : (guide.yearsOfExperience || 0);
+
+                const primaryEnv = guide.environments[0];
+                const accentColor = primaryEnv?.color || (
+                  roleCfg.badgeText.includes('amber') ? '#d97706' :
+                    roleCfg.badgeText.includes('emerald') ? '#059669' :
+                      roleCfg.badgeText.includes('sky') ? '#0284c7' :
+                        roleCfg.badgeText.includes('purple') ? '#7e22ce' :
+                          '#1b3b2b'
+                );
+
+                const isOwnerGuide = guide.isOwner || guide.role === 'OWNER';
+
+                return (
                   <div
-                    className="absolute top-0 bottom-0 left-0 w-1.5 rounded-l-2xl"
-                    style={{ backgroundColor: accentColor }}
-                  />
-
-                  {/* Left Section: Avatar + Identity + Role + Contact */}
-                  <div className="flex items-center gap-3.5 min-w-0 pl-1.5 flex-1">
+                    key={guide.id}
+                    onClick={() => canManageGuides ? handleOpenEdit(guide) : setSelectedGuideForFicha(guide)}
+                    className="bg-white rounded-2xl p-3.5 sm:p-4 border border-forest/10 shadow-2xs hover:border-forest/30 hover:shadow-xs transition-all cursor-pointer group flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 relative"
+                  >
+                    {/* Left Color Accent Bar */}
                     <div
-                      className="w-12 h-12 min-w-[48px] min-h-[48px] max-w-[48px] max-h-[48px] rounded-2xl bg-forest/5 border-2 flex items-center justify-center font-bold text-base font-display text-forest shrink-0 overflow-hidden shadow-2xs group-hover:scale-105 transition-transform"
-                      style={{ borderColor: accentColor }}
-                    >
-                      {guide.avatarUrl ? (
-                        <img src={guide.avatarUrl} alt={guide.fullName} className="w-full h-full object-cover" />
-                      ) : (
-                        <span>{guide.fullName.charAt(0)}</span>
-                      )}
-                    </div>
+                      className="absolute top-0 bottom-0 left-0 w-1.5 rounded-l-2xl"
+                      style={{ backgroundColor: isOwnerGuide ? '#059669' : accentColor }}
+                    />
 
-                    <div className="min-w-0 flex-1 space-y-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h4 className="font-bold text-forest text-sm truncate leading-tight group-hover:text-forest/90">
-                          {guide.fullName}
-                        </h4>
-
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${roleCfg.badgeBg} ${roleCfg.badgeText} ${roleCfg.badgeBorder}`}>
-                          {roleCfg.label}
-                        </span>
-
-                        {startYr ? (
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-200/80 flex items-center gap-0.5 shrink-0">
-                            <Sparkles className="w-2.5 h-2.5 text-amber-600 fill-amber-500" />
-                            Desde {startYr} ({calculatedYears} {calculatedYears === 1 ? 'año' : 'años'})
-                          </span>
-                        ) : null}
-                      </div>
-
-                      {isTutor ? (
-                        <div className="flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap">
-                          {guide.jobTitle && (
-                            <span className="font-medium text-forest/80">{guide.jobTitle}</span>
-                          )}
-                          <span className="text-[10px] text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/60 font-semibold flex items-center gap-1">
-                            <GraduationCap className="w-3 h-3 text-emerald-700" />
-                            <span>Equipo Docente</span>
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-3 text-[11px] text-muted-foreground flex-wrap">
-                          {guide.jobTitle && (
-                            <span className="font-medium text-forest/70">{guide.jobTitle}</span>
-                          )}
-                          <span className="flex items-center gap-1 truncate max-w-[200px]" title={guide.email}>
-                            <Mail className="w-3 h-3 text-forest/50 shrink-0" />
-                            <span className="truncate">{guide.email}</span>
-                          </span>
-                          {guide.phone && (
-                            <span className="flex items-center gap-1 font-mono text-forest/80 shrink-0">
-                              <Phone className="w-3 h-3 text-forest/50 shrink-0" />
-                              {guide.phone}
-                            </span>
-                          )}
-                          {guide.supervisor && (
-                            <span className="flex items-center gap-1 text-[10px] text-forest/70 bg-forest/5 px-2 py-0.5 rounded-md border border-forest/10 shrink-0">
-                              <ShieldCheck className="w-3 h-3 text-forest/60 shrink-0" />
-                              <span>Supervisado por: <strong className="font-semibold text-forest">{guide.supervisor.fullName}</strong></span>
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Middle Section: Assigned Environments & Certifications */}
-                  <div className="flex flex-wrap lg:flex-nowrap items-center gap-2.5 lg:max-w-md xl:max-w-lg pl-1.5 lg:pl-0">
-                    {/* Environments */}
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      {guide.environments.length === 0 ? (
-                        <span className="text-[10px] text-amber-800 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200/60 font-medium flex items-center gap-1 shrink-0">
-                          <AlertCircle className="w-3 h-3 text-amber-600 shrink-0" />
-                          Sin salón
-                        </span>
-                      ) : (
-                        guide.environments.map(env => (
-                          <span
-                            key={env.id}
-                            className="text-[10px] font-bold px-2 py-0.5 rounded-lg text-white shadow-2xs flex items-center gap-1 shrink-0"
-                            style={{ backgroundColor: env.color || '#1b3b2b' }}
-                            title={`Salón: ${env.name}`}
-                          >
-                            <Layers className="w-3 h-3" />
-                            <span className="truncate max-w-[120px]">{env.name}</span>
-                          </span>
-                        ))
-                      )}
-                    </div>
-
-                    {/* Certifications (up to 2 visible chips + counter) */}
-                    {certs.length > 0 && (
-                      <div className="flex items-center gap-1 flex-wrap">
-                        {certs.slice(0, 2).map((c, idx) => (
-                          <span
-                            key={idx}
-                            className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-forest/5 text-forest border border-forest/10 shadow-2xs flex items-center gap-1 shrink-0"
-                            title={c.name}
-                          >
-                            <Award className="w-2.5 h-2.5 text-amber-600 shrink-0" />
-                            <span className="truncate max-w-[110px]">{c.name}</span>
-                            {c.year && (
-                              <span className="text-[9px] text-forest/70 font-mono font-bold bg-forest/10 px-1 py-0.2 rounded">
-                                {c.year}
-                              </span>
-                            )}
-                          </span>
-                        ))}
-                        {certs.length > 2 && (
-                          <span className="text-[9px] font-bold text-forest/60 bg-forest/5 px-1.5 py-0.5 rounded-md border border-forest/10 shrink-0">
-                            +{certs.length - 2}
-                          </span>
+                    {/* Left Section: Avatar + Identity + Role + Contact */}
+                    <div className="flex items-center gap-3.5 min-w-0 pl-1.5 flex-1">
+                      <div
+                        className="w-12 h-12 min-w-[48px] min-h-[48px] max-w-[48px] max-h-[48px] rounded-2xl bg-forest/5 border-2 flex items-center justify-center font-bold text-base font-display text-forest shrink-0 overflow-hidden shadow-2xs group-hover:scale-105 transition-transform"
+                        style={{ borderColor: isOwnerGuide ? '#10b981' : accentColor }}
+                      >
+                        {guide.avatarUrl ? (
+                          <img src={guide.avatarUrl} alt={guide.fullName} className="w-full h-full object-cover" />
+                        ) : (
+                          <span>{guide.fullName.charAt(0)}</span>
                         )}
                       </div>
-                    )}
-                  </div>
 
-                  {/* Right Section: Action buttons & Arrow */}
-                  <div className="flex items-center justify-end gap-1 shrink-0 pl-1.5 lg:pl-0" onClick={(e) => e.stopPropagation()}>
-                    {isTutor ? (
-                      <span className="text-xs text-forest/70 font-bold group-hover:text-forest flex items-center gap-1">
-                        <span>Ver Ficha</span>
-                        <ChevronRight className="w-4 h-4 text-forest/40 group-hover:text-forest group-hover:translate-x-0.5 transition-all" />
-                      </span>
-                    ) : (
-                      <div className="relative">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveDropdownGuideId(activeDropdownGuideId === guide.id ? null : guide.id);
-                          }}
-                          className="p-1.5 hover:bg-slate-100 text-slate-500 rounded-xl transition-all flex items-center justify-center cursor-pointer shadow-2xs hover:scale-105 active:scale-[0.95]"
-                          title="Acciones"
-                        >
-                          <MoreVertical className="w-4 h-4" />
-                        </button>
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="font-bold text-forest text-sm truncate leading-tight group-hover:text-forest/90">
+                            {guide.fullName}
+                          </h4>
 
-                        {/* Dropdown Popover */}
-                        {activeDropdownGuideId === guide.id && (
-                          <div className="absolute right-0 top-full mt-1.5 w-52 bg-white border border-forest/15 rounded-2xl shadow-xl py-1.5 z-[60] animate-in fade-in zoom-in-95 duration-100 text-foreground">
-                            <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b border-forest/5 mb-1">
-                              Acciones Docente
-                            </div>
-                            <div className="space-y-0.5 px-1">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  handleOpenEdit(guide);
-                                  setActiveDropdownGuideId(null);
-                                }}
-                                className="w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-700 hover:text-forest hover:bg-forest/5 transition-all flex items-center gap-2 cursor-pointer"
-                              >
-                                <Edit className="w-3.5 h-3.5 text-slate-500" />
-                                <span>{isOwnerOrAdmin ? "Editar Perfil" : "Ver Perfil"}</span>
-                              </button>
+                          {isOwnerGuide ? (
+                            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full border shrink-0 bg-emerald-50 text-emerald-800 border-emerald-300 flex items-center gap-1">
+                              <Sparkles className="w-2.5 h-2.5 text-emerald-600 fill-emerald-500" />
+                              <span>Propietario & Guía</span>
+                            </span>
+                          ) : (
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${roleCfg.badgeBg} ${roleCfg.badgeText} ${roleCfg.badgeBorder}`}>
+                              {roleCfg.label}
+                            </span>
+                          )}
 
-                              {isOwnerOrAdmin && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    handleDelete(guide.id, guide.fullName);
-                                    setActiveDropdownGuideId(null);
-                                  }}
-                                  className="w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 transition-all flex items-center gap-2 cursor-pointer"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-                                  <span>Desvincular Docente</span>
-                                </button>
-                              )}
-                            </div>
+                          {startYr ? (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-200/80 flex items-center gap-0.5 shrink-0">
+                              <Sparkles className="w-2.5 h-2.5 text-amber-600 fill-amber-500" />
+                              Desde {startYr} ({calculatedYears} {calculatedYears === 1 ? 'año' : 'años'})
+                            </span>
+                          ) : null}
+                        </div>
+
+                        {isTutor ? (
+                          <p className="text-xs text-muted-foreground line-clamp-1">
+                            {guide.jobTitle || 'Guía Montessori'} • {guide.environments.map(e => e.name).join(', ') || 'Sin salón asignado'}
+                          </p>
+                        ) : (
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                            <span className="flex items-center gap-1 font-medium">
+                              <Mail className="w-3.5 h-3.5 text-forest/40" />
+                              <span className="truncate max-w-[180px] sm:max-w-[240px]">{guide.email}</span>
+                            </span>
+
+                            {guide.phone && (
+                              <span className="hidden sm:flex items-center gap-1">
+                                <Phone className="w-3.5 h-3.5 text-forest/40" />
+                                <span>{guide.phone}</span>
+                              </span>
+                            )}
+
+                            {guide.jobTitle && (
+                              <span className="hidden md:inline-block text-[11px] text-forest/80 font-medium px-2 py-0.5 bg-forest/5 rounded-md border border-forest/10">
+                                {guide.jobTitle}
+                              </span>
+                            )}
                           </div>
                         )}
                       </div>
-                    )}
+                    </div>
+
+                    {/* Middle Section: Assigned Environments Tags */}
+                    <div className="flex items-center gap-1.5 flex-wrap pl-1.5 lg:pl-0 shrink-0">
+                      {guide.environments.length > 0 ? (
+                        guide.environments.map(env => (
+                          <span
+                            key={env.id}
+                            className="text-[11px] font-bold px-2.5 py-1 rounded-xl text-white shadow-2xs flex items-center gap-1 shrink-0"
+                            style={{ backgroundColor: env.color || '#1b3b2b' }}
+                          >
+                            <Building2 className="w-3 h-3 text-white/80" />
+                            <span>{env.name}</span>
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-[11px] text-muted-foreground/60 italic font-medium px-2 py-0.5 bg-slate-50 border border-slate-100 rounded-lg">
+                          Sin salones asignados
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Right Section: Badges & Action Buttons */}
+                    <div className="flex items-center justify-between lg:justify-end gap-2 pl-1.5 lg:pl-0 shrink-0 border-t lg:border-t-0 pt-2 lg:pt-0 border-forest/5">
+                      {/* Certifications Preview Count */}
+                      {certs.length > 0 ? (
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-900 border border-emerald-200/80 flex items-center gap-1">
+                            <Award className="w-3 h-3 text-emerald-600" />
+                            <span>{certs[0].title}</span>
+                            {certs.length > 1 && (
+                              <span className="ml-0.5 bg-emerald-200 text-emerald-950 px-1 rounded-full text-[9px]">
+                                +{certs.length - 1}
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="hidden sm:block text-[11px] text-muted-foreground/40">
+                          —
+                        </div>
+                      )}
+
+                      {/* Tutor Quick Actions (Email & Phone) */}
+                      {isTutor ? (
+                        <div className="flex items-center gap-1.5">
+                          <a
+                            href={`mailto:${guide.email}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-8 h-8 rounded-xl bg-forest/5 hover:bg-forest text-forest hover:text-white border border-forest/10 flex items-center justify-center transition-all shadow-2xs cursor-pointer"
+                            title="Enviar correo"
+                          >
+                            <Mail className="w-3.5 h-3.5" />
+                          </a>
+                          {guide.phone && (
+                            <a
+                              href={`tel:${guide.phone}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="w-8 h-8 rounded-xl bg-forest/5 hover:bg-forest text-forest hover:text-white border border-forest/10 flex items-center justify-center transition-all shadow-2xs cursor-pointer"
+                              title="Llamar"
+                            >
+                              <Phone className="w-3.5 h-3.5" />
+                            </a>
+                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedGuideForFicha(guide);
+                            }}
+                            className="px-3 py-1.5 rounded-xl bg-forest/5 hover:bg-forest text-forest hover:text-white border border-forest/10 text-xs font-bold flex items-center gap-1 transition-all cursor-pointer"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">Ver Ficha</span>
+                          </button>
+                        </div>
+                      ) : (
+                        /* Admin 3-Dots Dropdown Trigger */
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveDropdownGuideId(activeDropdownGuideId === guide.id ? null : guide.id);
+                            }}
+                            className="w-8 h-8 rounded-xl bg-forest/5 hover:bg-forest/15 text-forest flex items-center justify-center transition-colors border border-forest/10 cursor-pointer"
+                            title="Opciones del docente"
+                          >
+                            <MoreVertical className="w-4 h-4" />
+                          </button>
+
+                          {/* Floating Action Menu */}
+                          {activeDropdownGuideId === guide.id && (
+                            <>
+                              <div 
+                                className="fixed inset-0 z-50 cursor-default" 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveDropdownGuideId(null);
+                                }} 
+                              />
+                              <div className="absolute right-0 top-full mt-1.5 w-52 bg-white border border-forest/15 rounded-2xl shadow-xl py-1.5 z-[60] animate-in fade-in zoom-in-95 duration-100 text-foreground">
+                                <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b border-forest/5 mb-1">
+                                  Acciones Docente
+                                </div>
+                                <div className="space-y-0.5 px-1">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedGuideForFicha(guide);
+                                      setActiveDropdownGuideId(null);
+                                    }}
+                                    className="w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-700 hover:text-forest hover:bg-forest/5 transition-all flex items-center gap-2 cursor-pointer"
+                                  >
+                                    <Eye className="w-3.5 h-3.5 text-slate-500" />
+                                    <span>Ver Ficha Completa</span>
+                                  </button>
+
+                                  {canManageGuides && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleOpenEdit(guide);
+                                        setActiveDropdownGuideId(null);
+                                      }}
+                                      className="w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-700 hover:text-forest hover:bg-forest/5 transition-all flex items-center gap-2 cursor-pointer"
+                                    >
+                                      <Edit className="w-3.5 h-3.5 text-slate-500" />
+                                      <span>Editar Perfil</span>
+                                    </button>
+                                  )}
+
+                                  {isOwnerOrAdmin && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleImpersonate(guide);
+                                        setActiveDropdownGuideId(null);
+                                      }}
+                                      className="w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-700 hover:text-indigo-600 hover:bg-indigo-50 transition-all flex items-center gap-2 cursor-pointer"
+                                    >
+                                      <UserCheck className="w-3.5 h-3.5 text-indigo-600" />
+                                      <span>Acceder como {guide.fullName.split(' ')[0]}</span>
+                                    </button>
+                                  )}
+
+                                  {canManageGuides && (
+                                    isOwnerGuide ? (
+                                      <div className="px-2.5 py-1.5 text-[11px] font-semibold text-slate-500 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center gap-1.5">
+                                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                        <span>Propietario (Inmutable)</span>
+                                      </div>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleDelete(guide.id, guide.fullName);
+                                          setActiveDropdownGuideId(null);
+                                        }}
+                                        className="w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 transition-all flex items-center gap-2 cursor-pointer"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                                        <span>Desvincular Docente</span>
+                                      </button>
+                                    )
+                                  )}
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+      {/* 3. FIXED FOOTER WITH PAGINATOR (NEVER ENTERS SCROLL) */}
+      <div className="shrink-0 px-4 sm:px-6 md:px-8 py-2 bg-white/95 backdrop-blur-md border-t border-forest/10 z-10 shadow-2xs">
+        <PaginationControl
+          currentPage={validCurrentPage}
+          pageSize={pageSize}
+          totalItems={totalItems}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
+          itemLabel="docentes"
+        />
       </div>
 
       {/* ==================================================== */}
@@ -1212,6 +1484,22 @@ export const GuidesSection: React.FC = () => {
                 )}
               </div>
             </div>
+
+            {isOwnerOrAdmin && (
+              <div className="pt-3 border-t border-forest/10 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleImpersonate(selectedGuideForFicha);
+                    setSelectedGuideForFicha(null);
+                  }}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-2 cursor-pointer"
+                >
+                  <UserCheck className="w-4 h-4" />
+                  <span>Acceder como {selectedGuideForFicha.fullName.split(' ')[0]}</span>
+                </button>
+              </div>
+            )}
           </div>
         </ResponsiveModal>
       )}

@@ -43,6 +43,7 @@ export interface SchoolMembership {
   activeStudentsCount?: number;
   totalStudentsCount?: number;
   school: School;
+  permissions?: string[] | null;
 }
 
 export interface EnvironmentItem {
@@ -62,6 +63,8 @@ export interface EnvironmentItem {
   created_at: string;
   updated_at: string;
   student_count?: number;
+  guideIds?: string[];
+  guides?: Array<{ userId: string; isLead?: boolean }>;
 }
 
 export interface AuthorizedContactItem {
@@ -979,6 +982,101 @@ const mapWaitlistEntry = (w: any): WaitlistEntry => ({
 });
 
 // SCHOOLS API
+export interface SuperAdminSchoolItem extends School {
+  trial?: {
+    startDate: string;
+    trialEndsAt: string;
+    daysRemaining: number;
+    isTrialActive: boolean;
+    status: string;
+  };
+  billing?: {
+    subscriptionStatus: string;
+    totalPaid: number;
+    lastPaymentDate: string | null;
+    paymentHistory: Array<{
+      id: string;
+      amount: number;
+      date: string;
+      method: string;
+      reference?: string;
+      notes?: string;
+    }>;
+    billingCycle?: string;
+  };
+  stats?: {
+    studentsCount: number;
+    environmentsCount: number;
+    membershipsCount: number;
+    applicationsCount: number;
+    documentsCount: number;
+    estimatedMrr: number;
+    modulesCost: number;
+    envCost: number;
+  };
+  environments?: Array<{ id: string; name: string; stage?: string | null }>;
+}
+
+export async function getSuperAdminSchoolsSummary(): Promise<SuperAdminSchoolItem[]> {
+  try {
+    const res = await fetch('/api/superadmin/schools-summary', { headers: getAuthHeaders() });
+    if (!res.ok) return [];
+    return await res.json();
+  } catch (e) {
+    console.error('getSuperAdminSchoolsSummary error', e);
+    return [];
+  }
+}
+
+export async function recordSchoolSubscriptionPayment(schoolId: string, data: {
+  status?: string;
+  paymentAmount?: number;
+  paymentMethod?: string;
+  paymentReference?: string;
+  paymentNotes?: string;
+  extendTrialDays?: number;
+}): Promise<boolean> {
+  try {
+    const res = await fetch(`/api/superadmin/schools/${schoolId}/subscription`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data)
+    });
+    return res.ok;
+  } catch (e) {
+    console.error('recordSchoolSubscriptionPayment error', e);
+    return false;
+  }
+}
+
+export async function eradicateSchool(schoolId: string): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    const res = await fetch(`/api/superadmin/schools/${schoolId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      return { success: false, error: data.error || 'Error al erradicar colegio' };
+    }
+    return { success: true, message: data.message };
+  } catch (e: any) {
+    console.error('eradicateSchool error', e);
+    return { success: false, error: e.message || 'Error de conexión' };
+  }
+}
+
+export async function getSuperAdminInfrastructureStatus(): Promise<any> {
+  try {
+    const res = await fetch('/api/superadmin/infrastructure-status', { headers: getAuthHeaders() });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (e) {
+    console.error('getSuperAdminInfrastructureStatus error', e);
+    return null;
+  }
+}
+
 export async function getSchools(): Promise<School[]> {
   try {
     const res = await fetch('/api/schools', { headers: getAuthHeaders() });
@@ -1034,6 +1132,8 @@ export async function getEnvironments(): Promise<EnvironmentItem[]> {
       created_at: e.createdAt,
       updated_at: e.updatedAt,
       student_count: e._count?.students || 0,
+      guides: e.guides || [],
+      guideIds: (e.guides || []).map((g: any) => g.userId),
     }));
   } catch (err) {
     console.error('getEnvironments error', err);
@@ -1060,6 +1160,8 @@ export async function getEnvironment(id: string): Promise<EnvironmentItem | null
       created_at: e.createdAt,
       updated_at: e.updatedAt,
       student_count: e._count?.students || 0,
+      guides: e.guides || [],
+      guideIds: (e.guides || []).map((g: any) => g.userId),
     };
   } catch (err) {
     console.error('getEnvironment error', err);
@@ -3292,18 +3394,61 @@ export async function updateAdminPassword(email: string, newPassword: string): P
   });
 }
 
-export async function updateUserProfile(email: string, fullName: string, phone?: string): Promise<{ id: string; email: string; fullName: string; phone?: string }> {
+export async function getAuthUserProfile(email?: string): Promise<{
+  user: any;
+  membership: any;
+}> {
+  const schoolId = localStorage.getItem('ceiba_active_school_id') || '';
+  const schoolSlug = localStorage.getItem('ceiba_active_school_slug') || 'ceiba';
+  const userEmail = email || localStorage.getItem('ceiba_user_email') || '';
+
+  const headers: Record<string, string> = {};
+  if (schoolId) headers['x-school-id'] = schoolId;
+  if (schoolSlug) headers['x-school-slug'] = schoolSlug;
+  if (userEmail) headers['x-user-email'] = userEmail;
+
+  const res = await fetch(`/api/auth/profile${userEmail ? `?email=${encodeURIComponent(userEmail)}` : ''}`, {
+    headers,
+  });
+  if (!res.ok) {
+    throw new Error('Error al obtener perfil');
+  }
+  return await res.json();
+}
+
+export async function updateUserProfile(
+  email: string, 
+  fullName: string, 
+  phone?: string,
+  extra?: {
+    jobTitle?: string;
+    staffRole?: string;
+    certifications?: string;
+    practiceStartYear?: number | null;
+    yearsOfExperience?: number;
+    bio?: string;
+    isTeachingStaff?: boolean;
+  }
+): Promise<{ id: string; email: string; fullName: string; phone?: string; user?: any; membership?: any }> {
+  const schoolId = localStorage.getItem('ceiba_active_school_id') || '';
+  const schoolSlug = localStorage.getItem('ceiba_active_school_slug') || 'ceiba';
+
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (schoolId) headers['x-school-id'] = schoolId;
+  if (schoolSlug) headers['x-school-slug'] = schoolSlug;
+  if (email) headers['x-user-email'] = email;
+
   const res = await fetch('/api/auth/profile', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, fullName, phone }),
+    headers,
+    body: JSON.stringify({ email, fullName, phone, ...extra }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: 'Error al actualizar perfil' }));
     throw new Error(err.error || 'Error al actualizar perfil');
   }
   const data = await res.json();
-  return data.user;
+  return { ...data.user, user: data.user, membership: data.membership };
 }
 
 export async function uploadFile(file: File, folder: string = 'gallery'): Promise<{ url: string; fileName: string; size: number }> {
@@ -3361,7 +3506,8 @@ export interface GuideUserItem {
     staffRole?: string;
     jobTitle?: string;
   } | null;
-  role: 'TEACHER' | 'STAFF';
+  role: 'TEACHER' | 'STAFF' | 'OWNER' | 'ADMIN';
+  isOwner?: boolean;
   environments: Array<{
     id: string;
     name: string;
@@ -3377,6 +3523,7 @@ export interface GuideUserItem {
     jobTitle?: string;
   }> | null;
   supervisorIds?: string[];
+  permissions?: string[] | Record<string, any> | null;
 }
 
 export async function getGuides(): Promise<GuideUserItem[]> {
@@ -3414,6 +3561,7 @@ export async function createGuide(data: {
   password?: string;
   role?: 'TEACHER' | 'STAFF';
   environmentIds?: string[];
+  permissions?: string[] | null;
 }): Promise<any> {
   const res = await fetch('/api/guides', {
     method: 'POST',
@@ -3450,6 +3598,7 @@ export async function updateGuide(id: string, data: {
   supervisorIds?: string[];
   role?: 'TEACHER' | 'STAFF';
   environmentIds?: string[];
+  permissions?: string[] | null;
 }): Promise<any> {
   const res = await fetch(`/api/guides/${id}`, {
     method: 'PUT',
@@ -3506,6 +3655,22 @@ export async function addGuideDocument(guideId: string, data: {
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: 'Error al agregar documento' }));
     throw new Error(err.error || 'Error al agregar documento');
+  }
+  return await res.json();
+}
+
+export async function updateGuideDocument(guideId: string, docId: string, data: { name: string }): Promise<UserDocumentItem> {
+  const res = await fetch(`/api/guides/${guideId}/documents/${docId}`, {
+    method: 'PUT',
+    headers: {
+      ...getAuthHeaders(),
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Error al actualizar documento' }));
+    throw new Error(err.error || 'Error al actualizar documento');
   }
   return await res.json();
 }
@@ -3653,6 +3818,59 @@ export async function deleteMontessoriCategory(id: string): Promise<boolean> {
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: 'Error al eliminar categoría' }));
     throw new Error(err.error || 'Error al eliminar categoría');
+  }
+  return true;
+}
+
+export interface EnvironmentMaterialItem {
+  id: string;
+  environmentId: string;
+  name: string;
+  areaName: string;
+  categoryName?: string;
+  description?: string;
+  pedagogicalPurpose?: string;
+  skillsDeveloped?: string;
+  photoUrl?: string;
+  isActive: boolean;
+  sortOrder?: number;
+  lessonId?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export async function getEnvironmentMaterials(environmentId: string): Promise<EnvironmentMaterialItem[]> {
+  try {
+    const res = await fetch(`/api/environments/${environmentId}/materials`, { headers: getAuthHeaders() });
+    if (!res.ok) return [];
+    return await res.json();
+  } catch (e) {
+    console.error('getEnvironmentMaterials error', e);
+    return [];
+  }
+}
+
+export async function saveEnvironmentMaterial(environmentId: string, data: Partial<EnvironmentMaterialItem>): Promise<EnvironmentMaterialItem> {
+  const res = await fetch(`/api/environments/${environmentId}/materials`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Error al guardar material' }));
+    throw new Error(err.error || 'Error al guardar material');
+  }
+  return await res.json();
+}
+
+export async function deleteEnvironmentMaterial(environmentId: string, materialId: string): Promise<boolean> {
+  const res = await fetch(`/api/environments/${environmentId}/materials/${materialId}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Error al eliminar material' }));
+    throw new Error(err.error || 'Error al eliminar material');
   }
   return true;
 }
@@ -4532,6 +4750,54 @@ export async function generateCharacterizationConsensus(studentId: string): Prom
   return await res.json();
 }
 
+export interface AiCharacterizationInterviewResponse {
+  success: boolean;
+  reply: string;
+  isComplete: boolean;
+  progress: {
+    percent: number;
+    step: string;
+  };
+  extractedData?: {
+    authorRole?: AuthorRoleType;
+    contextArea?: ContextAreaType;
+    independenceLevel?: number;
+    socialGraceLevel?: number;
+    focusRegulationLevel?: number;
+    curiosityEngagementLevel?: number;
+    autonomyCareNotes?: string;
+    socialGraceNotes?: string;
+    focusRegulationNotes?: string;
+    interestsPassionsNotes?: string;
+    anecdoteHighlight?: string;
+    tags?: string[];
+  };
+  error?: string;
+}
+
+export async function sendCharacterizationAiInterview(payload: {
+  studentId: string;
+  studentName: string;
+  authorName: string;
+  authorRole: string;
+  messages: Array<{ role: 'user' | 'assistant'; content: string }>;
+  currentExtractedData?: any;
+}): Promise<AiCharacterizationInterviewResponse> {
+  const res = await fetch('/api/montessori/characterizations/ai-interview', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeaders()
+    },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Error en la entrevista IA' }));
+    throw new Error(err.error || 'Error en la entrevista IA');
+  }
+  return await res.json();
+}
+
 // ==========================================
 // SCHOOL FINANCES & TUITION PLANS TYPES & API
 // ==========================================
@@ -5167,6 +5433,106 @@ export async function getTutorNewsletters(): Promise<NewsletterItem[]> {
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.error || 'Error al obtener comunicados');
+  }
+  return await res.json();
+}
+
+export interface AnnouncementItem {
+  id: string;
+  schoolId: string;
+  title: string;
+  content: string;
+  targetAudience: 'ALL' | 'PARENTS' | 'STAFF';
+  targetEnvironmentIds: string[] | null;
+  sendEmail: boolean;
+  style: 'info' | 'warning' | 'danger' | 'success';
+  isMarquee: boolean;
+  isPeriodic: boolean;
+  periodicity: 'daily' | 'weekly' | 'monthly' | null;
+  displayDurationHours: number | null;
+  startDate: string;
+  endDate: string | null;
+  status: 'ACTIVE' | 'INACTIVE';
+  createdAt: string;
+  updatedAt: string;
+  views?: Array<{
+    viewedAt: string;
+    user: {
+      id: string;
+      fullName: string | null;
+      email: string;
+    };
+  }>;
+}
+
+export async function getAnnouncements(): Promise<AnnouncementItem[]> {
+  const res = await fetch('/api/announcements', {
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Error al obtener anuncios');
+  }
+  return await res.json();
+}
+
+export async function getActiveAnnouncements(): Promise<AnnouncementItem[]> {
+  const res = await fetch('/api/announcements/active', {
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Error al obtener anuncios activos');
+  }
+  return await res.json();
+}
+
+export async function createAnnouncement(data: Partial<AnnouncementItem>): Promise<AnnouncementItem> {
+  const res = await fetch('/api/announcements', {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Error al crear anuncio');
+  }
+  return await res.json();
+}
+
+export async function updateAnnouncement(id: string, data: Partial<AnnouncementItem>): Promise<AnnouncementItem> {
+  const res = await fetch(`/api/announcements/${id}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Error al actualizar anuncio');
+  }
+  return await res.json();
+}
+
+export async function deleteAnnouncement(id: string): Promise<{ success: boolean }> {
+  const res = await fetch(`/api/announcements/${id}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Error al eliminar anuncio');
+  }
+  return await res.json();
+}
+
+export async function markAnnouncementAsViewed(id: string): Promise<{ success: boolean }> {
+  const res = await fetch(`/api/announcements/${id}/view`, {
+    method: 'POST',
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Error al registrar vista de anuncio');
   }
   return await res.json();
 }

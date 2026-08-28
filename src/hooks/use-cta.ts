@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { useI18n } from '@/context/I18nContext';
+import { useSiteSettings } from '@/context/SettingsContext';
 
 export type CTAIntent = 
   | 'visit' 
@@ -11,8 +12,8 @@ export type CTAIntent =
 
 export function useCTA() {
   const { locale } = useI18n();
-  const ctaMode = import.meta.env.VITE_CTA_MODE || 'whatsapp';
-  const phone = import.meta.env.VITE_CONTACT_PHONE?.replace(/\s+/g, '') || '';
+  const { ctaMode, contactPhone } = useSiteSettings();
+  const phone = contactPhone.replace(/\s+/g, '');
   
   const getMessage = useCallback((intent: CTAIntent, extra?: string) => {
     const isEn = locale === 'en';

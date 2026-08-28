@@ -70,6 +70,7 @@ model School {
   processApplications   ProcessApplication[]
   processFormTemplates  ProcessFormTemplate[]
   newsletters       Newsletter[]
+  announcements     Announcement[]
 
   @@map("schools")
 }
@@ -96,6 +97,7 @@ model Environment {
   guides       EnvironmentGuide[]
   eventTargets EventTargetEnvironment[]
   processApplications   ProcessApplication[]
+  materials    EnvironmentMaterial[]
 
   @@map("environments")
 }
@@ -150,6 +152,7 @@ model User {
   authoredConferenceReports ProgressConferenceReport[]
   authoredCharacterizations StudentCharacterization[]
   staffDocuments           UserDocument[]
+  announcementViews        AnnouncementView[]
 
   @@map("users")
 }
@@ -174,6 +177,7 @@ model SchoolMembership {
   userId    String   @map("user_id")
   schoolId  String   @map("school_id")
   role      Role     @default(STAFF)
+  permissions Json?
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -417,6 +421,27 @@ model MontessoriLesson {
   progressRecords StudentLessonProgress[]
 
   @@map("montessori_lessons")
+}
+
+model EnvironmentMaterial {
+  id                 String      @id @default(uuid())
+  environmentId      String      @map("environment_id")
+  name               String
+  areaName           String      @default("Sensorial") @map("area_name")
+  categoryName       String?     @default("") @map("category_name")
+  description        String?     @default("")
+  pedagogicalPurpose String?     @default("") @map("pedagogical_purpose")
+  skillsDeveloped    String?     @default("") @map("skills_developed")
+  photoUrl           String?     @default("") @map("photo_url")
+  isActive           Boolean     @default(true) @map("is_active")
+  sortOrder          Int         @default(0) @map("sort_order")
+  lessonId           String?     @map("lesson_id")
+  createdAt          DateTime    @default(now()) @map("created_at")
+  updatedAt          DateTime    @updatedAt @map("updated_at")
+
+  environment        Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+
+  @@map("environment_materials")
 }
 
 model TrackerCategory {
@@ -1100,6 +1125,58 @@ model Newsletter {
   @@index([schoolId, status])
   @@index([scheduledAt])
   @@map("newsletters")
+}
+
+model Announcement {
+  id                    String    @id @default(uuid())
+  schoolId              String    @map("school_id")
+  title                 String
+  content               String    // Main announcement text/body
+  
+  // Target audience: 'ALL', 'PARENTS', 'STAFF'
+  targetAudience        String    @default("ALL") @map("target_audience")
+  
+  // Environment filter: list of environment ids (JSON array) or null
+  targetEnvironmentIds  Json?     @map("target_environment_ids")
+  
+  sendEmail             Boolean   @default(false) @map("send_email")
+  
+  // Presentation style: alert visual color level ('info', 'warning', 'danger', 'success')
+  style                 String    @default("info")
+  isMarquee             Boolean   @default(false) @map("is_marquee")
+  
+  // Periodicity settings
+  isPeriodic            Boolean   @default(false) @map("is_periodic")
+  periodicity           String?   // 'daily', 'weekly', 'monthly' or null
+  displayDurationHours  Int?      @map("display_duration_hours") // e.g. 24, 48, 72
+  
+  // Start/End date (presentation window)
+  startDate             DateTime  @default(now()) @map("start_date")
+  endDate               DateTime? @map("end_date")
+  
+  status                String    @default("ACTIVE") // 'ACTIVE', 'INACTIVE'
+  
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+  
+  school                School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  views                 AnnouncementView[]
+  
+  @@index([schoolId, status])
+  @@map("announcements")
+}
+
+model AnnouncementView {
+  id             String   @id @default(uuid())
+  announcementId String   @map("announcement_id")
+  userId         String   @map("user_id")
+  viewedAt       DateTime @default(now()) @map("viewed_at")
+
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, userId])
+  @@map("announcement_views")
 }
 
 

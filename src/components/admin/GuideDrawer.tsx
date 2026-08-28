@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   X,
   User,
+  Users,
+  HeartHandshake,
   FileText,
   Upload,
   GraduationCap,
@@ -15,6 +17,7 @@ import {
   Check,
   Plus,
   Trash2,
+  Pencil,
   ChevronRight,
   ChevronLeft,
   ChevronDown,
@@ -32,7 +35,33 @@ import {
   Facebook,
   Instagram,
   Youtube,
-  Linkedin
+  Linkedin,
+  Bell,
+  Globe,
+  ClipboardList,
+  CheckSquare,
+  Settings,
+  Activity,
+  Compass,
+  Heart,
+  Shield,
+  Star,
+  Sliders,
+  Smile,
+  Trophy,
+  CheckCircle2,
+  Info,
+  UserPlus,
+  Folder,
+  PieChart,
+  Clock,
+  Lock,
+  MapPin,
+  CreditCard,
+  Bookmark,
+  ListTodo,
+  Lightbulb,
+  Send
 } from 'lucide-react';
 import { SlideOverDrawer } from '@/components/ui/SlideOverDrawer';
 import { ImageUploadDropzone } from '@/components/ui/ImageUploadDropzone';
@@ -46,11 +75,14 @@ import {
   getAdmissionApplications,
   getGuideDocuments,
   addGuideDocument,
+  updateGuideDocument,
   deleteGuideDocument,
   UserDocumentItem,
   getAuthHeaders
 } from '@/lib/sqlite';
 import { useAuth } from '@/context/AuthContext';
+import { useConfirm } from '@/context/ConfirmDialogContext';
+import { useAdminDashboard } from '@/pages/admin/AdminDashboard';
 import { toast } from 'sonner';
 import { useSiteSettings } from '@/context/SettingsContext';
 import { getCountryIdLabels } from './CreateAdmissionModal';
@@ -192,6 +224,269 @@ export interface GuideDrawerProps {
   onSaved: () => void;
 }
 
+const getIconComponent = (iconName: string) => {
+  const icons: Record<string, any> = {
+    Workflow,
+    Layers,
+    ClipboardList,
+    UserPlus,
+    Compass,
+    Folder,
+    Calendar,
+    Settings,
+    BookOpen,
+    User,
+    Award,
+    CheckSquare,
+    FileText,
+    Activity,
+    Heart,
+    Shield,
+    Star,
+    GraduationCap,
+    Building2,
+    Sparkles,
+    Globe,
+    Sliders,
+    PieChart,
+    Bell,
+    Clock,
+    Lock,
+    Mail,
+    Phone,
+    MapPin,
+    CreditCard,
+    Bookmark,
+    ListTodo,
+    Lightbulb,
+    Send,
+    Smile,
+    Trophy
+  };
+  return icons[iconName] || Layers;
+};
+
+const getStandardIcon = (modId: string) => {
+  switch (modId) {
+    case 'finances': return CreditCard;
+    case 'students': return Users;
+    case 'graduated_students': return Award;
+    case 'tutors': return HeartHandshake;
+    case 'guides': return GraduationCap;
+    case 'waitlist': return Clock;
+    case 'admissions': return Workflow;
+    case 'processes': return Sliders;
+    case 'montessori': return Compass;
+    case 'curriculum': return BookOpen;
+    case 'environments': return Layers;
+    case 'attendance': return CheckCircle2;
+    case 'events': return Calendar;
+    case 'newsletters': return Mail;
+    case 'announcements': return Bell;
+    case 'documents': return FileText;
+    case 'forms': return CheckSquare;
+    case 'applications': return Globe;
+    case 'gallery': return Sparkles;
+    case 'traffic': return Activity;
+    case 'settings': return Settings;
+    default: return Layers;
+  }
+};
+
+export interface PermissionModuleItem {
+  id: string;
+  label: string;
+  desc: string;
+  readDesc: string;
+  writeDesc: string;
+}
+
+export interface PermissionCategoryGroup {
+  category: string;
+  icon?: any;
+  modules: PermissionModuleItem[];
+}
+
+const PERMISSION_GROUPS: PermissionCategoryGroup[] = [
+  {
+    category: 'Administración & Finanzas',
+    modules: [
+      {
+        id: 'finances',
+        label: 'Gestión de Finanzas & Pagos',
+        desc: 'Planes de pago, mensualidades, conceptos de cobro, conciliación y estado financiero',
+        readDesc: 'Ver balances y pagos',
+        writeDesc: 'Cobros, planes y pagos'
+      },
+    ]
+  },
+  {
+    category: 'Comunidad, Alumnos & Familias',
+    modules: [
+      {
+        id: 'students',
+        label: 'Matrícula Activa (Estudiantes)',
+        desc: 'Expedientes de alumnos activos, datos médicos, fichas y credenciales',
+        readDesc: 'Consultar alumnos',
+        writeDesc: 'Crear/editar alumnos'
+      },
+      {
+        id: 'graduated_students',
+        label: 'Alumnos Graduados',
+        desc: 'Expedientes y archivo histórico de egresados y diplomas',
+        readDesc: 'Ver egresados',
+        writeDesc: 'Gestionar graduados'
+      },
+      {
+        id: 'tutors',
+        label: 'Padres & Tutores (Familias)',
+        desc: 'Directorio familiar, autorizaciones de recogida y datos de contacto',
+        readDesc: 'Ver directorio familiar',
+        writeDesc: 'Editar datos y retiro'
+      },
+      {
+        id: 'guides',
+        label: 'Equipo Docente & Staff',
+        desc: 'Organigrama, expedientes de guías, asignación de salones y roles',
+        readDesc: 'Ver equipo docente',
+        writeDesc: 'Crear/editar empleados'
+      },
+    ]
+  },
+  {
+    category: 'Admisiones & Procesos',
+    modules: [
+      {
+        id: 'admissions',
+        label: 'Procesos de Admisión',
+        desc: 'Embudo general de admisiones, postulaciones, entrevistas y expedientes',
+        readDesc: 'Consultar postulaciones',
+        writeDesc: 'Mover etapas y evaluar'
+      },
+      {
+        id: 'processes',
+        label: 'Configuración de Procesos / Embudos',
+        desc: 'Etapas, automatizaciones, requisitos y diseño de embudos',
+        readDesc: 'Ver pipelines',
+        writeDesc: 'Crear/editar procesos'
+      },
+      {
+        id: 'waitlist',
+        label: 'Lista de Espera',
+        desc: 'Fichas y registro de aspirantes e interesados en cupos',
+        readDesc: 'Ver interesados',
+        writeDesc: 'Gestionar y matricular'
+      },
+      {
+        id: 'forms',
+        label: 'Formularios & Fichas',
+        desc: 'Constructor y plantillas de formularios dinámicos y encuestas',
+        readDesc: 'Ver plantillas',
+        writeDesc: 'Crear/editar formularios'
+      },
+    ]
+  },
+  {
+    category: 'Pedagogía Montessori & Salones',
+    modules: [
+      {
+        id: 'montessori',
+        label: 'Seguimiento Montessori & Progreso',
+        desc: 'Presentaciones, bitácora evolutiva, informes de progreso y matriz',
+        readDesc: 'Ver progreso y lecciones',
+        writeDesc: 'Registrar presentaciones'
+      },
+      {
+        id: 'curriculum',
+        label: 'Áreas y Currículo Montessori',
+        desc: 'Planes curriculares, lecciones y materiales Montessori',
+        readDesc: 'Consultar currículo',
+        writeDesc: 'Modificar planes'
+      },
+      {
+        id: 'environments',
+        label: 'Salones & Ambientes',
+        desc: 'Configuración de salones, capacidades y guías asignadas',
+        readDesc: 'Ver salones',
+        writeDesc: 'Crear/editar ambientes'
+      },
+      {
+        id: 'attendance',
+        label: 'Asistencia Diaria',
+        desc: 'Pase de lista diario, retardos y ausencias justificadas',
+        readDesc: 'Ver asistencia diaria',
+        writeDesc: 'Pasar lista y justificar'
+      },
+    ]
+  },
+  {
+    category: 'Comunicación, Difusión & Archivos',
+    modules: [
+      {
+        id: 'events',
+        label: 'Calendario & Eventos',
+        desc: 'Agenda institucional, citas pedagógicas y eventos escolares',
+        readDesc: 'Ver calendario escolar',
+        writeDesc: 'Crear y agendar eventos'
+      },
+      {
+        id: 'newsletters',
+        label: 'Boletines & Comunicados',
+        desc: 'Diseño y distribución de boletines escolares y comunicados',
+        readDesc: 'Ver comunicados enviados',
+        writeDesc: 'Diseñar y enviar boletines'
+      },
+      {
+        id: 'announcements',
+        label: 'Anuncios & Banners',
+        desc: 'Marquesinas y alertas urgentes superiores del sistema',
+        readDesc: 'Ver anuncios activos',
+        writeDesc: 'Publicar/borrar alertas'
+      },
+      {
+        id: 'documents',
+        label: 'Documentación General',
+        desc: 'Repositorio institucional, circulares y descargas de guías',
+        readDesc: 'Consultar y descargar',
+        writeDesc: 'Subir/eliminar archivos'
+      },
+      {
+        id: 'applications',
+        label: 'Aplicativos & Enlaces',
+        desc: 'Enlaces a portales externos y accesos directos escolares',
+        readDesc: 'Ver portales y links',
+        writeDesc: 'Configurar enlaces'
+      },
+      {
+        id: 'gallery',
+        label: 'Galería de Fotos',
+        desc: 'Álbumes y fotografías de la bitácora escolar',
+        readDesc: 'Visualizar fotos',
+        writeDesc: 'Subir y gestionar fotos'
+      },
+    ]
+  },
+  {
+    category: 'Configuración & Analítica',
+    modules: [
+      {
+        id: 'traffic',
+        label: 'Métricas de Tráfico Web',
+        desc: 'Estadísticas de visitas y análisis de navegación en el portal',
+        readDesc: 'Visualizar métricas',
+        writeDesc: 'Gestionar reportes'
+      },
+      {
+        id: 'settings',
+        label: 'Configuración Escolar',
+        desc: 'Datos del colegio, ciclo lectivo, logotipos y sede',
+        readDesc: 'Consultar ajustes',
+        writeDesc: 'Editar escuela y ajustes'
+      },
+    ]
+  }
+];
+
 export const GuideDrawer: React.FC<GuideDrawerProps> = ({
   isOpen,
   onClose,
@@ -202,6 +497,8 @@ export const GuideDrawer: React.FC<GuideDrawerProps> = ({
 }) => {
   const currentYear = new Date().getFullYear();
   const { role, user, userEmail } = useAuth();
+  const { isReadOnly, triggerBlockedAction } = useAdminDashboard();
+  const confirm = useConfirm();
   const isOwnerOrAdmin = role === 'OWNER' || role === 'ADMIN' || role === 'SUPERADMIN';
   const isTutor = role === 'TUTOR';
   const { schoolCountry } = useSiteSettings();
@@ -233,13 +530,93 @@ export const GuideDrawer: React.FC<GuideDrawerProps> = ({
   const [curp, setCurp] = useState('');
   const [saving, setSaving] = useState(false);
 
+  const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+  const [availableProcesses, setAvailableProcesses] = useState<any[]>([]);
 
+  const parsePermissions = (raw: any): string[] => {
+    if (!raw) return [];
+    if (Array.isArray(raw)) return raw.filter((x): x is string => typeof x === 'string');
+    if (typeof raw === 'string') {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed.filter((x): x is string => typeof x === 'string');
+        if (parsed && typeof parsed === 'object' && Array.isArray(parsed.modules)) {
+          return parsed.modules.filter((x): x is string => typeof x === 'string');
+        }
+      } catch {
+        return [];
+      }
+    }
+    if (typeof raw === 'object') {
+      if (Array.isArray(raw.modules)) {
+        return raw.modules.filter((x): x is string => typeof x === 'string');
+      }
+    }
+    return [];
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      getProcesses()
+        .then(setAvailableProcesses)
+        .catch(err => console.error('Failed to load processes in GuideDrawer:', err));
+    }
+  }, [isOpen]);
 
   // Documents States
   const [documents, setDocuments] = useState<UserDocumentItem[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(false);
-  const [uploadingDoc, setUploadingDoc] = useState(false);
-  const [newDocName, setNewDocName] = useState('');
+  const [uploadingDocs, setUploadingDocs] = useState(false);
+  const [uploadProgressText, setUploadProgressText] = useState('');
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [editingDocId, setEditingDocId] = useState<string | null>(null);
+  const [editingDocName, setEditingDocName] = useState('');
+  const [savingDocName, setSavingDocName] = useState(false);
+
+  // Horizontal scroll for tabs in edit mode
+  const tabsContainerRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const checkTabsScroll = useCallback(() => {
+    const el = tabsContainerRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setCanScrollLeft(scrollLeft > 4);
+    setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 4);
+  }, []);
+
+  useEffect(() => {
+    const el = tabsContainerRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', checkTabsScroll);
+    window.addEventListener('resize', checkTabsScroll);
+    checkTabsScroll();
+    return () => {
+      el.removeEventListener('scroll', checkTabsScroll);
+      window.removeEventListener('resize', checkTabsScroll);
+    };
+  }, [checkTabsScroll, currentStep, guide]);
+
+  useEffect(() => {
+    const timer = setTimeout(checkTabsScroll, 100);
+    return () => clearTimeout(timer);
+  }, [checkTabsScroll, currentStep]);
+
+  const scrollTabs = (direction: 'left' | 'right') => {
+    const el = tabsContainerRef.current;
+    if (!el) return;
+    const amount = direction === 'left' ? -180 : 180;
+    el.scrollBy({ left: amount, behavior: 'smooth' });
+  };
+
+  const EDIT_TABS = [
+    { step: 1, label: 'Identidad & Contacto', icon: User },
+    { step: 2, label: 'Currículum', icon: GraduationCap },
+    { step: 3, label: 'Rol & Salones', icon: Crown },
+    { step: 4, label: 'Documentos', icon: FileText },
+    { step: 5, label: 'Permisos (RBAC)', icon: ShieldCheck }
+  ];
 
   // Load documents
   useEffect(() => {
@@ -252,62 +629,116 @@ export const GuideDrawer: React.FC<GuideDrawerProps> = ({
     }
   }, [isOpen, guide?.id, currentStep]);
 
-  const handleUploadDocument = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!guide?.id) return;
+  const handleUploadFiles = async (files: FileList | File[]) => {
+    const fileArray = Array.from(files);
+    if (fileArray.length === 0 || !guide?.id) return;
 
-    const docName = newDocName.trim() || file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+    setUploadingDocs(true);
+    let successCount = 0;
+    let errorCount = 0;
 
-    try {
-      setUploadingDoc(true);
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('folder', 'documents');
-      formData.append('employeeId', guide.id);
+    const authHeaders: Record<string, string> = { ...getAuthHeaders() };
+    delete authHeaders['Content-Type'];
 
-      const uploadRes = await fetch('/api/upload', {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: formData
-      });
+    for (let i = 0; i < fileArray.length; i++) {
+      const file = fileArray[i];
+      const docName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+      setUploadProgressText(`Subiendo ${i + 1} de ${fileArray.length}: ${file.name}`);
 
-      if (!uploadRes.ok) {
-        throw new Error('No se pudo subir el archivo al servidor');
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('folder', 'documents');
+        formData.append('employeeId', guide.id);
+
+        const uploadRes = await fetch('/api/upload', {
+          method: 'POST',
+          headers: authHeaders,
+          body: formData
+        });
+
+        if (!uploadRes.ok) {
+          const errorData = await uploadRes.json().catch(() => ({}));
+          throw new Error(errorData.error || `Error al subir ${file.name}`);
+        }
+
+        const uploadData = await uploadRes.json();
+        if (!uploadData.url) {
+          throw new Error(`No se recibió la URL para ${file.name}`);
+        }
+
+        const newDoc = await addGuideDocument(guide.id, {
+          name: docName,
+          fileUrl: uploadData.url,
+          fileType: file.type || 'application/octet-stream',
+          fileSize: file.size
+        });
+
+        setDocuments(prev => [newDoc, ...prev]);
+        successCount++;
+      } catch (err: any) {
+        console.error('Error uploading document:', err);
+        errorCount++;
       }
+    }
 
-      const uploadData = await uploadRes.json();
-      if (!uploadData.url) {
-        throw new Error('No se recibió la URL del archivo');
+    setUploadingDocs(false);
+    setUploadProgressText('');
+
+    if (successCount > 0) {
+      if (successCount === 1) {
+        toast.success('Documento subido correctamente');
+      } else {
+        toast.success(`Se subieron ${successCount} documentos con éxito`);
       }
-
-      const newDoc = await addGuideDocument(guide.id, {
-        name: docName,
-        fileUrl: uploadData.url,
-        fileType: file.type || 'application/octet-stream',
-        fileSize: file.size
-      });
-
-      setDocuments(prev => [newDoc, ...prev]);
-      setNewDocName('');
-      toast.success('Documento subido correctamente');
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err.message || 'Error al subir el documento');
-    } finally {
-      setUploadingDoc(false);
-      e.target.value = '';
+    }
+    if (errorCount > 0) {
+      toast.error(`Hubo un error al subir ${errorCount} archivo(s)`);
     }
   };
 
-  const handleDeleteDocument = async (docId: string) => {
+  const handleStartEditDoc = (doc: UserDocumentItem) => {
+    setEditingDocId(doc.id);
+    setEditingDocName(doc.name);
+  };
+
+  const handleCancelEditDoc = () => {
+    setEditingDocId(null);
+    setEditingDocName('');
+  };
+
+  const handleSaveDocName = async (docId: string) => {
+    if (!guide?.id || !editingDocName.trim()) return;
+    setSavingDocName(true);
+    try {
+      const updated = await updateGuideDocument(guide.id, docId, { name: editingDocName.trim() });
+      setDocuments(prev => prev.map(d => d.id === docId ? { ...d, name: updated.name } : d));
+      setEditingDocId(null);
+      setEditingDocName('');
+      toast.success('Nombre del documento actualizado');
+    } catch (err: any) {
+      toast.error(err.message || 'Error al renombrar el documento');
+    } finally {
+      setSavingDocName(false);
+    }
+  };
+
+  const handleDeleteDocument = async (docId: string, docName?: string) => {
     if (!guide?.id) return;
-    if (!window.confirm('¿Estás seguro de que deseas eliminar este documento de la bitácora?')) return;
+    const ok = await confirm({
+      title: '¿Eliminar Documento?',
+      description: docName
+        ? `¿Estás seguro de que deseas eliminar el documento "${docName}"? Esta acción no se puede deshacer.`
+        : '¿Estás seguro de que deseas eliminar este documento? Esta acción no se puede deshacer.',
+      confirmText: 'Sí, eliminar',
+      variant: 'danger'
+    });
+    if (!ok) return;
 
     try {
       await deleteGuideDocument(guide.id, docId);
       setDocuments(prev => prev.filter(d => d.id !== docId));
-      toast.success('Documento eliminado');
+      toast.success('Documento eliminado correctamente');
     } catch (err: any) {
       toast.error(err.message || 'Error al eliminar el documento');
     }
@@ -338,6 +769,7 @@ export const GuideDrawer: React.FC<GuideDrawerProps> = ({
       setPassword('');
       setSystemRole(guide.role || 'TEACHER');
       setSelectedEnvIds(guide.environments ? guide.environments.map(e => e.id) : []);
+      setSelectedPermissions(parsePermissions(guide.permissions));
     } else {
       setFullName('');
       setEmail('');
@@ -360,6 +792,7 @@ export const GuideDrawer: React.FC<GuideDrawerProps> = ({
       setPassword('ceiba123');
       setSystemRole('TEACHER');
       setSelectedEnvIds([]);
+      setSelectedPermissions([]);
     }
     setCurrentStep(1);
     setWizardDirection('forward');
@@ -407,6 +840,10 @@ export const GuideDrawer: React.FC<GuideDrawerProps> = ({
   };
 
   const saveData = async (shouldClose: boolean) => {
+    if (isReadOnly) {
+      triggerBlockedAction('Registrar o modificar perfil de docente');
+      return;
+    }
     if (!fullName.trim()) {
       toast.error('El nombre es obligatorio');
       setCurrentStep(1);
@@ -438,7 +875,8 @@ export const GuideDrawer: React.FC<GuideDrawerProps> = ({
           socialTiktok: socialTiktok.trim() || undefined,
           socialYoutube: socialYoutube.trim() || undefined,
           role: systemRole,
-          environmentIds: selectedEnvIds
+          environmentIds: selectedEnvIds,
+          permissions: selectedPermissions
         });
         toast.success('Docente actualizado con éxito');
       } else {
@@ -464,7 +902,8 @@ export const GuideDrawer: React.FC<GuideDrawerProps> = ({
           socialYoutube: socialYoutube.trim() || undefined,
           password: password || 'ceiba123',
           role: systemRole,
-          environmentIds: selectedEnvIds
+          environmentIds: selectedEnvIds,
+          permissions: selectedPermissions
         });
         toast.success('Docente registrado con éxito');
       }
@@ -502,24 +941,53 @@ export const GuideDrawer: React.FC<GuideDrawerProps> = ({
       description={
         !isOwnerOrAdmin
           ? (guide?.jobTitle ? `${guide.jobTitle} • Equipo Pedagógico` : 'Perfil pedagógico, trayectoria y salones')
-          : `Paso ${currentStep} de ${guide ? 4 : 3} • ${currentStep === 1
-            ? 'Identidad, personal, fiscal y redes sociales'
-            : currentStep === 2
-              ? 'Currículum y trayectoria'
-              : currentStep === 3
-                ? 'Rol, cargo, supervisor y salones asignados'
-                : 'Expediente de documentos oficiales'
-          }`
+          : guide
+            ? 'Edición de datos personales, currículum, asignaciones, documentos y permisos'
+            : `Paso ${currentStep} de 3 • ${
+                currentStep === 1
+                  ? 'Identidad, personal, fiscal y redes sociales'
+                  : currentStep === 2
+                    ? 'Currículum y trayectoria'
+                    : 'Rol, cargo, supervisor y salones asignados'
+              }`
       }
       footer={
         !isOwnerOrAdmin ? (
           <button
             type="button"
             onClick={onClose}
-            className="w-full py-2.5 bg-forest hover:bg-forest/90 text-white text-xs font-bold rounded-xl shadow-xs transition-all"
+            className="w-full py-2.5 bg-forest hover:bg-forest/90 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer"
           >
             Cerrar Ficha
           </button>
+        ) : guide ? (
+          <div className="flex items-center justify-between w-full gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-5 py-2.5 text-xs font-bold text-muted-foreground hover:bg-forest/5 rounded-xl transition-colors cursor-pointer"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              form="guide-wizard-form"
+              disabled={saving}
+              className="px-7 py-2.5 text-xs font-bold bg-forest hover:bg-forest/90 text-white rounded-xl shadow-xs transition-all flex items-center gap-2 hover:scale-105 active:scale-95 disabled:opacity-50 cursor-pointer"
+            >
+              {saving ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Guardando...</span>
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4" />
+                  <span>Guardar y Cerrar</span>
+                </>
+              )}
+            </button>
+          </div>
         ) : (
           <div className="flex items-center justify-between w-full gap-3">
             {currentStep === 1 ? (
@@ -527,30 +995,18 @@ export const GuideDrawer: React.FC<GuideDrawerProps> = ({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-5 py-2.5 text-xs font-bold text-muted-foreground hover:bg-forest/5 rounded-xl transition-colors"
+                  className="px-5 py-2.5 text-xs font-bold text-muted-foreground hover:bg-forest/5 rounded-xl transition-colors cursor-pointer"
                 >
                   Cancelar
                 </button>
-                <div className="flex items-center gap-2">
-                  {guide && (
-                    <button
-                      type="button"
-                      onClick={() => saveData(false)}
-                      disabled={saving}
-                      className="px-4 py-2.5 text-xs font-bold text-forest hover:bg-forest/5 border border-forest/10 rounded-xl transition-colors"
-                    >
-                      {saving ? 'Guardando...' : 'Guardar'}
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => goToStep(2)}
-                    className="px-6 py-2.5 text-xs font-bold bg-forest hover:bg-forest/90 text-white rounded-xl shadow-xs transition-all flex items-center gap-1.5 hover:scale-105 active:scale-95 cursor-pointer"
-                  >
-                    <span>Siguiente: Currículum</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => goToStep(2)}
+                  className="px-6 py-2.5 text-xs font-bold bg-forest hover:bg-forest/90 text-white rounded-xl shadow-xs transition-all flex items-center gap-1.5 hover:scale-105 active:scale-95 cursor-pointer"
+                >
+                  <span>Siguiente: Currículum</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
               </>
             ) : currentStep === 2 ? (
               <>
@@ -562,61 +1018,20 @@ export const GuideDrawer: React.FC<GuideDrawerProps> = ({
                   <ChevronLeft className="w-4 h-4" />
                   <span>Atrás</span>
                 </button>
-                <div className="flex items-center gap-2">
-                  {guide && (
-                    <button
-                      type="button"
-                      onClick={() => saveData(false)}
-                      disabled={saving}
-                      className="px-4 py-2.5 text-xs font-bold text-forest hover:bg-forest/5 border border-forest/10 rounded-xl transition-colors"
-                    >
-                      {saving ? 'Guardando...' : 'Guardar'}
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => goToStep(3)}
-                    className="px-6 py-2.5 text-xs font-bold bg-forest hover:bg-forest/90 text-white rounded-xl shadow-xs transition-all flex items-center gap-1.5 hover:scale-105 active:scale-95 cursor-pointer"
-                  >
-                    <span>Siguiente: Rol / Cargo</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </>
-            ) : currentStep === 3 && guide ? (
-              <>
                 <button
                   type="button"
-                  onClick={() => goToStep(2)}
-                  className="px-5 py-2.5 text-xs font-bold text-forest hover:bg-forest/5 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
+                  onClick={() => goToStep(3)}
+                  className="px-6 py-2.5 text-xs font-bold bg-forest hover:bg-forest/90 text-white rounded-xl shadow-xs transition-all flex items-center gap-1.5 hover:scale-105 active:scale-95 cursor-pointer"
                 >
-                  <ChevronLeft className="w-4 h-4" />
-                  <span>Atrás</span>
+                  <span>Siguiente: Rol / Cargo</span>
+                  <ChevronRight className="w-4 h-4" />
                 </button>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => saveData(false)}
-                    disabled={saving}
-                    className="px-4 py-2.5 text-xs font-bold text-forest hover:bg-forest/5 border border-forest/10 rounded-xl transition-colors"
-                  >
-                    {saving ? 'Guardando...' : 'Guardar'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => goToStep(4)}
-                    className="px-6 py-2.5 text-xs font-bold bg-forest hover:bg-forest/90 text-white rounded-xl shadow-xs transition-all flex items-center gap-1.5 hover:scale-105 active:scale-95 cursor-pointer"
-                  >
-                    <span>Siguiente: Documentos</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
               </>
             ) : (
               <>
                 <button
                   type="button"
-                  onClick={() => goToStep(guide ? 3 : 2)}
+                  onClick={() => goToStep(2)}
                   className="px-5 py-2.5 text-xs font-bold text-forest hover:bg-forest/5 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -628,8 +1043,17 @@ export const GuideDrawer: React.FC<GuideDrawerProps> = ({
                   disabled={saving}
                   className="px-7 py-2.5 text-xs font-bold bg-forest hover:bg-forest/90 text-white rounded-xl shadow-xs transition-all flex items-center gap-2 hover:scale-105 active:scale-95 disabled:opacity-50 cursor-pointer"
                 >
-                  <Check className="w-4 h-4" />
-                  <span>{saving ? 'Guardando...' : (guide ? 'Guardar y Cerrar' : 'Finalizar Registro')}</span>
+                  {saving ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>Guardando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span>Finalizar Registro</span>
+                    </>
+                  )}
                 </button>
               </>
             )}
@@ -801,82 +1225,130 @@ export const GuideDrawer: React.FC<GuideDrawerProps> = ({
         </div>
       ) : (
         /* ==================================================== */
-        /* WIZARD DE 3 PASOS PARA REGISTRO / EDICIÓN (ADMINS)  */
+        /* NAVEGACIÓN: TABS (EDICIÓN) O WIZARD (REGISTRO)       */
         /* ==================================================== */
         <div className="space-y-6">
-          <div className="bg-forest/5 p-3 rounded-2xl border border-forest/10">
-            <div className={`grid gap-2 ${guide ? 'grid-cols-4' : 'grid-cols-3'}`}>
-              <button
-                type="button"
-                onClick={() => goToStep(1)}
-                className={`flex items-center gap-2 p-2 rounded-xl text-left transition-all ${currentStep === 1
-                  ? 'bg-white text-forest shadow-xs font-bold'
-                  : 'text-muted-foreground hover:text-forest hover:bg-white/50'
-                  }`}
-              >
-                <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${currentStep === 1 ? 'bg-forest text-white' : 'bg-forest/10 text-forest'
-                  }`}>
-                  1
-                </div>
-                <div className="hidden sm:block min-w-0">
-                  <span className="text-[11px] block truncate">Identidad</span>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => goToStep(2)}
-                className={`flex items-center gap-2 p-2 rounded-xl text-left transition-all ${currentStep === 2
-                  ? 'bg-white text-forest shadow-xs font-bold'
-                  : 'text-muted-foreground hover:text-forest hover:bg-white/50'
-                  }`}
-              >
-                <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${currentStep === 2 ? 'bg-forest text-white' : 'bg-forest/10 text-forest'
-                  }`}>
-                  2
-                </div>
-                <div className="hidden sm:block min-w-0">
-                  <span className="text-[11px] block truncate">Currículum</span>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => goToStep(3)}
-                className={`flex items-center gap-2 p-2 rounded-xl text-left transition-all ${currentStep === 3
-                  ? 'bg-white text-forest shadow-xs font-bold'
-                  : 'text-muted-foreground hover:text-forest hover:bg-white/50'
-                  }`}
-              >
-                <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${currentStep === 3 ? 'bg-forest text-white' : 'bg-forest/10 text-forest'
-                  }`}>
-                  3
-                </div>
-                <div className="hidden sm:block min-w-0">
-                  <span className="text-[11px] block truncate">Rol / Cargo</span>
-                </div>
-              </button>
-
-              {guide && (
+          {guide ? (
+            /* TABS CON SCROLL HORIZONTAL Y HANDLERS PARA EDICIÓN */
+            <div className="relative border-b border-forest/15 flex items-center bg-transparent">
+              {canScrollLeft && (
                 <button
                   type="button"
-                  onClick={() => goToStep(4)}
-                  className={`flex items-center gap-2 p-2 rounded-xl text-left transition-all ${currentStep === 4
-                    ? 'bg-white text-forest shadow-xs font-bold'
-                    : 'text-muted-foreground hover:text-forest hover:bg-white/50'
-                    }`}
+                  onClick={() => scrollTabs('left')}
+                  className="shrink-0 mr-1.5 p-1 sm:p-1.5 rounded-full bg-white hover:bg-forest/5 text-forest border border-forest/20 transition-all shadow-xs hover:scale-110 active:scale-95 cursor-pointer z-10 -mt-1"
+                  title="Desplazar pestañas a la izquierda"
+                  aria-label="Desplazar a la izquierda"
                 >
-                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${currentStep === 4 ? 'bg-forest text-white' : 'bg-forest/10 text-forest'
-                    }`}>
-                    4
-                  </div>
-                  <div className="hidden sm:block min-w-0">
-                    <span className="text-[11px] block truncate">Documentos</span>
-                  </div>
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+              )}
+
+              <div
+                ref={tabsContainerRef}
+                className="flex-1 flex items-center gap-2 sm:gap-5 overflow-x-auto no-scrollbar scroll-smooth whitespace-nowrap select-none touch-pan-x px-1"
+              >
+                {EDIT_TABS.map(tab => {
+                  const Icon = tab.icon;
+                  const isActive = currentStep === tab.step;
+                  return (
+                    <button
+                      key={tab.step}
+                      type="button"
+                      onClick={() => goToStep(tab.step)}
+                      className={`pb-3 px-1.5 sm:px-2 text-xs sm:text-sm transition-all flex items-center gap-2 shrink-0 border-b-2 cursor-pointer ${
+                        isActive
+                          ? 'border-forest text-forest font-bold font-display'
+                          : 'border-transparent text-slate-500 hover:text-forest font-medium hover:border-forest/30'
+                      }`}
+                    >
+                      <Icon className={`w-4 h-4 ${isActive ? 'text-forest' : 'text-slate-400'}`} />
+                      <span>{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {canScrollRight && (
+                <button
+                  type="button"
+                  onClick={() => scrollTabs('right')}
+                  className="shrink-0 ml-1.5 p-1 sm:p-1.5 rounded-full bg-white hover:bg-forest/5 text-forest border border-forest/20 transition-all shadow-xs hover:scale-110 active:scale-95 cursor-pointer z-10 -mt-1"
+                  title="Desplazar pestañas a la derecha"
+                  aria-label="Desplazar a la derecha"
+                >
+                  <ChevronRight className="w-4 h-4" />
                 </button>
               )}
             </div>
-          </div>
+          ) : (
+            /* WIZARD DE 3 PASOS PARA REGISTRO NUEVO */
+            <div className="bg-forest/5 p-3 rounded-2xl border border-forest/10">
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => goToStep(1)}
+                  className={`flex items-center gap-2 p-2 rounded-xl text-left transition-all ${
+                    currentStep === 1
+                      ? 'bg-white text-forest shadow-xs font-bold'
+                      : 'text-muted-foreground hover:text-forest hover:bg-white/50'
+                  }`}
+                >
+                  <div
+                    className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
+                      currentStep === 1 ? 'bg-forest text-white' : 'bg-forest/10 text-forest'
+                    }`}
+                  >
+                    1
+                  </div>
+                  <div className="hidden sm:block min-w-0">
+                    <span className="text-[11px] block truncate">Identidad</span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => goToStep(2)}
+                  className={`flex items-center gap-2 p-2 rounded-xl text-left transition-all ${
+                    currentStep === 2
+                      ? 'bg-white text-forest shadow-xs font-bold'
+                      : 'text-muted-foreground hover:text-forest hover:bg-white/50'
+                  }`}
+                >
+                  <div
+                    className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
+                      currentStep === 2 ? 'bg-forest text-white' : 'bg-forest/10 text-forest'
+                    }`}
+                  >
+                    2
+                  </div>
+                  <div className="hidden sm:block min-w-0">
+                    <span className="text-[11px] block truncate">Currículum</span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => goToStep(3)}
+                  className={`flex items-center gap-2 p-2 rounded-xl text-left transition-all ${
+                    currentStep === 3
+                      ? 'bg-white text-forest shadow-xs font-bold'
+                      : 'text-muted-foreground hover:text-forest hover:bg-white/50'
+                  }`}
+                >
+                  <div
+                    className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
+                      currentStep === 3 ? 'bg-forest text-white' : 'bg-forest/10 text-forest'
+                    }`}
+                  >
+                    3
+                  </div>
+                  <div className="hidden sm:block min-w-0">
+                    <span className="text-[11px] block truncate">Rol / Cargo</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+          )}
 
           <form id="guide-wizard-form" onSubmit={handleSave} className="space-y-6">
             {/* PASO 1: IDENTIDAD Y ROL */}
@@ -1209,8 +1681,8 @@ export const GuideDrawer: React.FC<GuideDrawerProps> = ({
                             <label
                               key={g.id}
                               className={`flex items-center gap-3 p-2 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${isChecked
-                                  ? 'bg-forest/5 border-forest/30 text-forest shadow-2xs'
-                                  : 'bg-white border-slate-100 hover:bg-slate-50 text-slate-700'
+                                ? 'bg-forest/5 border-forest/30 text-forest shadow-2xs'
+                                : 'bg-white border-slate-100 hover:bg-slate-50 text-slate-700'
                                 }`}
                             >
                               <input
@@ -1292,111 +1764,449 @@ export const GuideDrawer: React.FC<GuideDrawerProps> = ({
               </div>
             )}
 
-            {/* PASO 4: EXPEDIENTE DE DOCUMENTOS */}
+            {/* PASO 4: DOCUMENTOS OFICIALES */}
             {currentStep === 4 && guide && (
               <div className="space-y-6 animate-in fade-in duration-200">
                 <div className="bg-forest/5 border border-forest/10 p-4 rounded-2xl">
                   <h4 className="font-bold text-xs text-forest uppercase tracking-wider mb-1">
-                    Expediente & Bitácora de Documentos
+                    Bitácora & Documentos Oficiales
                   </h4>
                   <p className="text-[11px] text-forest/70">
-                    Sube y organiza contratos, certificaciones y otros archivos del expediente oficial de {guide.fullName}.
+                    Sube y organiza contratos, certificaciones y otros archivos oficiales de {guide.fullName}.
                   </p>
                 </div>
 
-                {/* Subir archivo */}
-                <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3.5">
-                  <span className="text-[11px] font-bold text-forest uppercase tracking-wider block">
-                    Subir Nuevo Documento
-                  </span>
+                {/* Full-width Drag & Drop Zone (Multiple Files) */}
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsDragOver(true);
+                  }}
+                  onDragLeave={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsDragOver(false);
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsDragOver(false);
+                    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                      handleUploadFiles(e.dataTransfer.files);
+                    }
+                  }}
+                  className={`w-full p-6 sm:p-8 rounded-3xl border-2 border-dashed transition-all text-center flex flex-col items-center justify-center gap-3 relative cursor-pointer group ${
+                    isDragOver
+                      ? 'border-forest bg-forest/10 scale-[1.01] shadow-md'
+                      : 'border-forest/20 hover:border-forest/40 bg-slate-50/70 hover:bg-forest/5'
+                  }`}
+                >
+                  <input
+                    type="file"
+                    multiple
+                    disabled={uploadingDocs}
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        handleUploadFiles(e.target.files);
+                        e.target.value = '';
+                      }
+                    }}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,.xls,.xlsx"
+                  />
 
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-600 mb-1.5">
-                      Nombre descriptivo del documento
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Ej. Contrato Laboral 2026, Cédula Profesional"
-                      value={newDocName}
-                      onChange={(e) => setNewDocName(e.target.value)}
-                      className="w-full px-3 py-2.5 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-forest/20 focus:border-forest"
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <label className="flex items-center justify-center gap-2 px-4 py-2.5 bg-forest hover:bg-forest/90 text-white text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer select-none">
-                      <Upload className="w-4 h-4" />
-                      <span>{uploadingDoc ? 'Subiendo...' : 'Seleccionar y subir archivo'}</span>
-                      <input
-                        type="file"
-                        onChange={handleUploadDocument}
-                        disabled={uploadingDoc}
-                        className="hidden"
-                      />
-                    </label>
-                    {uploadingDoc && (
-                      <span className="text-[11px] text-muted-foreground animate-pulse">Procesando archivo...</span>
+                  <div className="w-14 h-14 rounded-2xl bg-white border border-forest/15 text-forest flex items-center justify-center shadow-xs group-hover:scale-110 group-hover:border-forest/30 transition-transform">
+                    {uploadingDocs ? (
+                      <Upload className="w-6 h-6 text-forest animate-bounce" />
+                    ) : (
+                      <Upload className="w-6 h-6 text-forest" />
                     )}
                   </div>
+
+                  <div className="space-y-1 max-w-sm">
+                    <h4 className="font-bold text-forest text-sm">
+                      {uploadingDocs ? 'Subiendo archivos...' : 'Arrastrá tus documentos aquí o hacé clic para explorar'}
+                    </h4>
+                    <p className="text-xs text-muted-foreground">
+                      {uploadingDocs ? uploadProgressText : 'Soporta subida múltiple de archivos (PDF, Word, Excel, Imágenes)'}
+                    </p>
+                  </div>
+
+                  {uploadingDocs && (
+                    <div className="w-full max-w-xs bg-forest/10 rounded-full h-1.5 overflow-hidden mt-1">
+                      <div className="bg-forest h-full w-full animate-pulse" />
+                    </div>
+                  )}
                 </div>
 
                 {/* Listado de archivos */}
                 <div className="space-y-3">
                   <span className="text-[11px] font-bold text-forest uppercase tracking-wider block">
-                    Archivos en el Expediente ({documents.length})
+                    Documentos Guardados ({documents.length})
                   </span>
 
                   {loadingDocs ? (
                     <div className="py-8 text-center text-xs text-muted-foreground">
-                      Cargando documentos del expediente...
+                      Cargando documentos...
                     </div>
                   ) : documents.length === 0 ? (
                     <div className="text-center py-8 text-xs text-muted-foreground italic bg-white border border-forest/5 rounded-2xl">
-                      No hay ningún documento guardado en este expediente.
+                      No hay ningún documento guardado para este usuario.
                     </div>
                   ) : (
                     <div className="space-y-2.5">
                       {documents.map(doc => {
                         const fileExt = doc.fileUrl.split('.').pop()?.toLowerCase() || '';
                         const formattedSize = doc.fileSize
-                          ? `${(doc.fileSize / 1024).toFixed(1)} KB`
-                          : 'Tamaño desconocido';
+                          ? `${(doc.fileSize / (1024 * 1024)).toFixed(2)} MB`
+                          : 'Archivo adjunto';
+                        const isEditing = editingDocId === doc.id;
 
                         return (
                           <div
                             key={doc.id}
                             className="bg-white border border-slate-100 hover:border-forest/20 p-3 rounded-2xl flex items-center justify-between gap-3 shadow-2xs group transition-all"
                           >
-                            <div className="flex items-center gap-3 min-w-0">
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
                               <div className="w-9 h-9 rounded-xl bg-forest/5 border border-forest/10 flex items-center justify-center shrink-0">
                                 <FileText className="w-5 h-5 text-forest" />
                               </div>
-                              <div className="min-w-0">
-                                <a
-                                  href={doc.fileUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="font-bold text-xs text-forest hover:underline block truncate"
-                                >
-                                  {doc.name}
-                                </a>
-                                <span className="text-[10px] text-muted-foreground block mt-0.5">
-                                  {fileExt.toUpperCase()} • {formattedSize} • Sido subido el {new Date(doc.createdAt).toLocaleDateString()}
-                                </span>
+                              <div className="min-w-0 flex-1">
+                                {isEditing ? (
+                                  <form
+                                    onSubmit={(e) => {
+                                      e.preventDefault();
+                                      handleSaveDocName(doc.id);
+                                    }}
+                                    className="flex items-center gap-1.5"
+                                  >
+                                    <input
+                                      type="text"
+                                      autoFocus
+                                      value={editingDocName}
+                                      onChange={(e) => setEditingDocName(e.target.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Escape') handleCancelEditDoc();
+                                      }}
+                                      className="w-full text-xs font-bold px-2.5 py-1.5 bg-white border border-forest/30 rounded-xl focus:outline-none focus:ring-1 focus:ring-forest text-forest shadow-2xs"
+                                    />
+                                    <button
+                                      type="submit"
+                                      disabled={savingDocName || !editingDocName.trim()}
+                                      className="p-1.5 bg-forest hover:bg-forest/90 text-white rounded-xl transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+                                      title="Guardar nombre"
+                                    >
+                                      <Check className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={handleCancelEditDoc}
+                                      className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
+                                      title="Cancelar"
+                                    >
+                                      <X className="w-3.5 h-3.5" />
+                                    </button>
+                                  </form>
+                                ) : (
+                                  <>
+                                    <a
+                                      href={doc.fileUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="font-bold text-xs text-forest hover:underline block truncate"
+                                    >
+                                      {doc.name}
+                                    </a>
+                                    <span className="text-[10px] text-muted-foreground block mt-0.5">
+                                      {fileExt.toUpperCase()} • {formattedSize} • Subido el {new Date(doc.createdAt).toLocaleDateString()}
+                                    </span>
+                                  </>
+                                )}
                               </div>
                             </div>
 
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteDocument(doc.id)}
-                              className="p-2 rounded-xl text-muted-foreground hover:text-rose-600 hover:bg-rose-50 transition-all shrink-0 cursor-pointer"
-                              title="Eliminar documento"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            {!isEditing && (
+                              <div className="flex items-center gap-1 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => handleStartEditDoc(doc)}
+                                  className="p-2 rounded-xl text-muted-foreground hover:text-forest hover:bg-forest/5 transition-all cursor-pointer"
+                                  title="Cambiar nombre del documento"
+                                >
+                                  <Pencil className="w-4 h-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteDocument(doc.id, doc.name)}
+                                  className="p-2 rounded-xl text-muted-foreground hover:text-rose-600 hover:bg-rose-50 transition-all shrink-0 cursor-pointer"
+                                  title="Eliminar documento"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            )}
                           </div>
                         );
                       })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* PASO 5: PERMISOS & ACCESOS */}
+            {/* STEP 5: PERMISSIONS (RBAC) */}
+            {currentStep === 5 && (
+              <div className="space-y-6 animate-in fade-in duration-300">
+                {/* Permissions Banner */}
+                <div className="p-4 sm:p-5 rounded-2xl bg-forest/5 border border-forest/10 flex items-start gap-3.5">
+                  <div className="w-9 h-9 rounded-xl bg-forest text-white flex items-center justify-center shrink-0 shadow-2xs">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="font-bold text-forest text-xs sm:text-sm">Control de Acceso Granular (RBAC)</h4>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Definí con precisión los módulos a los que esta guía puede acceder. Podés otorgar permisos de <strong>solo lectura</strong> o <strong>escritura/gestión completa</strong> por herramienta.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Quick Bulk Actions Toolbar */}
+                <div className="flex items-center justify-between gap-2 flex-wrap bg-slate-50 p-2.5 rounded-2xl border border-slate-200">
+                  <div className="text-[11px] font-bold text-forest flex items-center gap-1.5 pl-1">
+                    <ShieldCheck className="w-4 h-4 text-forest" />
+                    <span>Acciones Rápidas:</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const allReadKeys: string[] = [];
+                        PERMISSION_GROUPS.forEach(g => {
+                          g.modules.forEach(m => allReadKeys.push(`${m.id}:read`));
+                        });
+                        availableProcesses.forEach(p => allReadKeys.push(`process_${p.slug}:read`));
+                        const existingWrites = (selectedPermissions || []).filter(p => p.endsWith(':write'));
+                        setSelectedPermissions(Array.from(new Set([...allReadKeys, ...existingWrites])));
+                      }}
+                      className="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-white text-forest border border-forest/15 hover:bg-forest/5 transition-all shadow-3xs cursor-pointer"
+                    >
+                      + Todo Lectura
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const allKeys: string[] = [];
+                        PERMISSION_GROUPS.forEach(g => {
+                          g.modules.forEach(m => allKeys.push(`${m.id}:read`, `${m.id}:write`));
+                        });
+                        availableProcesses.forEach(p => allKeys.push(`process_${p.slug}:read`, `process_${p.slug}:write`));
+                        setSelectedPermissions(Array.from(new Set(allKeys)));
+                      }}
+                      className="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-forest text-white hover:bg-forest/90 transition-all shadow-3xs cursor-pointer"
+                    >
+                      + Control Total
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPermissions([])}
+                      className="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition-all shadow-3xs cursor-pointer"
+                    >
+                      Limpiar Todo
+                    </button>
+                  </div>
+                </div>
+
+                {/* Categorized Permissions Tables */}
+                <div className="space-y-6">
+                  {PERMISSION_GROUPS.map(group => (
+                    <div key={group.category} className="space-y-2.5">
+                      <div className="flex items-center justify-between px-1">
+                        <span className="text-[11px] font-bold text-forest uppercase tracking-wider block font-display">
+                          {group.category}
+                        </span>
+                        <span className="text-[10px] font-semibold text-muted-foreground bg-forest/5 px-2 py-0.5 rounded-full border border-forest/10">
+                          {group.modules.length} {group.modules.length === 1 ? 'módulo' : 'módulos'}
+                        </span>
+                      </div>
+
+                      <div className="border border-slate-100 rounded-2xl overflow-hidden shadow-2xs bg-white">
+                        <div className="grid grid-cols-12 bg-slate-50 border-b border-slate-100 p-2.5 sm:p-3 text-[10px] font-black uppercase tracking-wider text-slate-500">
+                          <div className="col-span-6 sm:col-span-6">Módulo / Herramienta</div>
+                          <div className="col-span-3 sm:col-span-3 text-center">Lectura</div>
+                          <div className="col-span-3 sm:col-span-3 text-center">Escritura</div>
+                        </div>
+
+                        <div className="divide-y divide-slate-100">
+                          {group.modules.map(mod => {
+                            const safePerms = Array.isArray(selectedPermissions) ? selectedPermissions : [];
+                            const readKey = `${mod.id}:read`;
+                            const writeKey = `${mod.id}:write`;
+                            const hasRead = safePerms.includes(readKey) || safePerms.includes(mod.id);
+                            const hasWrite = safePerms.includes(writeKey);
+                            const ModIcon = getStandardIcon(mod.id);
+
+                            const handleReadChange = () => {
+                              if (hasRead) {
+                                setSelectedPermissions(safePerms.filter(p => p !== readKey && p !== writeKey && p !== mod.id));
+                              } else {
+                                setSelectedPermissions([...safePerms.filter(p => p !== mod.id), readKey]);
+                              }
+                            };
+
+                            const handleWriteChange = () => {
+                              if (hasWrite) {
+                                setSelectedPermissions(safePerms.filter(p => p !== writeKey));
+                              } else {
+                                const listWithoutReadWrite = safePerms.filter(p => p !== readKey && p !== writeKey && p !== mod.id);
+                                setSelectedPermissions([...listWithoutReadWrite, readKey, writeKey]);
+                              }
+                            };
+
+                            return (
+                              <div key={mod.id} className="grid grid-cols-12 p-3 sm:p-3.5 items-center hover:bg-slate-50/50 transition-all gap-2">
+                                <div className="col-span-6 sm:col-span-6 pr-2 flex items-center gap-2.5 min-w-0">
+                                  <div className="w-8 h-8 rounded-xl bg-forest/5 text-forest flex items-center justify-center border border-forest/10 shrink-0 shadow-2xs">
+                                    <ModIcon className="w-4 h-4 text-forest" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="font-bold text-xs text-forest block leading-snug truncate">{mod.label}</span>
+                                    <span className="text-[10px] text-muted-foreground block leading-tight mt-0.5 truncate">{mod.desc}</span>
+                                  </div>
+                                </div>
+
+                                {/* Read Column */}
+                                <div className="col-span-3 sm:col-span-3 flex flex-col items-center justify-center">
+                                  <label className="flex flex-col items-center gap-1 cursor-pointer select-none">
+                                    <input
+                                      type="checkbox"
+                                      checked={hasRead}
+                                      onChange={handleReadChange}
+                                      className="accent-forest rounded w-3.5 h-3.5 cursor-pointer"
+                                    />
+                                    <span className="text-[9px] text-slate-500 font-medium text-center leading-none mt-1 max-w-[80px] hidden sm:block">
+                                      {mod.readDesc}
+                                    </span>
+                                  </label>
+                                </div>
+
+                                {/* Write Column */}
+                                <div className="col-span-3 sm:col-span-3 flex flex-col items-center justify-center">
+                                  <label className="flex flex-col items-center gap-1 cursor-pointer select-none">
+                                    <input
+                                      type="checkbox"
+                                      checked={hasWrite}
+                                      onChange={handleWriteChange}
+                                      className="accent-forest rounded w-3.5 h-3.5 cursor-pointer"
+                                    />
+                                    <span className="text-[9px] text-slate-500 font-medium text-center leading-none mt-1 max-w-[80px] hidden sm:block">
+                                      {mod.writeDesc}
+                                    </span>
+                                  </label>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Dynamic configured admissions processes / pipelines */}
+                  {availableProcesses.length > 0 && (
+                    <div className="space-y-2.5 pt-2 border-t border-slate-100">
+                      <div className="flex items-center justify-between px-1">
+                        <span className="text-[11px] font-bold text-forest uppercase tracking-wider block font-display">
+                          Procesos y Pipelines Configurados
+                        </span>
+                        <span className="text-[10px] font-semibold text-muted-foreground bg-forest/5 px-2 py-0.5 rounded-full border border-forest/10">
+                          {availableProcesses.length} {availableProcesses.length === 1 ? 'pipeline' : 'pipelines'}
+                        </span>
+                      </div>
+
+                      <div className="border border-slate-100 rounded-2xl overflow-hidden shadow-2xs bg-white">
+                        <div className="grid grid-cols-12 bg-slate-50 border-b border-slate-100 p-2.5 sm:p-3 text-[10px] font-black uppercase tracking-wider text-slate-500">
+                          <div className="col-span-6 sm:col-span-6">Proceso / Embudo</div>
+                          <div className="col-span-3 sm:col-span-3 text-center">Lectura</div>
+                          <div className="col-span-3 sm:col-span-3 text-center">Escritura</div>
+                        </div>
+
+                        <div className="divide-y divide-slate-100">
+                          {availableProcesses.map(proc => {
+                            const safePerms = Array.isArray(selectedPermissions) ? selectedPermissions : [];
+                            const basePermId = `process_${proc.slug}`;
+                            const readKey = `${basePermId}:read`;
+                            const writeKey = `${basePermId}:write`;
+                            const hasRead = safePerms.includes(readKey) || safePerms.includes(basePermId);
+                            const hasWrite = safePerms.includes(writeKey);
+                            const ProcIcon = getIconComponent(proc.icon);
+
+                            const handleReadChange = () => {
+                              if (hasRead) {
+                                setSelectedPermissions(safePerms.filter(p => p !== readKey && p !== writeKey && p !== basePermId));
+                              } else {
+                                setSelectedPermissions([...safePerms.filter(p => p !== basePermId), readKey]);
+                              }
+                            };
+
+                            const handleWriteChange = () => {
+                              if (hasWrite) {
+                                setSelectedPermissions(safePerms.filter(p => p !== writeKey));
+                              } else {
+                                const listWithoutReadWrite = safePerms.filter(p => p !== readKey && p !== writeKey && p !== basePermId);
+                                setSelectedPermissions([...listWithoutReadWrite, readKey, writeKey]);
+                              }
+                            };
+
+                            return (
+                              <div key={proc.id} className="grid grid-cols-12 p-3 sm:p-3.5 items-center hover:bg-slate-50/50 transition-all gap-2">
+                                <div className="col-span-6 sm:col-span-6 pr-2 flex items-center gap-2.5 min-w-0">
+                                  <div className="w-8 h-8 rounded-xl bg-forest/5 text-forest flex items-center justify-center border border-forest/10 shrink-0 shadow-2xs">
+                                    <ProcIcon className="w-4 h-4 text-forest" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="font-bold text-xs text-forest block leading-snug truncate">{proc.name || proc.title}</span>
+                                    <span className="text-[10px] text-muted-foreground block leading-tight mt-0.5 truncate">Pipeline "{proc.slug}"</span>
+                                  </div>
+                                </div>
+
+                                {/* Read Column */}
+                                <div className="col-span-3 sm:col-span-3 flex flex-col items-center justify-center">
+                                  <label className="flex flex-col items-center gap-1 cursor-pointer select-none">
+                                    <input
+                                      type="checkbox"
+                                      checked={hasRead}
+                                      onChange={handleReadChange}
+                                      className="accent-forest rounded w-3.5 h-3.5 cursor-pointer"
+                                    />
+                                    <span className="text-[9px] text-slate-500 font-medium text-center leading-none mt-1 max-w-[80px] hidden sm:block">
+                                      Ver prospectos
+                                    </span>
+                                  </label>
+                                </div>
+
+                                {/* Write Column */}
+                                <div className="col-span-3 sm:col-span-3 flex flex-col items-center justify-center">
+                                  <label className="flex flex-col items-center gap-1 cursor-pointer select-none">
+                                    <input
+                                      type="checkbox"
+                                      checked={hasWrite}
+                                      onChange={handleWriteChange}
+                                      className="accent-forest rounded w-3.5 h-3.5 cursor-pointer"
+                                    />
+                                    <span className="text-[9px] text-slate-500 font-medium text-center leading-none mt-1 max-w-[80px] hidden sm:block">
+                                      Editar y mover
+                                    </span>
+                                  </label>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>

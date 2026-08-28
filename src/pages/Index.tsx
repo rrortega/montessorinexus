@@ -35,7 +35,7 @@ const Index = () => {
   }, [mouseX, mouseY]);
 
   return (
-    <div className="min-h-screen overflow-x-hidden selection:bg-primary/30">
+    <div className="min-h-screen overflow-x-clip selection:bg-primary/30">
       <SEO />
       {/* Global Mouse Follower (Subtle) */}
       <motion.div

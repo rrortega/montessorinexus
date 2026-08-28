@@ -576,6 +576,57 @@ prisma.admissionStage = prisma.processStage;
 prisma.admissionApplication = prisma.processApplication;
 prisma.admissionFormTemplate = prisma.processFormTemplate;
 
+/**
+ * Automatically provisions and synchronizes the global Super Super Admin user (admin@montessorinexus.com)
+ * with the password defined in the SUPERADMIN_PASSWORD environment variable.
+ */
+async function ensureSuperAdminUser() {
+  try {
+    const superAdminEmail = (process.env.SUPERADMIN_EMAIL || 'admin@montessorinexus.com').trim().toLowerCase();
+    const superAdminPassword = process.env.SUPERADMIN_PASSWORD || process.env.SUPER_ADMIN_PASSWORD || 'NexusSuperAdmin2026!';
+    const passwordHash = crypto.createHash('sha256').update(superAdminPassword).digest('hex');
+
+    const superAdmin = await prisma.user.upsert({
+      where: { email: superAdminEmail },
+      update: {
+        fullName: 'Super Admin Montessori Nexus',
+        passwordHash,
+        jobTitle: 'Global Super Administrator',
+        staffRole: 'OWNER'
+      },
+      create: {
+        email: superAdminEmail,
+        passwordHash,
+        fullName: 'Super Admin Montessori Nexus',
+        jobTitle: 'Global Super Administrator',
+        staffRole: 'OWNER'
+      }
+    });
+
+    const allSchools = await prisma.school.findMany({ select: { id: true, name: true } });
+    for (const school of allSchools) {
+      await prisma.schoolMembership.upsert({
+        where: {
+          userId_schoolId: {
+            userId: superAdmin.id,
+            schoolId: school.id
+          }
+        },
+        update: { role: 'OWNER' },
+        create: {
+          userId: superAdmin.id,
+          schoolId: school.id,
+          role: 'OWNER'
+        }
+      });
+    }
+
+    console.log(`👑 [SUPERADMIN] Provisioned global super-admin (${superAdminEmail}) with OWNER access across ${allSchools.length} school(s).`);
+  } catch (err) {
+    console.error('❌ [SUPERADMIN ERROR] Failed to ensure super-admin user:', err.message);
+  }
+}
+
 const galleryData = JSON.parse(
   fs.readFileSync(path.join(__dirname, '../src/data/gallery.json'), 'utf-8')
 );
@@ -689,6 +740,13 @@ app.post('/api/kyc/verify-curp', async (req, res) => {
   }
 });
 
+function generateDefaultSubdomain(name) {
+  if (!name) return 'colegio';
+  const clean = String(name).replace(/\bmontessori\b/gi, '').trim();
+  const slug = slugify(clean) || 'colegio';
+  return slug.toLowerCase();
+}
+
 // MULTI-TENANT RESOLUTION MIDDLEWARE
 async function resolveSchool(req, res, next) {
   try {
@@ -704,6 +762,50 @@ async function resolveSchool(req, res, next) {
     }
     if (!school && schoolSlug) {
       school = await prisma.school.findUnique({ where: { slug: schoolSlug } });
+      if (!school) {
+        // Also check if any school has SiteSetting key='subdomain' matching schoolSlug
+        const subSetting = await prisma.siteSetting.findFirst({
+          where: { key: 'subdomain', value: schoolSlug },
+          include: { school: true }
+        });
+        if (subSetting?.school) school = subSetting.school;
+      }
+    }
+
+    // RESOLUTION VIA HOSTNAME (SUBDOMAINS OR CUSTOM DOMAIN)
+    if (!school) {
+      const hostHeader = req.headers['x-forwarded-host'] || req.headers.host || '';
+      const hostname = hostHeader.split(':')[0].toLowerCase().trim();
+
+      if (hostname && hostname !== 'localhost' && hostname !== '127.0.0.1' && hostname !== '0.0.0.0') {
+        // 1. Check if hostname matches custom_domain in siteSetting
+        const customDomainSetting = await prisma.siteSetting.findFirst({
+          where: { key: 'custom_domain', value: hostname },
+          include: { school: true }
+        });
+        if (customDomainSetting?.school) {
+          school = customDomainSetting.school;
+        }
+
+        // 2. Check if hostname is a subdomain (e.g. ceiba.ceiba-roots.com, ceiba.chamba.pro, ceiba.localhost)
+        if (!school) {
+          const parts = hostname.split('.');
+          if (parts.length >= 2) {
+            const sub = parts[0];
+            const ignoredSubs = ['www', 'api', 'app', 'panel', 'admin', 'console', 'mail', 'staging', 'dev'];
+            if (!ignoredSubs.includes(sub)) {
+              school = await prisma.school.findUnique({ where: { slug: sub } });
+              if (!school) {
+                const subSetting = await prisma.siteSetting.findFirst({
+                  where: { key: 'subdomain', value: sub },
+                  include: { school: true }
+                });
+                if (subSetting?.school) school = subSetting.school;
+              }
+            }
+          }
+        }
+      }
     }
 
     if (!school) {
@@ -731,6 +833,57 @@ async function resolveSchool(req, res, next) {
 }
 
 app.use('/api', resolveSchool);
+
+app.get('/api/schools/resolve-host', async (req, res) => {
+  try {
+    const hostHeader = req.query.host || req.headers['x-forwarded-host'] || req.headers.host || '';
+    const hostname = String(hostHeader).split(':')[0].toLowerCase().trim();
+
+    if (!hostname || hostname === 'localhost' || hostname === '127.0.0.1' || hostname === 'montessorinexus.com' || hostname === 'www.montessorinexus.com') {
+      return res.json({ isPlatformRoot: true, school: null, type: 'platform_root' });
+    }
+
+    // 1. Check custom_domain
+    const customSetting = await prisma.siteSetting.findFirst({
+      where: { key: 'custom_domain', value: hostname },
+      include: { school: true }
+    });
+    if (customSetting?.school) {
+      return res.json({ school: customSetting.school, type: 'custom_domain', matched: hostname });
+    }
+
+    // 2. Check subdomain
+    const parts = hostname.split('.');
+    if (parts.length >= 2) {
+      const sub = parts[0];
+      const ignoredSubs = ['www', 'api', 'app', 'panel', 'admin', 'console', 'staging', 'dev'];
+      if (!ignoredSubs.includes(sub)) {
+        let school = await prisma.school.findUnique({ where: { slug: sub } });
+        if (!school) {
+          const subSetting = await prisma.siteSetting.findFirst({
+            where: { key: 'subdomain', value: sub },
+            include: { school: true }
+          });
+          if (subSetting?.school) school = subSetting.school;
+        }
+        if (school) {
+          return res.json({ school, type: 'subdomain', matched: sub });
+        }
+        // Subdomain was explicitly specified but does not exist
+        return res.json({ school: null, notFound: true, attemptedHost: hostname, attemptedSubdomain: sub });
+      }
+    }
+
+    // Unregistered custom domain
+    if (!hostname.endsWith('.montessorinexus.com') && !hostname.endsWith('.localhost')) {
+      return res.json({ school: null, notFound: true, attemptedHost: hostname });
+    }
+
+    res.json({ isPlatformRoot: true, school: null, type: 'platform_root' });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
 
 // UNIFIED UPLOAD ROUTE (FOR IMAGES & ASSETS)
 app.post('/api/upload', upload.single('file'), async (req, res) => {
@@ -783,6 +936,314 @@ app.get('/api/schools', async (req, res) => {
       orderBy: { name: 'asc' }
     });
     res.json(schools);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/superadmin/schools-summary', async (req, res) => {
+  try {
+    const schools = await prisma.school.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        _count: {
+          select: {
+            students: true,
+            environments: true,
+            memberships: true,
+            applications: true,
+            documents: true
+          }
+        },
+        environments: {
+          select: { id: true, name: true, stage: true }
+        }
+      }
+    });
+
+    const enriched = schools.map(s => {
+      const feat = (s.features && typeof s.features === 'object') ? s.features : {};
+      const envCount = s._count.environments || 0;
+      
+      // Calculate estimated MRR:
+      // Base membership: $14 USD
+      // Environments: 1-3 ($25 USD each), 4+ ($10 USD each)
+      let envCost = 0;
+      if (envCount <= 3) {
+        envCost = envCount * 25;
+      } else {
+        envCost = (3 * 25) + ((envCount - 3) * 10);
+      }
+
+      let modulesCost = 0;
+      if (feat.finances) modulesCost += 12;
+      if (feat.webBuilder || feat.website) modulesCost += 18;
+      if (feat.forms) modulesCost += 9;
+      if (feat.pipelines) modulesCost += 9;
+      if (feat.newsletters) modulesCost += 3;
+      if (feat.storageTier && feat.storageTier !== 'free' && feat.storageTier !== 'byos') {
+        if (feat.storageTier === '12gb') modulesCost += 5;
+        if (feat.storageTier === '22gb') modulesCost += 10;
+        if (feat.storageTier === '52gb') modulesCost += 25;
+      }
+
+      const estimatedMrr = 14 + envCost + modulesCost;
+
+      const createdDate = new Date(s.createdAt);
+      // Trial is 3 full months (90 days from creation), unless custom trialEndsAt is set in features
+      const trialEndsAt = feat.trialEndsAt
+        ? new Date(feat.trialEndsAt)
+        : new Date(createdDate.getTime() + (90 + (feat.trialExtendedDays || 0)) * 24 * 60 * 60 * 1000);
+      const now = new Date();
+      const diffMs = trialEndsAt.getTime() - now.getTime();
+      const daysRemainingInTrial = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+      const isTrialActive = diffMs > 0 && feat.subscriptionStatus !== 'TRIAL_EXPIRED';
+
+      const subscriptionStatus = feat.subscriptionStatus || (isTrialActive ? 'TRIAL_ACTIVE' : 'TRIAL_EXPIRED');
+      const totalPaid = feat.totalPaid || 0;
+      const paymentHistory = Array.isArray(feat.paymentHistory) ? feat.paymentHistory : [];
+      const lastPaymentDate = feat.lastPaymentDate || null;
+      const billingCycle = feat.billingCycle || 'monthly';
+
+      return {
+        id: s.id,
+        slug: s.slug,
+        name: s.name,
+        legalName: s.legalName || '',
+        country: s.country || '',
+        province: s.province || '',
+        city: s.city || '',
+        address: s.address || '',
+        logoUrl: s.logoUrl || '',
+        primaryColor: s.primaryColor || '#1b3b2b',
+        accentColor: s.accentColor || '#c86d51',
+        phone: s.phone || '',
+        email: s.email || '',
+        currency: s.currency || 'USD',
+        currencySymbol: s.currencySymbol || '$',
+        timezone: s.timezone || 'America/Mexico_City',
+        locale: s.locale || 'es-MX',
+        features: feat,
+        createdAt: s.createdAt,
+        updatedAt: s.updatedAt,
+        environments: s.environments,
+        trial: {
+          startDate: s.createdAt,
+          trialEndsAt: trialEndsAt.toISOString(),
+          daysRemaining: daysRemainingInTrial,
+          isTrialActive,
+          status: subscriptionStatus
+        },
+        billing: {
+          subscriptionStatus,
+          totalPaid,
+          lastPaymentDate,
+          paymentHistory,
+          billingCycle
+        },
+        stats: {
+          studentsCount: s._count.students,
+          environmentsCount: s._count.environments,
+          membershipsCount: s._count.memberships,
+          applicationsCount: s._count.applications,
+          documentsCount: s._count.documents,
+          estimatedMrr,
+          modulesCost,
+          envCost
+        }
+      };
+    });
+
+    res.json(enriched);
+  } catch (e) {
+    console.error('Error fetching superadmin schools summary:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Update school subscription or record payment
+app.post('/api/superadmin/schools/:id/subscription', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, paymentAmount, paymentMethod, paymentReference, paymentNotes, extendTrialDays } = req.body;
+
+    const school = await prisma.school.findUnique({ where: { id } });
+    if (!school) return res.status(404).json({ error: 'Colegio no encontrado' });
+
+    const feat = (school.features && typeof school.features === 'object') ? { ...school.features } : {};
+
+    if (status) {
+      feat.subscriptionStatus = status;
+    }
+
+    if (paymentAmount && Number(paymentAmount) > 0) {
+      const amount = Number(paymentAmount);
+      feat.totalPaid = (feat.totalPaid || 0) + amount;
+      feat.lastPaymentDate = new Date().toISOString();
+      feat.subscriptionStatus = 'ACTIVE_PAID';
+
+      const history = Array.isArray(feat.paymentHistory) ? [...feat.paymentHistory] : [];
+      history.unshift({
+        id: crypto.randomUUID(),
+        amount,
+        date: new Date().toISOString(),
+        method: paymentMethod || 'Stripe / Online',
+        reference: paymentReference || '',
+        notes: paymentNotes || ''
+      });
+      feat.paymentHistory = history;
+    }
+
+    if (extendTrialDays && Number(extendTrialDays) > 0) {
+      feat.subscriptionStatus = 'TRIAL_ACTIVE';
+      feat.trialExtendedDays = (feat.trialExtendedDays || 0) + Number(extendTrialDays);
+    }
+
+    const updated = await prisma.school.update({
+      where: { id },
+      data: { features: feat }
+    });
+
+    res.json({ success: true, school: updated });
+  } catch (e) {
+    console.error('Error updating school subscription:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Superadmin Hard Delete / Eradicate School, Memberships, Students, and Physical Storage
+app.delete('/api/superadmin/schools/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const school = await prisma.school.findUnique({
+      where: { id },
+      include: {
+        memberships: {
+          select: { userId: true, role: true }
+        }
+      }
+    });
+
+    if (!school) {
+      return res.status(404).json({ error: 'Colegio no encontrado' });
+    }
+
+    const schoolSlug = school.slug;
+    const schoolName = school.name;
+    const memberUserIds = school.memberships.map(m => m.userId);
+
+    // 1. Delete physical storage directories on local disk
+    const dirsToDelete = [
+      path.join(__dirname, '../storage', id),
+      path.join(__dirname, '../storage/admissions', id),
+      path.join(__dirname, '../storage/forms', id),
+      path.join(__dirname, '../storage/students', id),
+      path.join(__dirname, '../storage/documents', id),
+      path.join(__dirname, '../storage/gallery', id),
+      path.join(__dirname, '../storage/schools', id),
+      path.join(__dirname, '../public/gallery', schoolSlug),
+      path.join(__dirname, '../public/gallery', id),
+      path.join(__dirname, '../public/documents', id)
+    ];
+
+    for (const d of dirsToDelete) {
+      try {
+        if (fs.existsSync(d)) {
+          fs.rmSync(d, { recursive: true, force: true });
+        }
+      } catch (fErr) {
+        console.warn(`[ERADICATE STORAGE] Could not delete directory ${d}:`, fErr.message);
+      }
+    }
+
+    // 2. Cascade delete in Database
+    // Prisma delete cascade removes environments, students, documents, applications, processes, events, memberships, settings
+    await prisma.school.delete({
+      where: { id }
+    });
+
+    // 3. Clean up orphaned user accounts (users who belonged ONLY to this school and are not superadmin)
+    const superAdminEmail = (process.env.SUPERADMIN_EMAIL || 'admin@montessorinexus.com').trim().toLowerCase();
+    for (const uId of memberUserIds) {
+      try {
+        const remaining = await prisma.schoolMembership.count({
+          where: { userId: uId }
+        });
+        if (remaining === 0) {
+          const u = await prisma.user.findUnique({ where: { id: uId }, select: { email: true } });
+          if (u && u.email.toLowerCase() !== superAdminEmail && u.email.toLowerCase() !== 'admin@ceibamontessori.com') {
+            await prisma.user.delete({ where: { id: uId } }).catch(() => {});
+          }
+        }
+      } catch (uErr) {
+        console.warn(`[CLEANUP USER] Error checking user ${uId}:`, uErr.message);
+      }
+    }
+
+    console.log(`🗑️ [ERADICATE SCHOOL] Permanently deleted school "${schoolName}" (ID: ${id}, Slug: ${schoolSlug})`);
+
+    res.json({
+      success: true,
+      message: `Colegio "${schoolName}" y todos sus archivos han sido erradicados exitosamente.`,
+      deletedSchoolId: id,
+      deletedSchoolName: schoolName
+    });
+  } catch (e) {
+    console.error('Error eradicating school:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Superadmin Live Infrastructure Status Endpoint
+app.get('/api/superadmin/infrastructure-status', async (req, res) => {
+  try {
+    const startDb = Date.now();
+    await prisma.$queryRaw`SELECT 1`;
+    const dbLatencyMs = Date.now() - startDb;
+
+    let emailQueueStats = { active: 0, waiting: 0, completed: 0, failed: 0 };
+    let kycQueueStats = { active: 0, waiting: 0, completed: 0, failed: 0 };
+
+    try {
+      const emailQueue = getEmailQueue();
+      if (emailQueue) {
+        const counts = await emailQueue.getJobCounts('active', 'waiting', 'completed', 'failed');
+        emailQueueStats = counts;
+      }
+    } catch (err) {}
+
+    try {
+      const kycQueue = getKycQueue();
+      if (kycQueue) {
+        const counts = await kycQueue.getJobCounts('active', 'waiting', 'completed', 'failed');
+        kycQueueStats = counts;
+      }
+    } catch (err) {}
+
+    res.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      database: {
+        engine: 'PostgreSQL',
+        status: 'CONNECTED',
+        latencyMs: dbLatencyMs
+      },
+      queues: {
+        redisStatus: redisClient?.status || 'READY',
+        emailQueue: emailQueueStats,
+        kycQueue: kycQueueStats
+      },
+      realtime: {
+        engine: 'Deepstream WebSocket',
+        endpoint: process.env.DEEPSTREAM_URL || 'https://realtime.asistenxa.com/api',
+        status: 'CONNECTED'
+      },
+      system: {
+        nodeVersion: process.version,
+        uptimeSeconds: Math.floor(process.uptime()),
+        memoryUsageMb: Math.round(process.memoryUsage().heapUsed / 1024 / 1024)
+      }
+    });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -923,7 +1384,10 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     // If user is OWNER or ADMIN in any school, ensure they have access to all schools
-    const isSuperAdmin = user.memberships.some(m => m.role === 'OWNER' || m.role === 'ADMIN') || cleanEmail === 'admin@ceibamontessori.com';
+    const isSuperAdmin = user.memberships.some(m => m.role === 'OWNER' || m.role === 'ADMIN') ||
+      cleanEmail === 'admin@montessorinexus.com' ||
+      cleanEmail === 'admin@ceibamontessori.com' ||
+      cleanEmail === (process.env.SUPERADMIN_EMAIL || '').trim().toLowerCase();
     if (isSuperAdmin) {
       const allSchools = await prisma.school.findMany();
       for (const s of allSchools) {
@@ -973,6 +1437,7 @@ app.post('/api/auth/login', async (req, res) => {
         userId: m.userId,
         schoolId: m.schoolId,
         role: m.role,
+        permissions: m.permissions,
         hasActiveEnrollment,
         activeStudentsCount,
         totalStudentsCount,
@@ -989,7 +1454,8 @@ app.post('/api/auth/login', async (req, res) => {
         id: user.id,
         email: user.email,
         fullName: user.fullName || user.email.split('@')[0],
-        phone: user.phone || ''
+        phone: user.phone || '',
+        avatarUrl: user.avatarUrl || ''
       },
       memberships: enrichedMemberships,
       activeMembership
@@ -1032,25 +1498,145 @@ app.post('/api/auth/password', async (req, res) => {
   }
 });
 
+app.get('/api/auth/profile', async (req, res) => {
+  try {
+    const userEmail = req.headers['x-user-email'] || req.query.email;
+    if (!userEmail) return res.status(400).json({ error: 'Email requerido' });
+
+    const cleanEmail = String(userEmail).trim().toLowerCase();
+    const user = await prisma.user.findUnique({
+      where: { email: cleanEmail },
+      include: {
+        memberships: {
+          where: req.school?.id ? { schoolId: req.school.id } : undefined,
+          include: { school: true }
+        }
+      }
+    });
+
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    const membership = user.memberships[0] || null;
+    const permissions = typeof membership?.permissions === 'object' && membership?.permissions !== null ? membership.permissions : {};
+
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName || '',
+        phone: user.phone || '',
+        jobTitle: user.jobTitle || '',
+        staffRole: user.staffRole || 'LEAD_GUIDE',
+        certifications: user.certifications || '',
+        practiceStartYear: user.practiceStartYear || null,
+        yearsOfExperience: user.yearsOfExperience || 0,
+        bio: user.bio || '',
+        rfc: user.rfc || '',
+        curp: user.curp || '',
+        avatarUrl: user.avatarUrl || ''
+      },
+      membership: membership ? {
+        id: membership.id,
+        role: membership.role,
+        permissions,
+        isTeachingStaff: Boolean(permissions.isTeachingStaff)
+      } : null
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.post('/api/auth/profile', async (req, res) => {
   try {
-    const { email, fullName, phone } = req.body;
+    const { 
+      email, 
+      fullName, 
+      phone,
+      avatarUrl,
+      rfc,
+      curp,
+      jobTitle,
+      staffRole,
+      certifications,
+      practiceStartYear,
+      yearsOfExperience,
+      bio,
+      isTeachingStaff
+    } = req.body;
     const cleanEmail = email.trim().toLowerCase();
+
+    const calculatedExp = practiceStartYear !== undefined 
+      ? (practiceStartYear ? Math.max(0, new Date().getFullYear() - Number(practiceStartYear)) : 0)
+      : (yearsOfExperience !== undefined ? Number(yearsOfExperience) : undefined);
 
     const updatedUser = await prisma.user.update({
       where: { email: cleanEmail },
       data: {
-        fullName: fullName ? fullName.trim() : undefined,
-        phone: phone !== undefined ? phone.trim() : undefined
+        fullName: fullName !== undefined ? fullName.trim() : undefined,
+        phone: phone !== undefined ? phone.trim() : undefined,
+        avatarUrl: avatarUrl !== undefined ? avatarUrl.trim() : undefined,
+        rfc: rfc !== undefined ? rfc.trim().toUpperCase() : undefined,
+        curp: curp !== undefined ? curp.trim().toUpperCase() : undefined,
+        jobTitle: jobTitle !== undefined ? jobTitle.trim() : undefined,
+        staffRole: staffRole !== undefined ? staffRole : undefined,
+        certifications: certifications !== undefined ? certifications.trim() : undefined,
+        practiceStartYear: practiceStartYear !== undefined ? (practiceStartYear ? Number(practiceStartYear) : null) : undefined,
+        yearsOfExperience: calculatedExp,
+        bio: bio !== undefined ? bio.trim() : undefined
       },
       select: {
         id: true,
         email: true,
         fullName: true,
-        phone: true
+        phone: true,
+        avatarUrl: true,
+        rfc: true,
+        curp: true,
+        jobTitle: true,
+        staffRole: true,
+        certifications: true,
+        practiceStartYear: true,
+        yearsOfExperience: true,
+        bio: true
       }
     });
-    res.json({ success: true, user: updatedUser });
+
+    let updatedMembership = null;
+    if (isTeachingStaff !== undefined && req.school?.id) {
+      const currentMembership = await prisma.schoolMembership.findUnique({
+        where: {
+          userId_schoolId: {
+            userId: updatedUser.id,
+            schoolId: req.school.id
+          }
+        }
+      });
+
+      if (currentMembership) {
+        const currentPerms = (typeof currentMembership.permissions === 'object' && currentMembership.permissions !== null)
+          ? currentMembership.permissions
+          : {};
+        
+        const newPerms = {
+          ...currentPerms,
+          isTeachingStaff: Boolean(isTeachingStaff)
+        };
+
+        updatedMembership = await prisma.schoolMembership.update({
+          where: { id: currentMembership.id },
+          data: { permissions: newPerms },
+          include: { school: true }
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      user: updatedUser,
+      membership: updatedMembership
+    });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -1062,6 +1648,9 @@ app.get('/api/environments', async (req, res) => {
     const envs = await prisma.environment.findMany({
       where: { schoolId: req.school.id },
       include: {
+        guides: {
+          select: { userId: true, isLead: true }
+        },
         _count: {
           select: { students: true }
         }
@@ -1079,6 +1668,9 @@ app.get('/api/environments/:id', async (req, res) => {
     const env = await prisma.environment.findFirst({
       where: { id: req.params.id, schoolId: req.school.id },
       include: {
+        guides: {
+          select: { userId: true, isLead: true }
+        },
         students: {
           select: { id: true, fullName: true, enrollmentCode: true, dateOfBirth: true }
         },
@@ -6243,8 +6835,14 @@ app.get('/api/settings', async (req, res) => {
     const settings = await prisma.siteSetting.findMany({
       where: { schoolId: req.school.id }
     });
+    const defaultSub = generateDefaultSubdomain(req.school.name || '');
     const map = {
       school_name: req.school.name || '',
+      school_slug: req.school.slug || '',
+      subdomain: defaultSub,
+      custom_domain: '',
+      domain_verified: 'false',
+      dns_cname_target: 'cname.montessorinexus.com',
       school_tagline: req.school.legalName || '',
       school_logo: req.school.logoUrl || '',
       brand_primary_color: req.school.primaryColor || '#1b3b2b',
@@ -7369,7 +7967,7 @@ app.get('/api/guides', async (req, res) => {
         memberships: {
           some: {
             schoolId: req.school.id,
-            role: { in: ['TEACHER', 'STAFF'] }
+            role: { in: ['TEACHER', 'STAFF', 'OWNER'] }
           }
         }
       },
@@ -7402,7 +8000,7 @@ app.get('/api/guides', async (req, res) => {
         },
         memberships: {
           where: { schoolId: req.school.id },
-          select: { role: true }
+          select: { role: true, permissions: true }
         },
         assignedEnvironments: {
           include: {
@@ -7415,36 +8013,58 @@ app.get('/api/guides', async (req, res) => {
       orderBy: { fullName: 'asc' }
     });
 
-    const formatted = guides.map(g => ({
-      id: g.id,
-      email: g.email,
-      fullName: g.fullName || g.email,
-      avatarUrl: g.avatarUrl || '',
-      phone: g.phone || '',
-      jobTitle: g.jobTitle || '',
-      staffRole: g.staffRole || 'LEAD_GUIDE',
-      certifications: g.certifications || '',
-      practiceStartYear: g.practiceStartYear || null,
-      yearsOfExperience: g.yearsOfExperience || (g.practiceStartYear ? Math.max(0, new Date().getFullYear() - g.practiceStartYear) : 0),
-      bio: g.bio || '',
-      socialLinkedin: g.socialLinkedin || '',
-      socialX: g.socialX || '',
-      socialFacebook: g.socialFacebook || '',
-      socialInstagram: g.socialInstagram || '',
-      socialTiktok: g.socialTiktok || '',
-      socialYoutube: g.socialYoutube || '',
-      supervisors: g.supervisors || [],
-      supervisorId: g.supervisors?.[0]?.id || null,
-      supervisor: g.supervisors?.[0] || null,
-      role: g.memberships[0]?.role || 'TEACHER',
-      environments: g.assignedEnvironments.map(ae => ({
-        id: ae.environment.id,
-        name: ae.environment.name,
-        stage: ae.environment.stage,
-        color: ae.environment.color,
-        isLead: ae.isLead
-      }))
-    }));
+    const activeGuides = guides.filter(g => {
+      const m = g.memberships.find(mem => mem.schoolId === req.school.id) || g.memberships[0];
+      if (!m) return false;
+      if (m.role === 'TEACHER' || m.role === 'STAFF') return true;
+      if (m.role === 'OWNER') {
+        const perms = typeof m.permissions === 'object' && m.permissions !== null ? m.permissions : {};
+        return Boolean(perms.isTeachingStaff);
+      }
+      return false;
+    });
+
+    const formatted = activeGuides.map(g => {
+      const m = g.memberships.find(mem => mem.schoolId === req.school.id) || g.memberships[0];
+      const isOwnerRole = m?.role === 'OWNER';
+
+      return {
+        id: g.id,
+        email: g.email,
+        fullName: g.fullName || g.email,
+        avatarUrl: g.avatarUrl || '',
+        phone: g.phone || '',
+        jobTitle: g.jobTitle || (isOwnerRole ? 'Propietario / Fundador' : ''),
+        staffRole: g.staffRole || 'LEAD_GUIDE',
+        certifications: g.certifications || '',
+        practiceStartYear: g.practiceStartYear || null,
+        yearsOfExperience: g.yearsOfExperience || (g.practiceStartYear ? Math.max(0, new Date().getFullYear() - g.practiceStartYear) : 0),
+        bio: g.bio || '',
+        socialLinkedin: g.socialLinkedin || '',
+        socialX: g.socialX || '',
+        socialFacebook: g.socialFacebook || '',
+        socialInstagram: g.socialInstagram || '',
+        socialTiktok: g.socialTiktok || '',
+        socialYoutube: g.socialYoutube || '',
+        supervisors: g.supervisors || [],
+        supervisorId: g.supervisors?.[0]?.id || null,
+        supervisor: g.supervisors?.[0] || null,
+        role: m?.role || 'TEACHER',
+        permissions: Array.isArray(m?.permissions)
+          ? m.permissions
+          : (m?.permissions && typeof m.permissions === 'object' && Array.isArray(m.permissions.modules)
+            ? m.permissions.modules
+            : []),
+        isOwner: isOwnerRole,
+        environments: g.assignedEnvironments.map(ae => ({
+          id: ae.environment.id,
+          name: ae.environment.name,
+          stage: ae.environment.stage,
+          color: ae.environment.color,
+          isLead: ae.isLead
+        }))
+      };
+    });
 
     res.json(formatted);
   } catch (e) {
@@ -7613,7 +8233,8 @@ app.put('/api/guides/:id', async (req, res) => {
       supervisorId,
       supervisorIds,
       role, 
-      environmentIds 
+      environmentIds,
+      permissions
     } = req.body;
     const userId = req.params.id;
 
@@ -7667,9 +8288,34 @@ app.put('/api/guides/:id', async (req, res) => {
 
     if (role) {
       await prisma.schoolMembership.updateMany({
-        where: { userId, schoolId: req.school.id },
+        where: {
+          userId,
+          schoolId: req.school.id,
+          role: { notIn: ['OWNER', 'ADMIN'] }
+        },
         data: { role: role === 'STAFF' ? 'STAFF' : 'TEACHER' }
       });
+    }
+
+    if (permissions !== undefined) {
+      const existingMemberships = await prisma.schoolMembership.findMany({
+        where: { userId, schoolId: req.school.id }
+      });
+      for (const mem of existingMemberships) {
+        let finalPerms = permissions;
+        const currentPerms = typeof mem.permissions === 'object' && mem.permissions !== null ? mem.permissions : {};
+        if (mem.role === 'OWNER' || currentPerms.isTeachingStaff) {
+          if (Array.isArray(permissions)) {
+            finalPerms = { ...currentPerms, isTeachingStaff: true, modules: permissions };
+          } else if (typeof permissions === 'object' && permissions !== null) {
+            finalPerms = { ...currentPerms, ...permissions, isTeachingStaff: true };
+          }
+        }
+        await prisma.schoolMembership.update({
+          where: { id: mem.id },
+          data: { permissions: finalPerms }
+        });
+      }
     }
 
     if (Array.isArray(environmentIds)) {
@@ -7739,6 +8385,26 @@ app.post('/api/guides/:id/documents', async (req, res) => {
   }
 });
 
+// Update/Rename a document for a guide
+app.put('/api/guides/:id/documents/:docId', async (req, res) => {
+  try {
+    const { docId } = req.params;
+    const { name } = req.body;
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: 'El nombre del documento es requerido' });
+    }
+    const doc = await prisma.userDocument.update({
+      where: { id: docId },
+      data: {
+        name: name.trim()
+      }
+    });
+    res.json(doc);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Delete a document for a guide
 app.delete('/api/guides/:id/documents/:docId', async (req, res) => {
   try {
@@ -7779,6 +8445,18 @@ app.delete('/api/guides/:id/documents/:docId', async (req, res) => {
 app.delete('/api/guides/:id', async (req, res) => {
   try {
     const userId = req.params.id;
+
+    // Protection: school owner cannot be deleted/unlinked
+    const targetMembership = await prisma.schoolMembership.findFirst({
+      where: { userId, schoolId: req.school.id }
+    });
+
+    if (targetMembership && targetMembership.role === 'OWNER') {
+      return res.status(403).json({
+        error: 'El propietario del colegio no puede ser desvinculado. Para dejar de figurar como docente, desactiva la opción desde tu perfil en Mi Cuenta.'
+      });
+    }
+
     // Remove membership from this school
     await prisma.schoolMembership.deleteMany({
       where: { userId, schoolId: req.school.id }
@@ -8144,6 +8822,81 @@ app.delete('/api/montessori/lessons/:id', async (req, res) => {
   try {
     await prisma.montessoriLesson.delete({
       where: { id: req.params.id }
+    });
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ENVIRONMENT MATERIALS (INVENTARIO DE MATERIALES POR SALÓN)
+app.get('/api/environments/:environmentId/materials', async (req, res) => {
+  try {
+    const { environmentId } = req.params;
+    const materials = await prisma.environmentMaterial.findMany({
+      where: { environmentId },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }]
+    });
+    res.json(materials);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/environments/:environmentId/materials', async (req, res) => {
+  try {
+    const { environmentId } = req.params;
+    const { id, name, areaName, categoryName, description, pedagogicalPurpose, skillsDeveloped, photoUrl, isActive, sortOrder, lessonId } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ error: 'Nombre del material requerido' });
+    }
+
+    let material;
+    if (id) {
+      material = await prisma.environmentMaterial.update({
+        where: { id },
+        data: {
+          name,
+          areaName: areaName || 'Sensorial',
+          categoryName: categoryName || '',
+          description: description || '',
+          pedagogicalPurpose: pedagogicalPurpose || '',
+          skillsDeveloped: skillsDeveloped || '',
+          photoUrl: photoUrl || '',
+          isActive: isActive !== undefined ? Boolean(isActive) : true,
+          sortOrder: sortOrder !== undefined ? parseInt(sortOrder) : undefined,
+          lessonId: lessonId || null,
+        }
+      });
+    } else {
+      material = await prisma.environmentMaterial.create({
+        data: {
+          environmentId,
+          name,
+          areaName: areaName || 'Sensorial',
+          categoryName: categoryName || '',
+          description: description || '',
+          pedagogicalPurpose: pedagogicalPurpose || '',
+          skillsDeveloped: skillsDeveloped || '',
+          photoUrl: photoUrl || '',
+          isActive: isActive !== undefined ? Boolean(isActive) : true,
+          sortOrder: sortOrder !== undefined ? parseInt(sortOrder) : 0,
+          lessonId: lessonId || null,
+        }
+      });
+    }
+    res.json(material);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.delete('/api/environments/:environmentId/materials/:materialId', async (req, res) => {
+  try {
+    const { materialId } = req.params;
+    await prisma.environmentMaterial.delete({
+      where: { id: materialId }
     });
     res.json({ success: true });
   } catch (e) {
@@ -10739,6 +11492,181 @@ app.post('/api/montessori/characterizations/ai-consensus/student/:studentId', as
   }
 });
 
+// 7. AI Conversational Assistant for Characterization Interview
+app.post('/api/montessori/characterizations/ai-interview', async (req, res) => {
+  try {
+    const { studentId, studentName, authorName, authorRole = 'LEAD_GUIDE', messages = [], currentExtractedData = {} } = req.body;
+    
+    // Find school settings for AI
+    const settings = await prisma.siteSetting.findMany({
+      where: {
+        schoolId: req.school?.id,
+        key: { in: ['ai_api_key', 'openai_api_key', 'OPENAI_API_KEY', 'ai_base_url', 'openai_base_url', 'ai_model_vision', 'openai_model'] }
+      }
+    });
+
+    const getSetting = (keys, fallback = '') => {
+      const match = settings.find(s => keys.includes(s.key));
+      return match?.value?.trim() || fallback;
+    };
+
+    let apiKey = getSetting(['ai_api_key', 'openai_api_key', 'OPENAI_API_KEY'], process.env.OPENAI_API_KEY || process.env.AI_API_KEY || '');
+    let baseUrl = getSetting(['ai_base_url', 'openai_base_url'], 'https://api.openai.com/v1').replace(/\/+$/, '');
+    baseUrl = baseUrl.replace(/\/models$/, '').replace(/\/chat\/completions$/, '');
+    let model = getSetting(['ai_model_vision', 'openai_model'], 'gpt-4o-mini').replace(/^models\//, '');
+    if (!model) model = /gemini|google/i.test(baseUrl) ? 'gemini-2.0-flash' : 'gpt-4o-mini';
+
+    const systemPrompt = `Eres una consultora y mentora pedagógica Montessori experta, cálida y empática de Ceiba Roots.
+Tu objetivo es guiar en una breve entrevista conversacional al observador (${authorName || 'la guía/personal'}, rol sugerido: ${authorRole}) para recopilar su mirada holística sobre el estudiante "${studentName || 'el estudiante'}".
+
+Cubre los siguientes aspectos haciendo UNA pregunta clara y natural a la vez:
+1. Espacio/Momento de observación: en qué área o momento suele interactuar con el niño (Salón Montessori, Comedor, Patio/Jardín, Taller, Áreas Comunes).
+2. Autonomía & Cuidado del Entorno: cómo maneja sus pertenencias, orden, selección de materiales y cuidado del espacio (asigna nivel 1-5 y redacta síntesis).
+3. Convivencia, Gracia & Cortesía: empatía, relación con pares y adultos, resolución de diferencias (asigna nivel 1-5 y redacta síntesis).
+4. Concentración & Autorregulación: ciclos de trabajo, atención prolongada y calma (asigna nivel 1-5 y redacta síntesis).
+5. Curiosidad, Pasiones & Talentos: intereses espontáneos y motivación intrínseca (asigna nivel 1-5 y redacta síntesis).
+6. Una anécdota o momento significativo observado.
+
+Etiquetas posibles a sugerir en tags: ["Líder Natural", "Protector de los Pequeños", "Amor por la Naturaleza", "Pensamiento Lógico", "Sensibilidad Musical", "Expresión Artística", "Muy Colaborador", "Perfeccionista en el Orden", "Cuidado Exquisito del Material", "Empatía Espontánea", "Curiosidad Científica", "Alta Concentración"].
+
+IMPORTANTE:
+- Responde SIEMPRE en formato JSON puro (sin bloques markdown ni explicaciones adicionales fuera del JSON).
+- Estructura exacta requerida:
+{
+  "reply": "Tu mensaje conversacional en español con tono cálido, reconociendo lo dicho y haciendo la siguiente pregunta concisa (o felicitando y cerrando si ya reuniste la información clave).",
+  "isComplete": true o false (marca true cuando ya se hayan explorado al menos 3 o 4 dimensiones clave o el observador pida finalizar),
+  "progress": {
+    "percent": 20 | 40 | 60 | 80 | 100,
+    "step": "context" | "autonomy" | "social" | "focus" | "interests" | "anecdote" | "complete"
+  },
+  "extractedData": {
+    "authorRole": "LEAD_GUIDE" | "ASSISTANT_GUIDE" | "SUPPORT_STAFF" | "SPECIALIST" | "ADMIN",
+    "contextArea": "SALON" | "COMEDOR" | "PATIO_JARDIN" | "TALLER_ESPECIAL" | "AREAS_COMUNES" | "GENERAL",
+    "independenceLevel": 1-5,
+    "socialGraceLevel": 1-5,
+    "focusRegulationLevel": 1-5,
+    "curiosityEngagementLevel": 1-5,
+    "autonomyCareNotes": "Texto redactado formal y pedagógico sobre autonomía",
+    "socialGraceNotes": "Texto redactado formal sobre convivencia y empatía",
+    "focusRegulationNotes": "Texto redactado formal sobre concentración",
+    "interestsPassionsNotes": "Texto redactado formal sobre pasiones e intereses",
+    "anecdoteHighlight": "La anécdota destacada redactada con sensibilidad",
+    "tags": ["Etiqueta1", "Etiqueta2"]
+  }
+}`;
+
+    // Try calling LLM if apiKey is present
+    if (apiKey) {
+      try {
+        const chatUrl = `${baseUrl}/chat/completions`;
+        const response = await fetch(chatUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiKey}`,
+            'x-goog-api-key': apiKey
+          },
+          body: JSON.stringify({
+            model,
+            temperature: 0.7,
+            response_format: { type: 'json_object' },
+            messages: [
+              { role: 'system', content: systemPrompt },
+              ...messages
+            ]
+          })
+        });
+
+        if (response.ok) {
+          const aiJson = await response.json();
+          const content = aiJson.choices?.[0]?.message?.content;
+          if (content) {
+            const cleanContent = content.replace(/```json/g, '').replace(/```/g, '').trim();
+            const parsed = JSON.parse(cleanContent);
+            return res.json({
+              success: true,
+              ...parsed
+            });
+          }
+        }
+      } catch (err) {
+        console.warn('AI API call failed, falling back to local dialog generator:', err.message);
+      }
+    }
+
+    // Smart Local Fallback Dialog Engine
+    const userMsgCount = messages.filter(m => m.role === 'user').length;
+    const lastUserMsg = messages[messages.length - 1]?.content || '';
+    
+    let fallbackReply = '';
+    let isComplete = false;
+    let percent = 20;
+    let step = 'context';
+    let extracted = {
+      authorRole: authorRole || 'LEAD_GUIDE',
+      contextArea: 'SALON',
+      independenceLevel: currentExtractedData.independenceLevel || 3,
+      socialGraceLevel: currentExtractedData.socialGraceLevel || 3,
+      focusRegulationLevel: currentExtractedData.focusRegulationLevel || 3,
+      curiosityEngagementLevel: currentExtractedData.curiosityEngagementLevel || 3,
+      autonomyCareNotes: currentExtractedData.autonomyCareNotes || '',
+      socialGraceNotes: currentExtractedData.socialGraceNotes || '',
+      focusRegulationNotes: currentExtractedData.focusRegulationNotes || '',
+      interestsPassionsNotes: currentExtractedData.interestsPassionsNotes || '',
+      anecdoteHighlight: currentExtractedData.anecdoteHighlight || '',
+      tags: currentExtractedData.tags || ['Muy Colaborador', 'Curiosidad Científica']
+    };
+
+    // Extract area if mentioned
+    if (/comedor|alimento|comida/i.test(lastUserMsg)) extracted.contextArea = 'COMEDOR';
+    else if (/patio|jard[ií]n|aire libre|huerto/i.test(lastUserMsg)) extracted.contextArea = 'PATIO_JARDIN';
+    else if (/taller|m[uú]sica|arte/i.test(lastUserMsg)) extracted.contextArea = 'TALLER_ESPECIAL';
+    else if (/pasillo|comunes/i.test(lastUserMsg)) extracted.contextArea = 'AREAS_COMUNES';
+
+    if (userMsgCount === 1) {
+      percent = 40;
+      step = 'autonomy';
+      fallbackReply = `¡Excelente contexto! Ahora cuéntame: en cuanto a su **Autonomía y Cuidado del Entorno**, ¿cómo observas a ${studentName || 'el niño'} al elegir sus actividades, cuidar sus pertenencias o colaborar en el orden del espacio?`;
+    } else if (userMsgCount === 2) {
+      percent = 60;
+      step = 'social';
+      extracted.autonomyCareNotes = lastUserMsg.length > 10 ? lastUserMsg : `Demuestra buena iniciativa e independencia en sus rutinas y materiales.`;
+      extracted.independenceLevel = /alto|excelente|muy bien|solo|independiente/i.test(lastUserMsg) ? 5 : 4;
+      fallbackReply = `Me encanta esa apreciación. Pasando a la **Convivencia, Gracia y Cortesía**: ¿cómo se relaciona con sus pares y con los adultos? ¿Cómo resuelve situaciones cuando surgen diferencias?`;
+    } else if (userMsgCount === 3) {
+      percent = 80;
+      step = 'interests';
+      extracted.socialGraceNotes = lastUserMsg.length > 10 ? lastUserMsg : `Mantiene interacciones respetuosas, colaborativas y de sana convivencia.`;
+      extracted.socialGraceLevel = /cariñoso|amable|solidario|empático|pacífico/i.test(lastUserMsg) ? 5 : 4;
+      fallbackReply = `¡Muy valioso! Respecto a sus **Pasiones, Intereses y Concentración**: ¿qué temas o actividades despiertan su mayor entusiasmo y enfoque espontáneo? ¿Recuerdas alguna **anécdota o momento especial** que lo refleje?`;
+    } else {
+      percent = 100;
+      step = 'complete';
+      isComplete = true;
+      extracted.interestsPassionsNotes = lastUserMsg.length > 10 ? lastUserMsg : `Manifiesta curiosidad viva e interés entusiasta por el aprendizaje exploratorio.`;
+      extracted.curiosityEngagementLevel = 5;
+      extracted.focusRegulationLevel = 4;
+      extracted.anecdoteHighlight = lastUserMsg.length > 15 ? lastUserMsg : `Muestra siempre una disposición activa y entusiasta durante las jornadas escolares.`;
+      fallbackReply = `¡Extraordinario! He estructurado todos los rasgos, niveles Montessori y observaciones de ${studentName || 'el estudiante'}. Haz clic en el botón de abajo para revisar la caracterización y montarla en el formulario.`;
+    }
+
+    res.json({
+      success: true,
+      reply: fallbackReply,
+      isComplete,
+      progress: {
+        percent,
+        step
+      },
+      extractedData: extracted
+    });
+
+  } catch (e) {
+    console.error('Error in ai-interview handler:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ==============================================================================
 // SCHOOL FINANCES & CUSTOM TUITION PLANS API
 // ==============================================================================
@@ -12328,6 +13256,438 @@ app.get('/api/tutor/newsletters', async (req, res) => {
   }
 });
 
+// ==========================================
+// ANNOUNCEMENTS (ANUNCIOS) API ENDPOINTS
+// ==========================================
+
+// Helper to send nodemailer emails for announcements in background
+async function sendAnnouncementEmails(announcement) {
+  try {
+    const { schoolId, title, content, targetAudience, targetEnvironmentIds } = announcement;
+    const { transporter, from, isConfigured } = await getSchoolSmtpTransporter(schoolId);
+    
+    let emails = [];
+
+    // Load active school memberships
+    const memberships = await prisma.schoolMembership.findMany({
+      where: { schoolId },
+      include: {
+        user: true
+      }
+    });
+
+    const parsedEnvIds = targetEnvironmentIds 
+      ? (Array.isArray(targetEnvironmentIds) ? targetEnvironmentIds : JSON.parse(targetEnvironmentIds))
+      : [];
+
+    const hasEnvFilter = parsedEnvIds.length > 0;
+
+    for (const m of memberships) {
+      if (!m.user || !m.user.email) continue;
+      const userRole = m.role;
+
+      // Filter by targetAudience
+      let roleMatches = false;
+      if (targetAudience === 'ALL') {
+        roleMatches = true;
+      } else if (targetAudience === 'STAFF' && (userRole === 'STAFF' || userRole === 'TEACHER')) {
+        roleMatches = true;
+      } else if (targetAudience === 'PARENTS' && userRole === 'TUTOR') {
+        roleMatches = true;
+      }
+
+      if (!roleMatches) continue;
+
+      // Filter by targetEnvironmentIds if defined
+      if (hasEnvFilter) {
+        if (userRole === 'STAFF' || userRole === 'TEACHER') {
+          const isAssigned = await prisma.environmentGuide.findFirst({
+            where: {
+              userId: m.userId,
+              environmentId: { in: parsedEnvIds }
+            }
+          });
+          if (!isAssigned) continue;
+        } else if (userRole === 'TUTOR') {
+          const childrenInEnv = await prisma.studentTutor.findFirst({
+            where: {
+              tutorUserId: m.userId,
+              student: {
+                schoolId,
+                environmentId: { in: parsedEnvIds }
+              }
+            }
+          });
+          if (!childrenInEnv) continue;
+        }
+      }
+
+      emails.push(m.user.email);
+    }
+
+    // Deduplicate emails
+    const uniqueEmails = [...new Set(emails)];
+    if (uniqueEmails.length === 0) return;
+
+    if (isConfigured && transporter) {
+      console.log(`✉️ Sending announcement "${title}" to ${uniqueEmails.length} recipients...`);
+      for (const toEmail of uniqueEmails) {
+        try {
+          await transporter.sendMail({
+            from,
+            to: toEmail,
+            subject: `[Anuncio] ${title}`,
+            html: `
+              <div style="font-family: sans-serif; padding: 20px; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 12px;">
+                <h2 style="color: #1b3b2b; border-bottom: 2px solid #1b3b2b; padding-bottom: 10px;">${title}</h2>
+                <div style="font-size: 14px; line-height: 1.6; margin-top: 15px; white-space: pre-wrap;">${content}</div>
+                <p style="font-size: 11px; color: #999; margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px;">
+                  Este es un comunicado oficial enviado por la administración del colegio.
+                </p>
+              </div>
+            `
+          });
+        } catch (e) {
+          console.error(`Failed to send announcement email to ${toEmail}:`, e.message);
+        }
+      }
+    } else {
+      console.log(`⚠️ SMTP not configured for school ${schoolId}. Simulation: Announcement "${title}" would be sent to: ${uniqueEmails.join(', ')}`);
+    }
+  } catch (err) {
+    console.error('Error in sendAnnouncementEmails:', err);
+  }
+}
+
+// GET /api/announcements - List all announcements for current school (Admin)
+app.get('/api/announcements', async (req, res) => {
+  try {
+    const announcements = await prisma.announcement.findMany({
+      where: { schoolId: req.school.id },
+      include: {
+        views: {
+          select: {
+            viewedAt: true,
+            user: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(announcements);
+  } catch (e) {
+    console.error('Error fetching announcements:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /api/announcements/:id/view - Record read receipt/view
+app.post('/api/announcements/:id/view', async (req, res) => {
+  try {
+    const userEmail = req.headers['x-user-email'];
+    if (!userEmail) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: String(userEmail).trim().toLowerCase() }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    await prisma.announcementView.upsert({
+      where: {
+        announcementId_userId: {
+          announcementId: req.params.id,
+          userId: user.id
+        }
+      },
+      update: {},
+      create: {
+        announcementId: req.params.id,
+        userId: user.id
+      }
+    });
+
+    res.json({ success: true });
+  } catch (e) {
+    console.error('Error recording announcement view:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+function isAnnouncementCurrentlyActive(ann, now) {
+  if (!ann.isPeriodic) {
+    const start = new Date(ann.startDate);
+    const end = ann.endDate ? new Date(ann.endDate) : null;
+    return start <= now && (!end || end >= now);
+  }
+
+  const start = new Date(ann.startDate);
+  if (start > now) return false;
+
+  const durationMs = (ann.displayDurationHours || 24) * 60 * 60 * 1000;
+
+  let latestCycleStart;
+  const startHours = start.getHours();
+  const startMinutes = start.getMinutes();
+  const startSeconds = start.getSeconds();
+  const startMs = start.getMilliseconds();
+
+  if (ann.periodicity === 'daily') {
+    latestCycleStart = new Date(now);
+    latestCycleStart.setHours(startHours, startMinutes, startSeconds, startMs);
+    if (latestCycleStart > now) {
+      latestCycleStart.setDate(latestCycleStart.getDate() - 1);
+    }
+  } else if (ann.periodicity === 'weekly') {
+    const startDayOfWeek = start.getDay();
+    latestCycleStart = new Date(now);
+    latestCycleStart.setHours(startHours, startMinutes, startSeconds, startMs);
+    const currentDayOfWeek = latestCycleStart.getDay();
+    let daysDiff = currentDayOfWeek - startDayOfWeek;
+    if (daysDiff < 0) {
+      daysDiff += 7;
+    }
+    latestCycleStart.setDate(latestCycleStart.getDate() - daysDiff);
+    if (latestCycleStart > now) {
+      latestCycleStart.setDate(latestCycleStart.getDate() - 7);
+    }
+  } else if (ann.periodicity === 'monthly') {
+    const startDateNum = start.getDate();
+    latestCycleStart = new Date(now);
+    latestCycleStart.setHours(startHours, startMinutes, startSeconds, startMs);
+    latestCycleStart.setDate(startDateNum);
+    if (latestCycleStart > now) {
+      latestCycleStart.setMonth(latestCycleStart.getMonth() - 1);
+    }
+  } else {
+    return start <= now;
+  }
+
+  const cycleEnd = new Date(latestCycleStart.getTime() + durationMs);
+  return now >= latestCycleStart && now <= cycleEnd;
+}
+
+// GET /api/announcements/active - List active announcements visible to caller
+app.get('/api/announcements/active', async (req, res) => {
+  try {
+    const userEmail = req.headers['x-user-email'];
+    const now = new Date();
+
+    const activeAnnouncements = await prisma.announcement.findMany({
+      where: {
+        schoolId: req.school.id,
+        status: 'ACTIVE',
+        startDate: { lte: now }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    // Filter to only include announcements that are within their current active date or periodic cycle window
+    const currentActiveAnnouncements = activeAnnouncements.filter(ann => {
+      return isAnnouncementCurrentlyActive(ann, now);
+    });
+
+    if (!userEmail) {
+      // Unauthenticated / public user: only return targetAudience ALL with no environment restrictions
+      const publicAnnouncements = currentActiveAnnouncements.filter(a => {
+        const envIds = a.targetEnvironmentIds;
+        return a.targetAudience === 'ALL' && (!envIds || (Array.isArray(envIds) && envIds.length === 0));
+      });
+      return res.json(publicAnnouncements);
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: String(userEmail).trim().toLowerCase() },
+      include: {
+        memberships: {
+          where: { schoolId: req.school.id }
+        }
+      }
+    });
+
+    if (!user || user.memberships.length === 0) {
+      const publicAnnouncements = currentActiveAnnouncements.filter(a => {
+        const envIds = a.targetEnvironmentIds;
+        return a.targetAudience === 'ALL' && (!envIds || (Array.isArray(envIds) && envIds.length === 0));
+      });
+      return res.json(publicAnnouncements);
+    }
+
+    const membership = user.memberships[0];
+    const userRole = membership.role; // OWNER, ADMIN, STAFF, TEACHER, TUTOR
+
+    if (userRole === 'OWNER' || userRole === 'ADMIN') {
+      return res.json(currentActiveAnnouncements);
+    }
+
+    let assignedEnvIds = [];
+    if (userRole === 'TEACHER' || userRole === 'STAFF') {
+      const guides = await prisma.environmentGuide.findMany({
+        where: { userId: user.id },
+        select: { environmentId: true }
+      });
+      assignedEnvIds = guides.map(g => g.environmentId);
+    }
+
+    if (userRole === 'TUTOR') {
+      const studentTutors = await prisma.studentTutor.findMany({
+        where: { tutorUserId: user.id },
+        include: {
+          student: true
+        }
+      });
+      assignedEnvIds = studentTutors
+        .map(st => st.student?.environmentId)
+        .filter(id => id);
+    }
+
+    const filteredAnnouncements = currentActiveAnnouncements.filter(a => {
+      let matchesAudience = false;
+      if (a.targetAudience === 'ALL') {
+        matchesAudience = true;
+      } else if (a.targetAudience === 'STAFF' && (userRole === 'TEACHER' || userRole === 'STAFF')) {
+        matchesAudience = true;
+      } else if (a.targetAudience === 'PARENTS' && userRole === 'TUTOR') {
+        matchesAudience = true;
+      }
+
+      if (!matchesAudience) return false;
+
+      const envIds = a.targetEnvironmentIds;
+      if (!envIds || (Array.isArray(envIds) && envIds.length === 0)) {
+        return true;
+      }
+
+      const targetList = Array.isArray(envIds) ? envIds : JSON.parse(envIds);
+      return targetList.some(id => assignedEnvIds.includes(id));
+    });
+
+    res.json(filteredAnnouncements);
+  } catch (e) {
+    console.error('Error fetching active announcements:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /api/announcements - Create new announcement
+app.post('/api/announcements', async (req, res) => {
+  try {
+    const {
+      title,
+      content,
+      targetAudience,
+      targetEnvironmentIds,
+      sendEmail,
+      style,
+      isMarquee,
+      isPeriodic,
+      periodicity,
+      displayDurationHours,
+      startDate,
+      endDate,
+      status
+    } = req.body;
+
+    const announcement = await prisma.announcement.create({
+      data: {
+        schoolId: req.school.id,
+        title: title || '',
+        content: content || '',
+        targetAudience: targetAudience || 'ALL',
+        targetEnvironmentIds: targetEnvironmentIds || null,
+        sendEmail: Boolean(sendEmail),
+        style: style || 'info',
+        isMarquee: Boolean(isMarquee),
+        isPeriodic: Boolean(isPeriodic),
+        periodicity: periodicity || null,
+        displayDurationHours: displayDurationHours ? Number(displayDurationHours) : null,
+        startDate: startDate ? new Date(startDate) : new Date(),
+        endDate: endDate ? new Date(endDate) : null,
+        status: status || 'ACTIVE'
+      }
+    });
+
+    if (sendEmail) {
+      sendAnnouncementEmails(announcement).catch(err => {
+        console.error('Error sending announcement emails:', err);
+      });
+    }
+
+    res.json(announcement);
+  } catch (e) {
+    console.error('Error creating announcement:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// PUT /api/announcements/:id - Update announcement
+app.put('/api/announcements/:id', async (req, res) => {
+  try {
+    const {
+      title,
+      content,
+      targetAudience,
+      targetEnvironmentIds,
+      sendEmail,
+      style,
+      isMarquee,
+      isPeriodic,
+      periodicity,
+      displayDurationHours,
+      startDate,
+      endDate,
+      status
+    } = req.body;
+
+    const announcement = await prisma.announcement.update({
+      where: { id: req.params.id },
+      data: {
+        title,
+        content,
+        targetAudience,
+        targetEnvironmentIds,
+        sendEmail: Boolean(sendEmail),
+        style,
+        isMarquee: Boolean(isMarquee),
+        isPeriodic: Boolean(isPeriodic),
+        periodicity,
+        displayDurationHours: displayDurationHours ? Number(displayDurationHours) : null,
+        startDate: startDate ? new Date(startDate) : undefined,
+        endDate: endDate ? new Date(endDate) : null,
+        status
+      }
+    });
+
+    res.json(announcement);
+  } catch (e) {
+    console.error('Error updating announcement:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// DELETE /api/announcements/:id - Delete announcement
+app.delete('/api/announcements/:id', async (req, res) => {
+  try {
+    await prisma.announcement.delete({
+      where: { id: req.params.id }
+    });
+    res.json({ success: true });
+  } catch (e) {
+    console.error('Error deleting announcement:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // BULLBOARD REDIS QUEUES DASHBOARD MOUNT
 const serverAdapter = new ExpressAdapter();
 serverAdapter.setBasePath('/admin/queues');
@@ -12372,8 +13732,9 @@ app.use((req, res) => {
   }
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🚀 Multi-Tenant Core API Server listening on http://localhost:${PORT}`);
   console.log(`📁 Physical Gallery Directory: ${galleryDir}`);
   console.log(`📁 Physical Documents Directory: ${documentsDir}`);
+  await ensureSuperAdminUser();
 });

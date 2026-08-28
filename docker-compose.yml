@@ -1,0 +1,65 @@
+services:
+  ceiba:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - VITE_CONTACT_PHONE=${VITE_CONTACT_PHONE}
+        - VITE_CONTACT_EMAIL=${VITE_CONTACT_EMAIL}
+        - VITE_SCHOOL_ADDRESS=${VITE_SCHOOL_ADDRESS}
+        - VITE_MAP_LAT=${VITE_MAP_LAT}
+        - VITE_MAP_LNG=${VITE_MAP_LNG}
+        - VITE_SOCIAL_FACEBOOK=${VITE_SOCIAL_FACEBOOK}
+        - VITE_SOCIAL_INSTAGRAM=${VITE_SOCIAL_INSTAGRAM}
+        - VITE_SHOW_TEACHERS_SECTION=${VITE_SHOW_TEACHERS_SECTION}
+        - VITE_SHOW_GALLERY_SECTION=${VITE_SHOW_GALLERY_SECTION}
+        - VITE_UMAMI_HOST=${VITE_UMAMI_HOST}
+        - VITE_UMAMI_USERNAME=${VITE_UMAMI_USERNAME}
+        - VITE_UMAMI_PASSWORD=${VITE_UMAMI_PASSWORD}
+        - VITE_UMAMI_SITE_ID=${VITE_UMAMI_SITE_ID}
+    ports:
+      - "${PORT:-3001}:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - SERVICE_ROLE=${SERVICE_ROLE:-all}
+      - DATABASE_URL=${DATABASE_URL:-}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+      - NOCAPTCHA_API_KEY=${NOCAPTCHA_API_KEY:-}
+      - HYPERBROWSER_API_KEY=${HYPERBROWSER_API_KEY:-}
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      # Persist the database and data
+      - ceiba-db:/app/server/data
+      # Persist uploaded gallery images
+      - ceiba-gallery:/app/public/gallery
+      # Persist uploaded documents
+      - ceiba-documents:/app/public/documents
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/api/settings"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - ceiba-redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  ceiba-db:
+  ceiba-gallery:
+  ceiba-documents:
+  ceiba-redis:

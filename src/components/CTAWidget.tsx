@@ -1,14 +1,61 @@
 import { useEffect } from 'react';
 import { useCTA } from '@/hooks/use-cta';
 import { useI18n } from '@/context/I18nContext';
+import { useSiteSettings } from '@/context/SettingsContext';
+import { useLocation } from 'react-router-dom';
 
 export function CTAWidget() {
   const { locale } = useI18n();
   const { handleCTA } = useCTA();
-  const ctaMode = import.meta.env.VITE_CTA_MODE || 'whatsapp';
+  const { ctaMode } = useSiteSettings();
+  const location = useLocation();
+
+  const isExcludedRoute = 
+    location.pathname.startsWith('/panel') || 
+    location.pathname.startsWith('/admin') || 
+    location.pathname.startsWith('/console') ||
+    location.pathname.startsWith('/forms') ||
+    location.pathname.startsWith('/f/') ||
+    location.pathname.startsWith('/formulario') ||
+    location.pathname.startsWith('/admision') ||
+    location.pathname.startsWith('/admissions');
 
   useEffect(() => {
-    if (ctaMode !== 'widget') return;
+    // Hide and disable widget if on admin/console dashboard, form pages, or if ctaMode is not widget
+    if (isExcludedRoute || ctaMode !== 'widget') {
+      const widgetElements = document.querySelectorAll(
+        '#asistenxa-root, #asistenxa-widget, [id^="asistenxa"], [class*="asistenxa"], iframe[src*="asistenxa"]'
+      );
+      widgetElements.forEach((el) => {
+        (el as HTMLElement).style.display = 'none';
+      });
+
+      if (typeof (window as any).Asistenxa !== 'undefined') {
+        try {
+          (window as any).Asistenxa.close?.();
+          (window as any).Asistenxa.hide?.();
+        } catch {
+          // Ignore
+        }
+      }
+      return;
+    }
+
+    // Restore widget visibility when on regular public routes
+    const widgetElements = document.querySelectorAll(
+      '#asistenxa-root, #asistenxa-widget, [id^="asistenxa"], [class*="asistenxa"], iframe[src*="asistenxa"]'
+    );
+    widgetElements.forEach((el) => {
+      (el as HTMLElement).style.display = '';
+    });
+
+    if (typeof (window as any).Asistenxa !== 'undefined') {
+      try {
+        (window as any).Asistenxa.show?.();
+      } catch {
+        // Ignore
+      }
+    }
 
     // Check if script is already added
     const existingScript = document.querySelector('script[aid="69ea4192bccfa50c14e2"]');
@@ -19,15 +66,10 @@ export function CTAWidget() {
     script.async = true;
     script.setAttribute('aid', '69ea4192bccfa50c14e2');
     document.body.appendChild(script);
+  }, [ctaMode, isExcludedRoute]);
 
-    return () => {
-      // Optional: Cleanup script tag if component unmounts
-      // We don't remove Asistenxa container elements as they might cause issues if re-mounted,
-      // but the script tag cleanup is safe.
-    };
-  }, [ctaMode]);
-
-  if (ctaMode !== 'whatsapp') {
+  // Hide CTA WhatsApp widget on forms and admin routes
+  if (isExcludedRoute || ctaMode !== 'whatsapp') {
     return null;
   }
 
