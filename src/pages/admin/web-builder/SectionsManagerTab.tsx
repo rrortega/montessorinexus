@@ -298,9 +298,9 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
 
 export const DEFAULT_PAGE_SECTIONS: WebSectionItem[] = [
   {
-    id: 'sec_about_split',
+    id: 'sec_why_us',
     type: 'split_media_benefits',
-    name: 'Sobre Nosotros & Beneficios',
+    name: 'Sobre Nosotros & Diferenciadores',
     badge: 'Nuestra Escuela',
     title: 'Un entorno preparado para el potencial de cada niño',
     subtitle: 'Instalaciones creadas para el aprendizaje integral y la autonomía.',
@@ -310,19 +310,10 @@ export const DEFAULT_PAGE_SECTIONS: WebSectionItem[] = [
   {
     id: 'sec_pillars',
     type: 'pillars_mosaic',
-    name: 'Pilares & Misión',
+    name: 'Pilares Pedagógicos & Misión',
     badge: 'Nuestros Pilares',
     title: 'Quiénes somos y qué nos representa',
     subtitle: 'Los principios formativos que guían cada jornada.',
-    isEnabled: true
-  },
-  {
-    id: 'sec_why_us',
-    type: 'feature_list_media',
-    name: 'Diferenciadores Clave',
-    badge: 'Por Qué Elegirnos',
-    title: 'Educación viva centrada en el niño',
-    subtitle: 'El respeto al ritmo natural, libertad con límites y ambiente guiado.',
     isEnabled: true
   },
   {
@@ -331,6 +322,23 @@ export const DEFAULT_PAGE_SECTIONS: WebSectionItem[] = [
     name: 'Frase de Inspiración',
     title: 'Libera el potencial del niño y lo transformarás en el mundo.',
     subtitle: 'Dra. María Montessori',
+    isEnabled: true,
+    ctaText: 'Conoce Nuestro Método'
+  },
+  {
+    id: 'sec_history',
+    type: 'story_split_slider',
+    name: 'Nuestra Historia & Trayectoria',
+    badge: 'Nuestra Historia',
+    title: 'Creciendo con raíces firmes y visión abierta',
+    subtitle: 'Inspirados en una educación que nutre la mente y el corazón.',
+    isEnabled: true
+  },
+  {
+    id: 'sec_metrics',
+    type: 'metrics_stats_banner',
+    name: 'Métricas & Impacto',
+    title: 'Cifras que respaldan nuestro compromiso pedagógico',
     isEnabled: true
   },
   {
@@ -354,13 +362,6 @@ export const DEFAULT_PAGE_SECTIONS: WebSectionItem[] = [
     ctaText: 'Iniciar Proceso de Admisión'
   },
   {
-    id: 'sec_metrics',
-    type: 'metrics_stats_banner',
-    name: 'Métricas & Impacto',
-    title: 'Cifras que respaldan nuestro compromiso pedagógico',
-    isEnabled: true
-  },
-  {
     id: 'sec_gallery',
     type: 'gallery_masonry_tabs',
     name: 'Galería de Ambientes',
@@ -370,34 +371,27 @@ export const DEFAULT_PAGE_SECTIONS: WebSectionItem[] = [
     isEnabled: true
   },
   {
-    id: 'sec_testimonials',
-    type: 'testimonials_slider',
-    name: 'Testimonios de Familias',
-    badge: 'Comunidad',
-    title: 'Lo que dicen las familias que confían en nosotros',
+    id: 'sec_guides',
+    type: 'teachers_team',
+    name: 'Equipo de Guías Montessori',
+    badge: 'Equipo Docente',
+    title: 'Guías preparadas y comprometidas con cada niño',
+    subtitle: 'Acompañantes certificados que facilitan el desarrollo.',
     isEnabled: true
   },
   {
-    id: 'sec_faq',
-    type: 'faq_categorized_accordion',
-    name: 'Preguntas Frecuentes',
-    badge: "FAQ's",
-    title: 'Todo lo que necesitas saber antes de postular',
-    isEnabled: true
-  },
-  {
-    id: 'sec_location_map',
+    id: 'sec_contact',
     type: 'location_map_cta',
-    name: 'Ubicación & Visita',
+    name: 'Contacto, Ubicación & Mapa',
     badge: 'Encuéntranos',
     title: 'Te dejamos nuestra ubicación y vías de contacto',
     isEnabled: true,
     ctaText: 'Mándanos un mensaje'
   },
   {
-    id: 'sec_cta_banner',
+    id: 'sec_cta',
     type: 'cta_banner_contrast',
-    name: 'Llamado a la Acción (CTA)',
+    name: 'Llamado a la Acción Final (CTA)',
     title: 'Planta hoy las raíces del futuro de tu hijo',
     subtitle: 'Agenda una visita guiada y conoce nuestros salones Montessori.',
     isEnabled: true,

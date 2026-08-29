@@ -90,7 +90,6 @@ const Index = () => {
         return <GuidesSection key={section.id} />;
       case 'location_map_cta':
       case 'quick_contact_form':
-      case 'faq_categorized_accordion':
         return <ContactSection key={section.id} />;
       case 'cta_banner_contrast':
         return <CTASection key={section.id} />;
