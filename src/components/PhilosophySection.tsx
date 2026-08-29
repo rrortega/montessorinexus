@@ -127,6 +127,9 @@ export interface PillarCardItem {
   subtitleColorDark?: string;
   titleSize?: number | string;
   subtitleSize?: number | string;
+  align?: 'left' | 'center' | 'right';
+  titleAlign?: 'left' | 'center' | 'right';
+  subtitleAlign?: 'left' | 'center' | 'right';
   shape?: 'rounded' | 'blob' | 'arch' | 'squircle' | 'minimal' | 'leaf' | 'pill';
   hoverEffect?: 'lift' | 'scale' | 'glow' | 'tilt' | 'border' | 'none';
   rotateZ?: number | string;
@@ -650,7 +653,9 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
           {titleText && (
             <h2
               style={{ fontFamily: titleFontFamily, color: titleColor, fontSize: config.title_size ? `${config.title_size}px` : undefined }}
-              className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-foreground leading-[1.15] whitespace-pre-line"
+              className={`text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-foreground leading-[1.15] whitespace-pre-line ${
+                config.title_align === 'center' ? 'text-center' : config.title_align === 'right' ? 'text-right' : config.title_align === 'left' ? 'text-left' : ''
+              }`}
             >
               {titleText}
             </h2>
@@ -659,7 +664,9 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
           {subtitleText && (
             <p
               style={{ fontFamily: subtitleFontFamily, color: subtitleColor, fontSize: config.subtitle_size ? `${config.subtitle_size}px` : undefined }}
-              className="text-base sm:text-lg text-muted-foreground leading-relaxed whitespace-pre-line"
+              className={`text-base sm:text-lg text-muted-foreground leading-relaxed whitespace-pre-line ${
+                config.subtitle_align === 'center' ? 'text-center' : config.subtitle_align === 'right' ? 'text-right' : config.subtitle_align === 'left' ? 'text-left' : ''
+              }`}
             >
               {subtitleText}
             </p>
@@ -745,6 +752,12 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
             if (subtitleColorLight) cardCustomStyle['--card-subtitle-color-light'] = subtitleColorLight;
             if (subtitleColorDark) cardCustomStyle['--card-subtitle-color-dark'] = subtitleColorDark;
 
+            const cardAlign = card.align || 'left';
+            const cardTitleAlign = card.titleAlign || cardAlign;
+            const cardSubtitleAlign = card.subtitleAlign || cardAlign;
+            const titleAlignClass = cardTitleAlign === 'center' ? 'text-center' : cardTitleAlign === 'right' ? 'text-right' : 'text-left';
+            const subtitleAlignClass = cardSubtitleAlign === 'center' ? 'text-center' : cardSubtitleAlign === 'right' ? 'text-right' : 'text-left';
+
             return (
               <FadeInScroll
                 key={card.id || index}
@@ -762,7 +775,7 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
                 >
                   <div className="space-y-4">
                     {/* Card Icon or Custom Image */}
-                    <div className="flex items-center justify-between">
+                    <div className={`flex items-center ${cardAlign === 'center' ? 'justify-center' : cardAlign === 'right' ? 'justify-end' : 'justify-between'}`}>
                       {card.imageUrl ? (
                         <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-xs shrink-0 border border-white/40">
                           <img
@@ -787,9 +800,11 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
                         </div>
                       )}
 
-                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-black/5 text-slate-500">
-                        {String(index + 1).padStart(2, '0')}
-                      </span>
+                      {cardAlign !== 'center' && cardAlign !== 'right' && (
+                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-black/5 text-slate-500">
+                          {String(index + 1).padStart(2, '0')}
+                        </span>
+                      )}
                     </div>
 
                     {/* Title & Subtitle */}
@@ -800,7 +815,7 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
                           color: titleColorLight || undefined,
                           fontSize: card.titleSize ? `${card.titleSize}px` : (config.card_title_size ? `${config.card_title_size}px` : undefined)
                         }}
-                        className={`font-display text-lg sm:text-xl font-bold text-foreground leading-snug whitespace-pre-line ${
+                        className={`font-display text-lg sm:text-xl font-bold text-foreground leading-snug whitespace-pre-line ${titleAlignClass} ${
                           titleColorLight ? 'text-[var(--card-title-color-light)]' : ''
                         } ${
                           titleColorDark ? 'dark:text-[var(--card-title-color-dark)]' : ''
@@ -815,7 +830,7 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
                             color: subtitleColorLight || undefined,
                             fontSize: card.subtitleSize ? `${card.subtitleSize}px` : (config.card_subtitle_size ? `${config.card_subtitle_size}px` : undefined)
                           }}
-                          className={`text-xs sm:text-sm text-muted-foreground leading-relaxed whitespace-pre-line ${
+                          className={`text-xs sm:text-sm text-muted-foreground leading-relaxed whitespace-pre-line ${subtitleAlignClass} ${
                             subtitleColorLight ? 'text-[var(--card-subtitle-color-light)]' : ''
                           } ${
                             subtitleColorDark ? 'dark:text-[var(--card-subtitle-color-dark)]' : ''

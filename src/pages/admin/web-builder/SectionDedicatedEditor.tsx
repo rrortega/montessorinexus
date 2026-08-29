@@ -433,11 +433,49 @@ export const FontSizeStepperMini: React.FC<{
   );
 };
 
+export const AlignmentCycleButton: React.FC<{
+  value?: 'left' | 'center' | 'right' | string;
+  onChange: (nextAlign: 'left' | 'center' | 'right') => void;
+  className?: string;
+}> = ({ value = 'left', onChange, className = '' }) => {
+  const currentAlign = (value === 'center' || value === 'right') ? value : 'left';
+
+  const handleCycle = () => {
+    if (currentAlign === 'left') onChange('center');
+    else if (currentAlign === 'center') onChange('right');
+    else onChange('left');
+  };
+
+  const getLabel = () => {
+    if (currentAlign === 'center') return 'Alineación: Centrado (clic para Derecha)';
+    if (currentAlign === 'right') return 'Alineación: Derecha (clic para Izquierda)';
+    return 'Alineación: Izquierda (clic para Centrado)';
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleCycle}
+      className={`p-1 px-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 active:scale-95 transition-all cursor-pointer shadow-3xs flex items-center gap-1 ${className}`}
+      title={getLabel()}
+    >
+      {currentAlign === 'left' && <AlignLeft className="w-3.5 h-3.5 text-forest" />}
+      {currentAlign === 'center' && <AlignCenter className="w-3.5 h-3.5 text-forest" />}
+      {currentAlign === 'right' && <AlignRight className="w-3.5 h-3.5 text-forest" />}
+      <span className="text-[9px] font-bold capitalize text-slate-500 hidden xs:inline">
+        {currentAlign === 'left' ? 'Izq' : currentAlign === 'center' ? 'Centro' : 'Der'}
+      </span>
+    </button>
+  );
+};
+
 interface FieldTypographyAndColorBarProps {
   fontValue?: string;
   onChangeFont: (fontId: string) => void;
   sizeValue?: number | string;
   onChangeSize?: (newSize: number) => void;
+  alignValue?: 'left' | 'center' | 'right' | string;
+  onChangeAlign?: (newAlign: 'left' | 'center' | 'right') => void;
   defaultSize?: number;
   minSize?: number;
   maxSize?: number;
@@ -455,6 +493,8 @@ const FieldTypographyAndColorBar: React.FC<FieldTypographyAndColorBarProps> = ({
   onChangeFont,
   sizeValue,
   onChangeSize,
+  alignValue,
+  onChangeAlign,
   defaultSize = 16,
   minSize = 10,
   maxSize = 72,
@@ -497,6 +537,14 @@ const FieldTypographyAndColorBar: React.FC<FieldTypographyAndColorBarProps> = ({
             defaultSize={defaultSize}
             min={minSize}
             max={maxSize}
+          />
+        )}
+
+        {/* Alignment Toggle Button (Izq -> Centro -> Der) */}
+        {onChangeAlign && (
+          <AlignmentCycleButton
+            value={alignValue}
+            onChange={onChangeAlign}
           />
         )}
 
@@ -1146,13 +1194,22 @@ const fullKey = editorLang === 'es' ? key : `${key}_${editorLang}`;
                 <label className="text-[10px] font-bold text-slate-700">
                   Título Principal de la Sección ({currentLangObj.code.toUpperCase()}):
                 </label>
-                <FontSizeStepperMini
-                  value={section.config?.title_size}
-                  onChange={(val) => handleConfigChange('title_size', val)}
-                  defaultSize={36}
-                  min={18}
-                  max={64}
-                />
+                <div className="flex items-center gap-1.5">
+                  <FontSizeStepperMini
+                    value={section.config?.title_size}
+                    onChange={(val) => handleConfigChange('title_size', val)}
+                    defaultSize={36}
+                    min={18}
+                    max={64}
+                  />
+                  <AlignmentCycleButton
+                    value={section.config?.title_align || section.layoutVariant}
+                    onChange={(val) => {
+                      handleConfigChange('title_align', val);
+                      onUpdateSection({ layoutVariant: val });
+                    }}
+                  />
+                </div>
               </div>
               <input
                 type="text"
@@ -1167,6 +1224,11 @@ const fullKey = editorLang === 'es' ? key : `${key}_${editorLang}`;
               onChangeFont={(val) => handleConfigChange('title_font', val)}
               sizeValue={section.config?.title_size}
               onChangeSize={(val) => handleConfigChange('title_size', val)}
+              alignValue={section.config?.title_align || section.layoutVariant}
+              onChangeAlign={(val) => {
+                handleConfigChange('title_align', val);
+                onUpdateSection({ layoutVariant: val });
+              }}
               defaultSize={36}
               minSize={18}
               maxSize={64}
@@ -1186,13 +1248,19 @@ const fullKey = editorLang === 'es' ? key : `${key}_${editorLang}`;
                 <label className="text-[10px] font-bold text-slate-700">
                   Subtítulo / Bajada Descriptiva ({currentLangObj.code.toUpperCase()}):
                 </label>
-                <FontSizeStepperMini
-                  value={section.config?.subtitle_size}
-                  onChange={(val) => handleConfigChange('subtitle_size', val)}
-                  defaultSize={16}
-                  min={12}
-                  max={32}
-                />
+                <div className="flex items-center gap-1.5">
+                  <FontSizeStepperMini
+                    value={section.config?.subtitle_size}
+                    onChange={(val) => handleConfigChange('subtitle_size', val)}
+                    defaultSize={16}
+                    min={12}
+                    max={32}
+                  />
+                  <AlignmentCycleButton
+                    value={section.config?.subtitle_align || section.layoutVariant}
+                    onChange={(val) => handleConfigChange('subtitle_align', val)}
+                  />
+                </div>
               </div>
               <textarea
                 value={getLangValue('subtitle')}
@@ -1207,6 +1275,8 @@ const fullKey = editorLang === 'es' ? key : `${key}_${editorLang}`;
               onChangeFont={(val) => handleConfigChange('subtitle_font', val)}
               sizeValue={section.config?.subtitle_size}
               onChangeSize={(val) => handleConfigChange('subtitle_size', val)}
+              alignValue={section.config?.subtitle_align || section.layoutVariant}
+              onChangeAlign={(val) => handleConfigChange('subtitle_align', val)}
               defaultSize={16}
               minSize={12}
               maxSize={32}
@@ -1669,13 +1739,19 @@ const fullKey = editorLang === 'es' ? key : `${key}_${editorLang}`;
                                 <label className="text-[10px] font-bold text-slate-700">
                                   Título de la Tarjeta ({currentLangObj.name}):
                                 </label>
-                                <FontSizeStepperMini
-                                  value={card.titleSize}
-                                  onChange={(val) => handleUpdateSingleCard(card.id, { titleSize: val })}
-                                  defaultSize={20}
-                                  min={12}
-                                  max={40}
-                                />
+                                <div className="flex items-center gap-1.5">
+                                  <FontSizeStepperMini
+                                    value={card.titleSize}
+                                    onChange={(val) => handleUpdateSingleCard(card.id, { titleSize: val })}
+                                    defaultSize={20}
+                                    min={12}
+                                    max={40}
+                                  />
+                                  <AlignmentCycleButton
+                                    value={card.titleAlign || card.align}
+                                    onChange={(val) => handleUpdateSingleCard(card.id, { titleAlign: val, align: val })}
+                                  />
+                                </div>
                               </div>
                               <input
                                 type="text"
@@ -1696,6 +1772,8 @@ const fullKey = editorLang === 'es' ? key : `${key}_${editorLang}`;
                                 onChangeFont={(fId) => handleUpdateSingleCard(card.id, { titleFont: fId })}
                                 sizeValue={card.titleSize}
                                 onChangeSize={(val) => handleUpdateSingleCard(card.id, { titleSize: val })}
+                                alignValue={card.titleAlign || card.align}
+                                onChangeAlign={(val) => handleUpdateSingleCard(card.id, { titleAlign: val, align: val })}
                                 defaultSize={20}
                                 minSize={12}
                                 maxSize={40}
@@ -1714,13 +1792,19 @@ const fullKey = editorLang === 'es' ? key : `${key}_${editorLang}`;
                                 <label className="text-[10px] font-bold text-slate-700">
                                   Descripción / Detalle de la Tarjeta ({currentLangObj.name}):
                                 </label>
-                                <FontSizeStepperMini
-                                  value={card.subtitleSize}
-                                  onChange={(val) => handleUpdateSingleCard(card.id, { subtitleSize: val })}
-                                  defaultSize={14}
-                                  min={10}
-                                  max={28}
-                                />
+                                <div className="flex items-center gap-1.5">
+                                  <FontSizeStepperMini
+                                    value={card.subtitleSize}
+                                    onChange={(val) => handleUpdateSingleCard(card.id, { subtitleSize: val })}
+                                    defaultSize={14}
+                                    min={10}
+                                    max={28}
+                                  />
+                                  <AlignmentCycleButton
+                                    value={card.subtitleAlign || card.align}
+                                    onChange={(val) => handleUpdateSingleCard(card.id, { subtitleAlign: val })}
+                                  />
+                                </div>
                               </div>
                               <textarea
                                 value={cardSubtitle}
@@ -1741,6 +1825,8 @@ const fullKey = editorLang === 'es' ? key : `${key}_${editorLang}`;
                                 onChangeFont={(fId) => handleUpdateSingleCard(card.id, { subtitleFont: fId })}
                                 sizeValue={card.subtitleSize}
                                 onChangeSize={(val) => handleUpdateSingleCard(card.id, { subtitleSize: val })}
+                                alignValue={card.subtitleAlign || card.align}
+                                onChangeAlign={(val) => handleUpdateSingleCard(card.id, { subtitleAlign: val })}
                                 defaultSize={14}
                                 minSize={10}
                                 maxSize={28}
