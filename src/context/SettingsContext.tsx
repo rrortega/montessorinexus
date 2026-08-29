@@ -217,18 +217,27 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const hostname = window.location.hostname;
         const searchParams = new URLSearchParams(window.location.search);
         const schoolQuery = searchParams.get('school') || searchParams.get('colegio');
-        const isAdminRoute = window.location.pathname.startsWith('/admin');
+        const pathname = window.location.pathname;
+        const isAdminRoute = pathname.startsWith('/admin') || pathname.startsWith('/panel') || pathname.startsWith('/console');
+        const isSchoolScopedRoute =
+          pathname.startsWith('/colegio/') ||
+          pathname.startsWith('/school/') ||
+          pathname.startsWith('/admision/') ||
+          pathname.startsWith('/admissions/') ||
+          pathname.startsWith('/forms/') ||
+          pathname.startsWith('/f/') ||
+          pathname.startsWith('/formulario/');
 
         const hostRes = await fetch(`/api/schools/resolve-host?host=${encodeURIComponent(hostname)}`);
         if (hostRes.ok) {
           const hostData = await hostRes.json();
-          if (hostData.isPlatformRoot && !schoolQuery && !activeMembership?.schoolId && !isAdminRoute) {
+          if (hostData.isPlatformRoot && !schoolQuery && !isSchoolScopedRoute && !isAdminRoute) {
             setIsPlatformRoot(true);
             setIsSchoolNotFound(false);
             setLoading(false);
             return;
           }
-          if (hostData.notFound && !schoolQuery && !activeMembership?.schoolId && !isAdminRoute) {
+          if (hostData.notFound && !schoolQuery && !isAdminRoute) {
             setIsSchoolNotFound(true);
             setIsPlatformRoot(false);
             setUnregisteredHost(hostData.attemptedHost || hostname);
