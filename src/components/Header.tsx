@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Menu, X, Globe, Sun, Moon, Phone, Mail, MapPin, Sparkles, Link2, ChevronDown, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -121,16 +121,51 @@ export function Header({ forceScrolled = false }: HeaderProps) {
 
   const activeScrolled = (isScrolled || forceScrolled) && scrollEnabled;
 
-  const navItems = [
-    { label: 'Nuestro Método', href: '/#metodo' },
-    { label: 'Programas', href: '/#programas' },
-    { label: 'Admisiones', href: '/#admisiones' },
-    ...(showGallery ? [{ label: 'Galería', href: '/#galeria' }] : []),
-    ...(showTeachers ? [{ label: 'Guías', href: '/#guias' }] : []),
-    ...(showDocumentsInMenu ? [{ label: 'Documentos', href: '/documentos' }] : []),
-    ...(showApplicationsInMenu ? [{ label: 'Aplicativos', href: '/aplicativos' }] : []),
-    { label: 'Contacto', href: '/#contacto' },
-  ];
+  const navItems = useMemo(() => {
+    let customItems: { label: string; href: string }[] = [];
+    if (settings?.page_sections_order) {
+      try {
+        const parsed: any[] = JSON.parse(settings.page_sections_order);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          customItems = parsed
+            .filter(sec => sec.isEnabled !== false && sec.showInMenu !== false && (sec.menuLabel || sec.name))
+            .map(sec => {
+              const localizedLabel = locale !== 'es'
+                ? (sec[`menuLabel_${locale}`] || sec[`name_${locale}`] || sec.menuLabel || sec.name)
+                : (sec.menuLabel || sec.name);
+              return {
+                label: localizedLabel,
+                href: `/#${sec.anchor || sec.id}`
+              };
+            });
+        }
+      } catch (e) {}
+    }
+
+    if (customItems.length === 0) {
+      customItems = [
+        { label: 'Nuestro Método', href: '/#sec_pillars' },
+        { label: 'Programas', href: '/#sec_programs' },
+        { label: 'Admisiones', href: '/#sec_process' },
+        ...(showGallery ? [{ label: 'Galería', href: '/#sec_gallery' }] : []),
+        ...(showTeachers ? [{ label: 'Guías', href: '/#sec_guides' }] : []),
+      ];
+    }
+
+    if (showDocumentsInMenu) {
+      customItems.push({ label: 'Documentos', href: '/documentos' });
+    }
+    if (showApplicationsInMenu) {
+      customItems.push({ label: 'Aplicativos', href: '/aplicativos' });
+    }
+
+    const hasContact = customItems.some(i => i.href.includes('contact') || i.label.toLowerCase().includes('contacto'));
+    if (!hasContact) {
+      customItems.push({ label: 'Contacto', href: '/#sec_contact' });
+    }
+
+    return customItems;
+  }, [settings?.page_sections_order, locale, showGallery, showTeachers, showDocumentsInMenu, showApplicationsInMenu]);
 
   const enabledLangsRaw = settings?.header_enabled_langs || 'es,en';
   const activeLangs = enabledLangsRaw

@@ -59,12 +59,12 @@ export const PreviewSectionWrapper: React.FC<PreviewSectionWrapperProps> = ({
   };
 
   if (!isBuilderPreview) {
-    return <>{children}</>;
+    return <div id={id} className="scroll-mt-24">{children}</div>;
   }
 
   return (
     <div
-      id={`preview-sec-${id}`}
+      id={id}
       onMouseEnter={() => setHoveredId(id)}
       onMouseLeave={() => setHoveredId(null)}
       className={`relative transition-all duration-300 ${

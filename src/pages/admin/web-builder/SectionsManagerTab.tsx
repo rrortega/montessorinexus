@@ -50,6 +50,10 @@ export interface WebSectionItem {
   ctaText_en?: string;
   ctaUrl?: string;
   layoutVariant?: string;
+  showInMenu?: boolean;
+  menuLabel?: string;
+  menuLabel_en?: string;
+  anchor?: string;
   config?: Record<string, any>;
 }
 
@@ -307,6 +311,9 @@ export const DEFAULT_PAGE_SECTIONS: WebSectionItem[] = [
     title: 'Un entorno preparado para el potencial de cada niño',
     subtitle: 'Instalaciones creadas para el aprendizaje integral y la autonomía.',
     isEnabled: true,
+    showInMenu: true,
+    menuLabel: 'Sobre Nosotros',
+    menuLabel_en: 'About Us',
     ctaText: 'Quiero una cita'
   },
   {
@@ -316,7 +323,10 @@ export const DEFAULT_PAGE_SECTIONS: WebSectionItem[] = [
     badge: 'Nuestros Pilares',
     title: 'Quiénes somos y qué nos representa',
     subtitle: 'Los principios formativos que guían cada jornada.',
-    isEnabled: true
+    isEnabled: true,
+    showInMenu: true,
+    menuLabel: 'Nuestro Método',
+    menuLabel_en: 'Our Method'
   },
   {
     id: 'sec_quote',
@@ -325,6 +335,7 @@ export const DEFAULT_PAGE_SECTIONS: WebSectionItem[] = [
     title: 'Libera el potencial del niño y lo transformarás en el mundo.',
     subtitle: 'Dra. María Montessori',
     isEnabled: true,
+    showInMenu: false,
     ctaText: 'Conoce Nuestro Método'
   },
   {
@@ -334,14 +345,18 @@ export const DEFAULT_PAGE_SECTIONS: WebSectionItem[] = [
     badge: 'Nuestra Historia',
     title: 'Creciendo con raíces firmes y visión abierta',
     subtitle: 'Inspirados en una educación que nutre la mente y el corazón.',
-    isEnabled: true
+    isEnabled: true,
+    showInMenu: false,
+    menuLabel: 'Historia',
+    menuLabel_en: 'History'
   },
   {
     id: 'sec_metrics',
     type: 'metrics_stats_banner',
     name: 'Métricas & Impacto',
     title: 'Cifras que respaldan nuestro compromiso pedagógico',
-    isEnabled: true
+    isEnabled: true,
+    showInMenu: false
   },
   {
     id: 'sec_programs',
@@ -351,6 +366,9 @@ export const DEFAULT_PAGE_SECTIONS: WebSectionItem[] = [
     title: 'Un camino adaptado para cada etapa del desarrollo',
     subtitle: 'Comunidad Infantil, Casa de Niños y Taller Montessori.',
     isEnabled: true,
+    showInMenu: true,
+    menuLabel: 'Programas',
+    menuLabel_en: 'Programs',
     ctaText: 'Quiero informes'
   },
   {
@@ -361,6 +379,9 @@ export const DEFAULT_PAGE_SECTIONS: WebSectionItem[] = [
     title: 'Paso a paso para formar parte de nuestra comunidad',
     subtitle: 'Un proceso cercano, claro y personalizado para cada familia.',
     isEnabled: true,
+    showInMenu: true,
+    menuLabel: 'Admisiones',
+    menuLabel_en: 'Admissions',
     ctaText: 'Iniciar Proceso de Admisión'
   },
   {
@@ -370,7 +391,10 @@ export const DEFAULT_PAGE_SECTIONS: WebSectionItem[] = [
     badge: 'Galería',
     title: 'Explorando el mundo: Niños en acción',
     subtitle: 'Ambientes preparados, materiales de desarrollo y vida práctica.',
-    isEnabled: true
+    isEnabled: true,
+    showInMenu: true,
+    menuLabel: 'Galería',
+    menuLabel_en: 'Gallery'
   },
   {
     id: 'sec_guides',
@@ -379,7 +403,10 @@ export const DEFAULT_PAGE_SECTIONS: WebSectionItem[] = [
     badge: 'Equipo Docente',
     title: 'Guías preparadas y comprometidas con cada niño',
     subtitle: 'Acompañantes certificados que facilitan el desarrollo.',
-    isEnabled: true
+    isEnabled: true,
+    showInMenu: true,
+    menuLabel: 'Guías',
+    menuLabel_en: 'Guides'
   },
   {
     id: 'sec_contact',
@@ -388,6 +415,9 @@ export const DEFAULT_PAGE_SECTIONS: WebSectionItem[] = [
     badge: 'Encuéntranos',
     title: 'Te dejamos nuestra ubicación y vías de contacto',
     isEnabled: true,
+    showInMenu: true,
+    menuLabel: 'Contacto',
+    menuLabel_en: 'Contact',
     ctaText: 'Mándanos un mensaje'
   },
   {
@@ -397,6 +427,7 @@ export const DEFAULT_PAGE_SECTIONS: WebSectionItem[] = [
     title: 'Planta hoy las raíces del futuro de tu hijo',
     subtitle: 'Agenda una visita guiada y conoce nuestros salones Montessori.',
     isEnabled: true,
+    showInMenu: false,
     ctaText: 'Agendar Visita'
   }
 ];
@@ -456,7 +487,9 @@ export const SectionsManagerTab: React.FC<SectionsManagerTabProps> = ({
       title: template.titleDefault,
       subtitle: template.subtitleDefault,
       ctaText: template.ctaDefault,
-      isEnabled: true
+      isEnabled: true,
+      showInMenu: true,
+      menuLabel: template.name
     };
     onChangeSections([...sections, newSection]);
     setIsCatalogOpen(false);

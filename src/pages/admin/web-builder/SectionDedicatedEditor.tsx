@@ -72,13 +72,13 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
     });
   };
 
-  const getLangValue = (field: 'name' | 'badge' | 'title' | 'subtitle' | 'ctaText'): string => {
+  const getLangValue = (field: 'name' | 'badge' | 'title' | 'subtitle' | 'ctaText' | 'menuLabel'): string => {
     if (editorLang === 'es') return (section[field] as string) || '';
     const key = `${field}_${editorLang}` as keyof WebSectionItem;
     return (section[key] as string) || '';
   };
 
-  const setLangValue = (field: 'name' | 'badge' | 'title' | 'subtitle' | 'ctaText', value: string) => {
+  const setLangValue = (field: 'name' | 'badge' | 'title' | 'subtitle' | 'ctaText' | 'menuLabel', value: string) => {
     if (editorLang === 'es') {
       onUpdateSection({ [field]: value });
     } else {
@@ -274,10 +274,70 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
         </div>
       </div>
 
+      {/* 2. ENLACE EN EL MENÚ DE NAVEGACIÓN (HEADER) */}
+      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-forest/10 text-forest flex items-center justify-center font-bold">
+              <PanelTop className="w-4 h-4" />
+            </div>
+            <div>
+              <h4 className="font-bold text-forest text-xs sm:text-sm">
+                Enlace en el Menú de Navegación (Header)
+              </h4>
+              <p className="text-[11px] text-muted-foreground">
+                Crea un ítem en la barra superior para saltar a esta sección
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => onUpdateSection({ showInMenu: section.showInMenu === false ? true : false })}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              section.showInMenu !== false
+                ? 'bg-forest text-white shadow-3xs'
+                : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+            }`}
+          >
+            <span>{section.showInMenu !== false ? 'Visible en Menú' : 'Oculto en Menú'}</span>
+          </button>
+        </div>
+
+        {section.showInMenu !== false && (
+          <div className="space-y-3 pt-2 border-t border-slate-100 animate-in fade-in duration-150">
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-bold text-slate-700">
+                  Texto del Ítem en el Menú ({currentLangObj.name}):
+                </label>
+                <span className="text-[10px] font-mono text-slate-400">
+                  {currentLangObj.flag} {currentLangObj.code.toUpperCase()}
+                </span>
+              </div>
+              <input
+                type="text"
+                value={getLangValue('menuLabel') || (editorLang === 'es' ? section.name : '')}
+                onChange={(e) => setLangValue('menuLabel', e.target.value)}
+                placeholder={`Ej: ${section.name}`}
+                className="w-full px-3 py-2 text-xs font-bold text-slate-900 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-forest/20 focus:border-forest shadow-3xs"
+              />
+            </div>
+
+            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-[11px]">
+              <span className="text-slate-500">Destino de Navegación:</span>
+              <span className="font-mono font-bold text-forest bg-white px-2 py-0.5 rounded-md border border-slate-200">
+                /#{section.anchor || section.id}
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* 3. BOTÓN CTA / LLAMADO A LA ACCIÓN */}
       <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-4">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-forest/10 text-forest flex items-center justify-center font-bold">2</div>
+          <div className="w-7 h-7 rounded-lg bg-forest/10 text-forest flex items-center justify-center font-bold">3</div>
           <h4 className="font-bold text-forest text-xs sm:text-sm">
             Botón de Acción CTA ({currentLangObj.name})
           </h4>
