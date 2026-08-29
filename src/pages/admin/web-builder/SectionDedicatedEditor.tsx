@@ -52,7 +52,8 @@ import {
   Sprout,
   GraduationCap,
   Baby,
-  Cloud
+  Cloud,
+  Compass
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { ImageUploadDropzone } from '@/components/ui/ImageUploadDropzone';
