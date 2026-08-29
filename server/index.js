@@ -6990,21 +6990,24 @@ app.get('/api/settings', async (req, res) => {
 app.post('/api/settings', async (req, res) => {
   try {
     const entries = Object.entries(req.body);
-    for (const [key, value] of entries) {
-      await prisma.siteSetting.upsert({
-        where: {
-          schoolId_key: {
+    if (entries.length > 0) {
+      const upsertOperations = entries.map(([key, value]) =>
+        prisma.siteSetting.upsert({
+          where: {
+            schoolId_key: {
+              schoolId: req.school.id,
+              key
+            }
+          },
+          update: { value: String(value) },
+          create: {
             schoolId: req.school.id,
-            key
+            key,
+            value: String(value)
           }
-        },
-        update: { value: String(value) },
-        create: {
-          schoolId: req.school.id,
-          key,
-          value: String(value)
-        }
-      });
+        })
+      );
+      await prisma.$transaction(upsertOperations);
     }
 
     // Sync to school model if school regional fields are updated
