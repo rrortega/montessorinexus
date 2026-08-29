@@ -408,12 +408,14 @@ interface SectionsManagerTabProps {
   sections: WebSectionItem[];
   onChangeSections: (sections: WebSectionItem[]) => void;
   onNavigateToTab?: (tab: 'header' | 'hero' | 'cta') => void;
+  onSelectSectionForEdit?: (sectionId: string) => void;
 }
 
 export const SectionsManagerTab: React.FC<SectionsManagerTabProps> = ({
   sections,
   onChangeSections,
-  onNavigateToTab
+  onNavigateToTab,
+  onSelectSectionForEdit
 }) => {
   const [isCatalogOpen, setIsCatalogOpen] = useState(false);
   const [searchFilter, setSearchFilter] = useState('');
@@ -619,9 +621,13 @@ export const SectionsManagerTab: React.FC<SectionsManagerTabProps> = ({
                       <IconComp className="w-4 h-4" />
                     </div>
 
-                    <div className="min-w-0 flex-1">
+                    <div
+                      onClick={() => onSelectSectionForEdit && onSelectSectionForEdit(section.id)}
+                      className="min-w-0 flex-1 cursor-pointer group"
+                      title="Click para abrir el editor dedicado de esta sección"
+                    >
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-bold text-xs text-slate-900 truncate">
+                        <span className="font-bold text-xs text-slate-900 group-hover:text-forest transition-colors truncate">
                           {section.name}
                         </span>
                         {template?.tag && (
@@ -675,19 +681,21 @@ export const SectionsManagerTab: React.FC<SectionsManagerTabProps> = ({
                       {section.isEnabled ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
                     </button>
 
-                    {/* Edit Details Accordion Button */}
+                    {/* Dedicated Section Editor Drawer Button */}
                     <button
                       type="button"
-                      onClick={() => setEditingSectionId(isEditing ? null : section.id)}
-                      className={`px-2.5 py-1.5 rounded-lg border text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
-                        isEditing
-                          ? 'bg-forest text-white border-forest shadow-3xs'
-                          : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
-                      }`}
-                      title="Personalizar contenido de la sección"
+                      onClick={() => {
+                        if (onSelectSectionForEdit) {
+                          onSelectSectionForEdit(section.id);
+                        } else {
+                          setEditingSectionId(isEditing ? null : section.id);
+                        }
+                      }}
+                      className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-forest hover:text-white text-slate-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shadow-3xs"
+                      title="Abrir editor dedicado de la sección"
                     >
                       <Settings2 className="w-3.5 h-3.5" />
-                      <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isEditing ? 'rotate-180' : ''}`} />
+                      <span className="hidden sm:inline">Editar</span>
                     </button>
 
                     {/* Duplicate */}

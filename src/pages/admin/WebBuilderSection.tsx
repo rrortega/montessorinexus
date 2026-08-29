@@ -56,7 +56,8 @@ import { useSiteSettings, ButtonRadiusType, ButtonHeightType } from '@/context/S
 import { ImageUploadDropzone } from '@/components/ui/ImageUploadDropzone';
 import { SlideOverDrawer } from '@/components/ui/SlideOverDrawer';
 import { toast } from 'sonner';
-import { SectionsManagerTab, WebSectionItem, DEFAULT_PAGE_SECTIONS } from './web-builder/SectionsManagerTab';
+import { SectionsManagerTab, WebSectionItem, DEFAULT_PAGE_SECTIONS, SECTION_TEMPLATES } from './web-builder/SectionsManagerTab';
+import { SectionDedicatedEditor } from './web-builder/SectionDedicatedEditor';
 
 export interface TopBarItem {
   id: string;
@@ -71,7 +72,7 @@ export const DEFAULT_TOP_BAR_ITEMS: TopBarItem[] = [
 ];
 
 type ViewportMode = 'desktop' | 'tablet' | 'mobile';
-type DesignerTab = 'domain' | 'branding' | 'header' | 'hero' | 'sections' | 'navigation' | 'cta';
+type DesignerTab = 'domain' | 'branding' | 'header' | 'hero' | 'sections' | 'navigation' | 'cta' | string;
 
 export function generateDefaultSubdomain(name: string): string {
   if (!name) return 'colegio';
@@ -4369,6 +4370,49 @@ export const WebBuilderSection: React.FC = () => {
             <Layers className="w-4 h-4" />
           </button>
 
+          {/* DIVIDER FOR SECTIONS */}
+          {pageSections.length > 0 && (
+            <div className="w-6 h-px bg-slate-800 my-0.5" />
+          )}
+
+          {/* DYNAMIC SECTION BUTTONS (IN THE SAME SEQUENCE AS LAYOUT) */}
+          {pageSections.map((section, idx) => {
+            const template = SECTION_TEMPLATES.find(t => t.type === section.type);
+            const IconComp = template?.icon || Layers;
+            const isTabActive = drawerOpen && activeTab === `section:${section.id}`;
+
+            return (
+              <button
+                key={section.id}
+                type="button"
+                onClick={() => handleOpenConfigTab(`section:${section.id}`)}
+                className={`p-2.5 rounded-xl transition-all flex items-center justify-center relative group cursor-pointer ${
+                  isTabActive
+                    ? 'bg-forest text-white shadow-md font-bold ring-2 ring-white/20'
+                    : section.isEnabled
+                    ? 'text-slate-400 hover:text-white hover:bg-slate-800'
+                    : 'text-slate-600 hover:text-slate-400 hover:bg-slate-800/60 opacity-60'
+                }`}
+                title={`Editar Sección #${idx + 1}: ${section.name}`}
+              >
+                <IconComp className="w-4 h-4" />
+                <span className={`absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full text-[8px] font-bold flex items-center justify-center ${
+                  isTabActive
+                    ? 'bg-amber-400 text-slate-950 font-extrabold'
+                    : section.isEnabled
+                    ? 'bg-slate-800 text-slate-300 border border-slate-700'
+                    : 'bg-slate-900 text-slate-600'
+                }`}>
+                  {idx + 1}
+                </span>
+              </button>
+            );
+          })}
+
+          {pageSections.length > 0 && (
+            <div className="w-6 h-px bg-slate-800 my-0.5" />
+          )}
+
           <button
             type="button"
             onClick={() => handleOpenConfigTab('navigation')}
@@ -4453,38 +4497,48 @@ export const WebBuilderSection: React.FC = () => {
       </div>
 
       {/* 3. RIGHT CONFIGURATION DRAWER (SLIDEOVER) */}
-      <SlideOverDrawer
-        isOpen={drawerOpen}
-        onClose={handleCloseDrawerWithoutSaving}
-        maxWidthClass="max-w-md lg:max-w-xl"
-        hideBackdrop
-        icon={
-          activeTab === 'domain' ? <Globe className="w-5 h-5 text-forest" /> :
-          activeTab === 'branding' ? <Palette className="w-5 h-5 text-forest" /> :
-          activeTab === 'header' ? <PanelTop className="w-5 h-5 text-forest" /> :
-          activeTab === 'hero' ? <Layout className="w-5 h-5 text-forest" /> :
-          activeTab === 'sections' ? <Layers className="w-5 h-5 text-forest" /> :
-          activeTab === 'navigation' ? <Compass className="w-5 h-5 text-forest" /> :
-          <MessageCircle className="w-5 h-5 text-forest" />
-        }
-        title={
-          activeTab === 'domain' ? 'Registro del Dominio' :
-          activeTab === 'branding' ? 'Marca, Paletas & Colores' :
-          activeTab === 'header' ? 'Diseño del Header & Barra Superior' :
-          activeTab === 'hero' ? 'Hero Banner' :
-          activeTab === 'sections' ? 'Estructura & Posición de Secciones' :
-          activeTab === 'navigation' ? 'Menú & Navegación' :
-          'Contacto & CTA'
-        }
-        description={
-          activeTab === 'domain' ? 'Escribí el subdominio deseado o tu dominio propio con TLD.' :
-          activeTab === 'branding' ? 'Elegí entre 9 paletas armónicas Montessori o definí colores a medida en modo claro y oscuro.' :
-          activeTab === 'header' ? 'Personalizá el header inicial, flotante, transformación en scroll y diseño móvil.' :
-          activeTab === 'hero' ? 'Editá los textos de impacto e imagen principal de portada.' :
-          activeTab === 'sections' ? 'Reordená, encendé/apagá visibilidad y editá las secciones de la página entre el Hero y el Footer.' :
-          activeTab === 'navigation' ? 'Gestioná la visibilidad de enlaces en la barra pública.' :
-          'Configurá el modo de atención por WhatsApp o formulario.'
-        }
+      {(() => {
+        const activeSectionId = activeTab.startsWith('section:') ? activeTab.replace('section:', '') : null;
+        const activeSection = activeSectionId ? pageSections.find(s => s.id === activeSectionId) : null;
+        const activeSectionTemplate = activeSection ? SECTION_TEMPLATES.find(t => t.type === activeSection.type) : null;
+        const ActiveSectionIcon = activeSectionTemplate?.icon || Layers;
+
+        return (
+          <SlideOverDrawer
+            isOpen={drawerOpen}
+            onClose={handleCloseDrawerWithoutSaving}
+            maxWidthClass="max-w-md lg:max-w-xl"
+            hideBackdrop
+            icon={
+              activeTab === 'domain' ? <Globe className="w-5 h-5 text-forest" /> :
+              activeTab === 'branding' ? <Palette className="w-5 h-5 text-forest" /> :
+              activeTab === 'header' ? <PanelTop className="w-5 h-5 text-forest" /> :
+              activeTab === 'hero' ? <Layout className="w-5 h-5 text-forest" /> :
+              activeTab === 'sections' ? <Layers className="w-5 h-5 text-forest" /> :
+              activeTab.startsWith('section:') ? <ActiveSectionIcon className="w-5 h-5 text-forest" /> :
+              activeTab === 'navigation' ? <Compass className="w-5 h-5 text-forest" /> :
+              <MessageCircle className="w-5 h-5 text-forest" />
+            }
+            title={
+              activeTab === 'domain' ? 'Registro del Dominio' :
+              activeTab === 'branding' ? 'Marca, Paletas & Colores' :
+              activeTab === 'header' ? 'Diseño del Header & Barra Superior' :
+              activeTab === 'hero' ? 'Hero Banner' :
+              activeTab === 'sections' ? 'Estructura & Posición de Secciones' :
+              activeTab.startsWith('section:') ? `Editar: ${activeSection?.name || 'Sección'}` :
+              activeTab === 'navigation' ? 'Menú & Navegación' :
+              'Contacto & CTA'
+            }
+            description={
+              activeTab === 'domain' ? 'Escribí el subdominio deseado o tu dominio propio con TLD.' :
+              activeTab === 'branding' ? 'Elegí entre 9 paletas armónicas Montessori o definí colores a medida en modo claro y oscuro.' :
+              activeTab === 'header' ? 'Personalizá el header inicial, flotante, transformación en scroll y diseño móvil.' :
+              activeTab === 'hero' ? 'Editá los textos de impacto e imagen principal de portada.' :
+              activeTab === 'sections' ? 'Reordená, encendé/apagá visibilidad y editá las secciones de la página entre el Hero y el Footer.' :
+              activeTab.startsWith('section:') ? 'Personalizá los contenidos, titulares, disposición y elementos de esta sección.' :
+              activeTab === 'navigation' ? 'Gestioná la visibilidad de enlaces en la barra pública.' :
+              'Configurá el modo de atención por WhatsApp o formulario.'
+            }
         footer={
           <div className="flex items-center justify-between w-full gap-3">
             <button
@@ -8657,8 +8711,57 @@ export const WebBuilderSection: React.FC = () => {
               sections={pageSections}
               onChangeSections={setPageSections}
               onNavigateToTab={(tab) => handleOpenConfigTab(tab as any)}
+              onSelectSectionForEdit={(secId) => handleOpenConfigTab(`section:${secId}`)}
             />
           )}
+
+          {/* TAB: DEDICATED INDIVIDUAL SECTION EDITOR */}
+          {activeTab.startsWith('section:') && (() => {
+            const secId = activeTab.replace('section:', '');
+            const targetSection = pageSections.find(s => s.id === secId);
+            if (!targetSection) {
+              return (
+                <div className="p-6 text-center space-y-3">
+                  <p className="text-xs text-muted-foreground">La sección seleccionada ya no existe o fue eliminada.</p>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenConfigTab('sections')}
+                    className="px-3 py-1.5 rounded-xl bg-forest text-white font-bold text-xs cursor-pointer"
+                  >
+                    Volver a Secciones
+                  </button>
+                </div>
+              );
+            }
+
+            return (
+              <SectionDedicatedEditor
+                section={targetSection}
+                onUpdateSection={(updates) => {
+                  setPageSections(prev => prev.map(s => s.id === targetSection.id ? { ...s, ...updates } : s));
+                }}
+                onBackToSectionsList={() => handleOpenConfigTab('sections')}
+                onDuplicateSection={() => {
+                  const targetIdx = pageSections.findIndex(s => s.id === targetSection.id);
+                  if (targetIdx === -1) return;
+                  const clone: WebSectionItem = {
+                    ...targetSection,
+                    id: `sec_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+                    name: `${targetSection.name} (Copia)`
+                  };
+                  const newSections = [...pageSections];
+                  newSections.splice(targetIdx + 1, 0, clone);
+                  setPageSections(newSections);
+                  handleOpenConfigTab(`section:${clone.id}`);
+                }}
+                onDeleteSection={() => {
+                  if (pageSections.length <= 1) return;
+                  setPageSections(prev => prev.filter(s => s.id !== targetSection.id));
+                  handleOpenConfigTab('sections');
+                }}
+              />
+            );
+          })()}
 
           {/* TAB 4: NAVIGATION */}
           {activeTab === 'navigation' && (
@@ -8699,25 +8802,25 @@ export const WebBuilderSection: React.FC = () => {
 
           {/* TAB 5: CTA & CONTACT */}
           {activeTab === 'cta' && (
-            <div className="space-y-5 animate-in fade-in duration-200 text-xs text-slate-900">
-              <div className="space-y-2">
-                <label className="font-bold text-slate-700 block">Modo de Contacto Rápido</label>
-                <div className="grid grid-cols-2 gap-2.5">
+            <div className="space-y-6 animate-in fade-in duration-200 text-slate-900">
+              <div className="space-y-3">
+                <label className="font-bold text-slate-700 block">Modo de Atención Principal</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <button
                     type="button"
                     onClick={() => setCta('whatsapp')}
                     className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
                       cta === 'whatsapp'
-                        ? 'border-emerald-600 bg-emerald-50 text-emerald-900 shadow-xs font-bold'
+                        ? 'border-forest bg-forest/10 text-forest shadow-xs font-bold'
                         : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-white'
                     }`}
                   >
                     <div className="flex items-center gap-1.5 mb-1">
-                      <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+                      <MessageCircle className="w-3.5 h-3.5 text-forest" />
                       <span className="text-xs">WhatsApp Directo</span>
                     </div>
                     <span className="text-[10px] text-muted-foreground font-normal block leading-tight">
-                      Abre chat directo de WhatsApp.
+                      Abre chat con número configurado.
                     </span>
                   </button>
 
