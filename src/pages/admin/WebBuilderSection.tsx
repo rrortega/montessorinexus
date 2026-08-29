@@ -8738,7 +8738,6 @@ export const WebBuilderSection: React.FC = () => {
                 onUpdateSection={(updates) => {
                   setPageSections(prev => prev.map(s => s.id === targetSection.id ? { ...s, ...updates } : s));
                 }}
-                onBackToSectionsList={() => handleOpenConfigTab('sections')}
                 onDuplicateSection={() => {
                   const targetIdx = pageSections.findIndex(s => s.id === targetSection.id);
                   if (targetIdx === -1) return;
