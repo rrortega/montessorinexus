@@ -2385,7 +2385,18 @@ export const WebBuilderSection: React.FC = () => {
 
   // Automatically scroll the iframe preview to the section being edited when drawer opens
   useEffect(() => {
-    if (!drawerOpen || !iframeRef.current?.contentWindow) return;
+    if (!iframeRef.current?.contentWindow) return;
+
+    if (!drawerOpen) {
+      iframeRef.current.contentWindow.postMessage(
+        {
+          type: 'SET_CURRENTLY_EDITING_SECTION',
+          sectionId: null
+        },
+        '*'
+      );
+      return;
+    }
 
     let targetSectionId = '';
     if (activeTab === 'header') targetSectionId = 'header';
@@ -2396,6 +2407,14 @@ export const WebBuilderSection: React.FC = () => {
     }
 
     if (targetSectionId) {
+      iframeRef.current.contentWindow.postMessage(
+        {
+          type: 'SET_CURRENTLY_EDITING_SECTION',
+          sectionId: targetSectionId
+        },
+        '*'
+      );
+
       const timer = setTimeout(() => {
         iframeRef.current?.contentWindow?.postMessage(
           {

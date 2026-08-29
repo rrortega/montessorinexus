@@ -4,17 +4,37 @@ import { Pencil } from 'lucide-react';
 interface PreviewHoverContextType {
   hoveredId: string | null;
   setHoveredId: (id: string | null) => void;
+  currentlyEditingId: string | null;
+  setCurrentlyEditingId: (id: string | null) => void;
 }
 
 const PreviewHoverContext = createContext<PreviewHoverContextType>({
   hoveredId: null,
-  setHoveredId: () => {}
+  setHoveredId: () => {},
+  currentlyEditingId: null,
+  setCurrentlyEditingId: () => {}
 });
 
 export const PreviewHoverProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [currentlyEditingId, setCurrentlyEditingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleEditingMessage = (event: MessageEvent) => {
+      if (event.data) {
+        if (event.data.type === 'SET_CURRENTLY_EDITING_SECTION') {
+          setCurrentlyEditingId(event.data.sectionId || null);
+        } else if (event.data.type === 'SCROLL_TO_SECTION') {
+          setCurrentlyEditingId(event.data.sectionId || null);
+        }
+      }
+    };
+    window.addEventListener('message', handleEditingMessage);
+    return () => window.removeEventListener('message', handleEditingMessage);
+  }, []);
+
   return (
-    <PreviewHoverContext.Provider value={{ hoveredId, setHoveredId }}>
+    <PreviewHoverContext.Provider value={{ hoveredId, setHoveredId, currentlyEditingId, setCurrentlyEditingId }}>
       {children}
     </PreviewHoverContext.Provider>
   );
@@ -38,11 +58,12 @@ export const PreviewSectionWrapper: React.FC<PreviewSectionWrapperProps> = ({
     new URLSearchParams(window.location.search).get('preview') === '1'
   );
 
-  const { hoveredId, setHoveredId } = useContext(PreviewHoverContext);
+  const { hoveredId, setHoveredId, currentlyEditingId } = useContext(PreviewHoverContext);
 
-  const isThisHovered = hoveredId === id;
-  const isAnyHovered = hoveredId !== null;
-  const isOtherHovered = isAnyHovered && !isThisHovered;
+  const isCurrentlyEditing = currentlyEditingId === id;
+  const isThisHovered = hoveredId === id && !isCurrentlyEditing;
+  const isAnyHovered = hoveredId !== null && hoveredId !== currentlyEditingId;
+  const isOtherHovered = isAnyHovered && !isThisHovered && !isCurrentlyEditing;
 
   // Listen to drawer open events from the parent builder window and scroll into view smoothly
   useEffect(() => {
