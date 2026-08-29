@@ -119,8 +119,14 @@ export interface PillarCardItem {
   bgColorDark?: string;
   textColor?: string;
   textColorDark?: string;
-  shape?: 'rounded' | 'blob' | 'arch' | 'squircle' | 'minimal';
-  hoverEffect?: 'lift' | 'scale' | 'glow' | 'tilt' | 'border';
+  titleFont?: string;
+  subtitleFont?: string;
+  titleColor?: string;
+  titleColorDark?: string;
+  subtitleColor?: string;
+  subtitleColorDark?: string;
+  shape?: 'rounded' | 'blob' | 'arch' | 'squircle' | 'minimal' | 'leaf' | 'pill';
+  hoverEffect?: 'lift' | 'scale' | 'glow' | 'tilt' | 'border' | 'none';
 }
 
 export const PILLAR_ICONS_MAP: Record<string, React.ElementType> = {
@@ -678,6 +684,9 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
             const shapeClass = getShapeClass(card.shape);
             const hoverAnim = getHoverAnimation(card.hoverEffect);
 
+            const cardTitleFont = getSectionFontFamily(card.titleFont || config.card_title_font);
+            const cardSubtitleFont = getSectionFontFamily(card.subtitleFont || config.card_subtitle_font);
+
             return (
               <FadeInScroll
                 key={card.id || index}
@@ -687,10 +696,10 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
                 <motion.div
                   whileHover={hoverAnim}
                   style={{
-                    backgroundColor: card.bgColor || '#ffffff',
+                    backgroundColor: card.bgColor || undefined,
                     color: card.textColor || undefined
                   }}
-                  className={`group p-7 sm:p-8 h-full flex flex-col justify-between shadow-card border border-black/5 relative overflow-hidden cursor-default ${shapeClass}`}
+                  className={`group p-7 sm:p-8 h-full flex flex-col justify-between shadow-card border border-black/5 relative overflow-hidden cursor-default bg-white dark:bg-slate-900 ${shapeClass}`}
                 >
                   <div className="space-y-4">
                     {/* Card Icon or Custom Image */}
@@ -716,11 +725,23 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
 
                     {/* Title & Subtitle */}
                     <div className="space-y-2">
-                      <h3 className="font-display text-lg sm:text-xl font-bold text-foreground leading-snug whitespace-pre-line">
+                      <h3
+                        style={{
+                          fontFamily: cardTitleFont,
+                          color: card.titleColor || undefined
+                        }}
+                        className="font-display text-lg sm:text-xl font-bold text-foreground leading-snug whitespace-pre-line"
+                      >
                         {cardTitle}
                       </h3>
                       {cardSubtitle && (
-                        <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+                        <p
+                          style={{
+                            fontFamily: cardSubtitleFont,
+                            color: card.subtitleColor || card.textColor || undefined
+                          }}
+                          className="text-xs sm:text-sm text-muted-foreground leading-relaxed whitespace-pre-line"
+                        >
                           {cardSubtitle}
                         </p>
                       )}
