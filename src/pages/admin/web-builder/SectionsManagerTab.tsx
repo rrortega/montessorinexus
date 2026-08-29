@@ -33,7 +33,8 @@ import {
   Calendar,
   Phone,
   Mail,
-  ChevronDown
+  ChevronDown,
+  GripVertical
 } from 'lucide-react';
 
 export interface WebSectionItem {
@@ -421,6 +422,8 @@ export const SectionsManagerTab: React.FC<SectionsManagerTabProps> = ({
   const [searchFilter, setSearchFilter] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   // Reorder functions
   const handleMoveUp = (index: number) => {
@@ -595,11 +598,54 @@ export const SectionsManagerTab: React.FC<SectionsManagerTabProps> = ({
             const IconComp = template?.icon || Layers;
             const isEditing = editingSectionId === section.id;
 
+            const isBeingDragged = draggedIndex === index;
+            const isDragOver = dragOverIndex === index;
+
             return (
               <div
                 key={section.id}
+                draggable
+                onDragStart={(e) => {
+                  setDraggedIndex(index);
+                  e.dataTransfer.effectAllowed = 'move';
+                  e.dataTransfer.setData('text/plain', String(index));
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = 'move';
+                  if (dragOverIndex !== index) {
+                    setDragOverIndex(index);
+                  }
+                }}
+                onDragLeave={() => {
+                  if (dragOverIndex === index) {
+                    setDragOverIndex(null);
+                  }
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (draggedIndex === null || draggedIndex === index) {
+                    setDraggedIndex(null);
+                    setDragOverIndex(null);
+                    return;
+                  }
+                  const newSections = [...sections];
+                  const [removed] = newSections.splice(draggedIndex, 1);
+                  newSections.splice(index, 0, removed);
+                  onChangeSections(newSections);
+                  setDraggedIndex(null);
+                  setDragOverIndex(null);
+                }}
+                onDragEnd={() => {
+                  setDraggedIndex(null);
+                  setDragOverIndex(null);
+                }}
                 className={`rounded-2xl border transition-all ${
-                  !section.isEnabled
+                  isBeingDragged
+                    ? 'opacity-40 border-dashed border-forest/60 bg-forest/5 scale-[0.98]'
+                    : isDragOver
+                    ? 'border-forest ring-2 ring-forest/30 bg-forest/5 shadow-md'
+                    : !section.isEnabled
                     ? 'bg-slate-50/70 border-slate-200 opacity-60'
                     : isEditing
                     ? 'bg-forest/5 border-forest shadow-xs ring-2 ring-forest/20'
@@ -609,11 +655,16 @@ export const SectionsManagerTab: React.FC<SectionsManagerTabProps> = ({
                 {/* Header Row */}
                 <div className="p-3.5 flex items-center justify-between gap-3">
                   
-                  {/* Left: Index + Icon + Title */}
+                  {/* Left: Drag Handle + Icon + Title */}
                   <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                    <span className="w-6 h-6 rounded-lg bg-slate-100 text-slate-700 font-mono font-bold text-[10px] flex items-center justify-center shrink-0 border border-slate-200/80">
-                      {index + 1}
-                    </span>
+                    
+                    {/* DRAG AND DROP HANDLER (LEFT) */}
+                    <div
+                      className="cursor-grab active:cursor-grabbing p-1.5 rounded-lg text-slate-400 hover:text-forest hover:bg-forest/10 transition-colors shrink-0 flex items-center justify-center"
+                      title="Arrastrar y soltar para reordenar"
+                    >
+                      <GripVertical className="w-4 h-4" />
+                    </div>
 
                     <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
                       section.isEnabled ? 'bg-forest/10 text-forest' : 'bg-slate-200 text-slate-500'
