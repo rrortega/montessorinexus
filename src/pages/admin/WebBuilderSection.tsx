@@ -4451,58 +4451,6 @@ export const WebBuilderSection: React.FC = () => {
       {/* 2. MAIN WORKSPACE WITH FLOATING TOOLBARS & CENTERED BROWSER PREVIEW */}
       <div className="flex-1 relative flex items-center justify-center p-3 sm:p-6 overflow-hidden [perspective:1100px]">
         
-        {/* 2A. FLOATING LEFT PALETTE (VIEWPORT CONTROLS) */}
-        <div className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-1.5 p-1.5 bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-2xl shadow-2xl">
-          <button
-            type="button"
-            onClick={() => setViewport('desktop')}
-            className={`p-2.5 rounded-xl transition-all flex items-center justify-center cursor-pointer group relative ${
-              viewport === 'desktop'
-                ? 'bg-forest text-white shadow-md font-bold'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
-            }`}
-            title="Vista Escritorio (Desktop)"
-          >
-            <Laptop className="w-4 h-4" />
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setViewport('tablet')}
-            className={`p-2.5 rounded-xl transition-all flex items-center justify-center cursor-pointer group relative ${
-              viewport === 'tablet'
-                ? 'bg-forest text-white shadow-md font-bold'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
-            }`}
-            title="Vista Tablet"
-          >
-            <Tablet className="w-4 h-4" />
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setViewport('mobile')}
-            className={`p-2.5 rounded-xl transition-all flex items-center justify-center cursor-pointer group relative ${
-              viewport === 'mobile'
-                ? 'bg-forest text-white shadow-md font-bold'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
-            }`}
-            title="Vista Móvil (Mobile)"
-          >
-            <Smartphone className="w-4 h-4" />
-          </button>
-
-          <div className="h-px w-full bg-slate-800 my-0.5" />
-
-          <button
-            type="button"
-            onClick={() => setPreviewKey(k => k + 1)}
-            className="p-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all flex items-center justify-center cursor-pointer"
-            title="Refrescar Previsualización"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
-        </div>
 
         {/* 2B. FLOATING RIGHT PALETTE (WIDGET / SECTION QUICK ACCESS) */}
         <div className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-1.5 p-1.5 bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-2xl shadow-2xl">
