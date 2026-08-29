@@ -62,17 +62,25 @@ export const PreviewSectionWrapper: React.FC<PreviewSectionWrapperProps> = ({
     return <div id={id} className="scroll-mt-24">{children}</div>;
   }
 
+  const isHeader = id === 'header';
+
   return (
     <div
       id={id}
       onMouseEnter={() => setHoveredId(id)}
       onMouseLeave={() => setHoveredId(null)}
       className={`relative transition-all duration-300 ${
-        isThisHovered
+        isHeader
+          ? isThisHovered
+            ? 'z-[70]'
+            : isOtherHovered
+            ? 'z-[50] filter blur-[2px] opacity-70 transition-all duration-300'
+            : 'z-[50] transition-all duration-300'
+          : isThisHovered
           ? 'z-40'
           : isOtherHovered
-          ? 'filter blur-[4px] opacity-40 grayscale-[20%] transition-all duration-300'
-          : 'transition-all duration-300'
+          ? 'z-10 filter blur-[4px] opacity-40 grayscale-[20%] transition-all duration-300'
+          : 'z-20 transition-all duration-300'
       }`}
     >
       {/* Red Dashed Border Overlay when Hovered */}
@@ -80,9 +88,9 @@ export const PreviewSectionWrapper: React.FC<PreviewSectionWrapperProps> = ({
         <div className="absolute inset-0 z-40 pointer-events-none border-2 border-dashed border-rose-500 bg-rose-500/5 transition-all animate-in fade-in duration-150 rounded-xl shadow-xs" />
       )}
 
-      {/* Top-Left Square Label Badge & Edit Button (Highest z-index) */}
+      {/* Bottom-Right Label Badge & Edit Button */}
       {isThisHovered && (
-        <div className="absolute top-3 left-3 z-[99999] flex items-center gap-2 bg-rose-600 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-2xl border border-rose-400/60 backdrop-blur-md animate-in fade-in zoom-in-95 duration-150 select-none">
+        <div className="absolute bottom-4 right-4 z-[99999] flex items-center gap-2 bg-rose-600/95 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-2xl border border-rose-400/60 backdrop-blur-md animate-in fade-in zoom-in-95 duration-150 select-none">
           <span className="tracking-tight text-white">{name}</span>
           <button
             type="button"
