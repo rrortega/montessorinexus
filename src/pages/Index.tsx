@@ -65,7 +65,7 @@ const Index = () => {
       case 'split_media_benefits':
         return <WhyChooseUs key={section.id} />;
       case 'pillars_mosaic':
-        return <PhilosophySection key={section.id} />;
+        return <PhilosophySection key={section.id} section={section} />;
       case 'feature_list_media':
       case 'feature_cards_row':
         return <WhyChooseUs key={section.id} />;

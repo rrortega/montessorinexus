@@ -32,10 +32,22 @@ import {
   Languages,
   PanelTop,
   Sun,
-  Moon
+  Moon,
+  ChevronUp,
+  ChevronDown,
+  GripVertical,
+  Copy,
+  Grid,
+  Box,
+  Check
 } from 'lucide-react';
 import { ImageUploadDropzone } from '@/components/ui/ImageUploadDropzone';
 import { ALL_SUPPORTED_LANGUAGES, getLanguageByCode } from './languages';
+import {
+  DEFAULT_PILLAR_CARDS,
+  PillarCardItem,
+  PILLAR_ICONS_MAP
+} from '@/components/PhilosophySection';
 
 export const SECTION_FONTS = [
   { id: 'inherit', name: 'Predeterminada del Tema', category: 'Sistema', family: 'inherit' },
@@ -178,6 +190,7 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
   const activeLanguages = activeCodes.map(code => getLanguageByCode(code));
   const [editorLang, setEditorLang] = useState<string>(activeCodes[0] || 'es');
   const currentLangObj = getLanguageByCode(editorLang);
+  const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
 
   const template = SECTION_TEMPLATES.find(t => t.type === section.type);
   const IconComp = template?.icon || Layers;
@@ -191,6 +204,51 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
         [key]: value
       }
     });
+  };
+
+  // Pillars Mosaic Cards Handlers
+  const currentCards: PillarCardItem[] = Array.isArray(section.config?.cards) && section.config.cards.length > 0
+    ? section.config.cards
+    : DEFAULT_PILLAR_CARDS;
+
+  const handleUpdateCards = (updatedCards: PillarCardItem[]) => {
+    handleConfigChange('cards', updatedCards);
+  };
+
+  const handleAddCard = () => {
+    const newCard: PillarCardItem = {
+      id: `pillar_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      icon: 'Sparkles',
+      title: 'Nuevo Pilar Pedagógico',
+      subtitle: 'Descripción formativa del pilar y su propósito para el niño.',
+      bgColor: '#f4f8f5',
+      bgColorDark: '#14251c',
+      shape: 'rounded',
+      hoverEffect: 'lift'
+    };
+    handleUpdateCards([...currentCards, newCard]);
+    setExpandedCardId(newCard.id);
+  };
+
+  const handleUpdateSingleCard = (id: string, updates: Partial<PillarCardItem>) => {
+    const updated = currentCards.map(c => c.id === id ? { ...c, ...updates } : c);
+    handleUpdateCards(updated);
+  };
+
+  const handleDeleteCard = (id: string) => {
+    if (currentCards.length <= 1) return;
+    const updated = currentCards.filter(c => c.id !== id);
+    handleUpdateCards(updated);
+    if (expandedCardId === id) setExpandedCardId(null);
+  };
+
+  const handleMoveCard = (index: number, direction: 'up' | 'down') => {
+    const targetIdx = direction === 'up' ? index - 1 : index + 1;
+    if (targetIdx < 0 || targetIdx >= currentCards.length) return;
+    const clone = [...currentCards];
+    const item = clone.splice(index, 1)[0];
+    clone.splice(targetIdx, 0, item);
+    handleUpdateCards(clone);
   };
 
   const getLangValue = (field: 'name' | 'badge' | 'title' | 'subtitle' | 'ctaText' | 'menuLabel'): string => {
@@ -590,33 +648,484 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
       )}
 
       {section.type === 'pillars_mosaic' && (
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-4">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-forest/10 text-forest flex items-center justify-center font-bold">3</div>
-            <h4 className="font-bold text-forest text-xs sm:text-sm">Configuración de Tarjetas de Pilares</h4>
+        <div className="space-y-6">
+          {/* 4.1 FONDO Y DISPOSICIÓN DE COLUMNAS */}
+          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-4">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-forest/10 text-forest flex items-center justify-center font-bold">
+                <Layout className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className="font-bold text-forest text-xs sm:text-sm">
+                  Fondo & Disposición de la Sección
+                </h4>
+                <p className="text-[11px] text-muted-foreground">
+                  Personalizá la cuadrícula de columnas y el fondo general del mosaico
+                </p>
+              </div>
+            </div>
+
+            {/* Disposición de Columnas */}
+            <div className="space-y-2 pt-2 border-t border-slate-100">
+              <label className="text-[11px] font-bold text-slate-700 block">
+                Disposición de Columnas en Pantallas Grandes:
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  { id: '2', label: '2 Columnas', desc: 'Tarjetas amplias' },
+                  { id: '3', label: '3 Columnas', desc: 'Cuadrícula clásica (3x2)' },
+                  { id: '4', label: '4 Columnas', desc: 'Cuadrícula compacta' },
+                  { id: 'bento', label: 'Bento Mosaico', desc: 'Asimétrico moderno' }
+                ].map(col => {
+                  const isSelected = (section.config?.columns || '3') === col.id;
+                  return (
+                    <button
+                      key={col.id}
+                      type="button"
+                      onClick={() => handleConfigChange('columns', col.id)}
+                      className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                        isSelected
+                          ? 'border-forest bg-forest/5 text-forest ring-2 ring-forest/20 shadow-3xs'
+                          : 'border-slate-200 hover:border-slate-300 bg-white text-slate-700'
+                      }`}
+                    >
+                      <span className="font-bold text-xs block">{col.label}</span>
+                      <span className="text-[10px] text-muted-foreground block">{col.desc}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Fondo de Toda la Sección */}
+            <div className="space-y-2 pt-2 border-t border-slate-100">
+              <label className="text-[11px] font-bold text-slate-700 block">
+                Fondo de Toda la Sección:
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  { id: 'secondary', label: 'Sand Suave', bg: 'bg-secondary' },
+                  { id: 'white', label: 'Blanco Puro', bg: 'bg-white' },
+                  { id: 'cream', label: 'Crema Cálido', bg: 'bg-[#faf8f5]' },
+                  { id: 'forest-subtle', label: 'Menta Bosque', bg: 'bg-[#f2f7f4]' },
+                  { id: 'dark', label: 'Oscuro Elegante', bg: 'bg-slate-950 text-white' },
+                  { id: 'gradient', label: 'Degradado Orgánico', bg: 'bg-gradient-to-b from-[#faf8f5] to-[#f4f8f5]' },
+                  { id: 'custom', label: 'Personalizado', bg: 'bg-slate-100' }
+                ].map(bgOpt => {
+                  const isSelected = (section.config?.sectionBg || 'secondary') === bgOpt.id;
+                  return (
+                    <button
+                      key={bgOpt.id}
+                      type="button"
+                      onClick={() => handleConfigChange('sectionBg', bgOpt.id)}
+                      className={`p-2 rounded-xl border flex items-center gap-2 transition-all cursor-pointer ${
+                        isSelected
+                          ? 'border-forest ring-2 ring-forest/20 shadow-3xs font-bold'
+                          : 'border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      <div className={`w-4 h-4 rounded-full border border-slate-300 ${bgOpt.bg} shrink-0`} />
+                      <span className="text-xs truncate">{bgOpt.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {section.config?.sectionBg === 'custom' && (
+                <div className="flex items-center gap-2 pt-2 animate-in fade-in duration-150">
+                  <span className="text-[11px] font-bold text-slate-600">Color Hex:</span>
+                  <input
+                    type="color"
+                    value={section.config?.sectionBgCustom || '#faf8f5'}
+                    onChange={(e) => handleConfigChange('sectionBgCustom', e.target.value)}
+                    className="w-7 h-7 rounded-lg border border-slate-300 cursor-pointer"
+                  />
+                  <input
+                    type="text"
+                    value={section.config?.sectionBgCustom || '#faf8f5'}
+                    onChange={(e) => handleConfigChange('sectionBgCustom', e.target.value)}
+                    placeholder="#faf8f5"
+                    className="px-2.5 py-1 text-xs font-mono uppercase bg-slate-50 border border-slate-200 rounded-lg w-28"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Bloque Destacado de Misión */}
+            <div className="space-y-3 pt-2 border-t border-slate-100">
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-bold text-slate-700">
+                  Tarjeta Destacada de Misión:
+                </label>
+                <button
+                  type="button"
+                  onClick={() => handleConfigChange('showMission', section.config?.showMission === false ? true : false)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    section.config?.showMission !== false
+                      ? 'bg-forest/10 text-forest border border-forest/20'
+                      : 'bg-slate-100 text-slate-500'
+                  }`}
+                >
+                  {section.config?.showMission !== false ? 'Visible' : 'Oculta'}
+                </button>
+              </div>
+
+              {section.config?.showMission !== false && (
+                <div className="space-y-2 animate-in fade-in duration-150">
+                  <textarea
+                    value={getConfigLangValue('missionText', 'En nuestra escuela nos comprometemos a entender la infancia para ayudar a los niños a desarrollar la grandeza de sus potencialidades.')}
+                    onChange={(e) => setConfigLangValue('missionText', e.target.value)}
+                    rows={2}
+                    placeholder={`Texto de misión en ${currentLangObj.name}...`}
+                    className="w-full px-3 py-2 text-xs text-slate-800 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-forest/20 focus:border-forest"
+                  />
+                  <FieldTypographyAndColorBar
+                    fontValue={section.config?.mission_font}
+                    onChangeFont={(val) => handleConfigChange('mission_font', val)}
+                    colorLight={section.config?.mission_color}
+                    onChangeColorLight={(val) => handleConfigChange('mission_color', val)}
+                    colorDark={section.config?.mission_color_dark}
+                    onChangeColorDark={(val) => handleConfigChange('mission_color_dark', val)}
+                    defaultColorLight="#1b3b2b"
+                    defaultColorDark="#ffffff"
+                  />
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-[11px] font-bold text-slate-700 block">
-              Texto Destacado de Misión ({currentLangObj.name}):
-            </label>
-            <textarea
-              value={getConfigLangValue('missionText', 'En nuestra escuela nos comprometemos a entender la infancia para ayudar a los niños a desarrollar la grandeza de sus potencialidades.')}
-              onChange={(e) => setConfigLangValue('missionText', e.target.value)}
-              rows={3}
-              placeholder={`Texto de misión en ${currentLangObj.name}...`}
-              className="w-full px-3 py-2 text-xs text-slate-800 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-forest/20 focus:border-forest"
-            />
-            <FieldTypographyAndColorBar
-              fontValue={section.config?.mission_font}
-              onChangeFont={(val) => handleConfigChange('mission_font', val)}
-              colorLight={section.config?.mission_color}
-              onChangeColorLight={(val) => handleConfigChange('mission_color', val)}
-              colorDark={section.config?.mission_color_dark}
-              onChangeColorDark={(val) => handleConfigChange('mission_color_dark', val)}
-              defaultColorLight="#1b3b2b"
-              defaultColorDark="#ffffff"
-            />
+          {/* 4.2 GESTOR DE TARJETAS DE PILARES */}
+          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-forest/10 text-forest flex items-center justify-center font-bold">
+                  <Grid className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-forest text-xs sm:text-sm">
+                    Tarjetas de Pilares ({currentCards.length})
+                  </h4>
+                  <p className="text-[11px] text-muted-foreground">
+                    Añadí, reordená y personalizá el contenido, iconos, formas y colores de cada tarjeta
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleAddCard}
+                className="px-3 py-1.5 rounded-xl bg-forest text-white hover:bg-forest/90 font-bold text-xs flex items-center gap-1.5 shadow-3xs cursor-pointer active:scale-95 transition-all"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Agregar Tarjeta</span>
+              </button>
+            </div>
+
+            {/* Lista de Tarjetas */}
+            <div className="space-y-3 pt-2 border-t border-slate-100">
+              {currentCards.map((card, index) => {
+                const isExpanded = expandedCardId === card.id;
+                const IconComp = card.icon && PILLAR_ICONS_MAP[card.icon] ? PILLAR_ICONS_MAP[card.icon] : Compass;
+                const cardTitle = editorLang !== 'es'
+                  ? ((card as any)[`title_${editorLang}`] || card.title)
+                  : card.title;
+                const cardSubtitle = editorLang !== 'es'
+                  ? ((card as any)[`subtitle_${editorLang}`] || card.subtitle)
+                  : card.subtitle;
+
+                return (
+                  <div
+                    key={card.id}
+                    className={`rounded-2xl border transition-all ${
+                      isExpanded
+                        ? 'border-forest ring-2 ring-forest/10 bg-slate-50/50 shadow-sm'
+                        : 'border-slate-200 bg-white hover:border-slate-300'
+                    }`}
+                  >
+                    {/* Header de la tarjeta */}
+                    <div className="p-3.5 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                        {/* Controles de Reordenamiento */}
+                        <div className="flex flex-col gap-0.5 shrink-0">
+                          <button
+                            type="button"
+                            disabled={index === 0}
+                            onClick={() => handleMoveCard(index, 'up')}
+                            className="p-0.5 hover:bg-slate-200 rounded text-slate-400 hover:text-slate-700 disabled:opacity-30 cursor-pointer"
+                            title="Mover arriba"
+                          >
+                            <ChevronUp className="w-3 h-3" />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={index === currentCards.length - 1}
+                            onClick={() => handleMoveCard(index, 'down')}
+                            className="p-0.5 hover:bg-slate-200 rounded text-slate-400 hover:text-slate-700 disabled:opacity-30 cursor-pointer"
+                            title="Mover abajo"
+                          >
+                            <ChevronDown className="w-3 h-3" />
+                          </button>
+                        </div>
+
+                        {/* Thumbnail / Icono */}
+                        <div
+                          style={{ backgroundColor: card.bgColor || '#f4f8f5' }}
+                          className="w-9 h-9 rounded-xl flex items-center justify-center text-forest shadow-3xs shrink-0 border border-slate-200 overflow-hidden"
+                        >
+                          {card.imageUrl ? (
+                            <img src={card.imageUrl} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <IconComp className="w-4 h-4" />
+                          )}
+                        </div>
+
+                        {/* Info Principal */}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-mono font-bold text-slate-400">
+                              #{index + 1}
+                            </span>
+                            <h5 className="font-bold text-xs text-slate-900 truncate">
+                              {cardTitle || 'Sin título'}
+                            </h5>
+                          </div>
+                          <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
+                            <span className="capitalize">{card.shape || 'rounded'}</span>
+                            <span>•</span>
+                            <span className="capitalize">Hover: {card.hoverEffect || 'lift'}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Botones de acción */}
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCard(card.id)}
+                          disabled={currentCards.length <= 1}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all disabled:opacity-30 cursor-pointer"
+                          title="Eliminar tarjeta"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setExpandedCardId(isExpanded ? null : card.id)}
+                          className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 flex items-center gap-1 cursor-pointer transition-all"
+                        >
+                          <span>{isExpanded ? 'Cerrar' : 'Editar'}</span>
+                          <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Panel de Edición Detallada */}
+                    {isExpanded && (
+                      <div className="p-4 pt-0 space-y-4 border-t border-slate-200/80 mt-2 animate-in fade-in duration-150">
+                        {/* Título de la tarjeta */}
+                        <div className="space-y-1 pt-2">
+                          <label className="text-[10px] font-bold text-slate-700">
+                            Título del Pilar ({currentLangObj.name}):
+                          </label>
+                          <input
+                            type="text"
+                            value={cardTitle}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (editorLang === 'es') {
+                                handleUpdateSingleCard(card.id, { title: val });
+                              } else {
+                                handleUpdateSingleCard(card.id, { [`title_${editorLang}`]: val } as any);
+                              }
+                            }}
+                            placeholder={`Título en ${currentLangObj.name}`}
+                            className="w-full px-3 py-2 text-xs font-bold text-slate-900 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-forest/20 focus:border-forest"
+                          />
+                        </div>
+
+                        {/* Subtítulo / Descripción */}
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-slate-700">
+                            Descripción / Detalle del Pilar ({currentLangObj.name}):
+                          </label>
+                          <textarea
+                            value={cardSubtitle}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (editorLang === 'es') {
+                                handleUpdateSingleCard(card.id, { subtitle: val });
+                              } else {
+                                handleUpdateSingleCard(card.id, { [`subtitle_${editorLang}`]: val } as any);
+                              }
+                            }}
+                            rows={2}
+                            placeholder={`Explicación formativa en ${currentLangObj.name}...`}
+                            className="w-full px-3 py-2 text-xs text-slate-800 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-forest/20 focus:border-forest"
+                          />
+                        </div>
+
+                        {/* Icono o Imagen */}
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-bold text-slate-700 block">
+                            Icono o Fotografía de la Tarjeta:
+                          </label>
+                          <div className="space-y-2">
+                            {/* Icon Picker Grid */}
+                            <div className="space-y-1">
+                              <span className="text-[10px] text-muted-foreground block">Seleccionar Icono:</span>
+                              <div className="grid grid-cols-6 sm:grid-cols-11 gap-1 bg-white p-2 rounded-xl border border-slate-200 max-h-36 overflow-y-auto">
+                                {Object.entries(PILLAR_ICONS_MAP).map(([iconName, Icon]) => {
+                                  const isSelected = !card.imageUrl && (card.icon || 'Compass') === iconName;
+                                  return (
+                                    <button
+                                      key={iconName}
+                                      type="button"
+                                      onClick={() => handleUpdateSingleCard(card.id, { icon: iconName, imageUrl: '' })}
+                                      className={`p-2 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
+                                        isSelected
+                                          ? 'bg-forest text-white shadow-3xs scale-105'
+                                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                                      }`}
+                                      title={iconName}
+                                    >
+                                      <Icon className="w-4 h-4" />
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                            {/* O Subir Foto Custom */}
+                            <div className="space-y-1 pt-1 border-t border-slate-100">
+                              <span className="text-[10px] text-muted-foreground block">O Subir Imagen Personalizada:</span>
+                              <ImageUploadDropzone
+                                currentImageUrl={card.imageUrl || ''}
+                                onImageUploaded={(url) => handleUpdateSingleCard(card.id, { imageUrl: url })}
+                                onRemove={() => handleUpdateSingleCard(card.id, { imageUrl: '' })}
+                                label="Foto miniatura de la tarjeta"
+                                helperText="Recomendado cuadrado 1:1"
+                                folder="pillars"
+                                maxSizeMB={5}
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Forma de la Tarjeta & Efecto Hover */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-100">
+                          {/* Forma */}
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-700 block">
+                              Forma Geométrica de la Tarjeta:
+                            </label>
+                            <select
+                              value={card.shape || 'rounded'}
+                              onChange={(e) => handleUpdateSingleCard(card.id, { shape: e.target.value as any })}
+                              className="w-full text-xs font-semibold text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:ring-2 focus:ring-forest/20 focus:border-forest"
+                            >
+                              <option value="rounded">Redondeado Clásico (3XL)</option>
+                              <option value="blob">Orgánico / Blob Shape</option>
+                              <option value="arch">Arco Superior Nórdico</option>
+                              <option value="squircle">Squircle Suave</option>
+                              <option value="minimal">Minimalista Recto</option>
+                            </select>
+                          </div>
+
+                          {/* Efecto Hover */}
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-700 block">
+                              Efecto al Pasar el Mouse (Hover):
+                            </label>
+                            <select
+                              value={card.hoverEffect || 'lift'}
+                              onChange={(e) => handleUpdateSingleCard(card.id, { hoverEffect: e.target.value as any })}
+                              className="w-full text-xs font-semibold text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:ring-2 focus:ring-forest/20 focus:border-forest"
+                            >
+                              <option value="lift">Elevación 3D (Lift)</option>
+                              <option value="scale">Zoom Suave (105%)</option>
+                              <option value="glow">Resplandor Brillante (Glow)</option>
+                              <option value="tilt">Inclinación Lúdica (Tilt)</option>
+                              <option value="border">Borde Acento Dinámico</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        {/* Color de Fondo de la Tarjeta */}
+                        <div className="space-y-2 pt-2 border-t border-slate-100">
+                          <label className="text-[10px] font-bold text-slate-700 block">
+                            Color de Fondo de la Tarjeta:
+                          </label>
+
+                          {/* Presets */}
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {[
+                              { hex: '#f4f8f5', label: 'Sage' },
+                              { hex: '#fbf6ee', label: 'Crema' },
+                              { hex: '#f1f5f9', label: 'Sky' },
+                              { hex: '#fef3f2', label: 'Rose' },
+                              { hex: '#ecfdf5', label: 'Mint' },
+                              { hex: '#faf5ff', label: 'Lavender' },
+                              { hex: '#ffffff', label: 'Blanco' },
+                              { hex: '#1e293b', label: 'Slate' }
+                            ].map(p => (
+                              <button
+                                key={p.hex}
+                                type="button"
+                                onClick={() => handleUpdateSingleCard(card.id, { bgColor: p.hex })}
+                                style={{ backgroundColor: p.hex }}
+                                className={`w-6 h-6 rounded-lg border transition-all cursor-pointer ${
+                                  card.bgColor === p.hex
+                                    ? 'border-forest ring-2 ring-forest/30 scale-110 shadow-3xs'
+                                    : 'border-slate-300 hover:scale-105'
+                                }`}
+                                title={p.label}
+                              />
+                            ))}
+                          </div>
+
+                          {/* Pickers Claro & Oscuro */}
+                          <div className="flex items-center gap-3 pt-1">
+                            <div className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-lg border border-slate-200 shadow-3xs">
+                              <Sun className="w-3.5 h-3.5 text-amber-500 shrink-0" title="Modo Claro" />
+                              <input
+                                type="color"
+                                value={card.bgColor?.startsWith('#') && card.bgColor.length === 7 ? card.bgColor : '#f4f8f5'}
+                                onChange={(e) => handleUpdateSingleCard(card.id, { bgColor: e.target.value })}
+                                className="w-5 h-5 rounded border border-slate-300 cursor-pointer p-0 appearance-none bg-transparent"
+                              />
+                              <input
+                                type="text"
+                                value={card.bgColor || ''}
+                                onChange={(e) => handleUpdateSingleCard(card.id, { bgColor: e.target.value })}
+                                placeholder="#f4f8f5"
+                                className="w-16 text-[10px] font-mono uppercase bg-transparent border-0 focus:outline-none"
+                              />
+                            </div>
+
+                            <div className="flex items-center gap-1.5 bg-slate-900 text-white px-2 py-1 rounded-lg border border-slate-800 shadow-3xs">
+                              <Moon className="w-3.5 h-3.5 text-sky-400 shrink-0" title="Modo Oscuro" />
+                              <input
+                                type="color"
+                                value={card.bgColorDark?.startsWith('#') && card.bgColorDark.length === 7 ? card.bgColorDark : '#14251c'}
+                                onChange={(e) => handleUpdateSingleCard(card.id, { bgColorDark: e.target.value })}
+                                className="w-5 h-5 rounded border border-slate-600 cursor-pointer p-0 appearance-none bg-transparent"
+                              />
+                              <input
+                                type="text"
+                                value={card.bgColorDark || ''}
+                                onChange={(e) => handleUpdateSingleCard(card.id, { bgColorDark: e.target.value })}
+                                placeholder="#14251c"
+                                className="w-16 text-[10px] font-mono uppercase text-slate-200 bg-transparent border-0 focus:outline-none"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
