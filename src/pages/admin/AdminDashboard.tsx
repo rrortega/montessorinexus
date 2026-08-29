@@ -801,7 +801,7 @@ export const AdminDashboard: React.FC = () => {
     }
   }, [activeTab, subscriptionInfo.enabledModules, isGlobalSuperAdmin, isGhostMode, basePath, navigate]);
 
-  const currentSchoolName = schoolName || activeMembership?.school.name || 'Ceiba Montessori';
+  const currentSchoolName = schoolName || activeMembership?.school.name || 'Escuela Montessori';
   const primaryColor = brandPrimaryColor || activeMembership?.school.primaryColor || '#1b3b2b';
 
   return (

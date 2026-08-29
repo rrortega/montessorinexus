@@ -458,7 +458,7 @@ export const useSiteSettings = (): SettingsContextType => {
     console.warn('useSiteSettings: Context is undefined (likely during HMR re-eval). Returning default fallback settings.');
     return {
       settings: {},
-      schoolName: 'Ceiba Montessori',
+      schoolName: 'Escuela Montessori',
       schoolTagline: 'Comunidad y Aprendizaje Auténtico',
       schoolLogo: '',
       schoolLogoDark: '',

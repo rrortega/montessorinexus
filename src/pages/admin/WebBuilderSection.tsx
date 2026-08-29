@@ -414,7 +414,7 @@ const HeroAccordionItem: React.FC<HeroAccordionItemProps> = ({
 };
 
 const HERO_FONTS = [
-  { id: 'default', name: 'Predeterminada del Tema', category: 'Sistema', family: 'inherit', sample: 'Ceiba Montessori' },
+  { id: 'default', name: 'Predeterminada del Tema', category: 'Sistema', family: 'inherit', sample: 'Escuela Montessori' },
   { id: 'new-kansas', name: 'New Kansas', category: 'Display Serif / Retro Bold', family: "'New Kansas', 'Fraunces', 'Cooper Black', serif", sample: 'Educación Transformadora & Consciente' },
   { id: 'articulat-cf', name: 'Articulat CF', category: 'Neo-Grotesque / Mid-Century', family: "'Articulat CF', 'Articulat', 'Plus Jakarta Sans', sans-serif", sample: 'Ambiente Montessori Bilingüe' },
   { id: 'outfit', name: 'Outfit', category: 'Moderna / Geométrica', family: "'Outfit', sans-serif", sample: 'Educación Montessori Internacional' },
@@ -433,7 +433,7 @@ const HERO_FONTS = [
   { id: 'nunito', name: 'Nunito', category: 'Cálida / Equilibrada', family: "'Nunito', sans-serif", sample: 'Niños Felices y Autónomos' },
   { id: 'raleway', name: 'Raleway', category: 'Elegante / Fina', family: "'Raleway', sans-serif", sample: 'Descubrimiento & Curiosidad' },
   { id: 'inter', name: 'Inter', category: 'Neutra / UI Moderna', family: "'Inter', sans-serif", sample: 'Portal Educativo Institucional' },
-  { id: 'mono', name: 'Monoespaciada', category: 'Técnica / Código', family: 'monospace', sample: 'Ceiba-Montessori-v2.0' }
+  { id: 'mono', name: 'Monoespaciada', category: 'Técnica / Código', family: 'monospace', sample: 'Escuela-Montessori-v2.0' }
 ];
 
 const CustomFontPicker = ({
@@ -795,7 +795,7 @@ export const WebBuilderSection: React.FC = () => {
   );
   const [headerShowName, setHeaderShowName] = useState<boolean>(settings?.header_show_name !== 'false');
   const [headerNameSplit, setHeaderNameSplit] = useState<boolean>(settings?.header_name_split !== 'false');
-  const [headerNamePart1, setHeaderNamePart1] = useState<string>(settings?.header_name_part1 || 'Ceiba');
+  const [headerNamePart1, setHeaderNamePart1] = useState<string>(settings?.header_name_part1 || 'Escuela');
   const [headerNamePart2, setHeaderNamePart2] = useState<string>(settings?.header_name_part2 || 'Montessori');
   const [headerNameColor1, setHeaderNameColor1] = useState<string>(settings?.header_name_color1 || '');
   const [headerNameColor2, setHeaderNameColor2] = useState<string>(settings?.header_name_color2 || '');
@@ -2307,7 +2307,7 @@ export const WebBuilderSection: React.FC = () => {
     setHeaderLogoPosition((settings?.header_logo_position as any) || 'left');
     setHeaderShowName(settings?.header_show_name !== 'false');
     setHeaderNameSplit(settings?.header_name_split !== 'false');
-    setHeaderNamePart1(settings?.header_name_part1 || 'Ceiba');
+    setHeaderNamePart1(settings?.header_name_part1 || 'Escuela');
     setHeaderNamePart2(settings?.header_name_part2 || 'Montessori');
     setHeaderNameColor1(settings?.header_name_color1 || '');
     setHeaderNameColor2(settings?.header_name_color2 || '');
@@ -4688,7 +4688,7 @@ export const WebBuilderSection: React.FC = () => {
                       type="text"
                       value={domainInput}
                       onChange={handleDomainChange}
-                      placeholder="ceiba o colegioceiba.edu.mx"
+                      placeholder="escuela o colegio.edu.mx"
                       className="w-full text-xs font-mono font-bold text-forest focus:outline-none bg-transparent placeholder:font-normal placeholder:text-slate-400"
                     />
                     {!isCustom && (
@@ -6047,7 +6047,7 @@ export const WebBuilderSection: React.FC = () => {
                                   type="text"
                                   value={headerNamePart1}
                                   onChange={(e) => setHeaderNamePart1(e.target.value)}
-                                  placeholder="Ceiba"
+                                  placeholder="Escuela"
                                   className="w-full px-2.5 py-1.5 text-xs font-bold border border-slate-200 rounded-lg bg-white"
                                 />
                                 <div className="flex items-center gap-1.5 pt-1">
@@ -6092,7 +6092,7 @@ export const WebBuilderSection: React.FC = () => {
                                 type="text"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                placeholder="Ceiba Montessori"
+                                placeholder="Escuela Montessori"
                                 className="w-full px-2.5 py-1.5 text-xs font-bold border border-slate-200 rounded-lg bg-white"
                               />
                             </div>

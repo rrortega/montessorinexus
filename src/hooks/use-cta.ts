@@ -12,8 +12,9 @@ export type CTAIntent =
 
 export function useCTA() {
   const { locale } = useI18n();
-  const { ctaMode, contactPhone } = useSiteSettings();
+  const { ctaMode, contactPhone, schoolName } = useSiteSettings();
   const phone = contactPhone.replace(/\s+/g, '');
+  const displayName = schoolName || 'Escuela Montessori';
   
   const getMessage = useCallback((intent: CTAIntent, extra?: string) => {
     const isEn = locale === 'en';
@@ -21,13 +22,13 @@ export function useCTA() {
     switch (intent) {
       case 'visit':
         return isEn 
-          ? "Hello! I am very interested in Ceiba Montessori and would like to schedule a visit to see the campus and learn about your educational project."
-          : "¡Hola! Me interesa mucho Ceiba Montessori y me gustaría agendar una visita para conocer sus instalaciones y proyecto educativo.";
+          ? `Hello! I am very interested in ${displayName} and would like to schedule a visit to see the campus and learn about your educational project.`
+          : `¡Hola! Me interesa mucho ${displayName} y me gustaría agendar una visita para conocer sus instalaciones y proyecto educativo.`;
       case 'info':
       case 'contact':
         return isEn
-          ? "Hello! I would like to receive more information about Ceiba Montessori and the services you offer."
-          : "¡Hola! Me gustaría recibir más información sobre Ceiba Montessori y los servicios que ofrecen.";
+          ? `Hello! I would like to receive more information about ${displayName} and the services you offer.`
+          : `¡Hola! Me gustaría recibir más información sobre ${displayName} y los servicios que ofrecen.`;
       case 'method':
         return isEn
           ? "Hello! I am interested in learning more about your teaching method and Montessori philosophy."
@@ -38,12 +39,12 @@ export function useCTA() {
           : `¡Hola! Me gustaría obtener más información sobre el programa de ${extra || 'enseñanza'}.`;
       case 'admission':
         return isEn
-          ? "Hello! I would like to know the steps to start the admission process at Ceiba Montessori."
-          : "¡Hola! Quisiera saber cuáles son los pasos para iniciar el proceso de admisión en Ceiba Montessori.";
+          ? `Hello! I would like to know the steps to start the admission process at ${displayName}.`
+          : `¡Hola! Quisiera saber cuáles son los pasos para iniciar el proceso de admisión en ${displayName}.`;
       default:
         return "";
     }
-  }, [locale]);
+  }, [locale, displayName]);
 
   const handleCTA = useCallback((intent: CTAIntent, extra?: string) => {
     const message = getMessage(intent, extra);

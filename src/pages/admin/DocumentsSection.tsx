@@ -490,7 +490,7 @@ export const DocumentsSection: React.FC = () => {
               <div className="px-4 py-2.5 bg-white/10 backdrop-blur-md rounded-2xl border border-white/15 text-xs text-white/90 space-y-0.5 shrink-0">
                 <span className="text-[10px] text-white/60 uppercase font-bold block">Colegio Activo</span>
                 <strong className="text-sm sm:text-base font-bold font-display block text-white">
-                  {activeMembership?.school.name || 'Ceiba Montessori'}
+                  {activeMembership?.school.name || 'Escuela Montessori'}
                 </strong>
               </div>
             )}

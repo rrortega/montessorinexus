@@ -1201,7 +1201,7 @@ export const AdmissionStageConfigDrawer: React.FC<AdmissionStageConfigDrawerProp
                         {[
                           { tag: '{{nombre_completo_estudiante}}', label: 'Nombre Completo del Niño(a)', example: 'Sofía María Morales Gómez' },
                           { tag: '{{solo_nombres_estudiante}}', label: 'Solo Nombres (Sin apellidos)', example: 'Sofía María' },
-                          { tag: '{{escuela}}', label: 'Nombre del Colegio', example: 'Ceiba Montessori' },
+                          { tag: '{{escuela}}', label: 'Nombre del Colegio', example: 'Escuela Montessori' },
                           { tag: '{{tutor}}', label: 'Nombre del Tutor', example: 'Carlos Morales' },
                           { tag: '{{ambiente}}', label: 'Ambiente Solicitado', example: 'Casa de Niños' },
                           { tag: '{{email_tutor}}', label: 'Email del Tutor', example: 'familia@ejemplo.com' }

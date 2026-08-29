@@ -77,7 +77,7 @@ export const TutorFinancesSection: React.FC = () => {
 
   const bankDetails = {
     bank: 'BBVA Bancomer',
-    beneficiary: statementData?.school?.name || activeMembership?.school.legalName || activeMembership?.school.name || 'Colegio Ceiba Montessori',
+    beneficiary: statementData?.school?.name || activeMembership?.school.legalName || activeMembership?.school.name || 'Escuela Montessori',
     clabe: '012691001928475829',
     account: '0192847582',
     phone: statementData?.school?.phone || activeMembership?.school.phone || '+52 998 350 2849'
@@ -110,7 +110,7 @@ export const TutorFinancesSection: React.FC = () => {
           <div className="px-4 py-2.5 bg-white/10 backdrop-blur-md rounded-2xl border border-white/15 text-xs text-white/90 shrink-0 space-y-0.5">
             <span className="text-[10px] text-white/60 uppercase font-bold block">Colegio Activo</span>
             <strong className="text-sm sm:text-base font-bold font-display block text-white">
-              {statementData?.school?.name || activeMembership?.school.name || 'Ceiba Montessori'}
+              {statementData?.school?.name || activeMembership?.school.name || 'Escuela Montessori'}
             </strong>
           </div>
         </div>

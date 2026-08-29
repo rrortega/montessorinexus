@@ -2627,7 +2627,7 @@ export function HeroSection() {
 
                           {/* Polaroid Bottom Title */}
                           <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between text-[11px] font-bold text-slate-600 tracking-wider uppercase font-sans">
-                            <span className="truncate max-w-[70%]">{schoolName || 'Ceiba Montessori'}</span>
+                            <span className="truncate max-w-[70%]">{schoolName || 'Escuela Montessori'}</span>
                             <span className="text-[10px] text-amber-700/80 font-mono">2026</span>
                           </div>
 

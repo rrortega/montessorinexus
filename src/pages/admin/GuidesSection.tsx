@@ -535,7 +535,7 @@ export const GuidesSection: React.FC = () => {
     };
   }, [guides]);
 
-  const schoolDisplayName = schoolName || currentSchool?.name || 'Ceiba Montessori International';
+  const schoolDisplayName = schoolName || currentSchool?.name || 'Escuela Montessori';
 
   return (
     <div className="flex flex-col h-full w-full min-h-0 overflow-hidden bg-background">

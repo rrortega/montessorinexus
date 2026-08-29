@@ -97,7 +97,7 @@ export const TutorPortalSection: React.FC = () => {
           <div className="px-4 py-2.5 bg-white/10 backdrop-blur-md rounded-2xl border border-white/15 text-xs text-white/90 shrink-0 space-y-0.5">
             <span className="text-[10px] text-white/60 uppercase font-bold block">Colegio Activo</span>
             <strong className="text-sm sm:text-base font-bold font-display block text-white">
-              {activeMembership?.school.name || 'Ceiba Montessori'}
+              {activeMembership?.school.name || 'Escuela Montessori'}
             </strong>
           </div>
         </div>
@@ -368,7 +368,7 @@ export const TutorPortalSection: React.FC = () => {
                 )}
                 <div>
                   <span className="text-[10px] uppercase tracking-widest text-white/80 font-bold block">
-                    {activeMembership?.school.name || 'Ceiba Montessori'}
+                    {activeMembership?.school.name || 'Escuela Montessori'}
                   </span>
                   <h3 className="font-display font-bold text-base sm:text-lg text-white line-clamp-1">
                     {readingNewsletter.title}

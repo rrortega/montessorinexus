@@ -65,7 +65,7 @@ export const DYNAMIC_VARIABLES: DynamicVariable[] = [
     code: '{{escuela}}',
     label: 'Nombre del Colegio',
     description: 'Nombre institucional de la escuela',
-    example: 'Ceiba Montessori',
+    example: 'Escuela Montessori',
     icon: <School className="w-3.5 h-3.5 text-forest" />
   },
   {

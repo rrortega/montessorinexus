@@ -1509,7 +1509,7 @@ export const AdminSystemSettings: React.FC = () => {
                         type="text"
                         value={formData.smtp_from_name || ''}
                         onChange={(e) => handleInputChange('smtp_from_name', e.target.value)}
-                        placeholder={formData.schoolName || 'Ceiba Montessori'}
+                        placeholder={formData.schoolName || 'Escuela Montessori'}
                         className="w-full p-2.5 rounded-xl border border-forest/20 text-forest bg-white text-xs focus:outline-none focus:ring-2 focus:ring-forest"
                       />
                     </div>

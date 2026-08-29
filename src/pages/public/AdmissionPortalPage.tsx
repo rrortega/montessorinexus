@@ -3337,7 +3337,7 @@ export const AdmissionPortalPage: React.FC = () => {
                         <SchoolIcon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                       </div>
                       <h1 className="text-xs sm:text-sm md:text-base font-bold text-white font-display truncate">
-                        {school?.name || 'Ceiba Montessori International'}
+                        {school?.name || 'Escuela Montessori'}
                       </h1>
                     </div>
                   )}
@@ -3845,7 +3845,7 @@ export const AdmissionPortalPage: React.FC = () => {
                   <SchoolIcon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                 </div>
                 <h1 className="text-xs sm:text-sm md:text-base font-bold text-white font-display truncate">
-                  {school?.name || 'Ceiba Montessori International'}
+                  {school?.name || 'Escuela Montessori'}
                 </h1>
               </div>
             )}

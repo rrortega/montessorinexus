@@ -153,7 +153,7 @@ export const NewsletterEditorDrawer: React.FC<NewsletterEditorDrawerProps> = ({
   }, [isOpen]);
 
   const effectiveLogo = siteSettings.school_logo || schoolInfo?.logoUrl || activeMembership?.school?.logoUrl || '';
-  const effectiveSchoolName = siteSettings.school_name || schoolInfo?.name || activeMembership?.school?.name || 'Ceiba Montessori';
+  const effectiveSchoolName = siteSettings.school_name || schoolInfo?.name || activeMembership?.school?.name || 'Escuela Montessori';
   const effectivePrimaryColor = siteSettings.brand_primary_color || schoolInfo?.primaryColor || activeMembership?.school?.primaryColor || '#1b3b2b';
   const effectiveAddress = siteSettings.school_address || schoolInfo?.address || activeMembership?.school?.address || '';
 

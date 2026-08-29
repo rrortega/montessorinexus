@@ -367,7 +367,7 @@ export const AdminAccountSection: React.FC = () => {
     toast.success('Archivo de códigos descargado');
   };
 
-  const schoolName = activeMembership?.school.name || 'Ceiba Montessori';
+  const schoolName = activeMembership?.school.name || 'Escuela Montessori';
   const totpUri = tempSecret ? getTotpUri(activeEmail, tempSecret, schoolName) : '';
   const qrCodeUrl = totpUri ? `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(totpUri)}&bgcolor=ffffff&color=1b3b2b&margin=1` : '';
 

@@ -212,7 +212,7 @@ export const LanguagesAndSeoTab: React.FC<LanguagesAndSeoTabProps> = ({
             type="text"
             value={seoTitle}
             onChange={(e) => onChangeSeoTitle(e.target.value)}
-            placeholder="Ej: Ceiba Montessori | Escuela Montessori Bilingüe en Cancún"
+            placeholder="Ej: Escuela Montessori | Educación Viva y Bilingüe"
             className="w-full px-3 py-2 text-xs font-semibold text-slate-900 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-forest/20 focus:border-forest shadow-3xs"
           />
         </div>

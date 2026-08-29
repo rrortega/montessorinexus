@@ -43,7 +43,7 @@ const quickLinks = [
 
 export function Footer() {
   const { t } = useI18n();
-  const { socialLinks } = useSiteSettings();
+  const { socialLinks, schoolName } = useSiteSettings();
 
   return (
     <footer className="bg-foreground text-primary-foreground">
@@ -54,7 +54,7 @@ export function Footer() {
             <a href="#" className="flex items-center mb-6">
               <img
                 src={logoLetras}
-                alt="Ceiba Montessori"
+                alt={schoolName || "Escuela Montessori"}
                 className="h-8 w-auto brightness-0 invert"
               />
             </a>
@@ -118,7 +118,7 @@ export function Footer() {
 
         <div className="border-t border-primary-foreground/10 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center gap-6">
           <p className="text-primary-foreground/50 text-sm">
-            © {new Date().getFullYear()} Ceiba Montessori International. {t('Todos los derechos reservados.')}
+            © {new Date().getFullYear()} {schoolName || 'Escuela Montessori'}. {t('Todos los derechos reservados.')}
           </p>
           <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 text-[10px] sm:text-xs text-primary-foreground/40 font-bold tracking-[0.15em] uppercase">
             <a href="https://chamba.pro" target="_blank" rel="noopener noreferrer" className="hover:text-primary-foreground/80 transition-colors">

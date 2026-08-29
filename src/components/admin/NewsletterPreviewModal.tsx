@@ -63,7 +63,7 @@ export const NewsletterPreviewModal: React.FC<NewsletterPreviewModalProps> = ({
   if (!isOpen || !newsletter) return null;
 
   const effectiveLogo = siteSettings.school_logo || activeMembership?.school?.logoUrl || '';
-  const effectiveSchoolName = siteSettings.school_name || activeMembership?.school?.name || 'Ceiba Montessori';
+  const effectiveSchoolName = siteSettings.school_name || activeMembership?.school?.name || 'Escuela Montessori';
   const effectivePrimaryColor = siteSettings.brand_primary_color || activeMembership?.school?.primaryColor || '#1b3b2b';
   const effectiveAddress = siteSettings.school_address || activeMembership?.school?.address || '';
 
