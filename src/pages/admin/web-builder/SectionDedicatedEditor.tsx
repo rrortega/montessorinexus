@@ -773,43 +773,187 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
             </div>
 
             {/* Bloque Destacado de Misión */}
-            <div className="space-y-3 pt-2 border-t border-slate-100">
-              <div className="flex items-center justify-between">
-                <label className="text-[11px] font-bold text-slate-700">
-                  Tarjeta Destacada de Misión:
-                </label>
-                <button
-                  type="button"
-                  onClick={() => handleConfigChange('showMission', section.config?.showMission === false ? true : false)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    section.config?.showMission !== false
-                      ? 'bg-forest/10 text-forest border border-forest/20'
-                      : 'bg-slate-100 text-slate-500'
-                  }`}
-                >
-                  {section.config?.showMission !== false ? 'Visible' : 'Oculta'}
-                </button>
+            <div className="space-y-4 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h5 className="font-bold text-xs text-slate-800">
+                    Tarjeta Destacada de Misión
+                  </h5>
+                  <p className="text-[10px] text-muted-foreground">
+                    Banner panorámico para resaltar el propósito pedagógico
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-slate-600">
+                    {section.config?.showMission !== false ? 'Activado' : 'Desactivado'}
+                  </span>
+                  <Switch
+                    checked={section.config?.showMission !== false}
+                    onCheckedChange={(checked) => handleConfigChange('showMission', checked)}
+                  />
+                </div>
               </div>
 
               {section.config?.showMission !== false && (
-                <div className="space-y-2 animate-in fade-in duration-150">
-                  <textarea
-                    value={getConfigLangValue('missionText', 'En nuestra escuela nos comprometemos a entender la infancia para ayudar a los niños a desarrollar la grandeza de sus potencialidades.')}
-                    onChange={(e) => setConfigLangValue('missionText', e.target.value)}
-                    rows={2}
-                    placeholder={`Texto de misión en ${currentLangObj.name}...`}
-                    className="w-full px-3 py-2 text-xs text-slate-800 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-forest/20 focus:border-forest"
-                  />
-                  <FieldTypographyAndColorBar
-                    fontValue={section.config?.mission_font}
-                    onChangeFont={(val) => handleConfigChange('mission_font', val)}
-                    colorLight={section.config?.mission_color}
-                    onChangeColorLight={(val) => handleConfigChange('mission_color', val)}
-                    colorDark={section.config?.mission_color_dark}
-                    onChangeColorDark={(val) => handleConfigChange('mission_color_dark', val)}
-                    defaultColorLight="#1b3b2b"
-                    defaultColorDark="#ffffff"
-                  />
+                <div className="space-y-4 p-4 rounded-xl bg-slate-50/80 border border-slate-200 animate-in fade-in duration-150">
+                  {/* Texto de la misión */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-700 block">
+                      Texto de la Misión ({currentLangObj.name}):
+                    </label>
+                    <textarea
+                      value={getConfigLangValue('missionText', 'En nuestra escuela nos comprometemos a entender la infancia para ayudar a los niños a desarrollar la grandeza de sus potencialidades.')}
+                      onChange={(e) => setConfigLangValue('missionText', e.target.value)}
+                      rows={2}
+                      placeholder={`Texto de misión en ${currentLangObj.name}...`}
+                      className="w-full px-3 py-2 text-xs text-slate-800 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-forest/20 focus:border-forest"
+                    />
+                  </div>
+
+                  {/* Tipografía y Color del Texto */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-700 block">
+                      Tipografía & Color del Texto:
+                    </label>
+                    <FieldTypographyAndColorBar
+                      fontValue={section.config?.mission_font}
+                      onChangeFont={(val) => handleConfigChange('mission_font', val)}
+                      colorLight={section.config?.mission_color}
+                      onChangeColorLight={(val) => handleConfigChange('mission_color', val)}
+                      colorDark={section.config?.mission_color_dark}
+                      onChangeColorDark={(val) => handleConfigChange('mission_color_dark', val)}
+                      defaultColorLight="#ffffff"
+                      defaultColorDark="#ffffff"
+                    />
+                  </div>
+
+                  {/* Alineación y Redondeo */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200/70">
+                    {/* Alineación del Texto */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-700 block">
+                        Alineación del Texto:
+                      </label>
+                      <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200">
+                        {[
+                          { val: 'left', icon: AlignLeft, label: 'Izquierda' },
+                          { val: 'center', icon: AlignCenter, label: 'Centrado' },
+                          { val: 'right', icon: AlignRight, label: 'Derecha' }
+                        ].map(al => {
+                          const AlIcon = al.icon;
+                          const isSelected = (section.config?.mission_align || 'left') === al.val;
+                          return (
+                            <button
+                              key={al.val}
+                              type="button"
+                              onClick={() => handleConfigChange('mission_align', al.val)}
+                              className={`flex-1 p-1.5 rounded-lg transition-all flex items-center justify-center cursor-pointer ${
+                                isSelected
+                                  ? 'bg-forest text-white shadow-3xs font-bold'
+                                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                              }`}
+                              title={al.label}
+                            >
+                              <AlIcon className="w-3.5 h-3.5" />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Redondeo de Esquinas */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-700 block">
+                        Redondeo de Esquinas:
+                      </label>
+                      <select
+                        value={section.config?.mission_radius || '3xl'}
+                        onChange={(e) => handleConfigChange('mission_radius', e.target.value)}
+                        className="w-full text-xs font-semibold text-slate-800 bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 focus:ring-2 focus:ring-forest/20 focus:border-forest"
+                      >
+                        <option value="none">Recto (0px)</option>
+                        <option value="md">Medio (12px)</option>
+                        <option value="lg">Grande (16px)</option>
+                        <option value="xl">Extra (24px)</option>
+                        <option value="2xl">2XL (32px)</option>
+                        <option value="3xl">3XL (40px - Clásico)</option>
+                        <option value="full">Píldora (Cápsula)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Color de Fondo de la Tarjeta Destacada */}
+                  <div className="space-y-2 pt-2 border-t border-slate-200/70">
+                    <label className="text-[10px] font-bold text-slate-700 block">
+                      Color de Fondo de la Tarjeta:
+                    </label>
+
+                    {/* Presets */}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {[
+                        { hex: 'gradient', label: 'Degradado Bosque', bg: 'bg-gradient-to-r from-forest to-forest-light' },
+                        { hex: '#1b3b2b', label: 'Bosque Clásico', bg: 'bg-[#1b3b2b]' },
+                        { hex: '#fbf6ee', label: 'Crema Cálido', bg: 'bg-[#fbf6ee]' },
+                        { hex: '#064e3b', label: 'Esmeralda', bg: 'bg-[#064e3b]' },
+                        { hex: '#0f172a', label: 'Azul Noche', bg: 'bg-[#0f172a]' },
+                        { hex: '#7c2d12', label: 'Terracota', bg: 'bg-[#7c2d12]' },
+                        { hex: '#3b0764', label: 'Púrpura', bg: 'bg-[#3b0764]' },
+                        { hex: '#ffffff', label: 'Blanco', bg: 'bg-white' }
+                      ].map(p => {
+                        const isSelected = (section.config?.mission_bg_color || 'gradient') === p.hex;
+                        return (
+                          <button
+                            key={p.hex}
+                            type="button"
+                            onClick={() => handleConfigChange('mission_bg_color', p.hex)}
+                            className={`w-6 h-6 rounded-lg border transition-all cursor-pointer ${p.bg} ${
+                              isSelected
+                                ? 'border-forest ring-2 ring-forest/30 scale-110 shadow-3xs'
+                                : 'border-slate-300 hover:scale-105'
+                            }`}
+                            title={p.label}
+                          />
+                        );
+                      })}
+                    </div>
+
+                    {/* Pickers Claro y Oscuro */}
+                    <div className="flex items-center gap-3 pt-1">
+                      <div className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-lg border border-slate-200 shadow-3xs">
+                        <Sun className="w-3.5 h-3.5 text-amber-500 shrink-0" title="Modo Claro" />
+                        <input
+                          type="color"
+                          value={section.config?.mission_bg_color?.startsWith('#') ? section.config?.mission_bg_color : '#1b3b2b'}
+                          onChange={(e) => handleConfigChange('mission_bg_color', e.target.value)}
+                          className="w-5 h-5 rounded border border-slate-300 cursor-pointer p-0 appearance-none bg-transparent"
+                        />
+                        <input
+                          type="text"
+                          value={section.config?.mission_bg_color || ''}
+                          onChange={(e) => handleConfigChange('mission_bg_color', e.target.value)}
+                          placeholder="#1b3b2b"
+                          className="w-16 text-[10px] font-mono uppercase bg-transparent border-0 focus:outline-none"
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-1.5 bg-slate-900 text-white px-2 py-1 rounded-lg border border-slate-800 shadow-3xs">
+                        <Moon className="w-3.5 h-3.5 text-sky-400 shrink-0" title="Modo Oscuro" />
+                        <input
+                          type="color"
+                          value={section.config?.mission_bg_color_dark?.startsWith('#') ? section.config?.mission_bg_color_dark : '#0f1f17'}
+                          onChange={(e) => handleConfigChange('mission_bg_color_dark', e.target.value)}
+                          className="w-5 h-5 rounded border border-slate-600 cursor-pointer p-0 appearance-none bg-transparent"
+                        />
+                        <input
+                          type="text"
+                          value={section.config?.mission_bg_color_dark || ''}
+                          onChange={(e) => handleConfigChange('mission_bg_color_dark', e.target.value)}
+                          placeholder="#0f1f17"
+                          className="w-16 text-[10px] font-mono uppercase text-slate-200 bg-transparent border-0 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

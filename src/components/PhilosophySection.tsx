@@ -384,29 +384,64 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
     ? 'text-right ml-auto items-end'
     : 'text-left mr-auto items-start';
 
+  // Mission card radius resolver
+  const getMissionRadiusClass = (radius?: string) => {
+    switch (radius) {
+      case 'none': return 'rounded-none';
+      case 'md': return 'rounded-xl';
+      case 'lg': return 'rounded-2xl';
+      case 'xl': return 'rounded-3xl';
+      case '2xl': return 'rounded-[2rem]';
+      case 'full': return 'rounded-full';
+      case '3xl':
+      default: return 'rounded-[2.5rem]';
+    }
+  };
+
+  const missionAlign = config.mission_align || 'left';
+  const missionAlignClass = missionAlign === 'center'
+    ? 'text-center items-center md:items-center'
+    : missionAlign === 'right'
+    ? 'text-right items-end md:items-end'
+    : 'text-left items-start md:items-start';
+
+  const missionCardBg = config.mission_bg_color;
+  const isMissionGradient = !missionCardBg || missionCardBg === 'gradient';
+
   return (
     <section
-      id="metodo"
+      id={section?.anchor || section?.id || 'metodo'}
       style={getSectionBgStyle()}
-      className={`section-padding overflow-hidden transition-colors duration-300 relative ${getSectionBgClass()}`}
+      className={`section-padding ${getSectionBgClass()} relative overflow-hidden transition-colors duration-300`}
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
-        {/* Header Block */}
-        <FadeInScroll className={`mb-12 md:mb-16 flex flex-col ${alignClass} max-w-3xl`}>
+        {/* Section Header */}
+        <FadeInScroll
+          direction="up"
+          className={`space-y-4 mb-12 sm:mb-16 ${
+            section?.layoutVariant === 'center'
+              ? 'text-center mx-auto max-w-3xl'
+              : section?.layoutVariant === 'right'
+              ? 'text-right ml-auto max-w-3xl'
+              : 'text-left max-w-3xl'
+          }`}
+        >
           {badgeText && (
-            <span
-              style={{ fontFamily: badgeFontFamily, color: badgeColor }}
-              className="text-xs sm:text-sm font-extrabold uppercase tracking-widest text-primary mb-3 px-3.5 py-1 rounded-full bg-primary/10 inline-block"
+            <div
+              className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-forest/10 border border-forest/20 text-xs font-bold uppercase tracking-wider text-forest`}
             >
-              {badgeText}
-            </span>
+              <Sparkles className="w-3.5 h-3.5 text-forest" />
+              <span style={{ fontFamily: badgeFontFamily, color: badgeColor }}>
+                {badgeText}
+              </span>
+            </div>
           )}
 
           {titleText && (
             <h2
               style={{ fontFamily: titleFontFamily, color: titleColor }}
-              className="heading-section text-foreground mb-4 leading-tight text-balance"
+              className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-foreground leading-[1.15]"
             >
               {titleText}
             </h2>
@@ -415,7 +450,7 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
           {subtitleText && (
             <p
               style={{ fontFamily: subtitleFontFamily, color: subtitleColor }}
-              className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-2xl leading-relaxed"
+              className="text-base sm:text-lg text-muted-foreground leading-relaxed"
             >
               {subtitleText}
             </p>
@@ -425,17 +460,27 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
         {/* Highlighted Mission Card (if enabled) */}
         {config.showMission !== false && missionText && (
           <FadeInScroll direction="up" className="mb-10 lg:mb-12">
-            <div className="p-6 sm:p-8 md:p-10 rounded-[2.5rem] bg-gradient-to-r from-forest via-forest-light to-forest text-white shadow-xl relative overflow-hidden">
+            <div
+              style={{
+                backgroundColor: isMissionGradient ? undefined : missionCardBg,
+                color: missionColor || undefined
+              }}
+              className={`p-6 sm:p-8 md:p-10 ${getMissionRadiusClass(config.mission_radius)} ${
+                isMissionGradient
+                  ? 'bg-gradient-to-r from-forest via-forest-light to-forest text-white'
+                  : 'shadow-xl'
+              } relative overflow-hidden transition-all duration-300`}
+            >
               <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl pointer-events-none" />
               <div className="relative z-10 flex flex-col md:flex-row items-center gap-6 justify-between">
-                <div className="space-y-2 text-center md:text-left max-w-3xl">
-                  <div className="flex items-center gap-2 justify-center md:justify-start text-white/80 text-xs font-bold uppercase tracking-wider">
-                    <Sparkles className="w-4 h-4 text-amber-300" />
+                <div className={`space-y-2 flex flex-col ${missionAlignClass} max-w-3xl flex-1`}>
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider opacity-80">
+                    <Sparkles className="w-4 h-4 text-amber-300 shrink-0" />
                     <span>Nuestra Misión & Compromiso Pedagógico</span>
                   </div>
                   <p
                     style={{ fontFamily: missionFontFamily, color: missionColor }}
-                    className="text-base sm:text-lg md:text-xl font-display font-medium text-white leading-relaxed text-balance"
+                    className="text-base sm:text-lg md:text-xl font-display font-medium leading-relaxed text-balance"
                   >
                     "{missionText}"
                   </p>
