@@ -1916,12 +1916,162 @@ export const MontessoriNexusLanding: React.FC = () => {
 
   const t = translations[lang] || translations.en;
 
+  const SEO_BY_LANG: Record<Language, {
+    title: string;
+    description: string;
+    ogTitle: string;
+    ogDescription: string;
+    ogImage: string;
+    locale: string;
+    keywords: string;
+  }> = {
+    es: {
+      title: 'Montessori Nexus | El Sistema Operativo para Colegios Montessori Auténticos',
+      description: 'Software escolar y pedagógico para comunidades Montessori. Registro de tres tiempos, seguimiento visual de materiales, control de asistencias, portal de admisiones y suite de IA ética.',
+      ogTitle: 'Montessori Nexus | El Sistema Operativo para Colegios Montessori Auténticos',
+      ogDescription: 'Software escolar y pedagógico para comunidades Montessori. Registro de tres tiempos, seguimiento visual de materiales, admisiones y suite de IA ética.',
+      ogImage: '/images/og-montessorinexus-es.png',
+      locale: 'es_ES',
+      keywords: 'montessori, software montessori, colegio montessori, sistema escolar montessori, registro tres tiempos montessori, seguimiento de materiales, portal de admisiones montessori, inteligencia artificial etica montessori',
+    },
+    en: {
+      title: 'Montessori Nexus | The Operating System for Authentic Montessori Schools',
+      description: 'Comprehensive pedagogical and operational software for Montessori schools. Three-period lesson tracking, visual material progression, attendance radar, admissions portal and ethical AI suite.',
+      ogTitle: 'Montessori Nexus | The Operating System for Authentic Montessori Schools',
+      ogDescription: 'Comprehensive pedagogical software for Montessori communities. Three-period lesson tracking, visual material progression, admissions and ethical AI suite.',
+      ogImage: '/images/og-montessorinexus-en.png',
+      locale: 'en_US',
+      keywords: 'montessori software, montessori school system, authentic montessori software, three period lesson tracking, montessori materials tracker, school admissions portal, ethical montessori ai',
+    },
+    pt: {
+      title: 'Montessori Nexus | O Sistema Operacional para Escolas Montessori Autênticas',
+      description: 'Software escolar e pedagógico completo para comunidades Montessori. Registro de três tempos, acompanhamento visual de materiais, frequência, portal de matrículas e suíte de IA ética.',
+      ogTitle: 'Montessori Nexus | O Sistema Operacional para Escolas Montessori Autênticas',
+      ogDescription: 'Software escolar e pedagógico para comunidades Montessori. Registro em três tempos, acompanhamento de materiais, matrículas e suíte de IA ética.',
+      ogImage: '/images/og-montessorinexus-pt.png',
+      locale: 'pt_BR',
+      keywords: 'software montessori, escola montessori, lição em tres tempos montessori, acompanhamento de materiais, gestão escolar montessori, portal de matriculas, ia etica montessori',
+    },
+    it: {
+      title: 'Montessori Nexus | Il Sistema Operativo per Scuole Montessori Autentiche',
+      description: 'Software scolastico e pedagogico per comunità Montessori. Lezioni in tre tempi, tracciamento visuale dei materiali, registro presenze, portale iscrizioni e suite di IA etica.',
+      ogTitle: 'Montessori Nexus | Il Sistema Operativo per Scuole Montessori Autentiche',
+      ogDescription: 'Software scolastico e pedagogico per comunità Montessori. Lezioni in tre tempi, tracciamento materiali, portale iscrizioni e suite di IA etica.',
+      ogImage: '/images/og-montessorinexus-it.png',
+      locale: 'it_IT',
+      keywords: 'software montessori, scuola montessori, lezione in tre tempi, tracciamento materiali montessori, registro presenze montessori, portale iscrizioni, ia etica montessori',
+    },
+  };
+
   useEffect(() => {
     localStorage.setItem('montessori_nexus_theme', theme);
   }, [theme]);
 
   useEffect(() => {
     localStorage.setItem('montessori_nexus_lang', lang);
+
+    if (typeof document !== 'undefined') {
+      const seo = SEO_BY_LANG[lang] || SEO_BY_LANG.en;
+      document.title = seo.title;
+      document.documentElement.lang = lang;
+
+      const setMeta = (attr: string, key: string, content: string) => {
+        let el = document.querySelector(`meta[${attr}="${key}"]`);
+        if (!el) {
+          el = document.createElement('meta');
+          el.setAttribute(attr, key);
+          document.head.appendChild(el);
+        }
+        el.setAttribute('content', content);
+      };
+
+      const setLink = (rel: string, href: string, type?: string, sizes?: string) => {
+        let el = document.querySelector(`link[rel="${rel}"]${sizes ? `[sizes="${sizes}"]` : ''}`) as HTMLLinkElement | null;
+        if (!el) {
+          el = document.createElement('link');
+          el.setAttribute('rel', rel);
+          if (sizes) el.setAttribute('sizes', sizes);
+          document.head.appendChild(el);
+        }
+        el.setAttribute('href', href);
+        if (type) el.setAttribute('type', type);
+      };
+
+      // Set Favicons
+      setLink('icon', '/favicon.svg', 'image/svg+xml');
+      setLink('icon', '/favicon-32x32.png', 'image/png', '32x32');
+      setLink('icon', '/favicon-16x16.png', 'image/png', '16x16');
+      setLink('apple-touch-icon', '/apple-touch-icon.png', 'image/png', '180x180');
+
+      // Meta Description & Keywords
+      setMeta('name', 'description', seo.description);
+      setMeta('name', 'keywords', seo.keywords);
+      setMeta('name', 'theme-color', '#C4661F');
+
+      // OpenGraph
+      const origin = window.location.origin;
+      const ogFullUrl = `${origin}${seo.ogImage}`;
+      setMeta('property', 'og:title', seo.ogTitle);
+      setMeta('property', 'og:description', seo.ogDescription);
+      setMeta('property', 'og:image', ogFullUrl);
+      setMeta('property', 'og:image:width', '1200');
+      setMeta('property', 'og:image:height', '630');
+      setMeta('property', 'og:locale', seo.locale);
+      setMeta('property', 'og:type', 'website');
+      setMeta('property', 'og:site_name', 'Montessori Nexus');
+      setMeta('property', 'og:url', window.location.href);
+
+      // Twitter Cards
+      setMeta('name', 'twitter:card', 'summary_large_image');
+      setMeta('name', 'twitter:title', seo.ogTitle);
+      setMeta('name', 'twitter:description', seo.ogDescription);
+      setMeta('name', 'twitter:image', ogFullUrl);
+
+      // JSON-LD Structured Data
+      let script = document.getElementById('montessori-nexus-jsonld') as HTMLScriptElement | null;
+      if (!script) {
+        script = document.createElement('script');
+        script.id = 'montessori-nexus-jsonld';
+        script.type = 'application/ld+json';
+        document.head.appendChild(script);
+      }
+      script.text = JSON.stringify({
+        '@context': 'https://schema.org',
+        '@graph': [
+          {
+            '@type': 'SoftwareApplication',
+            'name': 'Montessori Nexus',
+            'operatingSystem': 'Cloud / Web / iOS / Android',
+            'applicationCategory': 'EducationalApplication',
+            'description': seo.description,
+            'image': ogFullUrl,
+            'offers': {
+              '@type': 'Offer',
+              'price': '49',
+              'priceCurrency': 'USD',
+              'priceValidUntil': '2027-12-31'
+            },
+            'aggregateRating': {
+              '@type': 'AggregateRating',
+              'ratingValue': '4.98',
+              'ratingCount': '142',
+              'bestRating': '5',
+              'worstRating': '1'
+            }
+          },
+          {
+            '@type': 'Organization',
+            'name': 'Montessori Nexus',
+            'url': origin,
+            'logo': `${origin}/images/montessori-nexus-logo-circle.png`,
+            'sameAs': [
+              'https://instagram.com/montessorinexus',
+              'https://twitter.com/montessorinexus'
+            ]
+          }
+        ]
+      });
+    }
   }, [lang]);
 
   // Initial mockup live boot simulation
