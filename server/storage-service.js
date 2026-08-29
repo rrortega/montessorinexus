@@ -64,26 +64,29 @@ const STORAGE_SIGN_SECRET = process.env.STORAGE_SIGN_SECRET || process.env.JWT_S
  */
 export function isPublicStorageMedia(relativePath) {
   if (!relativePath) return false;
-  const cleanPath = String(relativePath).toLowerCase();
+  const cleanPath = String(relativePath).toLowerCase().replace(/\\/g, '/');
+
+  // Explicit private paths (Forms, Admissions, Documents, KYC, RRHH, etc.) are ALWAYS private
+  if (
+    cleanPath.includes('/forms/') ||
+    cleanPath.includes('/admissions/') ||
+    cleanPath.includes('/rrhh/') ||
+    cleanPath.includes('/private/') ||
+    cleanPath.includes('/documents/')
+  ) {
+    return false;
+  }
+
+  // Explicit public web folders (Web Builder, Public Gallery, Stickers, Brand, Theme assets)
   return (
+    cleanPath.includes('/public/') ||
     cleanPath.includes('/gallery/') || 
     cleanPath.includes('/stickers/') || 
     cleanPath.includes('/hero') || 
     cleanPath.includes('/brand/') ||
     cleanPath.includes('/logo') ||
     cleanPath.includes('/pillars/') ||
-    cleanPath.includes('/public/') ||
-    cleanPath.includes('/web-builder/') ||
-    cleanPath.endsWith('.png') ||
-    cleanPath.endsWith('.jpg') ||
-    cleanPath.endsWith('.jpeg') ||
-    cleanPath.endsWith('.webp') ||
-    cleanPath.endsWith('.svg') ||
-    cleanPath.endsWith('.gif') ||
-    cleanPath.endsWith('.ico') ||
-    cleanPath.endsWith('.css') ||
-    cleanPath.endsWith('.woff') ||
-    cleanPath.endsWith('.woff2')
+    cleanPath.includes('/web-builder/')
   );
 }
 
@@ -497,8 +500,10 @@ export async function saveAdmissionAsset({
     'application/octet-stream'
   );
 
-  // Relative storage path: schools/:schoolId/admissions/:applicationId/forms/:formId/:filename
-  const relativePath = path.join('schools', cleanSchoolId, 'admissions', cleanAppId, 'forms', cleanFormId, cleanFilename).replace(/\\/g, '/');
+  // Relative storage path: schools/:schoolId/forms/:formId/:filename (or schools/:schoolId/admissions/:applicationId/forms/:formId/:filename if bound to admission)
+  const relativePath = (cleanAppId === 'standalone' || !cleanAppId)
+    ? path.join('schools', cleanSchoolId, 'forms', cleanFormId, cleanFilename).replace(/\\/g, '/')
+    : path.join('schools', cleanSchoolId, 'admissions', cleanAppId, 'forms', cleanFormId, cleanFilename).replace(/\\/g, '/');
 
   if (config.driver === 's3' || config.driver === 'minio') {
     const s3 = new S3Client({
@@ -579,6 +584,176 @@ export async function saveAdmissionAsset({
     filename: cleanFilename,
     mimeType: detectedMime
   };
+}
+
+/**
+ * Saves an uploaded asset specifically for a dynamic standalone form
+ * Hierarchy: schools/:schoolId/forms/:formId/:filename
+ */
+export async function saveFormAsset({
+  schoolId,
+  formId = 'general',
+  filename,
+  content,
+  mimeType,
+  prisma = null
+}) {
+  if (!schoolId || !filename || !content) {
+    throw new Error('Faltan parámetros requeridos para guardar archivo de formulario');
+  }
+
+  const config = await getStorageConfigForSchool(schoolId, prisma);
+  const cleanSchoolId = String(schoolId).trim();
+  const cleanFormId = String(formId || 'general').trim();
+  const cleanFilename = path.basename(filename).replace(/[^a-zA-Z0-9._-]/g, '_');
+
+  const buffer = parseBufferFromInput(content);
+  const size = buffer.length;
+
+  const detectedMime = mimeType || (
+    cleanFilename.endsWith('.pdf') ? 'application/pdf' :
+    cleanFilename.endsWith('.png') ? 'image/png' :
+    cleanFilename.endsWith('.jpg') || cleanFilename.endsWith('.jpeg') ? 'image/jpeg' :
+    cleanFilename.endsWith('.webp') ? 'image/webp' :
+    cleanFilename.endsWith('.webm') ? 'video/webm' :
+    cleanFilename.endsWith('.mp4') ? 'video/mp4' :
+    'application/octet-stream'
+  );
+
+  // Hierarchy: schools/:schoolId/forms/:formId/:filename
+  const relativePath = path.join('schools', cleanSchoolId, 'forms', cleanFormId, cleanFilename).replace(/\\/g, '/');
+
+  if (config.driver === 's3' || config.driver === 'minio') {
+    const s3 = new S3Client({
+      region: config.s3Region,
+      endpoint: config.s3Endpoint || undefined,
+      credentials: {
+        accessKeyId: config.s3AccessKeyId,
+        secretAccessKey: config.s3SecretAccessKey
+      },
+      forcePathStyle: config.s3ForcePathStyle
+    });
+
+    await s3.send(new PutObjectCommand({
+      Bucket: config.s3Bucket,
+      Key: relativePath,
+      Body: buffer,
+      ContentType: detectedMime
+    }));
+
+    const fileUrl = `/api/storage/stream?file=${encodeURIComponent(relativePath)}`;
+
+    console.log(`🔒 [STORAGE ${config.driver.toUpperCase()} FORMS] Saved form asset: ${relativePath} (${size} bytes)`);
+
+    dispatchStorageWebhook({
+      schoolId: cleanSchoolId,
+      event: 'form.file_created',
+      formId: cleanFormId,
+      filename: cleanFilename,
+      relativePath,
+      size,
+      mimeType: detectedMime,
+      fileBuffer: buffer,
+      prisma
+    });
+
+    return {
+      fileUrl,
+      relativePath,
+      size,
+      filename: cleanFilename,
+      mimeType: detectedMime
+    };
+  }
+
+  // Local private filesystem driver
+  const targetFullPath = path.join(config.localRoot, relativePath);
+  const targetDir = path.dirname(targetFullPath);
+
+  if (!fs.existsSync(targetDir)) {
+    fs.mkdirSync(targetDir, { recursive: true });
+  }
+
+  fs.writeFileSync(targetFullPath, buffer);
+  const fileUrl = `/api/storage/stream?file=${encodeURIComponent(relativePath)}`;
+
+  console.log(`🔒 [STORAGE LOCAL FORMS] Saved form asset: ${relativePath} (${size} bytes) -> ${fileUrl}`);
+
+  dispatchStorageWebhook({
+    schoolId: cleanSchoolId,
+    event: 'form.file_created',
+    formId: cleanFormId,
+    filename: cleanFilename,
+    relativePath,
+    size,
+    mimeType: detectedMime,
+    fileBuffer: buffer,
+    prisma
+  });
+
+  return {
+    fileUrl,
+    relativePath,
+    size,
+    filename: cleanFilename,
+    mimeType: detectedMime
+  };
+}
+
+/**
+ * Deletes the entire physical directory for a standalone dynamic form
+ */
+export async function deleteFormFolder({ schoolId, formId, prisma = null }) {
+  if (!schoolId || !formId) return;
+
+  const config = await getStorageConfigForSchool(schoolId, prisma);
+  const cleanSchoolId = String(schoolId).trim();
+  const cleanFormId = String(formId).trim();
+  const relativeDir = path.join('schools', cleanSchoolId, 'forms', cleanFormId).replace(/\\/g, '/');
+
+  if (config.driver === 'local') {
+    const fullDirPath = path.join(config.localRoot, relativeDir);
+    if (fs.existsSync(fullDirPath)) {
+      try {
+        fs.rmSync(fullDirPath, { recursive: true, force: true });
+        console.log(`🗑️ [STORAGE LOCAL] Deleted form folder: ${fullDirPath}`);
+      } catch (err) {
+        console.warn(`[STORAGE WARNING] Failed to delete form folder ${fullDirPath}:`, err.message);
+      }
+    }
+  } else if (config.driver === 's3' || config.driver === 'minio') {
+    try {
+      const s3 = new S3Client({
+        region: config.s3Region,
+        endpoint: config.s3Endpoint || undefined,
+        credentials: {
+          accessKeyId: config.s3AccessKeyId,
+          secretAccessKey: config.s3SecretAccessKey
+        },
+        forcePathStyle: config.s3ForcePathStyle
+      });
+      const prefix = relativeDir + '/';
+      const list = await s3.send(new ListObjectsV2Command({ Bucket: config.s3Bucket, Prefix: prefix }));
+      if (list.Contents && list.Contents.length > 0) {
+        for (const item of list.Contents) {
+          if (item.Key) {
+            await s3.send(new DeleteObjectCommand({ Bucket: config.s3Bucket, Key: item.Key }));
+          }
+        }
+        console.log(`🗑️ [STORAGE ${config.driver.toUpperCase()}] Deleted ${list.Contents.length} objects for form ${formId}`);
+      }
+    } catch (e) {
+      console.warn('[STORAGE S3 DELETE ERROR]', e.message);
+    }
+  }
+
+  dispatchStorageWebhook({
+    schoolId: cleanSchoolId,
+    event: 'form.folder_deleted',
+    formId: cleanFormId,
+    relativePath: relativeDir,
+    prisma
+  });
 }
 
 /**
@@ -890,37 +1065,7 @@ export async function deleteAdmissionFolder({ schoolId, applicationId, prisma = 
   });
 }
 
-/**
- * Deletes a single form's directory
- */
-export async function deleteFormFolder({ schoolId, applicationId, formId, prisma = null }) {
-  if (!schoolId || !applicationId || !formId) return;
 
-  const config = await getStorageConfigForSchool(schoolId, prisma);
-  const relativeDir = path.join('schools', String(schoolId), 'admissions', String(applicationId), 'forms', String(formId)).replace(/\\/g, '/');
-
-  if (config.driver === 'local') {
-    const fullDirPath = path.join(config.localRoot, relativeDir);
-    if (fs.existsSync(fullDirPath)) {
-      try {
-        fs.rmSync(fullDirPath, { recursive: true, force: true });
-        console.log(`🗑️ [STORAGE LOCAL] Deleted form folder: ${fullDirPath}`);
-      } catch (e) {
-        console.warn('[STORAGE ERROR]', e.message);
-      }
-    }
-  }
-
-  // Emit Webhook Event
-  dispatchStorageWebhook({
-    schoolId: String(schoolId),
-    event: 'form.folder_deleted',
-    applicationId: String(applicationId),
-    formId: String(formId),
-    relativePath: relativeDir,
-    prisma
-  });
-}
 
 /**
  * Tests storage connection with provided or active parameters

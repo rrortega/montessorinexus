@@ -2293,7 +2293,8 @@ export const PublicFormPage: React.FC = () => {
       // Optimistic background upload
       const formPayload = new FormData();
       formPayload.append('file', file);
-      formPayload.append('folder', 'selfie_biometrics');
+      formPayload.append('folder', id ? `forms/${id}` : 'forms');
+      if (id) formPayload.append('formId', id);
 
       try {
         const res = await fetch('/api/upload', {

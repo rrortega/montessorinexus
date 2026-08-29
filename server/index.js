@@ -925,7 +925,11 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
     const cleanFilename = `${baseSlug}-${uniqueSuffix}${ext}`;
 
     let relativePath = '';
-    if (folderType === 'documents' && employeeId) {
+    const formId = req.body.formId || req.query.formId;
+    if (formId || folderType === 'forms' || folderType.startsWith('forms/') || folderType === 'selfie_biometrics' || folderType === 'kyc' || folderType === 'form_uploads') {
+      const cleanFormId = formId || (folderType.startsWith('forms/') ? folderType.slice('forms/'.length) : (folderType !== 'forms' && folderType !== 'selfie_biometrics' && folderType !== 'kyc' && folderType !== 'form_uploads' ? folderType : 'general'));
+      relativePath = `schools/${schoolId}/forms/${cleanFormId}/${cleanFilename}`;
+    } else if (folderType === 'documents' && employeeId) {
       relativePath = `schools/${schoolId}/rrhh/${employeeId}/${cleanFilename}`;
     } else if (folderType.startsWith('admissions') || folderType.startsWith('rrhh') || folderType.startsWith('private')) {
       relativePath = `schools/${schoolId}/${folderType}/${cleanFilename}`;

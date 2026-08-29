@@ -56,7 +56,7 @@ export const TermsOfServicePage: React.FC = () => {
       badge: 'Documento Legal Contractual',
       title: 'Términos y Condiciones de Servicio',
       effectiveDate: 'Última actualización: 29 de Agosto de 2026',
-      intro: 'Los presentes Términos y Condiciones de Servicio (en adelante los "Términos") regulan el acceso, suscripción y uso de la plataforma MontessoriNexus OS (en adelante la "Plataforma"), operada y administrada legalmente por CHAMBAPRO S.A.P.I. DE C.V. (en adelante "CHAMBAPRO", "nosotros" o "MontessoriNexus"), con sede en Cancún, Quintana Roo, México.',
+      intro: 'Los presentes Términos y Condiciones de Servicio (en adelante los "Términos") regulan el acceso, suscripción y uso de la plataforma MontessoriNexus (en adelante la "Plataforma"), operada y administrada legalmente por CHAMBAPRO S.A.P.I. DE C.V. (en adelante "CHAMBAPRO", "nosotros" o "MontessoriNexus"), con sede en Cancún, Quintana Roo, México.',
       tocTitle: 'Índice de Cláusulas',
       sections: [
         { id: 'objeto', title: '1. Objeto y Partes Contratantes' },
@@ -126,7 +126,7 @@ export const TermsOfServicePage: React.FC = () => {
       badge: 'Official Legal Agreement',
       title: 'Terms of Service',
       effectiveDate: 'Last Updated: August 29, 2026',
-      intro: 'These Terms of Service (the "Terms") govern the access, subscription, and use of the MontessoriNexus OS platform (the "Platform"), legally operated and maintained by CHAMBAPRO S.A.P.I. DE C.V. ("CHAMBAPRO", "we", or "MontessoriNexus"), located in Cancun, Quintana Roo, Mexico.',
+      intro: 'These Terms of Service (the "Terms") govern the access, subscription, and use of the MontessoriNexus platform (the "Platform"), legally operated and maintained by CHAMBAPRO S.A.P.I. DE C.V. ("CHAMBAPRO", "we", or "MontessoriNexus"), located in Cancun, Quintana Roo, Mexico.',
       tocTitle: 'Table of Contents',
       sections: [
         { id: 'objeto', title: '1. Parties and Purpose' },
@@ -191,7 +191,7 @@ export const TermsOfServicePage: React.FC = () => {
       badge: 'Acordo Legal Contratual',
       title: 'Termos de Serviço',
       effectiveDate: 'Última atualização: 29 de Agosto de 2026',
-      intro: 'Estes Termos de Serviço regulam o acesso e uso da plataforma MontessoriNexus OS, operada por CHAMBAPRO S.A.P.I. DE C.V., com sede em Cancún, Quintana Roo, México (https://chamba.pro).',
+      intro: 'Estes Termos de Serviço regulam o acesso e uso da plataforma MontessoriNexus, operada por CHAMBAPRO S.A.P.I. DE C.V., com sede em Cancún, Quintana Roo, México (https://chamba.pro).',
       tocTitle: 'Índice de Cláusulas',
       sections: [
         { id: 'objeto', title: '1. Objeto e Partes' },
@@ -228,7 +228,7 @@ export const TermsOfServicePage: React.FC = () => {
       badge: 'Contrat Juridique Officiel',
       title: 'Conditions Générales de Service',
       effectiveDate: 'Dernière mise à jour : 29 Août 2026',
-      intro: 'Les présentes Conditions Générales de Service régissent l’utilisation de la plateforme MontessoriNexus OS, exploitée par CHAMBAPRO S.A.P.I. DE C.V., sise à Cancún, Quintana Roo, Mexique (https://chamba.pro).',
+      intro: 'Les présentes Conditions Générales de Service régissent l’utilisation de la plateforme MontessoriNexus, exploitée par CHAMBAPRO S.A.P.I. DE C.V., sise à Cancún, Quintana Roo, Mexique (https://chamba.pro).',
       tocTitle: 'Sommaire',
       sections: [
         { id: 'objeto', title: '1. Objet et Parties' },
@@ -266,13 +266,11 @@ export const TermsOfServicePage: React.FC = () => {
   const t = content[lang] || content.es;
 
   return (
-    <div className={`min-h-screen font-sans antialiased transition-colors duration-300 ${
-      isDark ? 'bg-[#0f1710] text-slate-100' : 'bg-[#FAF8F5] text-stone-900'
-    }`}>
-      {/* Top Header */}
-      <header className={`sticky top-0 z-40 backdrop-blur-md border-b transition-colors ${
-        isDark ? 'bg-[#0f1710]/90 border-slate-800' : 'bg-[#FAF8F5]/90 border-stone-200 shadow-xs'
+    <div className={`min-h-screen font-sans antialiased transition-colors duration-300 ${isDark ? 'bg-[#0f1710] text-slate-100' : 'bg-[#FAF8F5] text-stone-900'
       }`}>
+      {/* Top Header */}
+      <header className={`sticky top-0 z-40 backdrop-blur-md border-b transition-colors ${isDark ? 'bg-[#0f1710]/90 border-slate-800' : 'bg-[#FAF8F5]/90 border-stone-200 shadow-xs'
+        }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 group">
             <MontessoriNexusLogo size={32} />
@@ -292,9 +290,8 @@ export const TermsOfServicePage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setLangMenuOpen(!langMenuOpen)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
-                  isDark ? 'bg-slate-800/80 border-slate-700 text-white' : 'bg-white border-stone-300 text-stone-800 shadow-3xs'
-                }`}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${isDark ? 'bg-slate-800/80 border-slate-700 text-white' : 'bg-white border-stone-300 text-stone-800 shadow-3xs'
+                  }`}
               >
                 <LanguageFlag code={lang} className="w-4 h-3 rounded-[2px]" />
                 <span>{LANGUAGES.find(l => l.code === lang)?.codeShort}</span>
@@ -302,9 +299,8 @@ export const TermsOfServicePage: React.FC = () => {
               </button>
 
               {langMenuOpen && (
-                <div className={`absolute right-0 mt-2 w-36 rounded-xl shadow-xl border p-1 z-50 ${
-                  isDark ? 'bg-[#162218] border-slate-700 text-white' : 'bg-white border-stone-200 text-stone-900'
-                }`}>
+                <div className={`absolute right-0 mt-2 w-36 rounded-xl shadow-xl border p-1 z-50 ${isDark ? 'bg-[#162218] border-slate-700 text-white' : 'bg-white border-stone-200 text-stone-900'
+                  }`}>
                   {LANGUAGES.map((item) => (
                     <button
                       key={item.code}
@@ -313,11 +309,10 @@ export const TermsOfServicePage: React.FC = () => {
                         setLang(item.code);
                         setLangMenuOpen(false);
                       }}
-                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-                        lang === item.code
+                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${lang === item.code
                           ? 'bg-[#C4661F]/15 text-[#C4661F]'
                           : isDark ? 'hover:bg-slate-800' : 'hover:bg-stone-100'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center gap-2">
                         <LanguageFlag code={item.code} className="w-4 h-3 rounded-[2px]" />
@@ -333,9 +328,8 @@ export const TermsOfServicePage: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsDark(!isDark)}
-              className={`p-2 rounded-xl border transition-colors ${
-                isDark ? 'bg-slate-800 border-slate-700 text-amber-300' : 'bg-white border-stone-300 text-stone-700 shadow-3xs'
-              }`}
+              className={`p-2 rounded-xl border transition-colors ${isDark ? 'bg-slate-800 border-slate-700 text-amber-300' : 'bg-white border-stone-300 text-stone-700 shadow-3xs'
+                }`}
               aria-label="Toggle Theme"
             >
               {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -378,9 +372,8 @@ export const TermsOfServicePage: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           {/* Sidebar TOC */}
           <aside className="lg:col-span-4 text-left">
-            <div className={`sticky top-24 p-5 rounded-2xl border space-y-3 ${
-              isDark ? 'bg-[#162218] border-slate-800' : 'bg-white border-stone-200 shadow-sm'
-            }`}>
+            <div className={`sticky top-24 p-5 rounded-2xl border space-y-3 ${isDark ? 'bg-[#162218] border-slate-800' : 'bg-white border-stone-200 shadow-sm'
+              }`}>
               <h4 className="font-serif font-bold text-sm text-stone-900 dark:text-white flex items-center gap-2">
                 <FileText className="w-4 h-4 text-[#C4661F]" />
                 {t.tocTitle}
@@ -413,9 +406,8 @@ export const TermsOfServicePage: React.FC = () => {
             </section>
 
             {/* S2: Free Trial */}
-            <section id="prueba-gratuita" className={`p-6 rounded-2xl border space-y-4 ${
-              isDark ? 'bg-emerald-950/20 border-emerald-900/40' : 'bg-emerald-50/70 border-emerald-200'
-            }`}>
+            <section id="prueba-gratuita" className={`p-6 rounded-2xl border space-y-4 ${isDark ? 'bg-emerald-950/20 border-emerald-900/40' : 'bg-emerald-50/70 border-emerald-200'
+              }`}>
               <h2 className="text-xl sm:text-2xl font-serif font-bold text-emerald-900 dark:text-emerald-300 flex items-center gap-2">
                 <Zap className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                 {t.s2_title}
@@ -545,7 +537,7 @@ export const TermsOfServicePage: React.FC = () => {
       {/* Footer */}
       <footer className="py-10 border-t border-stone-200 dark:border-slate-800 text-xs text-stone-500 dark:text-slate-400 text-center">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p>© {new Date().getFullYear()} MontessoriNexus OS • CHAMBAPRO SAPI DE CV</p>
+          <p>© {new Date().getFullYear()} MontessoriNexus • CHAMBAPRO SAPI DE CV</p>
           <div className="flex gap-4">
             <Link to="/privacidad" className="hover:text-[#C4661F]">Política de Privacidad</Link>
             <Link to="/" className="hover:text-[#C4661F]">Inicio</Link>

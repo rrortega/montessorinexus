@@ -138,46 +138,46 @@ export const AnimatedPriceCounter: React.FC<{
 // =========================================================================
 export const FlagUS: React.FC<{ className?: string }> = ({ className = "w-4 h-3 rounded-xs shrink-0 shadow-xs" }) => (
   <svg viewBox="0 0 640 480" className={className} aria-hidden="true">
-    <path fill="#bd3d44" d="M0 0h640v480H0z"/>
-    <path stroke="#fff" strokeWidth="37" d="M0 55.4h640M0 129.2h640M0 203h640M0 277h640M0 350.8h640M0 424.6h640"/>
-    <path fill="#192f5d" d="M0 0h260v258.5H0z"/>
+    <path fill="#bd3d44" d="M0 0h640v480H0z" />
+    <path stroke="#fff" strokeWidth="37" d="M0 55.4h640M0 129.2h640M0 203h640M0 277h640M0 350.8h640M0 424.6h640" />
+    <path fill="#192f5d" d="M0 0h260v258.5H0z" />
     <g fill="#fff">
-      <circle cx="35" cy="35" r="9"/><circle cx="85" cy="35" r="9"/><circle cx="135" cy="35" r="9"/><circle cx="185" cy="35" r="9"/><circle cx="225" cy="35" r="9"/>
-      <circle cx="60" cy="70" r="9"/><circle cx="110" cy="70" r="9"/><circle cx="160" cy="70" r="9"/><circle cx="210" cy="70" r="9"/>
-      <circle cx="35" cy="105" r="9"/><circle cx="85" cy="105" r="9"/><circle cx="135" cy="105" r="9"/><circle cx="185" cy="105" r="9"/><circle cx="225" cy="105" r="9"/>
-      <circle cx="60" cy="140" r="9"/><circle cx="110" cy="140" r="9"/><circle cx="160" cy="140" r="9"/><circle cx="210" cy="140" r="9"/>
-      <circle cx="35" cy="175" r="9"/><circle cx="85" cy="175" r="9"/><circle cx="135" cy="175" r="9"/><circle cx="185" cy="175" r="9"/><circle cx="225" cy="175" r="9"/>
-      <circle cx="60" cy="210" r="9"/><circle cx="110" cy="210" r="9"/><circle cx="160" cy="210" r="9"/><circle cx="210" cy="210" r="9"/>
+      <circle cx="35" cy="35" r="9" /><circle cx="85" cy="35" r="9" /><circle cx="135" cy="35" r="9" /><circle cx="185" cy="35" r="9" /><circle cx="225" cy="35" r="9" />
+      <circle cx="60" cy="70" r="9" /><circle cx="110" cy="70" r="9" /><circle cx="160" cy="70" r="9" /><circle cx="210" cy="70" r="9" />
+      <circle cx="35" cy="105" r="9" /><circle cx="85" cy="105" r="9" /><circle cx="135" cy="105" r="9" /><circle cx="185" cy="105" r="9" /><circle cx="225" cy="105" r="9" />
+      <circle cx="60" cy="140" r="9" /><circle cx="110" cy="140" r="9" /><circle cx="160" cy="140" r="9" /><circle cx="210" cy="140" r="9" />
+      <circle cx="35" cy="175" r="9" /><circle cx="85" cy="175" r="9" /><circle cx="135" cy="175" r="9" /><circle cx="185" cy="175" r="9" /><circle cx="225" cy="175" r="9" />
+      <circle cx="60" cy="210" r="9" /><circle cx="110" cy="210" r="9" /><circle cx="160" cy="210" r="9" /><circle cx="210" cy="210" r="9" />
     </g>
   </svg>
 );
 
 export const FlagES: React.FC<{ className?: string }> = ({ className = "w-4 h-3 rounded-xs shrink-0 shadow-xs" }) => (
   <svg viewBox="0 0 640 480" className={className} aria-hidden="true">
-    <path fill="#c60b1e" d="M0 0h640v480H0z"/>
-    <path fill="#ffc400" d="M0 120h640v240H0z"/>
+    <path fill="#c60b1e" d="M0 0h640v480H0z" />
+    <path fill="#ffc400" d="M0 120h640v240H0z" />
     <g transform="translate(140, 175) scale(0.9)">
-      <rect x="0" y="0" width="48" height="60" rx="6" fill="#c60b1e" stroke="#ffc400" strokeWidth="4"/>
-      <path d="M12 0v60 M36 0v60 M0 30h48" stroke="#ffc400" strokeWidth="3"/>
-      <circle cx="24" cy="-8" r="10" fill="#c60b1e" stroke="#ffc400" strokeWidth="3"/>
+      <rect x="0" y="0" width="48" height="60" rx="6" fill="#c60b1e" stroke="#ffc400" strokeWidth="4" />
+      <path d="M12 0v60 M36 0v60 M0 30h48" stroke="#ffc400" strokeWidth="3" />
+      <circle cx="24" cy="-8" r="10" fill="#c60b1e" stroke="#ffc400" strokeWidth="3" />
     </g>
   </svg>
 );
 
 export const FlagBR: React.FC<{ className?: string }> = ({ className = "w-4 h-3 rounded-xs shrink-0 shadow-xs" }) => (
   <svg viewBox="0 0 640 480" className={className} aria-hidden="true">
-    <path fill="#009c3b" d="M0 0h640v480H0z"/>
-    <path fill="#ffdf00" d="m320 55 260 185-260 185L60 240z"/>
-    <circle cx="320" cy="240" r="90" fill="#002776"/>
-    <path fill="#fff" d="M230 240c40-35 140-35 180 0-20-4-160-4-180 0z"/>
+    <path fill="#009c3b" d="M0 0h640v480H0z" />
+    <path fill="#ffdf00" d="m320 55 260 185-260 185L60 240z" />
+    <circle cx="320" cy="240" r="90" fill="#002776" />
+    <path fill="#fff" d="M230 240c40-35 140-35 180 0-20-4-160-4-180 0z" />
   </svg>
 );
 
 export const FlagFR: React.FC<{ className?: string }> = ({ className = "w-4 h-3 rounded-xs shrink-0 shadow-xs" }) => (
   <svg viewBox="0 0 640 480" className={className} aria-hidden="true">
-    <path fill="#002654" d="M0 0h213.3v480H0z"/>
-    <path fill="#fff" d="M213.3 0h213.4v480H213.3z"/>
-    <path fill="#ce1126" d="M426.7 0H640v480H426.7z"/>
+    <path fill="#002654" d="M0 0h213.3v480H0z" />
+    <path fill="#fff" d="M213.3 0h213.4v480H213.3z" />
+    <path fill="#ce1126" d="M426.7 0H640v480H426.7z" />
   </svg>
 );
 
@@ -1998,7 +1998,7 @@ export const MontessoriNexusLanding: React.FC = () => {
       ogTitle: 'Montessori Nexus | El Sistema Operativo para Colegios Montessori Auténticos',
       ogDescription: 'Software escolar y pedagógico para comunidades Montessori. Registro de tres tiempos, seguimiento visual de materiales, admisiones y suite de IA ética.',
       ogImage: '/images/og-montessorinexus-es.png',
-        locale: 'es_ES',
+      locale: 'es_ES',
       keywords: 'montessori, software montessori, colegio montessori, sistema escolar montessori, registro tres tiempos montessori, seguimiento de materiales, portal de admisiones montessori, inteligencia artificial etica montessori',
     },
     en: {
@@ -2315,11 +2315,10 @@ export const MontessoriNexusLanding: React.FC = () => {
 
   return (
     <div
-      className={`min-h-screen font-sans transition-colors duration-300 ${
-        isDark
+      className={`min-h-screen font-sans transition-colors duration-300 ${isDark
           ? 'bg-[#0e1710] text-[#f1f5f9] selection:bg-[#C4661F]/40 selection:text-white'
           : 'bg-[#FEFAE0] text-[#162218] selection:bg-[#C4661F]/20 selection:text-[#C4661F]'
-      }`}
+        }`}
     >
       {/* ========================================================================= */}
       {/* INITIAL TOP HEADER */}
@@ -2367,11 +2366,10 @@ export const MontessoriNexusLanding: React.FC = () => {
                 onClick={() => setLangMenuOpen(!langMenuOpen)}
                 aria-label="Language selector"
                 aria-expanded={langMenuOpen}
-                className={`h-10 px-3.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-2 cursor-pointer shadow-xs ${
-                  isDark
+                className={`h-10 px-3.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-2 cursor-pointer shadow-xs ${isDark
                     ? 'bg-slate-800/80 hover:bg-slate-700 text-slate-200 border-slate-700 focus:ring-1 focus:ring-[#C4661F]'
                     : 'bg-white hover:bg-stone-100 text-stone-700 border-stone-300 focus:ring-1 focus:ring-[#C4661F]'
-                }`}
+                  }`}
               >
                 <LanguageFlag code={lang} className="w-4 h-3 rounded-[2px] shrink-0 shadow-xs" />
                 <span className="font-sans">{LANGUAGES.find(l => l.code === lang)?.label}</span>
@@ -2385,9 +2383,8 @@ export const MontessoriNexusLanding: React.FC = () => {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 6, scale: 0.96 }}
                     transition={{ duration: 0.15 }}
-                    className={`absolute right-0 mt-2 w-44 rounded-2xl shadow-xl border p-1.5 z-50 ${
-                      isDark ? 'bg-[#162218] border-slate-700 text-white' : 'bg-white border-stone-200 text-stone-900 shadow-stone-300/50'
-                    }`}
+                    className={`absolute right-0 mt-2 w-44 rounded-2xl shadow-xl border p-1.5 z-50 ${isDark ? 'bg-[#162218] border-slate-700 text-white' : 'bg-white border-stone-200 text-stone-900 shadow-stone-300/50'
+                      }`}
                   >
                     {LANGUAGES.map((item) => (
                       <button
@@ -2397,11 +2394,10 @@ export const MontessoriNexusLanding: React.FC = () => {
                           setLang(item.code);
                           setLangMenuOpen(false);
                         }}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
-                          lang === item.code
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer ${lang === item.code
                             ? 'bg-[#C4661F]/15 text-[#C4661F]'
                             : isDark ? 'hover:bg-slate-800 text-slate-200' : 'hover:bg-stone-100 text-stone-700'
-                        }`}
+                          }`}
                       >
                         <div className="flex items-center gap-2.5">
                           <LanguageFlag code={item.code} className="w-4 h-3 rounded-[2px] shrink-0 shadow-xs" />
@@ -2419,11 +2415,10 @@ export const MontessoriNexusLanding: React.FC = () => {
             <button
               type="button"
               onClick={toggleTheme}
-              className={`h-10 w-10 rounded-xl text-xs transition-all border flex items-center justify-center cursor-pointer shadow-xs ${
-                isDark
+              className={`h-10 w-10 rounded-xl text-xs transition-all border flex items-center justify-center cursor-pointer shadow-xs ${isDark
                   ? 'bg-slate-800/80 hover:bg-slate-700 text-amber-300 border-slate-700'
                   : 'bg-white hover:bg-stone-100 text-stone-700 border-stone-300'
-              }`}
+                }`}
               title={isDark ? 'Light Mode' : 'Dark Mode'}
             >
               {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -2432,11 +2427,10 @@ export const MontessoriNexusLanding: React.FC = () => {
             {/* School Login */}
             <a
               href="/admin"
-              className={`h-10 px-4 text-xs sm:text-sm font-bold rounded-xl transition-all border shrink-0 flex items-center justify-center shadow-xs ${
-                isDark
+              className={`h-10 px-4 text-xs sm:text-sm font-bold rounded-xl transition-all border shrink-0 flex items-center justify-center shadow-xs ${isDark
                   ? 'text-slate-200 hover:bg-slate-800 border-slate-700'
                   : 'text-[#162218] hover:bg-stone-200/60 border-stone-300/80'
-              }`}
+                }`}
             >
               {t.nav.login}
             </a>
@@ -2449,11 +2443,10 @@ export const MontessoriNexusLanding: React.FC = () => {
               type="button"
               onClick={() => setMobileMenuOpen(true)}
               aria-label="Abrir menú"
-              className={`h-10 px-3 rounded-xl border flex items-center gap-2 cursor-pointer shadow-xs transition-colors ${
-                isDark
+              className={`h-10 px-3 rounded-xl border flex items-center gap-2 cursor-pointer shadow-xs transition-colors ${isDark
                   ? 'bg-slate-800/90 text-white border-slate-700 hover:bg-slate-700'
                   : 'bg-white text-stone-800 border-stone-300 hover:bg-stone-100'
-              }`}
+                }`}
             >
               <LanguageFlag code={lang} className="w-4 h-3 rounded-[2px] shrink-0 shadow-xs" />
               <span className="font-sans uppercase font-black text-xs">{LANGUAGES.find(l => l.code === lang)?.codeShort}</span>
@@ -2479,9 +2472,8 @@ export const MontessoriNexusLanding: React.FC = () => {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-              className={`fixed top-0 right-0 bottom-0 w-[320px] max-w-[85vw] z-50 lg:hidden shadow-2xl p-6 flex flex-col justify-between overflow-y-auto ${
-                isDark ? 'bg-[#121c13] text-white border-l border-slate-800' : 'bg-[#FEFAE0] text-stone-900 border-l border-stone-200'
-              }`}
+              className={`fixed top-0 right-0 bottom-0 w-[320px] max-w-[85vw] z-50 lg:hidden shadow-2xl p-6 flex flex-col justify-between overflow-y-auto ${isDark ? 'bg-[#121c13] text-white border-l border-slate-800' : 'bg-[#FEFAE0] text-stone-900 border-l border-stone-200'
+                }`}
             >
               <div className="space-y-6">
                 {/* Drawer Header */}
@@ -2556,11 +2548,10 @@ export const MontessoriNexusLanding: React.FC = () => {
                           onClick={() => {
                             setLang(item.code);
                           }}
-                          className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
-                            isSelected
+                          className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${isSelected
                               ? 'bg-[#C4661F] text-white shadow-xs'
                               : 'text-stone-700 dark:text-slate-300 hover:bg-stone-200 dark:hover:bg-slate-700'
-                          }`}
+                            }`}
                         >
                           <div className="flex items-center gap-1.5 truncate">
                             <LanguageFlag code={item.code} className="w-4 h-3 rounded-[2px] shrink-0 shadow-xs" />
@@ -2580,9 +2571,8 @@ export const MontessoriNexusLanding: React.FC = () => {
                 <button
                   type="button"
                   onClick={toggleTheme}
-                  className={`w-full py-3 px-4 rounded-2xl border text-xs font-bold flex items-center justify-between transition-colors cursor-pointer ${
-                    isDark ? 'bg-slate-800/80 border-slate-700 text-slate-200' : 'bg-white border-stone-300 text-stone-700'
-                  }`}
+                  className={`w-full py-3 px-4 rounded-2xl border text-xs font-bold flex items-center justify-between transition-colors cursor-pointer ${isDark ? 'bg-slate-800/80 border-slate-700 text-slate-200' : 'bg-white border-stone-300 text-stone-700'
+                    }`}
                 >
                   <span className="flex items-center gap-2">
                     {isDark ? <Moon className="w-4 h-4 text-amber-300" /> : <Sun className="w-4 h-4 text-amber-500" />}
@@ -2690,11 +2680,10 @@ export const MontessoriNexusLanding: React.FC = () => {
                               setLang(item.code);
                               setCompactLangMenuOpen(false);
                             }}
-                            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
-                              lang === item.code
+                            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${lang === item.code
                                 ? 'bg-[#C4661F]/25 text-[#C4661F]'
                                 : 'hover:bg-white/10 text-slate-200'
-                            }`}
+                              }`}
                           >
                             <div className="flex items-center gap-2">
                               <LanguageFlag code={item.code} className="w-3.5 h-2.5 rounded-[1px] shrink-0 shadow-xs" />
@@ -2759,549 +2748,531 @@ export const MontessoriNexusLanding: React.FC = () => {
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider ${
-                isDark
+              className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider ${isDark
                   ? 'bg-[#C4661F]/20 border border-[#C4661F]/40 text-[#C4661F]'
                   : 'bg-[#C4661F]/10 border border-[#C4661F]/20 text-[#C4661F]'
-              }`}
+                }`}
             >
-            <Compass className="w-3.5 h-3.5" />
-            <span>{t.hero.badge}</span>
-          </motion.div>
+              <Compass className="w-3.5 h-3.5" />
+              <span>{t.hero.badge}</span>
+            </motion.div>
 
-          {/* High-Impact Hero Headline with Cursive Accent Word and Glowing Aura */}
-          <motion.h1
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className={`text-4xl sm:text-6xl lg:text-7xl font-sans font-black tracking-tight leading-[1.12] sm:leading-[1.08] ${
-              isDark ? 'text-white' : 'text-[#162218]'
-            }`}
-          >
-            <span className={`block font-black tracking-tight ${
-              isDark
-                ? 'bg-gradient-to-r from-[#E07A2B] via-emerald-200 to-white bg-clip-text text-transparent'
-                : 'bg-gradient-to-r from-[#C4661F] via-[#2A442E] to-[#162218] bg-clip-text text-transparent'
-            }`}>
-              {t.hero.titlePrefix}
-            </span>
-            <span className="block mt-2 sm:mt-3">
-              <span className="relative inline-block mr-3 sm:mr-4.5 -rotate-6 sm:-rotate-[7deg] origin-bottom-left select-none">
-                {/* Glowing ambient aura behind the script word */}
-                <span className="absolute -inset-2 sm:-inset-2.5 rounded-2xl bg-[#C4661F]/25 dark:bg-[#C4661F]/40 blur-md sm:blur-lg -z-10 pointer-events-none" />
-                <span
-                  style={{ fontFamily: "'Dancing Script', 'Caveat', cursive" }}
-                  className="text-4xl sm:text-6xl lg:text-7xl font-bold text-[#C4661F] dark:text-[#E07A2B] drop-shadow-[0_2px_14px_rgba(196,102,31,0.45)] tracking-wide"
-                >
-                  {t.hero.titleScriptWord}
-                </span>
-              </span>
-              <span className={`font-black tracking-tight ${
-                isDark
-                  ? 'bg-gradient-to-r from-white via-emerald-200 to-[#E07A2B] bg-clip-text text-transparent'
-                  : 'bg-gradient-to-r from-[#162218] via-[#2A442E] to-[#C4661F] bg-clip-text text-transparent'
-              }`}>
-                {t.hero.titleSuffix}
-              </span>
-            </span>
-          </motion.h1>
-
-          {/* Subtitle */}
-          <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className={`text-base sm:text-xl font-sans max-w-2xl mx-auto leading-relaxed ${
-              isDark ? 'text-slate-300' : 'text-stone-600'
-            }`}
-          >
-            {t.hero.subtitle}
-          </motion.p>
-
-          {/* CTAs */}
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 pt-2 w-full"
-          >
-            <Button
-              onClick={() => setDemoModalOpen(true)}
-              size="lg"
-              className="w-full sm:w-auto bg-[#C4661F] hover:bg-[#783D19] text-white font-bold text-sm sm:text-base px-6 sm:px-9 py-4 sm:py-6 rounded-2xl shadow-md shadow-[#C4661F]/25 hover:scale-[1.02] transition-all flex items-center justify-center text-center"
+            {/* High-Impact Hero Headline with Cursive Accent Word and Glowing Aura */}
+            <motion.h1
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className={`text-4xl sm:text-6xl lg:text-7xl font-sans font-black tracking-tight leading-[1.12] sm:leading-[1.08] ${isDark ? 'text-white' : 'text-[#162218]'
+                }`}
             >
-              <span>{t.hero.ctaBtn}</span>
-              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2 shrink-0" />
-            </Button>
-          </motion.div>
-
-          {/* Reassurance pills */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            className={`pt-4 flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-xs font-medium text-center ${
-              isDark ? 'text-slate-400' : 'text-stone-500'
-            }`}
-          >
-            <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-[#C4661F] shrink-0" /> {t.hero.pill1}
-            </span>
-            <span className="flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-[#C4661F] shrink-0" /> {t.hero.pill2}
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Zap className="w-4 h-4 text-[#C4661F] shrink-0" /> {t.hero.pill3}
-            </span>
-          </motion.div>
-        </div>
-
-        {/* ========================================================================= */}
-        {/* INTERACTIVE SAAS APPLICATION SIMULATOR MOCKUP WITH 3D PERSPECTIVE SCROLL */}
-        {/* ========================================================================= */}
-        <div className="hidden md:block mt-10 sm:mt-14 max-w-5xl mx-auto [perspective:1200px] relative z-10 px-1 sm:px-0">
-          <motion.div
-            style={{
-              rotateX: mockupRotateX,
-              scale: mockupScale,
-              y: mockupTranslateY,
-              opacity: mockupOpacity,
-              transformStyle: 'preserve-3d',
-            }}
-            className={`w-full rounded-3xl p-2 sm:p-4 border shadow-2xl transition-shadow ${
-              isDark ? 'bg-[#0f1711] border-slate-700/80 shadow-black/80' : 'bg-white/95 backdrop-blur-md border-stone-300 shadow-stone-900/15'
-            }`}
-          >
-          <div className={`rounded-2xl border overflow-hidden text-left flex flex-col ${
-            isDark ? 'bg-[#0a100c] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
-          }`}>
-            {/* Top Browser Bar & School Status */}
-            <div className={`px-4 sm:px-5 py-3 border-b flex items-center justify-between flex-wrap gap-2 ${
-              isDark ? 'bg-[#060c07] border-slate-800 text-slate-300' : 'bg-stone-100 border-stone-200 text-stone-700'
-            }`}>
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-rose-400/90" />
-                <span className="w-3 h-3 rounded-full bg-amber-400/90" />
-                <span className="w-3 h-3 rounded-full bg-emerald-400/90" />
-                <span className={`text-xs font-mono ml-2 font-medium px-2.5 py-0.5 rounded-md ${
-                  isDark ? 'bg-slate-800/80 text-slate-300' : 'bg-white text-stone-600 border border-stone-200/80'
+              <span className={`block font-black tracking-tight ${isDark
+                  ? 'bg-gradient-to-r from-[#E07A2B] via-emerald-200 to-white bg-clip-text text-transparent'
+                  : 'bg-gradient-to-r from-[#C4661F] via-[#2A442E] to-[#162218] bg-clip-text text-transparent'
                 }`}>
-                  {t.hero.mockupUrl}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 px-3 py-1 rounded-full">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  {t.mockupExt.cycleLivePill}
-                </span>
-                <span className="hidden sm:inline-flex text-xs font-bold text-white bg-[#C4661F] px-3 py-1 rounded-full shadow-xs">
-                  Casa de Niños A
-                </span>
-              </div>
-            </div>
-
-            {/* App Workspace: Interactive Sidebar + Main View Canvas */}
-            <div className="flex flex-col md:flex-row min-h-[460px]">
-              {/* Mini App Sidebar */}
-              <aside className={`w-full md:w-52 p-3 border-b md:border-b-0 md:border-r flex flex-row md:flex-col justify-between shrink-0 ${
-                isDark ? 'bg-[#080e0a] border-slate-800' : 'bg-[#F5F2EC] border-stone-200'
-              }`}>
-                <div className="space-y-1 w-full flex md:block overflow-x-auto gap-1">
-                  <div className="hidden md:flex items-center gap-2 px-3 py-2.5 mb-2">
-                    <div className="w-6 h-6 rounded-lg bg-[#C4661F] flex items-center justify-center text-white font-serif font-black text-xs">
-                      M
-                    </div>
-                    <div className="leading-tight">
-                      <span className={`text-xs font-bold block ${isDark ? 'text-white' : 'text-stone-900'}`}>MontessoriNexus</span>
-                      <span className="text-[10px] text-stone-400 block">Colegio Ceiba</span>
-                    </div>
-                  </div>
-
-                  {/* Interactive Tab 1: Live Classroom */}
-                  <button
-                    type="button"
-                    onClick={() => setHeroMockupTab('live')}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-all text-left cursor-pointer shrink-0 md:shrink ${
-                      heroMockupTab === 'live'
-                        ? 'bg-[#C4661F] text-white shadow-xs font-semibold'
-                        : isDark ? 'text-slate-400 hover:text-white hover:bg-slate-800/50' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/60'
-                    }`}
+                {t.hero.titlePrefix}
+              </span>
+              <span className="block mt-2 sm:mt-3">
+                <span className="relative inline-block mr-3 sm:mr-4.5 -rotate-6 sm:-rotate-[7deg] origin-bottom-left select-none">
+                  {/* Glowing ambient aura behind the script word */}
+                  <span className="absolute -inset-2 sm:-inset-2.5 rounded-2xl bg-[#C4661F]/25 dark:bg-[#C4661F]/40 blur-md sm:blur-lg -z-10 pointer-events-none" />
+                  <span
+                    style={{ fontFamily: "'Dancing Script', 'Caveat', cursive" }}
+                    className="text-4xl sm:text-6xl lg:text-7xl font-bold text-[#C4661F] dark:text-[#E07A2B] drop-shadow-[0_2px_14px_rgba(196,102,31,0.45)] tracking-wide"
                   >
-                    <LayoutGrid className="w-3.5 h-3.5 shrink-0" />
-                    <span className="truncate">{t.mockupExt.navLive}</span>
-                  </button>
+                    {t.hero.titleScriptWord}
+                  </span>
+                </span>
+                <span className={`font-black tracking-tight ${isDark
+                    ? 'bg-gradient-to-r from-white via-emerald-200 to-[#E07A2B] bg-clip-text text-transparent'
+                    : 'bg-gradient-to-r from-[#162218] via-[#2A442E] to-[#C4661F] bg-clip-text text-transparent'
+                  }`}>
+                  {t.hero.titleSuffix}
+                </span>
+              </span>
+            </motion.h1>
 
-                  {/* Interactive Tab 2: Cycle & Areas */}
-                  <button
-                    type="button"
-                    onClick={() => setHeroMockupTab('areas')}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-all text-left cursor-pointer shrink-0 md:shrink ${
-                      heroMockupTab === 'areas'
-                        ? 'bg-[#C4661F] text-white shadow-xs font-semibold'
-                        : isDark ? 'text-slate-400 hover:text-white hover:bg-slate-800/50' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/60'
-                    }`}
-                  >
-                    <Compass className="w-3.5 h-3.5 shrink-0" />
-                    <span className="truncate">{t.mockupExt.navAreas}</span>
-                  </button>
+            {/* Subtitle */}
+            <motion.p
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className={`text-base sm:text-xl font-sans max-w-2xl mx-auto leading-relaxed ${isDark ? 'text-slate-300' : 'text-stone-600'
+                }`}
+            >
+              {t.hero.subtitle}
+            </motion.p>
 
-                  {/* Interactive Tab 3: Family Portal */}
-                  <button
-                    type="button"
-                    onClick={() => setHeroMockupTab('family')}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-all text-left cursor-pointer shrink-0 md:shrink ${
-                      heroMockupTab === 'family'
-                        ? 'bg-[#C4661F] text-white shadow-xs font-semibold'
-                        : isDark ? 'text-slate-400 hover:text-white hover:bg-slate-800/50' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/60'
-                    }`}
-                  >
-                    <Users className="w-3.5 h-3.5 shrink-0" />
-                    <span className="truncate">{t.mockupExt.navFamily}</span>
-                  </button>
+            {/* CTAs */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 pt-2 w-full"
+            >
+              <Button
+                onClick={() => setDemoModalOpen(true)}
+                size="lg"
+                className="w-full sm:w-auto bg-[#C4661F] hover:bg-[#783D19] text-white font-bold text-sm sm:text-base px-6 sm:px-9 py-4 sm:py-6 rounded-2xl shadow-md shadow-[#C4661F]/25 hover:scale-[1.02] transition-all flex items-center justify-center text-center"
+              >
+                <span>{t.hero.ctaBtn}</span>
+                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2 shrink-0" />
+              </Button>
+            </motion.div>
 
-                  {/* Ecosystem Modules Preview in Sidebar */}
-                  <div className="hidden md:block pt-3 border-t border-stone-200/60 dark:border-slate-800 space-y-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider px-3 text-stone-400 block mb-1">Ecosistema</span>
-                    <div className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs opacity-60 ${isDark ? 'text-slate-400' : 'text-stone-500'}`}>
-                      <Kanban className="w-3.5 h-3.5 shrink-0" />
-                      <span>{t.mockupExt.navAdmissions}</span>
-                    </div>
-                    <div className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs opacity-60 ${isDark ? 'text-slate-400' : 'text-stone-500'}`}>
-                      <CreditCard className="w-3.5 h-3.5 shrink-0" />
-                      <span>{t.mockupExt.navBilling}</span>
-                    </div>
-                    <div className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs opacity-60 ${isDark ? 'text-slate-400' : 'text-stone-500'}`}>
-                      <Globe className="w-3.5 h-3.5 shrink-0" />
-                      <span>Web Builder</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Guide User Profile */}
-                <div className="hidden md:flex items-center gap-2.5 px-3 py-2 rounded-xl bg-stone-200/50 dark:bg-slate-800/40 border border-stone-200/60 dark:border-slate-700/50 mt-4">
-                  <div className="w-7 h-7 rounded-full bg-[#C4661F]/20 text-[#C4661F] flex items-center justify-center font-bold text-xs">
-                    MM
-                  </div>
-                  <div className="text-[11px] leading-tight overflow-hidden">
-                    <span className={`font-bold block truncate ${isDark ? 'text-white' : 'text-stone-800'}`}>María M. (AMI)</span>
-                    <span className="text-stone-400 text-[10px] block">Guía Titular</span>
-                  </div>
-                </div>
-              </aside>
-
-              {/* Main View Canvas */}
-              <div className="flex-1 p-4 sm:p-6 overflow-y-auto">
-                <AnimatePresence mode="wait">
-                  {/* LIVE BOOT LOADER (Simulation of real live sync) */}
-                  {mockupBooting ? (
-                    <motion.div
-                      key="mockup-booting"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="h-full min-h-[340px] flex flex-col justify-center items-center space-y-5 py-8"
-                    >
-                      <div className="relative">
-                        <div className="w-12 h-12 rounded-2xl bg-[#C4661F]/15 border border-[#C4661F]/30 flex items-center justify-center text-[#C4661F]">
-                          <Compass className="w-6 h-6 animate-spin [animation-duration:3s]" />
-                        </div>
-                        <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald-500 animate-ping" />
-                      </div>
-
-                      <div className="text-center space-y-1.5 max-w-xs">
-                        <span className={`text-xs font-bold block ${isDark ? 'text-white' : 'text-stone-800'}`}>
-                          {t.mockupExt.syncingStatus}
-                        </span>
-                        <div className="w-48 h-1.5 rounded-full bg-stone-200 dark:bg-slate-800 mx-auto overflow-hidden">
-                          <div className="h-full bg-[#C4661F] w-3/4 rounded-full animate-pulse" />
-                        </div>
-                      </div>
-
-                      {/* Ghost card placeholders shimmering */}
-                      <div className="w-full grid grid-cols-3 gap-3 pt-2 opacity-50">
-                        <div className="h-24 rounded-xl bg-stone-200/60 dark:bg-slate-800/60 animate-pulse" />
-                        <div className="h-24 rounded-xl bg-stone-200/60 dark:bg-slate-800/60 animate-pulse" />
-                        <div className="h-24 rounded-xl bg-stone-200/60 dark:bg-slate-800/60 animate-pulse" />
-                      </div>
-                    </motion.div>
-                  ) : (
-                    <>
-                      {/* TAB 1: LIVE CLASSROOM DASHBOARD */}
-                      {heroMockupTab === 'live' && (
-                        <motion.div
-                          key="tab-live"
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          transition={{ duration: 0.25 }}
-                          className="space-y-5"
-                        >
-                      <div className={`flex flex-wrap items-center justify-between gap-3 pb-3.5 border-b ${isDark ? 'border-slate-800' : 'border-stone-200'}`}>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h3 className={`text-lg sm:text-xl font-serif font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>
-                              {t.hero.mockupEnv}
-                            </h3>
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                              3 a 6 Años
-                            </span>
-                          </div>
-                          <p className={`text-xs font-sans mt-0.5 ${isDark ? 'text-slate-400' : 'text-stone-500'}`}>
-                            {t.mockupExt.subSummary}
-                          </p>
-                        </div>
-
-                        <Button
-                          size="sm"
-                          onClick={() => {
-                            setMockObservationSuccess(true);
-                            setTimeout(() => setMockObservationSuccess(false), 3000);
-                          }}
-                          className="bg-[#C4661F] hover:bg-[#783D19] text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                          <span>{t.mockupExt.quickPresentation}</span>
-                        </Button>
-                      </div>
-
-                      {/* Toast when quick presentation registered */}
-                      {mockObservationSuccess && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs flex items-center gap-2 font-medium"
-                        >
-                          <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                          <span>Observación registrada: Presentación de 3 tiempos vinculada al diario pedagógico de Elena R.</span>
-                        </motion.div>
-                      )}
-
-                      {/* 3 Real Montessori Live Cards */}
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-                        {/* Child 1: Santiago */}
-                        <div className={`p-4 rounded-2xl border space-y-2.5 transition-all shadow-xs ${
-                          isDark ? 'bg-[#121c13] border-slate-700 hover:border-[#C4661F]/50' : 'bg-white border-stone-200 hover:border-[#C4661F]/40'
-                        }`}>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div className="w-7 h-7 rounded-full bg-[#C4661F]/15 text-[#C4661F] font-bold text-xs flex items-center justify-center">
-                                SM
-                              </div>
-                              <span className={`text-xs font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>{t.mockupCards.c1Name}</span>
-                            </div>
-                            <span className="px-2 py-0.5 rounded-md bg-[#C4661F]/20 text-[#C4661F] text-[10px] font-bold">
-                              {t.mockupCards.c1Status}
-                            </span>
-                          </div>
-
-                          <div className={`p-2.5 rounded-xl border text-xs space-y-1 ${isDark ? 'bg-[#0a120c] border-slate-800' : 'bg-[#FAF8F5] border-stone-200/80'}`}>
-                            <span className="font-bold block text-amber-500 dark:text-amber-400">{t.mockupCards.c1Mat}</span>
-                            <p className={`text-[11px] leading-relaxed ${isDark ? 'text-slate-400' : 'text-stone-600'}`}>
-                              {t.mockupCards.c1Desc}
-                            </p>
-                          </div>
-
-                          <div className="flex justify-between items-center text-[10px] font-mono pt-1 text-stone-400 dark:text-slate-400">
-                            <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-[#C4661F]" /> 09:14 AM</span>
-                            <span className="text-[#C4661F] font-bold">{t.mockupCards.c1Time}</span>
-                          </div>
-                        </div>
-
-                        {/* Child 2: Elena */}
-                        <div className={`p-4 rounded-2xl border space-y-2.5 transition-all shadow-xs ${
-                          isDark ? 'bg-[#121c13] border-slate-700 hover:border-emerald-500/50' : 'bg-white border-stone-200 hover:border-emerald-500/40'
-                        }`}>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div className="w-7 h-7 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold text-xs flex items-center justify-center">
-                                ER
-                              </div>
-                              <span className={`text-xs font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>{t.mockupCards.c2Name}</span>
-                            </div>
-                            <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">
-                              {t.mockupCards.c2Status}
-                            </span>
-                          </div>
-
-                          <div className={`p-2.5 rounded-xl border text-xs space-y-1 ${isDark ? 'bg-[#0a120c] border-slate-800' : 'bg-[#FAF8F5] border-stone-200/80'}`}>
-                            <span className="font-bold block text-emerald-600 dark:text-emerald-400">{t.mockupCards.c2Mat}</span>
-                            <p className={`text-[11px] leading-relaxed ${isDark ? 'text-slate-400' : 'text-stone-600'}`}>
-                              {t.mockupCards.c2Desc}
-                            </p>
-                          </div>
-
-                          <div className="flex justify-between items-center text-[10px] font-mono pt-1 text-stone-400 dark:text-slate-400">
-                            <span>Lección 3 Tiempos</span>
-                            <span className="text-emerald-600 dark:text-emerald-400 font-bold">{t.mockupCards.c2Time}</span>
-                          </div>
-                        </div>
-
-                        {/* Child 3: Mateo */}
-                        <div className={`p-4 rounded-2xl border space-y-2.5 transition-all shadow-xs ${
-                          isDark ? 'bg-[#121c13] border-slate-700 hover:border-teal-500/50' : 'bg-white border-stone-200 hover:border-teal-500/40'
-                        }`}>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div className="w-7 h-7 rounded-full bg-teal-500/15 text-teal-600 dark:text-teal-400 font-bold text-xs flex items-center justify-center">
-                                MV
-                              </div>
-                              <span className={`text-xs font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>{t.mockupCards.c3Name}</span>
-                            </div>
-                            <span className="px-2 py-0.5 rounded-md bg-teal-500/20 text-teal-600 dark:text-teal-400 text-[10px] font-bold">
-                              {t.mockupCards.c3Status}
-                            </span>
-                          </div>
-
-                          <div className={`p-2.5 rounded-xl border text-xs space-y-1 ${isDark ? 'bg-[#0a120c] border-slate-800' : 'bg-[#FAF8F5] border-stone-200/80'}`}>
-                            <span className="font-bold block text-teal-600 dark:text-teal-400">{t.mockupCards.c3Mat}</span>
-                            <p className={`text-[11px] leading-relaxed ${isDark ? 'text-slate-400' : 'text-stone-600'}`}>
-                              {t.mockupCards.c3Desc}
-                            </p>
-                          </div>
-
-                          <div className="flex justify-between items-center text-[10px] font-mono pt-1 text-stone-400 dark:text-slate-400">
-                            <span>Vida Práctica</span>
-                            <span className="text-[#C4661F] font-bold">{t.mockupCards.c3Time}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {/* TAB 2: WORK CYCLE ANALYTICS & AMI AREAS */}
-                  {heroMockupTab === 'areas' && (
-                    <motion.div
-                      key="tab-areas"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      transition={{ duration: 0.25 }}
-                      className="space-y-5"
-                    >
-                      <div>
-                        <h3 className={`text-lg sm:text-xl font-serif font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>
-                          {t.mockupExt.cycleTimelineTitle}
-                        </h3>
-                        <p className={`text-xs font-sans mt-0.5 ${isDark ? 'text-slate-400' : 'text-stone-500'}`}>
-                          {t.mockupExt.cycleCurrentPhase}
-                        </p>
-                      </div>
-
-                      {/* 3-Hour Cycle Visual Flow Bar */}
-                      <div className={`p-4 rounded-2xl border space-y-3 ${isDark ? 'bg-[#121c13] border-slate-700' : 'bg-white border-stone-200'}`}>
-                        <div className="flex justify-between text-xs font-medium text-stone-500 dark:text-slate-400">
-                          <span>08:30 (Inicio)</span>
-                          <span className="text-amber-500 font-bold">09:45 (Falsa Fatiga)</span>
-                          <span className="text-[#C4661F] font-bold">10:15 (Gran Trabajo ★)</span>
-                          <span>11:30 (Cierre)</span>
-                        </div>
-
-                        {/* Progress meter */}
-                        <div className="w-full h-3 rounded-full bg-stone-200 dark:bg-slate-800 overflow-hidden flex">
-                          <div className="h-full bg-amber-400 w-[35%]" title="Inicio e integración" />
-                          <div className="h-full bg-amber-500/80 w-[15%]" title="Falsa Fatiga Superada" />
-                          <div className="h-full bg-[#C4661F] w-[28%] animate-pulse" title="Pico de Máxima Concentración" />
-                          <div className="h-full bg-stone-300 dark:bg-slate-700 w-[22%]" title="Tiempo restante" />
-                        </div>
-
-                        <div className="flex items-center justify-between text-[11px] text-stone-500 dark:text-slate-400 pt-1">
-                          <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            {t.mockupExt.cycleNormalState}
-                          </span>
-                          <span className="font-mono font-bold text-[#C4661F]">Minuto 105 / 180</span>
-                        </div>
-                      </div>
-
-                      {/* 4 AMI Curriculum Area Cards */}
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        <div className={`p-3 rounded-xl border text-center ${isDark ? 'bg-[#0a120c] border-slate-800' : 'bg-white border-stone-200'}`}>
-                          <span className="text-xs font-bold block text-stone-800 dark:text-white">{t.mockupExt.areaPracticalLife}</span>
-                          <span className="text-lg font-serif font-black text-[#C4661F] block my-0.5">6</span>
-                          <span className="text-[10px] text-stone-400">23% del ambiente</span>
-                        </div>
-                        <div className={`p-3 rounded-xl border text-center ${isDark ? 'bg-[#0a120c] border-slate-800' : 'bg-white border-stone-200'}`}>
-                          <span className="text-xs font-bold block text-stone-800 dark:text-white">{t.mockupExt.areaSensorial}</span>
-                          <span className="text-lg font-serif font-black text-amber-500 block my-0.5">8</span>
-                          <span className="text-[10px] text-stone-400">31% del ambiente</span>
-                        </div>
-                        <div className={`p-3 rounded-xl border text-center ${isDark ? 'bg-[#0a120c] border-slate-800' : 'bg-white border-stone-200'}`}>
-                          <span className="text-xs font-bold block text-stone-800 dark:text-white">{t.mockupExt.areaLanguage}</span>
-                          <span className="text-lg font-serif font-black text-emerald-500 block my-0.5">7</span>
-                          <span className="text-[10px] text-stone-400">27% del ambiente</span>
-                        </div>
-                        <div className={`p-3 rounded-xl border text-center ${isDark ? 'bg-[#0a120c] border-slate-800' : 'bg-white border-stone-200'}`}>
-                          <span className="text-xs font-bold block text-stone-800 dark:text-white">{t.mockupExt.areaMath}</span>
-                          <span className="text-lg font-serif font-black text-teal-500 block my-0.5">5</span>
-                          <span className="text-[10px] text-stone-400">19% del ambiente</span>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {/* TAB 3: FAMILY PORTAL EXPERIENCE */}
-                  {heroMockupTab === 'family' && (
-                    <motion.div
-                      key="tab-family"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      transition={{ duration: 0.25 }}
-                      className="space-y-4 max-w-xl mx-auto"
-                    >
-                      <div className="text-center pb-2">
-                        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#C4661F] bg-[#C4661F]/15 px-3 py-0.5 rounded-full border border-[#C4661F]/20 mb-1">
-                          <Users className="w-3 h-3" />
-                          {t.mockupExt.familyPortalTitle}
-                        </span>
-                        <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-stone-500'}`}>
-                          {t.mockupExt.familyNotification}
-                        </p>
-                      </div>
-
-                      {/* Parent Mobile Card Simulation */}
-                      <div className={`p-5 rounded-2xl border space-y-3.5 shadow-md ${isDark ? 'bg-[#121c13] border-slate-700' : 'bg-white border-stone-200'}`}>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-9 h-9 rounded-full bg-[#C4661F]/15 text-[#C4661F] font-bold text-xs flex items-center justify-center border border-[#C4661F]/30">
-                              SM
-                            </div>
-                            <div>
-                              <span className={`text-sm font-bold block ${isDark ? 'text-white' : 'text-stone-900'}`}>Santiago Morales</span>
-                              <span className="text-[11px] text-stone-400 block">Casa de Niños A • Guía: María M.</span>
-                            </div>
-                          </div>
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
-                            <ShieldCheck className="w-3 h-3" /> {t.mockupExt.familyPhotoConsent}
-                          </span>
-                        </div>
-
-                        {/* Warm Narrative Box */}
-                        <div className={`p-3.5 rounded-xl border text-xs leading-relaxed italic ${
-                          isDark ? 'bg-[#0a120c] border-slate-800 text-slate-300' : 'bg-[#FAF8F5] border-stone-200 text-stone-700'
-                        }`}>
-                          {t.mockupExt.familyNarrative}
-                        </div>
-
-                        <div className="flex items-center justify-between text-[11px] text-stone-400 dark:text-slate-400 pt-1 border-t border-stone-100 dark:border-slate-800">
-                          <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
-                            {t.mockupExt.familyZeroGrades}
-                          </span>
-                          <span className="text-[#C4661F] font-bold">Autonomía: 100%</span>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                    </>
-                  )}
-                </AnimatePresence>
-              </div>
-            </div>
+            {/* Reassurance pills */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+              className={`pt-4 flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-xs font-medium text-center ${isDark ? 'text-slate-400' : 'text-stone-500'
+                }`}
+            >
+              <span className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-[#C4661F] shrink-0" /> {t.hero.pill1}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-[#C4661F] shrink-0" /> {t.hero.pill2}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Zap className="w-4 h-4 text-[#C4661F] shrink-0" /> {t.hero.pill3}
+              </span>
+            </motion.div>
           </div>
-        </motion.div>
-        </div>
+
+          {/* ========================================================================= */}
+          {/* INTERACTIVE SAAS APPLICATION SIMULATOR MOCKUP WITH 3D PERSPECTIVE SCROLL */}
+          {/* ========================================================================= */}
+          <div className="hidden md:block mt-10 sm:mt-14 max-w-5xl mx-auto [perspective:1200px] relative z-10 px-1 sm:px-0">
+            <motion.div
+              style={{
+                rotateX: mockupRotateX,
+                scale: mockupScale,
+                y: mockupTranslateY,
+                opacity: mockupOpacity,
+                transformStyle: 'preserve-3d',
+              }}
+              className={`w-full rounded-3xl p-2 sm:p-4 border shadow-2xl transition-shadow ${isDark ? 'bg-[#0f1711] border-slate-700/80 shadow-black/80' : 'bg-white/95 backdrop-blur-md border-stone-300 shadow-stone-900/15'
+                }`}
+            >
+              <div className={`rounded-2xl border overflow-hidden text-left flex flex-col ${isDark ? 'bg-[#0a100c] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
+                }`}>
+                {/* Top Browser Bar & School Status */}
+                <div className={`px-4 sm:px-5 py-3 border-b flex items-center justify-between flex-wrap gap-2 ${isDark ? 'bg-[#060c07] border-slate-800 text-slate-300' : 'bg-stone-100 border-stone-200 text-stone-700'
+                  }`}>
+                  <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full bg-rose-400/90" />
+                    <span className="w-3 h-3 rounded-full bg-amber-400/90" />
+                    <span className="w-3 h-3 rounded-full bg-emerald-400/90" />
+                    <span className={`text-xs font-mono ml-2 font-medium px-2.5 py-0.5 rounded-md ${isDark ? 'bg-slate-800/80 text-slate-300' : 'bg-white text-stone-600 border border-stone-200/80'
+                      }`}>
+                      {t.hero.mockupUrl}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 px-3 py-1 rounded-full">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      {t.mockupExt.cycleLivePill}
+                    </span>
+                    <span className="hidden sm:inline-flex text-xs font-bold text-white bg-[#C4661F] px-3 py-1 rounded-full shadow-xs">
+                      Casa de Niños A
+                    </span>
+                  </div>
+                </div>
+
+                {/* App Workspace: Interactive Sidebar + Main View Canvas */}
+                <div className="flex flex-col md:flex-row min-h-[460px]">
+                  {/* Mini App Sidebar */}
+                  <aside className={`w-full md:w-52 p-3 border-b md:border-b-0 md:border-r flex flex-row md:flex-col justify-between shrink-0 ${isDark ? 'bg-[#080e0a] border-slate-800' : 'bg-[#F5F2EC] border-stone-200'
+                    }`}>
+                    <div className="space-y-1 w-full flex md:block overflow-x-auto gap-1">
+                      <div className="hidden md:flex items-center gap-2 px-3 py-2.5 mb-2">
+                        <div className="w-6 h-6 rounded-lg bg-[#C4661F] flex items-center justify-center text-white font-serif font-black text-xs">
+                          M
+                        </div>
+                        <div className="leading-tight">
+                          <span className={`text-xs font-bold block ${isDark ? 'text-white' : 'text-stone-900'}`}>MontessoriNexus</span>
+                          <span className="text-[10px] text-stone-400 block">Colegio Ceiba</span>
+                        </div>
+                      </div>
+
+                      {/* Interactive Tab 1: Live Classroom */}
+                      <button
+                        type="button"
+                        onClick={() => setHeroMockupTab('live')}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-all text-left cursor-pointer shrink-0 md:shrink ${heroMockupTab === 'live'
+                            ? 'bg-[#C4661F] text-white shadow-xs font-semibold'
+                            : isDark ? 'text-slate-400 hover:text-white hover:bg-slate-800/50' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/60'
+                          }`}
+                      >
+                        <LayoutGrid className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">{t.mockupExt.navLive}</span>
+                      </button>
+
+                      {/* Interactive Tab 2: Cycle & Areas */}
+                      <button
+                        type="button"
+                        onClick={() => setHeroMockupTab('areas')}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-all text-left cursor-pointer shrink-0 md:shrink ${heroMockupTab === 'areas'
+                            ? 'bg-[#C4661F] text-white shadow-xs font-semibold'
+                            : isDark ? 'text-slate-400 hover:text-white hover:bg-slate-800/50' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/60'
+                          }`}
+                      >
+                        <Compass className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">{t.mockupExt.navAreas}</span>
+                      </button>
+
+                      {/* Interactive Tab 3: Family Portal */}
+                      <button
+                        type="button"
+                        onClick={() => setHeroMockupTab('family')}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-all text-left cursor-pointer shrink-0 md:shrink ${heroMockupTab === 'family'
+                            ? 'bg-[#C4661F] text-white shadow-xs font-semibold'
+                            : isDark ? 'text-slate-400 hover:text-white hover:bg-slate-800/50' : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/60'
+                          }`}
+                      >
+                        <Users className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">{t.mockupExt.navFamily}</span>
+                      </button>
+
+                      {/* Ecosystem Modules Preview in Sidebar */}
+                      <div className="hidden md:block pt-3 border-t border-stone-200/60 dark:border-slate-800 space-y-1">
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-3 text-stone-400 block mb-1">Ecosistema</span>
+                        <div className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs opacity-60 ${isDark ? 'text-slate-400' : 'text-stone-500'}`}>
+                          <Kanban className="w-3.5 h-3.5 shrink-0" />
+                          <span>{t.mockupExt.navAdmissions}</span>
+                        </div>
+                        <div className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs opacity-60 ${isDark ? 'text-slate-400' : 'text-stone-500'}`}>
+                          <CreditCard className="w-3.5 h-3.5 shrink-0" />
+                          <span>{t.mockupExt.navBilling}</span>
+                        </div>
+                        <div className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs opacity-60 ${isDark ? 'text-slate-400' : 'text-stone-500'}`}>
+                          <Globe className="w-3.5 h-3.5 shrink-0" />
+                          <span>Web Builder</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Guide User Profile */}
+                    <div className="hidden md:flex items-center gap-2.5 px-3 py-2 rounded-xl bg-stone-200/50 dark:bg-slate-800/40 border border-stone-200/60 dark:border-slate-700/50 mt-4">
+                      <div className="w-7 h-7 rounded-full bg-[#C4661F]/20 text-[#C4661F] flex items-center justify-center font-bold text-xs">
+                        MM
+                      </div>
+                      <div className="text-[11px] leading-tight overflow-hidden">
+                        <span className={`font-bold block truncate ${isDark ? 'text-white' : 'text-stone-800'}`}>María M. (AMI)</span>
+                        <span className="text-stone-400 text-[10px] block">Guía Titular</span>
+                      </div>
+                    </div>
+                  </aside>
+
+                  {/* Main View Canvas */}
+                  <div className="flex-1 p-4 sm:p-6 overflow-y-auto">
+                    <AnimatePresence mode="wait">
+                      {/* LIVE BOOT LOADER (Simulation of real live sync) */}
+                      {mockupBooting ? (
+                        <motion.div
+                          key="mockup-booting"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className="h-full min-h-[340px] flex flex-col justify-center items-center space-y-5 py-8"
+                        >
+                          <div className="relative">
+                            <div className="w-12 h-12 rounded-2xl bg-[#C4661F]/15 border border-[#C4661F]/30 flex items-center justify-center text-[#C4661F]">
+                              <Compass className="w-6 h-6 animate-spin [animation-duration:3s]" />
+                            </div>
+                            <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald-500 animate-ping" />
+                          </div>
+
+                          <div className="text-center space-y-1.5 max-w-xs">
+                            <span className={`text-xs font-bold block ${isDark ? 'text-white' : 'text-stone-800'}`}>
+                              {t.mockupExt.syncingStatus}
+                            </span>
+                            <div className="w-48 h-1.5 rounded-full bg-stone-200 dark:bg-slate-800 mx-auto overflow-hidden">
+                              <div className="h-full bg-[#C4661F] w-3/4 rounded-full animate-pulse" />
+                            </div>
+                          </div>
+
+                          {/* Ghost card placeholders shimmering */}
+                          <div className="w-full grid grid-cols-3 gap-3 pt-2 opacity-50">
+                            <div className="h-24 rounded-xl bg-stone-200/60 dark:bg-slate-800/60 animate-pulse" />
+                            <div className="h-24 rounded-xl bg-stone-200/60 dark:bg-slate-800/60 animate-pulse" />
+                            <div className="h-24 rounded-xl bg-stone-200/60 dark:bg-slate-800/60 animate-pulse" />
+                          </div>
+                        </motion.div>
+                      ) : (
+                        <>
+                          {/* TAB 1: LIVE CLASSROOM DASHBOARD */}
+                          {heroMockupTab === 'live' && (
+                            <motion.div
+                              key="tab-live"
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -10 }}
+                              transition={{ duration: 0.25 }}
+                              className="space-y-5"
+                            >
+                              <div className={`flex flex-wrap items-center justify-between gap-3 pb-3.5 border-b ${isDark ? 'border-slate-800' : 'border-stone-200'}`}>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <h3 className={`text-lg sm:text-xl font-serif font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>
+                                      {t.hero.mockupEnv}
+                                    </h3>
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                      3 a 6 Años
+                                    </span>
+                                  </div>
+                                  <p className={`text-xs font-sans mt-0.5 ${isDark ? 'text-slate-400' : 'text-stone-500'}`}>
+                                    {t.mockupExt.subSummary}
+                                  </p>
+                                </div>
+
+                                <Button
+                                  size="sm"
+                                  onClick={() => {
+                                    setMockObservationSuccess(true);
+                                    setTimeout(() => setMockObservationSuccess(false), 3000);
+                                  }}
+                                  className="bg-[#C4661F] hover:bg-[#783D19] text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                                >
+                                  <Plus className="w-3.5 h-3.5" />
+                                  <span>{t.mockupExt.quickPresentation}</span>
+                                </Button>
+                              </div>
+
+                              {/* Toast when quick presentation registered */}
+                              {mockObservationSuccess && (
+                                <motion.div
+                                  initial={{ opacity: 0, y: -8 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs flex items-center gap-2 font-medium"
+                                >
+                                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                                  <span>Observación registrada: Presentación de 3 tiempos vinculada al diario pedagógico de Elena R.</span>
+                                </motion.div>
+                              )}
+
+                              {/* 3 Real Montessori Live Cards */}
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                                {/* Child 1: Santiago */}
+                                <div className={`p-4 rounded-2xl border space-y-2.5 transition-all shadow-xs ${isDark ? 'bg-[#121c13] border-slate-700 hover:border-[#C4661F]/50' : 'bg-white border-stone-200 hover:border-[#C4661F]/40'
+                                  }`}>
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-7 h-7 rounded-full bg-[#C4661F]/15 text-[#C4661F] font-bold text-xs flex items-center justify-center">
+                                        SM
+                                      </div>
+                                      <span className={`text-xs font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>{t.mockupCards.c1Name}</span>
+                                    </div>
+                                    <span className="px-2 py-0.5 rounded-md bg-[#C4661F]/20 text-[#C4661F] text-[10px] font-bold">
+                                      {t.mockupCards.c1Status}
+                                    </span>
+                                  </div>
+
+                                  <div className={`p-2.5 rounded-xl border text-xs space-y-1 ${isDark ? 'bg-[#0a120c] border-slate-800' : 'bg-[#FAF8F5] border-stone-200/80'}`}>
+                                    <span className="font-bold block text-amber-500 dark:text-amber-400">{t.mockupCards.c1Mat}</span>
+                                    <p className={`text-[11px] leading-relaxed ${isDark ? 'text-slate-400' : 'text-stone-600'}`}>
+                                      {t.mockupCards.c1Desc}
+                                    </p>
+                                  </div>
+
+                                  <div className="flex justify-between items-center text-[10px] font-mono pt-1 text-stone-400 dark:text-slate-400">
+                                    <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-[#C4661F]" /> 09:14 AM</span>
+                                    <span className="text-[#C4661F] font-bold">{t.mockupCards.c1Time}</span>
+                                  </div>
+                                </div>
+
+                                {/* Child 2: Elena */}
+                                <div className={`p-4 rounded-2xl border space-y-2.5 transition-all shadow-xs ${isDark ? 'bg-[#121c13] border-slate-700 hover:border-emerald-500/50' : 'bg-white border-stone-200 hover:border-emerald-500/40'
+                                  }`}>
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-7 h-7 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold text-xs flex items-center justify-center">
+                                        ER
+                                      </div>
+                                      <span className={`text-xs font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>{t.mockupCards.c2Name}</span>
+                                    </div>
+                                    <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">
+                                      {t.mockupCards.c2Status}
+                                    </span>
+                                  </div>
+
+                                  <div className={`p-2.5 rounded-xl border text-xs space-y-1 ${isDark ? 'bg-[#0a120c] border-slate-800' : 'bg-[#FAF8F5] border-stone-200/80'}`}>
+                                    <span className="font-bold block text-emerald-600 dark:text-emerald-400">{t.mockupCards.c2Mat}</span>
+                                    <p className={`text-[11px] leading-relaxed ${isDark ? 'text-slate-400' : 'text-stone-600'}`}>
+                                      {t.mockupCards.c2Desc}
+                                    </p>
+                                  </div>
+
+                                  <div className="flex justify-between items-center text-[10px] font-mono pt-1 text-stone-400 dark:text-slate-400">
+                                    <span>Lección 3 Tiempos</span>
+                                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">{t.mockupCards.c2Time}</span>
+                                  </div>
+                                </div>
+
+                                {/* Child 3: Mateo */}
+                                <div className={`p-4 rounded-2xl border space-y-2.5 transition-all shadow-xs ${isDark ? 'bg-[#121c13] border-slate-700 hover:border-teal-500/50' : 'bg-white border-stone-200 hover:border-teal-500/40'
+                                  }`}>
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-7 h-7 rounded-full bg-teal-500/15 text-teal-600 dark:text-teal-400 font-bold text-xs flex items-center justify-center">
+                                        MV
+                                      </div>
+                                      <span className={`text-xs font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>{t.mockupCards.c3Name}</span>
+                                    </div>
+                                    <span className="px-2 py-0.5 rounded-md bg-teal-500/20 text-teal-600 dark:text-teal-400 text-[10px] font-bold">
+                                      {t.mockupCards.c3Status}
+                                    </span>
+                                  </div>
+
+                                  <div className={`p-2.5 rounded-xl border text-xs space-y-1 ${isDark ? 'bg-[#0a120c] border-slate-800' : 'bg-[#FAF8F5] border-stone-200/80'}`}>
+                                    <span className="font-bold block text-teal-600 dark:text-teal-400">{t.mockupCards.c3Mat}</span>
+                                    <p className={`text-[11px] leading-relaxed ${isDark ? 'text-slate-400' : 'text-stone-600'}`}>
+                                      {t.mockupCards.c3Desc}
+                                    </p>
+                                  </div>
+
+                                  <div className="flex justify-between items-center text-[10px] font-mono pt-1 text-stone-400 dark:text-slate-400">
+                                    <span>Vida Práctica</span>
+                                    <span className="text-[#C4661F] font-bold">{t.mockupCards.c3Time}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+
+                          {/* TAB 2: WORK CYCLE ANALYTICS & AMI AREAS */}
+                          {heroMockupTab === 'areas' && (
+                            <motion.div
+                              key="tab-areas"
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -10 }}
+                              transition={{ duration: 0.25 }}
+                              className="space-y-5"
+                            >
+                              <div>
+                                <h3 className={`text-lg sm:text-xl font-serif font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>
+                                  {t.mockupExt.cycleTimelineTitle}
+                                </h3>
+                                <p className={`text-xs font-sans mt-0.5 ${isDark ? 'text-slate-400' : 'text-stone-500'}`}>
+                                  {t.mockupExt.cycleCurrentPhase}
+                                </p>
+                              </div>
+
+                              {/* 3-Hour Cycle Visual Flow Bar */}
+                              <div className={`p-4 rounded-2xl border space-y-3 ${isDark ? 'bg-[#121c13] border-slate-700' : 'bg-white border-stone-200'}`}>
+                                <div className="flex justify-between text-xs font-medium text-stone-500 dark:text-slate-400">
+                                  <span>08:30 (Inicio)</span>
+                                  <span className="text-amber-500 font-bold">09:45 (Falsa Fatiga)</span>
+                                  <span className="text-[#C4661F] font-bold">10:15 (Gran Trabajo ★)</span>
+                                  <span>11:30 (Cierre)</span>
+                                </div>
+
+                                {/* Progress meter */}
+                                <div className="w-full h-3 rounded-full bg-stone-200 dark:bg-slate-800 overflow-hidden flex">
+                                  <div className="h-full bg-amber-400 w-[35%]" title="Inicio e integración" />
+                                  <div className="h-full bg-amber-500/80 w-[15%]" title="Falsa Fatiga Superada" />
+                                  <div className="h-full bg-[#C4661F] w-[28%] animate-pulse" title="Pico de Máxima Concentración" />
+                                  <div className="h-full bg-stone-300 dark:bg-slate-700 w-[22%]" title="Tiempo restante" />
+                                </div>
+
+                                <div className="flex items-center justify-between text-[11px] text-stone-500 dark:text-slate-400 pt-1">
+                                  <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                    {t.mockupExt.cycleNormalState}
+                                  </span>
+                                  <span className="font-mono font-bold text-[#C4661F]">Minuto 105 / 180</span>
+                                </div>
+                              </div>
+
+                              {/* 4 AMI Curriculum Area Cards */}
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                <div className={`p-3 rounded-xl border text-center ${isDark ? 'bg-[#0a120c] border-slate-800' : 'bg-white border-stone-200'}`}>
+                                  <span className="text-xs font-bold block text-stone-800 dark:text-white">{t.mockupExt.areaPracticalLife}</span>
+                                  <span className="text-lg font-serif font-black text-[#C4661F] block my-0.5">6</span>
+                                  <span className="text-[10px] text-stone-400">23% del ambiente</span>
+                                </div>
+                                <div className={`p-3 rounded-xl border text-center ${isDark ? 'bg-[#0a120c] border-slate-800' : 'bg-white border-stone-200'}`}>
+                                  <span className="text-xs font-bold block text-stone-800 dark:text-white">{t.mockupExt.areaSensorial}</span>
+                                  <span className="text-lg font-serif font-black text-amber-500 block my-0.5">8</span>
+                                  <span className="text-[10px] text-stone-400">31% del ambiente</span>
+                                </div>
+                                <div className={`p-3 rounded-xl border text-center ${isDark ? 'bg-[#0a120c] border-slate-800' : 'bg-white border-stone-200'}`}>
+                                  <span className="text-xs font-bold block text-stone-800 dark:text-white">{t.mockupExt.areaLanguage}</span>
+                                  <span className="text-lg font-serif font-black text-emerald-500 block my-0.5">7</span>
+                                  <span className="text-[10px] text-stone-400">27% del ambiente</span>
+                                </div>
+                                <div className={`p-3 rounded-xl border text-center ${isDark ? 'bg-[#0a120c] border-slate-800' : 'bg-white border-stone-200'}`}>
+                                  <span className="text-xs font-bold block text-stone-800 dark:text-white">{t.mockupExt.areaMath}</span>
+                                  <span className="text-lg font-serif font-black text-teal-500 block my-0.5">5</span>
+                                  <span className="text-[10px] text-stone-400">19% del ambiente</span>
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+
+                          {/* TAB 3: FAMILY PORTAL EXPERIENCE */}
+                          {heroMockupTab === 'family' && (
+                            <motion.div
+                              key="tab-family"
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -10 }}
+                              transition={{ duration: 0.25 }}
+                              className="space-y-4 max-w-xl mx-auto"
+                            >
+                              <div className="text-center pb-2">
+                                <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#C4661F] bg-[#C4661F]/15 px-3 py-0.5 rounded-full border border-[#C4661F]/20 mb-1">
+                                  <Users className="w-3 h-3" />
+                                  {t.mockupExt.familyPortalTitle}
+                                </span>
+                                <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-stone-500'}`}>
+                                  {t.mockupExt.familyNotification}
+                                </p>
+                              </div>
+
+                              {/* Parent Mobile Card Simulation */}
+                              <div className={`p-5 rounded-2xl border space-y-3.5 shadow-md ${isDark ? 'bg-[#121c13] border-slate-700' : 'bg-white border-stone-200'}`}>
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2.5">
+                                    <div className="w-9 h-9 rounded-full bg-[#C4661F]/15 text-[#C4661F] font-bold text-xs flex items-center justify-center border border-[#C4661F]/30">
+                                      SM
+                                    </div>
+                                    <div>
+                                      <span className={`text-sm font-bold block ${isDark ? 'text-white' : 'text-stone-900'}`}>Santiago Morales</span>
+                                      <span className="text-[11px] text-stone-400 block">Casa de Niños A • Guía: María M.</span>
+                                    </div>
+                                  </div>
+                                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                                    <ShieldCheck className="w-3 h-3" /> {t.mockupExt.familyPhotoConsent}
+                                  </span>
+                                </div>
+
+                                {/* Warm Narrative Box */}
+                                <div className={`p-3.5 rounded-xl border text-xs leading-relaxed italic ${isDark ? 'bg-[#0a120c] border-slate-800 text-slate-300' : 'bg-[#FAF8F5] border-stone-200 text-stone-700'
+                                  }`}>
+                                  {t.mockupExt.familyNarrative}
+                                </div>
+
+                                <div className="flex items-center justify-between text-[11px] text-stone-400 dark:text-slate-400 pt-1 border-t border-stone-100 dark:border-slate-800">
+                                  <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
+                                    {t.mockupExt.familyZeroGrades}
+                                  </span>
+                                  <span className="text-[#C4661F] font-bold">Autonomía: 100%</span>
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
         </div>
       </section>
 
@@ -3354,29 +3325,27 @@ export const MontessoriNexusLanding: React.FC = () => {
                     <Eye className="w-3.5 h-3.5 text-[#C4661F]" />
                     {lang === 'en' ? 'Interactive Privacy Simulator:' : lang === 'es' ? 'Simulador de Privacidad en Vivo:' : lang === 'pt' ? 'Simulador de Privacidade em Tempo Real:' : 'Simulateur de Confidentialité en Direct :'}
                   </span>
-                  
+
                   {/* Interactive Tab */}
                   <div className="w-full sm:w-auto p-1 rounded-2xl bg-slate-900 border border-slate-800">
                     <div className="grid grid-cols-2 gap-1 w-full sm:w-auto">
                       <button
                         type="button"
                         onClick={() => setAiConsentMode(true)}
-                        className={`px-3 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-bold transition-all duration-200 cursor-pointer flex items-center justify-center ${
-                          aiConsentMode
+                        className={`px-3 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-bold transition-all duration-200 cursor-pointer flex items-center justify-center ${aiConsentMode
                             ? 'bg-emerald-500 text-slate-950 shadow-md font-black ring-1 ring-emerald-400/50'
                             : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                        }`}
+                          }`}
                       >
                         {lang === 'en' ? 'GRANTED' : lang === 'es' ? 'OTORGADO' : lang === 'pt' ? 'AUTORIZADO' : 'ACCORDÉ'}
                       </button>
                       <button
                         type="button"
                         onClick={() => setAiConsentMode(false)}
-                        className={`px-3 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-bold transition-all duration-200 cursor-pointer flex items-center justify-center ${
-                          !aiConsentMode
+                        className={`px-3 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-bold transition-all duration-200 cursor-pointer flex items-center justify-center ${!aiConsentMode
                             ? 'bg-rose-500 text-white shadow-md font-black ring-1 ring-rose-400/50'
                             : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                        }`}
+                          }`}
                       >
                         {lang === 'en' ? 'RESTRICTED' : lang === 'es' ? 'NO OTORGADO' : lang === 'pt' ? 'RESTRITO' : 'REFUSÉ'}
                       </button>
@@ -3395,9 +3364,8 @@ export const MontessoriNexusLanding: React.FC = () => {
                     />
                     {/* Transparent Circular Face Blur Lens (only covers child face, leaves hands and material crisp) */}
                     <div
-                      className={`absolute top-[24%] left-[34%] w-[33%] h-[34%] rounded-full backdrop-blur-xl bg-black/15 pointer-events-none transition-opacity duration-300 ${
-                        !aiConsentMode ? 'opacity-100' : 'opacity-0'
-                      }`}
+                      className={`absolute top-[24%] left-[34%] w-[33%] h-[34%] rounded-full backdrop-blur-xl bg-black/15 pointer-events-none transition-opacity duration-300 ${!aiConsentMode ? 'opacity-100' : 'opacity-0'
+                        }`}
                     />
                   </div>
 
@@ -3415,17 +3383,17 @@ export const MontessoriNexusLanding: React.FC = () => {
                         ? (lang === 'en'
                           ? '🔒 Facial recognition auto-applies precision blur to the child’s face before publishing or exporting, protecting student privacy by law when parental consent is not granted.'
                           : lang === 'es'
-                          ? '🔒 El algoritmo detecta el rostro del niño y aplica difuminado gaussiano automático en el diario escolar cuando los tutores no han autorizado difusión pública.'
-                          : lang === 'pt'
-                          ? '🔒 O sistema aplica desfoque automático no rosto da criança para proteger a privacidade caso os pais não tenham dado consentimento.'
-                          : '🔒 Détection et floutage automatique du visage de l’enfant si le consentement parental n’a pas été accordé.')
+                            ? '🔒 El algoritmo detecta el rostro del niño y aplica difuminado gaussiano automático en el diario escolar cuando los tutores no han autorizado difusión pública.'
+                            : lang === 'pt'
+                              ? '🔒 O sistema aplica desfoque automático no rosto da criança para proteger a privacidade caso os pais não tenham dado consentimento.'
+                              : '🔒 Détection et floutage automatique du visage de l’enfant si le consentement parental n’a pas été accordé.')
                         : (lang === 'en'
                           ? '✓ Guardian consent verified in system. High-resolution observation photos are securely available to authorized family members in their private portal.'
                           : lang === 'es'
-                          ? '✓ Consentimiento verificado en el expediente familiar. La fotografía nítida se comparte de manera segura únicamente con los padres autorizados.'
-                          : lang === 'pt'
-                          ? '✓ Consentimento ativo. Foto nítida e segura disponível exclusivamente no portal da família.'
-                          : '✓ Consentement validé. La photo nette est partagée en toute sécurité sur le portail familial privé.')}
+                            ? '✓ Consentimiento verificado en el expediente familiar. La fotografía nítida se comparte de manera segura únicamente con los padres autorizados.'
+                            : lang === 'pt'
+                              ? '✓ Consentimento ativo. Foto nítida e segura disponível exclusivamente no portal da família.'
+                              : '✓ Consentement validé. La photo nette est partagée en toute sécurité sur le portail familial privé.')}
                     </p>
 
                     <div className="flex items-center gap-2 pt-1">
@@ -3478,22 +3446,20 @@ export const MontessoriNexusLanding: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setAiNarrativeStep('raw')}
-                        className={`px-3 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-bold transition-all duration-200 cursor-pointer flex items-center justify-center ${
-                          aiNarrativeStep === 'raw' 
-                            ? 'bg-[#C4661F] text-white shadow-md ring-1 ring-[#C4661F]/50' 
+                        className={`px-3 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-bold transition-all duration-200 cursor-pointer flex items-center justify-center ${aiNarrativeStep === 'raw'
+                            ? 'bg-[#C4661F] text-white shadow-md ring-1 ring-[#C4661F]/50'
                             : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                        }`}
+                          }`}
                       >
                         {lang === 'en' ? 'Raw Note' : lang === 'es' ? 'Nota Rápida' : lang === 'pt' ? 'Nota Rápida' : 'Note Brute'}
                       </button>
                       <button
                         type="button"
                         onClick={() => setAiNarrativeStep('montessori')}
-                        className={`px-3 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-bold transition-all duration-200 cursor-pointer flex items-center justify-center ${
-                          aiNarrativeStep === 'montessori' 
-                            ? 'bg-[#C4661F] text-white shadow-md ring-1 ring-[#C4661F]/50' 
+                        className={`px-3 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-bold transition-all duration-200 cursor-pointer flex items-center justify-center ${aiNarrativeStep === 'montessori'
+                            ? 'bg-[#C4661F] text-white shadow-md ring-1 ring-[#C4661F]/50'
                             : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                        }`}
+                          }`}
                       >
                         {lang === 'en' ? 'Montessori AI' : lang === 'es' ? 'Narrativa IA' : lang === 'pt' ? 'Narrativa IA' : 'Rapport IA'}
                       </button>
@@ -3509,10 +3475,10 @@ export const MontessoriNexusLanding: React.FC = () => {
                         {lang === 'en'
                           ? '"Elena built words with movable alphabet. 30 mins concentrated, sounded phonemes clearly."'
                           : lang === 'es'
-                          ? '"Elena armó masa y sol con el alfabeto móvil. 30 min concentrada, fonemas claros."'
-                          : lang === 'pt'
-                          ? '"Elena formou masa e sol com alfabeto móvel. 30 min concentrada."'
-                          : '"Elena a composé masa avec l’alphabet mobile. 30 min de concentration."'}
+                            ? '"Elena armó masa y sol con el alfabeto móvil. 30 min concentrada, fonemas claros."'
+                            : lang === 'pt'
+                              ? '"Elena formou masa e sol com alfabeto móvel. 30 min concentrada."'
+                              : '"Elena a composé masa avec l’alphabet mobile. 30 min de concentration."'}
                       </p>
                     </div>
                   ) : (
@@ -3525,10 +3491,10 @@ export const MontessoriNexusLanding: React.FC = () => {
                         {lang === 'en'
                           ? '"Elena displayed sustained intrinsic concentration during language work, successfully associating auditory phonemes with wooden movable typography with deep enthusiasm."'
                           : lang === 'es'
-                          ? '"Elena demostró un periodo de concentración prolongada en el área de lenguaje, interiorizando con entusiasmo la correspondencia fonética y la construcción de palabras."'
-                          : lang === 'pt'
-                          ? '"Elena demonstrou grande concentração na área de linguagem, associando fonemas com entusiasmo."'
-                          : '"Elena a fait preuve d’une belle concentration dans l’aire du langage, explorant avec joie la composition phonétique."'}
+                            ? '"Elena demostró un periodo de concentración prolongada en el área de lenguaje, interiorizando con entusiasmo la correspondencia fonética y la construcción de palabras."'
+                            : lang === 'pt'
+                              ? '"Elena demonstrou grande concentração na área de linguagem, associando fonemas com entusiasmo."'
+                              : '"Elena a fait preuve d’une belle concentration dans l’aire du langage, explorant avec joie la composition phonétique."'}
                       </p>
                     </div>
                   )}
@@ -3641,11 +3607,10 @@ export const MontessoriNexusLanding: React.FC = () => {
               type="button"
               onClick={() => scrollModuleTabs('left')}
               aria-label="Desplazar pestañas hacia la izquierda"
-              className={`absolute -left-2 sm:-left-3 top-1/2 -translate-y-1/2 z-20 w-8 sm:w-9 h-8 sm:h-9 rounded-full flex items-center justify-center border shadow-md backdrop-blur-md transition-all cursor-pointer ${
-                isDark
+              className={`absolute -left-2 sm:-left-3 top-1/2 -translate-y-1/2 z-20 w-8 sm:w-9 h-8 sm:h-9 rounded-full flex items-center justify-center border shadow-md backdrop-blur-md transition-all cursor-pointer ${isDark
                   ? 'bg-[#162218]/90 border-slate-700 text-slate-200 hover:bg-[#C4661F] hover:text-white hover:border-[#C4661F]'
                   : 'bg-white/95 border-stone-300 text-stone-700 hover:bg-[#C4661F] hover:text-white hover:border-[#C4661F]'
-              }`}
+                }`}
             >
               <ChevronLeft className="w-4 sm:w-5 h-4 sm:h-5" />
             </button>
@@ -3674,13 +3639,12 @@ export const MontessoriNexusLanding: React.FC = () => {
                       key={tab.id}
                       type="button"
                       onClick={() => setActiveModuleTab(tab.id)}
-                      className={`px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 border ${
-                        isSelected
+                      className={`px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 border ${isSelected
                           ? 'bg-[#C4661F] text-white border-[#C4661F] shadow-lg shadow-[#C4661F]/20'
                           : isDark
                             ? 'bg-[#162218] text-slate-300 border-slate-800 hover:bg-slate-800 hover:text-white'
                             : 'bg-white text-stone-700 border-stone-300 hover:bg-stone-100 hover:text-stone-950 shadow-3xs'
-                      }`}
+                        }`}
                     >
                       <Icon className={`w-4 h-4 shrink-0 ${isSelected ? 'text-white' : 'text-[#C4661F]'}`} />
                       <span>{tab.label}</span>
@@ -3695,11 +3659,10 @@ export const MontessoriNexusLanding: React.FC = () => {
               type="button"
               onClick={() => scrollModuleTabs('right')}
               aria-label="Desplazar pestañas hacia la derecha"
-              className={`absolute -right-2 sm:-right-3 top-1/2 -translate-y-1/2 z-20 w-8 sm:w-9 h-8 sm:h-9 rounded-full flex items-center justify-center border shadow-md backdrop-blur-md transition-all cursor-pointer ${
-                isDark
+              className={`absolute -right-2 sm:-right-3 top-1/2 -translate-y-1/2 z-20 w-8 sm:w-9 h-8 sm:h-9 rounded-full flex items-center justify-center border shadow-md backdrop-blur-md transition-all cursor-pointer ${isDark
                   ? 'bg-[#162218]/90 border-slate-700 text-slate-200 hover:bg-[#C4661F] hover:text-white hover:border-[#C4661F]'
                   : 'bg-white/95 border-stone-300 text-stone-700 hover:bg-[#C4661F] hover:text-white hover:border-[#C4661F]'
-              }`}
+                }`}
             >
               <ChevronRight className="w-4 sm:w-5 h-4 sm:h-5" />
             </button>
@@ -3727,20 +3690,18 @@ export const MontessoriNexusLanding: React.FC = () => {
                     key={tab.id}
                     type="button"
                     onClick={() => setActiveModuleTab(tab.id)}
-                    className={`w-full p-3.5 rounded-2xl text-left transition-all flex items-center justify-between gap-3 cursor-pointer border ${
-                      isSelected
+                    className={`w-full p-3.5 rounded-2xl text-left transition-all flex items-center justify-between gap-3 cursor-pointer border ${isSelected
                         ? 'bg-[#C4661F] text-white border-[#C4661F] shadow-lg shadow-[#C4661F]/20 translate-x-1 font-bold'
                         : isDark
                           ? 'bg-[#162218] text-slate-300 border-slate-800 hover:bg-slate-800/80 hover:text-white hover:border-slate-700'
                           : 'bg-white text-stone-700 border-stone-200 hover:bg-stone-100 hover:text-stone-950 hover:border-stone-300 shadow-3xs'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                        isSelected
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${isSelected
                           ? 'bg-white/20 text-white'
                           : 'bg-[#C4661F]/10 text-[#C4661F]'
-                      }`}>
+                        }`}>
                         <Icon className="w-4.5 h-4.5" />
                       </div>
                       <div className="truncate">
@@ -3757,1154 +3718,1079 @@ export const MontessoriNexusLanding: React.FC = () => {
             </div>
 
             {/* DETAIL SHOWCASE CONTAINER (Desktop Right 8 Columns, Mobile Full Width) */}
-            <div className={`col-span-12 lg:col-span-8 p-5 sm:p-7 lg:p-8 rounded-3xl border shadow-xl transition-all min-w-0 overflow-hidden ${
-              isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-300 shadow-stone-200/50'
-            }`}>
+            <div className={`col-span-12 lg:col-span-8 p-5 sm:p-7 lg:p-8 rounded-3xl border shadow-xl transition-all min-w-0 overflow-hidden ${isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-300 shadow-stone-200/50'
+              }`}>
               <AnimatePresence mode="wait">
-              {/* TAB 1: FORMULARIOS & SMART KYC */}
-              {activeModuleTab === 'forms' && (
-                <motion.div
-                  key="forms"
-                  initial={{ opacity: 0, y: 14 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -14 }}
-                  transition={{ duration: 0.25 }}
-                  className="space-y-6 text-left min-w-0"
-                >
-                  {/* Top Header */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-[#C4661F] bg-[#C4661F]/10 px-3 py-1 rounded-full border border-[#C4661F]/20 flex items-center gap-1.5">
-                        <FileSpreadsheet className="w-3.5 h-3.5" />
-                        Formularios & KYC Inteligente
-                      </span>
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 flex items-center gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        Validación RENAPO en Vivo
-                      </span>
-                    </div>
-                    <h3 className={`text-2xl sm:text-3xl font-serif font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>
-                      Gestor de Formularios Pro & Biometría
-                    </h3>
-                    <p className={`text-sm leading-relaxed max-w-2xl ${isDark ? 'text-slate-300' : 'text-stone-600'}`}>
-                      Crea formularios con validación oficial de CURP ante RENAPO en segundo plano, biometría KYC para tutores y 3 modos de presentación interactiva.
-                    </p>
-                  </div>
-
-                  {/* Full-Width Interactive Form Simulator */}
-                  <div className={`p-4 sm:p-5 rounded-2xl border space-y-4 ${
-                    isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200 shadow-sm'
-                  }`}>
-                    {/* Mode Selector Tabs */}
-                    <div className={`p-1 rounded-xl border grid grid-cols-3 gap-1 text-xs font-bold ${
-                      isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-stone-200/70 border-stone-300'
-                    }`}>
-                      <button
-                        type="button"
-                        onClick={() => setFormPresentationMode('smart_fields')}
-                        className={`py-2 px-2 rounded-lg text-center transition-all cursor-pointer truncate ${
-                          formPresentationMode === 'smart_fields'
-                            ? 'bg-white dark:bg-[#162218] text-[#C4661F] shadow-xs font-bold'
-                            : 'text-stone-600 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white'
-                        }`}
-                      >
-                        ⚡ Campos Inteligentes
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setFormPresentationMode('wizard')}
-                        className={`py-2 px-2 rounded-lg text-center transition-all cursor-pointer truncate ${
-                          formPresentationMode === 'wizard'
-                            ? 'bg-white dark:bg-[#162218] text-[#C4661F] shadow-xs font-bold'
-                            : 'text-stone-600 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white'
-                        }`}
-                      >
-                        📋 Modo Wizard
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setFormPresentationMode('fluid')}
-                        className={`py-2 px-2 rounded-lg text-center transition-all cursor-pointer truncate ${
-                          formPresentationMode === 'fluid'
-                            ? 'bg-white dark:bg-[#162218] text-[#C4661F] shadow-xs font-bold'
-                            : 'text-stone-600 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white'
-                        }`}
-                      >
-                        💬 Modo Fluid
-                      </button>
-                    </div>
-
-                    {/* Mode 1: Smart Fields */}
-                    {formPresentationMode === 'smart_fields' && (
-                      <div className="space-y-3.5">
-                        {/* CURP Field */}
-                        <div className={`p-4 rounded-xl border space-y-2.5 ${
-                          isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200 shadow-3xs'
-                        }`}>
-                          <div className="flex items-center justify-between gap-2 flex-wrap text-xs">
-                            <span className="font-bold flex items-center gap-1.5 text-stone-900 dark:text-white">
-                              <Fingerprint className="w-4 h-4 text-[#C4661F]" />
-                              Campo Inteligente: CURP Oficial (México)
-                            </span>
-                            <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                              Conexión RENAPO en segundo plano
-                            </span>
-                          </div>
-
-                          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                            <div className={`p-2.5 rounded-xl border font-mono flex-1 ${
-                              isDark ? 'bg-slate-900/80 border-slate-800 text-slate-200' : 'bg-stone-50 border-stone-200 text-stone-800'
-                            }`}>
-                              <span className="text-[10px] text-stone-400 block font-sans font-semibold">Entrada de la Familia:</span>
-                              <span className="font-bold text-sm tracking-wider">MOSS180512HDFRRN04</span>
-                            </div>
-                            <div className={`p-2.5 rounded-xl border flex-1 flex items-center justify-between ${
-                              isDark ? 'bg-emerald-950/30 border-emerald-900/60 text-emerald-300' : 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                            }`}>
-                              <div>
-                                <span className="text-[10px] block font-semibold text-emerald-600 dark:text-emerald-400">Datos Verificados Automáticamente:</span>
-                                <span className="font-bold text-xs">Santiago Morales Suárez • 12/05/2018</span>
-                              </div>
-                              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 ml-2" />
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* KYC & Biometrics Field */}
-                        <div className={`p-4 rounded-xl border space-y-2.5 ${
-                          isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200 shadow-3xs'
-                        }`}>
-                          <div className="flex items-center justify-between gap-2 flex-wrap text-xs">
-                            <span className="font-bold flex items-center gap-1.5 text-stone-900 dark:text-white">
-                              <ScanFace className="w-4 h-4 text-[#C4661F]" />
-                              Prueba de Vida & Verificación KYC de Tutores
-                            </span>
-                            <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 font-bold">
-                              Facial Match: 99.4%
-                            </span>
-                          </div>
-
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                            <div className={`p-3 rounded-xl border flex items-center gap-3 ${
-                              isDark ? 'bg-slate-900/80 border-slate-800 text-slate-300' : 'bg-stone-50 border-stone-200 text-stone-700'
-                            }`}>
-                              <FileCheck className="w-5 h-5 text-emerald-500 shrink-0" />
-                              <div>
-                                <span className="font-bold block text-xs">Identificación Oficial (INE)</span>
-                                <span className="text-[11px] text-stone-400">Documento verificado y legible</span>
-                              </div>
-                            </div>
-                            <div className={`p-3 rounded-xl border flex items-center gap-3 ${
-                              isDark ? 'bg-slate-900/80 border-slate-800 text-slate-300' : 'bg-stone-50 border-stone-200 text-stone-700'
-                            }`}>
-                              <Camera className="w-5 h-5 text-[#C4661F] shrink-0" />
-                              <div>
-                                <span className="font-bold block text-xs">Selfie / Prueba de Vida</span>
-                                <span className="text-[11px] text-emerald-500 font-semibold">● Coincidencia facial aprobada</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Mode 2: Wizard */}
-                    {formPresentationMode === 'wizard' && (
-                      <div className={`p-4 rounded-xl border space-y-3 ${
-                        isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200'
-                      }`}>
-                        <div className="flex items-center justify-between text-xs font-bold gap-2">
-                          <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-                            <span className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center text-[10px]">✓</span>
-                            <span>1. Aspirante</span>
-                          </div>
-                          <div className="h-0.5 flex-1 bg-[#C4661F]" />
-                          <div className="flex items-center gap-1.5 text-[#C4661F]">
-                            <span className="w-5 h-5 rounded-full bg-[#C4661F] text-white flex items-center justify-center text-[10px]">2</span>
-                            <span>2. RENAPO & KYC</span>
-                          </div>
-                          <div className="h-0.5 flex-1 bg-stone-300 dark:bg-slate-700" />
-                          <div className="flex items-center gap-1.5 text-stone-400">
-                            <span className="w-5 h-5 rounded-full bg-stone-200 dark:bg-slate-800 flex items-center justify-center text-[10px]">3</span>
-                            <span>3. Firma Digital</span>
-                          </div>
-                        </div>
-                        <p className="text-xs text-stone-500 dark:text-slate-400 leading-relaxed pt-1">
-                          El modo Wizard divide admisiones complejas en pasos digeribles, reduciendo el abandono de registro en un 42% y validando la identidad antes de almacenar.
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Mode 3: Fluid */}
-                    {formPresentationMode === 'fluid' && (
-                      <div className={`p-4 rounded-xl border text-xs space-y-3 ${
-                        isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200'
-                      }`}>
-                        <div className="flex items-center justify-between text-[11px] text-[#C4661F] font-bold">
-                          <span>Pregunta 3 de 7 • Modo Conversacional</span>
-                          <span>45% completado</span>
-                        </div>
-                        <p className="text-sm font-serif font-bold text-stone-900 dark:text-white">
-                          ¿A qué ambiente Montessori deseas postular a tu hijo/a?
-                        </p>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                          <div className="p-3 rounded-xl border bg-[#C4661F]/10 border-[#C4661F] font-bold text-xs text-[#C4661F] flex items-center justify-between">
-                            <span>A) Casa de Niños (3-6 años)</span>
-                            <Check className="w-4 h-4" />
-                          </div>
-                          <div className="p-3 rounded-xl border text-stone-600 dark:text-slate-400 border-stone-200 dark:border-slate-800 text-xs">
-                            <span>B) Taller 1 (6-9 años)</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Bottom Value Pillars */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                    <div className={`p-3 rounded-xl border text-xs ${
-                      isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
-                    }`}>
-                      <span className="font-bold text-stone-900 dark:text-white block">🏛️ Consulta RENAPO</span>
-                      <span className="text-[11px] text-stone-500 dark:text-slate-400">Autorrellenado sin errores de captura.</span>
-                    </div>
-                    <div className={`p-3 rounded-xl border text-xs ${
-                      isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
-                    }`}>
-                      <span className="font-bold text-stone-900 dark:text-white block">🛡️ Biometría KYC</span>
-                      <span className="text-[11px] text-stone-500 dark:text-slate-400">Prueba de vida y cotejo de INE.</span>
-                    </div>
-                    <div className={`p-3 rounded-xl border text-xs ${
-                      isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
-                    }`}>
-                      <span className="font-bold text-stone-900 dark:text-white block">⚡ Sincronización Total</span>
-                      <span className="text-[11px] text-stone-500 dark:text-slate-400">Directo al expediente del alumno.</span>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* TAB 2: GALERÍA INTELIGENTE */}
-              {activeModuleTab === 'gallery' && (
-                <motion.div
-                  key="gallery"
-                  initial={{ opacity: 0, y: 14 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -14 }}
-                  transition={{ duration: 0.25 }}
-                  className="space-y-6 text-left min-w-0"
-                >
-                  {/* Top Header */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-[#C4661F] bg-[#C4661F]/10 px-3 py-1 rounded-full border border-[#C4661F]/20 flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5" />
-                        IA Pedagógica & Narrativa
-                      </span>
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 bg-purple-500/10 px-3 py-1 rounded-full border border-purple-500/20 flex items-center gap-1">
-                        <Camera className="w-3.5 h-3.5" />
-                        Reconocimiento de Materiales AMI
-                      </span>
-                    </div>
-                    <h3 className={`text-2xl sm:text-3xl font-serif font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>
-                      Galería Inteligente & Observaciones
-                    </h3>
-                    <p className={`text-sm leading-relaxed max-w-2xl ${isDark ? 'text-slate-300' : 'text-stone-600'}`}>
-                      Solo sube la foto del aula: la IA reconoce el material didáctico y redacta la observación pedagógica describiendo la actividad, concentración y emocionalidad del niño.
-                    </p>
-                  </div>
-
-                  {/* Full-Width Interactive Gallery Showcase */}
-                  <div className={`p-4 sm:p-5 rounded-2xl border space-y-4 ${
-                    isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200 shadow-sm'
-                  }`}>
-                    {/* Child Selection: 2 Clean Full-Width Buttons */}
-                    <div className="grid grid-cols-2 gap-2 w-full">
-                      {[
-                        { id: 'santiago', name: 'Santiago (Torre Rosa • Sensorial)' },
-                        { id: 'elena', name: 'Elena (Decanomio • Matemáticas)' },
-                      ].map((child) => (
-                        <button
-                          key={child.id}
-                          type="button"
-                          onClick={() => setGallerySelectedChild(child.id as any)}
-                          className={`py-2 px-2.5 rounded-xl text-xs font-medium transition-all cursor-pointer border text-center truncate ${
-                            gallerySelectedChild === child.id
-                              ? 'bg-[#C4661F] text-white border-[#C4661F] font-bold shadow-xs'
-                              : isDark ? 'bg-slate-900/80 text-slate-300 border-slate-800 hover:bg-slate-800' : 'bg-white text-stone-700 border-stone-200 hover:bg-stone-100 shadow-3xs'
-                          }`}
-                        >
-                          {child.name}
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Photo & Pedagogical Analysis Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-stretch">
-                      {/* Photo Thumbnail */}
-                      <div className="md:col-span-5 relative rounded-xl overflow-hidden border border-stone-200 dark:border-slate-800 bg-stone-900 min-h-[190px] flex items-center justify-center">
-                        <div className={`absolute inset-0 bg-gradient-to-br ${
-                          gallerySelectedChild === 'santiago'
-                            ? 'from-amber-950/60 via-stone-900 to-emerald-950/80'
-                            : gallerySelectedChild === 'elena'
-                            ? 'from-blue-950/60 via-stone-900 to-indigo-950/80'
-                            : 'from-orange-950/60 via-stone-900 to-rose-950/80'
-                        } flex items-center justify-center p-4 text-center`}>
-                          <div className="space-y-1.5">
-                            <Camera className="w-8 h-8 text-[#C4661F] mx-auto opacity-75" />
-                            <div className="text-xs font-medium text-stone-300">
-                              Foto del Ambiente Montessori
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Badges on Photo */}
-                        <div className="absolute top-2.5 left-2.5">
-                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-md text-white border border-white/20 flex items-center gap-1">
-                            <Camera className="w-3 h-3 text-[#C4661F]" />
-                            #OBS-402
-                          </span>
-                        </div>
-
-                        <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between flex-wrap gap-1.5">
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-950/90 backdrop-blur-md text-emerald-200 border border-emerald-500/60 flex items-center gap-1">
-                            <Check className="w-3 h-3 text-emerald-400 shrink-0" />
-                            Analizado en 1.2s
-                          </span>
-                          <span className="text-[10px] font-mono text-stone-300 bg-black/60 px-2 py-0.5 rounded">
-                            {gallerySelectedChild === 'santiago' ? 'Casa de Niños' : gallerySelectedChild === 'elena' ? 'Taller 1' : 'Comunidad Infantil'}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Pedagogical Narrative Result */}
-                      <div className="md:col-span-7 flex flex-col justify-between p-4 rounded-xl border space-y-3 bg-white dark:bg-[#162218] border-stone-200 dark:border-slate-700 shadow-3xs">
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between flex-wrap gap-1.5">
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-[#C4661F] flex items-center gap-1.5">
-                              <Sparkles className="w-3.5 h-3.5" />
-                              Narrativa Pedagógica Montessori
-                            </span>
-                            <span className="text-[10px] font-mono text-stone-400 dark:text-slate-400 bg-stone-100 dark:bg-slate-800 px-2 py-0.5 rounded">
-                              Modelo AMI
-                            </span>
-                          </div>
-
-                          <p className="text-xs sm:text-sm italic font-serif leading-relaxed text-stone-700 dark:text-slate-200 border-l-2 border-[#C4661F] pl-3 py-1">
-                            {gallerySelectedChild === 'santiago' && (
-                              '“Santiago (4a 2m) experimenta profunda concentración con la Torre Rosa. Gradúa los 10 cubos con serenidad y persevera en el control de error sin intervención del adulto.”'
-                            )}
-                            {gallerySelectedChild === 'elena' && (
-                              '“Elena (5a 8m) explora con gran curiosidad la geometría de los decanomios, compartiendo deducciones espaciales con gracia y cortesía.”'
-                            )}
-                            {gallerySelectedChild === 'mateo' && (
-                              '“Mateo (2a 10m) ejercita su coordinación motriz fina abotonando el Marco de Vestir con serenidad y orden espontáneo.”'
-                            )}
-                          </p>
-                        </div>
-
-                        <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-stone-100 dark:border-slate-800 text-[11px]">
-                          <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium">
-                            ✓ Registrado en Bitácora
-                          </span>
-                          <span className="px-2.5 py-1 rounded-lg bg-[#C4661F]/10 text-[#C4661F] font-medium">
-                            ✓ Portafolio Familiar Actualizado
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Bottom Value Pillars */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                    <div className={`p-3 rounded-xl border text-xs ${
-                      isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
-                    }`}>
-                      <span className="font-bold text-stone-900 dark:text-white block">✨ Redacción Automática</span>
-                      <span className="text-[11px] text-stone-500 dark:text-slate-400">Describe el desarrollo sin notas numéricas.</span>
-                    </div>
-                    <div className={`p-3 rounded-xl border text-xs ${
-                      isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
-                    }`}>
-                      <span className="font-bold text-stone-900 dark:text-white block">🌿 Filosofía AMI Integrada</span>
-                      <span className="text-[11px] text-stone-500 dark:text-slate-400">Enfocado en concentración y autonomía.</span>
-                    </div>
-                    <div className={`p-3 rounded-xl border text-xs ${
-                      isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
-                    }`}>
-                      <span className="font-bold text-stone-900 dark:text-white block">📁 Portafolio Familiar</span>
-                      <span className="text-[11px] text-stone-500 dark:text-slate-400">Las familias reciben reportes de valor real.</span>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* TAB 3: WEB BUILDER INSTITUCIONAL */}
-              {activeModuleTab === 'webbuilder' && (
-                <motion.div
-                  key="webbuilder"
-                  initial={{ opacity: 0, y: 14 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -14 }}
-                  transition={{ duration: 0.25 }}
-                  className="space-y-6 text-left min-w-0"
-                >
-                  {/* Top Header */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-[#C4661F] bg-[#C4661F]/10 px-3 py-1 rounded-full border border-[#C4661F]/20 flex items-center gap-1.5">
-                        <Globe className="w-3.5 h-3.5" />
-                        Web Builder Institucional
-                      </span>
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 flex items-center gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        Multiidioma & SSL Incluido
-                      </span>
-                    </div>
-                    <h3 className={`text-2xl sm:text-3xl font-serif font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>
-                      Constructor Web Modular para tu Escuela
-                    </h3>
-                    <p className={`text-sm leading-relaxed max-w-2xl ${isDark ? 'text-slate-300' : 'text-stone-600'}`}>
-                      Crea y actualiza la página oficial de tu colegio con bloques modulares Montessori sin necesidad de diseñadores ni programadores.
-                    </p>
-                  </div>
-
-                  {/* Full-Width Interactive Web Builder Sandbox */}
-                  <div className={`p-4 sm:p-5 rounded-2xl border space-y-4 ${
-                    isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200 shadow-sm'
-                  }`}>
-                    {/* Navigation Tabs */}
-                    <div className={`p-1 rounded-xl border grid grid-cols-3 gap-1 text-xs font-bold ${
-                      isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-stone-200/70 border-stone-300'
-                    }`}>
-                      <button
-                        type="button"
-                        onClick={() => setBuilderActiveTab('sections')}
-                        className={`py-2 px-2 rounded-lg text-center transition-all cursor-pointer truncate ${
-                          builderActiveTab === 'sections'
-                            ? 'bg-white dark:bg-[#162218] text-[#C4661F] shadow-xs font-bold'
-                            : 'text-stone-600 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white'
-                        }`}
-                      >
-                        🧱 Secciones Modulares
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setBuilderActiveTab('style')}
-                        className={`py-2 px-2 rounded-lg text-center transition-all cursor-pointer truncate ${
-                          builderActiveTab === 'style'
-                            ? 'bg-white dark:bg-[#162218] text-[#C4661F] shadow-xs font-bold'
-                            : 'text-stone-600 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white'
-                        }`}
-                      >
-                        🎨 Paleta & Marca
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setBuilderActiveTab('integrations')}
-                        className={`py-2 px-2 rounded-lg text-center transition-all cursor-pointer truncate ${
-                          builderActiveTab === 'integrations'
-                            ? 'bg-white dark:bg-[#162218] text-[#C4661F] shadow-xs font-bold'
-                            : 'text-stone-600 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white'
-                        }`}
-                      >
-                        🔗 Integraciones
-                      </button>
-                    </div>
-
-                    {/* Content Area */}
-                    {builderActiveTab === 'sections' && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                        {builderSections.map((sec) => (
-                          <div
-                            key={sec.id}
-                            className={`p-3 rounded-xl border flex items-center justify-between text-xs transition-all ${
-                              sec.active
-                                ? isDark ? 'bg-[#162218] border-slate-700 text-white' : 'bg-white border-stone-200 text-stone-800 shadow-3xs'
-                                : 'opacity-40 bg-stone-100 dark:bg-slate-900 border-dashed border-stone-300 dark:border-slate-800'
-                            }`}
-                          >
-                            <div className="flex items-center gap-2 truncate">
-                              <GripVertical className="w-4 h-4 text-stone-400 shrink-0 cursor-grab" />
-                              <span className="font-bold text-xs truncate">{sec.name}</span>
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#C4661F]/10 text-[#C4661F] font-bold">
-                                {sec.badge}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => toggleBuilderSection(sec.id)}
-                                className="p-1 text-stone-400 hover:text-[#C4661F] transition-colors cursor-pointer"
-                                title={sec.active ? 'Ocultar sección' : 'Mostrar sección'}
-                              >
-                                {sec.active ? <Eye className="w-4 h-4 text-emerald-500" /> : <EyeOff className="w-4 h-4 text-stone-400" />}
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {builderActiveTab === 'style' && (
-                      <div className={`p-4 rounded-xl border space-y-3 ${
-                        isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200'
-                      }`}>
-                        <div className="flex justify-between items-center text-xs">
-                          <span className="font-bold text-stone-900 dark:text-white">Tema y Tipografía Institucional Activa:</span>
-                          <span className="text-[11px] font-bold text-[#C4661F] uppercase">{activeBuilderTheme}</span>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2.5">
-                          <button
-                            type="button"
-                            onClick={() => setActiveBuilderTheme('terracotta')}
-                            className={`h-9 px-4 rounded-xl text-xs font-bold transition-all border flex items-center gap-2 cursor-pointer ${
-                              activeBuilderTheme === 'terracotta'
-                                ? 'bg-[#C4661F] text-white border-[#C4661F] shadow-xs'
-                                : isDark ? 'bg-slate-900 border-slate-800 text-slate-300' : 'bg-stone-100 border-stone-200 text-stone-700'
-                            }`}
-                          >
-                            <span className="w-3 h-3 rounded-full bg-[#C4661F] border border-white" />
-                            Alloy Orange & Serif Clásica
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setActiveBuilderTheme('sage')}
-                            className={`h-9 px-4 rounded-xl text-xs font-bold transition-all border flex items-center gap-2 cursor-pointer ${
-                              activeBuilderTheme === 'sage'
-                                ? 'bg-[#5F6F52] text-white border-[#5F6F52] shadow-xs'
-                                : isDark ? 'bg-slate-900 border-slate-800 text-slate-300' : 'bg-stone-100 border-stone-200 text-stone-700'
-                            }`}
-                          >
-                            <span className="w-3 h-3 rounded-full bg-[#5F6F52] border border-white" />
-                            Olive Sage & Minimalista
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setActiveBuilderTheme('navy')}
-                            className={`h-9 px-4 rounded-xl text-xs font-bold transition-all border flex items-center gap-2 cursor-pointer ${
-                              activeBuilderTheme === 'navy'
-                                ? 'bg-[#B99470] text-white border-[#B99470] shadow-xs'
-                                : isDark ? 'bg-slate-900 border-slate-800 text-slate-300' : 'bg-stone-100 border-stone-200 text-stone-700'
-                            }`}
-                          >
-                            <span className="w-3 h-3 rounded-full bg-[#B99470] border border-white" />
-                            Camel Terra & Orgánico
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {builderActiveTab === 'integrations' && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                        <div className={`p-3.5 rounded-xl border flex items-start gap-3 ${
-                          isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200'
-                        }`}>
-                          <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                          <div>
-                            <span className="font-bold block text-stone-900 dark:text-white">Pipeline de Admisiones Directo</span>
-                            <span className="text-[11px] text-stone-500 dark:text-slate-400">Las solicitudes del formulario web ingresan automáticamente a la etapa "Nueva Solicitud" del Kanban.</span>
-                          </div>
-                        </div>
-                        <div className={`p-3.5 rounded-xl border flex items-start gap-3 ${
-                          isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200'
-                        }`}>
-                          <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                          <div>
-                            <span className="font-bold block text-stone-900 dark:text-white">Portal de Familias & Calendario</span>
-                            <span className="text-[11px] text-stone-500 dark:text-slate-400">Acceso autenticado y agenda de visitas sincronizada con confirmación automática.</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Bottom Value Pillars */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                    <div className={`p-3 rounded-xl border text-xs ${
-                      isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
-                    }`}>
-                      <span className="font-bold text-stone-900 dark:text-white block">🧱 Arrastra & Publica</span>
-                      <span className="text-[11px] text-stone-500 dark:text-slate-400">Bloques modulares listos para usar.</span>
-                    </div>
-                    <div className={`p-3 rounded-xl border text-xs ${
-                      isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
-                    }`}>
-                      <span className="font-bold text-stone-900 dark:text-white block">🎨 Identidad Única</span>
-                      <span className="text-[11px] text-stone-500 dark:text-slate-400">Paletas y tipografías a tu medida.</span>
-                    </div>
-                    <div className={`p-3 rounded-xl border text-xs ${
-                      isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
-                    }`}>
-                      <span className="font-bold text-stone-900 dark:text-white block">🔗 Conexión al Sistema</span>
-                      <span className="text-[11px] text-stone-500 dark:text-slate-400">Admisiones directo al expediente.</span>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* TAB 4: COBRANZA & FACTURACIÓN */}
-              {activeModuleTab === 'finances' && (
-                <motion.div
-                  key="finances"
-                  initial={{ opacity: 0, y: 14 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -14 }}
-                  transition={{ duration: 0.25 }}
-                  className="space-y-6 text-left min-w-0"
-                >
-                  {/* Top Header */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-[#C4661F] bg-[#C4661F]/10 px-3 py-1 rounded-full border border-[#C4661F]/20 flex items-center gap-1.5">
-                        <CreditCard className="w-3.5 h-3.5" />
-                        Cobranza & Facturación
-                      </span>
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 flex items-center gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        Stripe · Mercado Pago · SPEI
-                      </span>
-                    </div>
-                    <h3 className={`text-2xl sm:text-3xl font-serif font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>
-                      Gestión Financiera & Recurrencia Automática
-                    </h3>
-                    <p className={`text-sm leading-relaxed max-w-2xl ${isDark ? 'text-slate-300' : 'text-stone-600'}`}>
-                      Automatiza el cobro de colegiaturas, emite facturas electrónicas y envía recordatorios cordiales por WhatsApp reduciendo la morosidad hasta un 68%.
-                    </p>
-                  </div>
-
-                  {/* Full-Width Interactive Billing Dashboard */}
-                  <div className={`p-4 sm:p-5 rounded-2xl border space-y-4 ${
-                    isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200 shadow-sm'
-                  }`}>
-                    <div className="flex items-center justify-between text-xs pb-2 border-b border-stone-200 dark:border-slate-800">
-                      <span className="font-bold text-stone-900 dark:text-white">Tablero de Colegiaturas • Ciclo Escolar Activo</span>
-                      <span className="text-emerald-500 font-bold text-[11px]">● Conciliación 95.6%</span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                      <div className={`p-3.5 rounded-xl border ${
-                        isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200 shadow-3xs'
-                      }`}>
-                        <span className="text-stone-400 text-[10px] block font-semibold">Total Cobrado</span>
-                        <span className="text-xl font-bold text-emerald-500">$38,250 USD</span>
-                      </div>
-                      <div className={`p-3.5 rounded-xl border ${
-                        isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200 shadow-3xs'
-                      }`}>
-                        <span className="text-stone-400 text-[10px] block font-semibold">Pendiente por Cobrar</span>
-                        <span className="text-xl font-bold text-amber-500">$1,750 USD</span>
-                      </div>
-                      <div className={`p-3.5 rounded-xl border ${
-                        isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200 shadow-3xs'
-                      }`}>
-                        <span className="text-stone-400 text-[10px] block font-semibold">Tasa de Morosidad</span>
-                        <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400">1.8% (Mínima)</span>
-                      </div>
-                    </div>
-
-                    <div className={`p-3.5 rounded-xl border flex items-center justify-between text-xs ${
-                      isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200 shadow-3xs'
-                    }`}>
-                      <div className="flex items-center gap-2.5">
-                        <MessageCircle className="w-4 h-4 text-emerald-500 shrink-0" />
-                        <span className="font-semibold text-stone-900 dark:text-white">Recordatorio automático por WhatsApp (3 días antes del vencimiento)</span>
-                      </div>
-                      <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold shrink-0">
-                        Activo en Piloto
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Bottom Value Pillars */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                    <div className={`p-3 rounded-xl border text-xs ${
-                      isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
-                    }`}>
-                      <span className="font-bold text-stone-900 dark:text-white block">💳 Cargo Recurrente</span>
-                      <span className="text-[11px] text-stone-500 dark:text-slate-400">Tarjetas, SPEI y pasarelas globales.</span>
-                    </div>
-                    <div className={`p-3 rounded-xl border text-xs ${
-                      isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
-                    }`}>
-                      <span className="font-bold text-stone-900 dark:text-white block">💬 Mensajes Cordiales</span>
-                      <span className="text-[11px] text-stone-500 dark:text-slate-400">Vía WhatsApp con enlace de pago.</span>
-                    </div>
-                    <div className={`p-3 rounded-xl border text-xs ${
-                      isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
-                    }`}>
-                      <span className="font-bold text-stone-900 dark:text-white block">📊 Facturación Instantánea</span>
-                      <span className="text-[11px] text-stone-500 dark:text-slate-400">Comprobantes y conciliación al día.</span>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* TAB 5: PIPELINES & KANBAN */}
-              {activeModuleTab === 'pipelines' && (
-                <motion.div
-                  key="pipelines"
-                  initial={{ opacity: 0, y: 14 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -14 }}
-                  transition={{ duration: 0.25 }}
-                  className="space-y-6 text-left min-w-0"
-                >
-                  {/* Top Header */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-[#C4661F] bg-[#C4661F]/10 px-3 py-1 rounded-full border border-[#C4661F]/20 flex items-center gap-1.5">
-                        <GitPullRequest className="w-3.5 h-3.5" />
-                        Pipelines & Kanban
-                      </span>
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 flex items-center gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        Automatizaciones por Etapa
-                      </span>
-                    </div>
-                    <h3 className={`text-2xl sm:text-3xl font-serif font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>
-                      Tableros de Admisiones & Seguimiento
-                    </h3>
-                    <p className={`text-sm leading-relaxed max-w-2xl ${isDark ? 'text-slate-300' : 'text-stone-600'}`}>
-                      Visualiza el flujo de cada familia desde la primera solicitud hasta la bienvenida en el aula, con contratos y fichas de pago automáticas.
-                    </p>
-                  </div>
-
-                  {/* Full-Width Interactive Kanban Board */}
-                  <div className={`p-4 sm:p-5 rounded-2xl border space-y-3.5 ${
-                    isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200 shadow-sm'
-                  }`}>
-                    <div className="flex items-center justify-between text-xs pb-2 border-b border-stone-200 dark:border-slate-800">
-                      <span className="font-bold text-stone-900 dark:text-white">Tablero Kanban • Admisiones Ciclo 2026-2027</span>
-                      <span className="text-[#C4661F] text-[11px] font-bold bg-[#C4661F]/10 px-2.5 py-0.5 rounded-full">
-                        18 Aspirantes en Proceso
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                      {/* Column 1: Solicitud */}
-                      <div className={`p-3 rounded-xl border space-y-2.5 ${
-                        isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200 shadow-3xs'
-                      }`}>
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] font-bold text-stone-500 dark:text-slate-400 uppercase">
-                            1. Solicitud (4)
-                          </span>
-                          <span className="w-2 h-2 rounded-full bg-amber-400" />
-                        </div>
-                        <div className="p-3 rounded-xl bg-stone-50 dark:bg-slate-800/90 border border-stone-200 dark:border-slate-700 space-y-1.5">
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-xs text-stone-900 dark:text-white">Mateo Luna</span>
-                            <span className="text-[10px] text-stone-400">Hace 2h</span>
-                          </div>
-                          <span className="inline-block text-[10px] font-medium text-stone-600 dark:text-slate-300 bg-stone-200/70 dark:bg-slate-700 px-2 py-0.5 rounded-md">
-                            Comunidad Infantil
-                          </span>
-                          <p className="text-[10px] text-stone-400">Formulario web completado</p>
-                        </div>
-                      </div>
-
-                      {/* Column 2: Entrevista */}
-                      <div className={`p-3 rounded-xl border space-y-2.5 ${
-                        isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200 shadow-3xs'
-                      }`}>
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] font-bold text-[#C4661F] uppercase">
-                            2. Entrevista (2)
-                          </span>
-                          <span className="w-2 h-2 rounded-full bg-[#C4661F]" />
-                        </div>
-                        <div className="p-3 rounded-xl bg-[#C4661F]/5 border border-[#C4661F]/30 space-y-1.5">
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-xs text-[#C4661F]">Santiago Morales</span>
-                            <span className="text-[10px] text-[#C4661F] font-bold">Mañana</span>
-                          </div>
-                          <span className="inline-block text-[10px] font-medium text-[#C4661F] bg-[#C4661F]/15 px-2 py-0.5 rounded-md">
-                            Casa de Niños
-                          </span>
-                          <p className="text-[10px] text-stone-500 dark:text-slate-400">Cita confirmada por WhatsApp</p>
-                        </div>
-                      </div>
-
-                      {/* Column 3: Matriculado */}
-                      <div className={`p-3 rounded-xl border space-y-2.5 ${
-                        isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200 shadow-3xs'
-                      }`}>
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase">
-                            3. Matriculado (12)
-                          </span>
-                          <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                        </div>
-                        <div className="p-3 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 space-y-1.5">
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-xs text-emerald-800 dark:text-emerald-300">Valentina Ruiz</span>
-                            <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                          </div>
-                          <span className="inline-block text-[10px] font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/60 px-2 py-0.5 rounded-md">
-                            Taller 1
-                          </span>
-                          <p className="text-[10px] text-emerald-600/80 dark:text-emerald-400/80">Contrato y pago formalizados</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Bottom Value Pillars */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                    <div className={`p-3 rounded-xl border text-xs ${
-                      isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
-                    }`}>
-                      <span className="font-bold text-stone-900 dark:text-white block">📋 Control Visual</span>
-                      <span className="text-[11px] text-stone-500 dark:text-slate-400">Seguimiento etapa por etapa.</span>
-                    </div>
-                    <div className={`p-3 rounded-xl border text-xs ${
-                      isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
-                    }`}>
-                      <span className="font-bold text-stone-900 dark:text-white block">⚡ Disparadores</span>
-                      <span className="text-[11px] text-stone-500 dark:text-slate-400">Contratos y fichas automáticas.</span>
-                    </div>
-                    <div className={`p-3 rounded-xl border text-xs ${
-                      isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
-                    }`}>
-                      <span className="font-bold text-stone-900 dark:text-white block">🎒 Múltiples Flujos</span>
-                      <span className="text-[11px] text-stone-500 dark:text-slate-400">Admisiones, personal o psicopedagógico.</span>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* TAB 6: CALENDARIO & CITAS */}
-              {activeModuleTab === 'calendar' && (
-                <motion.div
-                  key="calendar"
-                  initial={{ opacity: 0, y: 14 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -14 }}
-                  transition={{ duration: 0.25 }}
-                  className="space-y-6 text-left min-w-0"
-                >
-                  {/* Top Header */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-[#C4661F] bg-[#C4661F]/10 px-3 py-1 rounded-full border border-[#C4661F]/20 flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5" />
-                        Calendario & Citas
-                      </span>
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 flex items-center gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        Google & Apple Sync
-                      </span>
-                    </div>
-                    <h3 className={`text-2xl sm:text-3xl font-serif font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>
-                      Agenda de Observaciones y Entrevistas
-                    </h3>
-                    <p className={`text-sm leading-relaxed max-w-2xl ${isDark ? 'text-slate-300' : 'text-stone-600'}`}>
-                      Permite a las familias reservar visitas al ambiente según la disponibilidad real del equipo docente, eliminando empalmes y cancelaciones.
-                    </p>
-                  </div>
-
-                  {/* Full-Width Interactive Calendar Simulator */}
-                  <div className={`p-4 sm:p-5 rounded-2xl border space-y-3 ${
-                    isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200 shadow-sm'
-                  }`}>
-                    <div className="flex items-center justify-between text-xs pb-2 border-b border-stone-200 dark:border-slate-800">
-                      <span className="font-bold text-stone-900 dark:text-white">Visita de Observación al Ambiente</span>
-                      <span className="text-emerald-500 font-bold text-[10px]">● 3 Horarios Disponibles</span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                      <button type="button" className={`p-3.5 rounded-xl border text-center font-bold transition-all ${
-                        isDark ? 'bg-[#162218] border-slate-700 text-slate-200' : 'bg-white border-stone-200 text-stone-800 shadow-3xs'
-                      }`}>
-                        09:00 AM
-                        <span className="block text-[10px] font-normal text-stone-400 mt-0.5">Casa de Niños 1</span>
-                      </button>
-                      <button type="button" className="p-3.5 rounded-xl border border-[#C4661F] bg-[#C4661F]/15 text-[#C4661F] text-center font-bold shadow-xs">
-                        11:00 AM (Seleccionado)
-                        <span className="block text-[10px] font-normal mt-0.5">Casa de Niños 2</span>
-                      </button>
-                      <button type="button" className={`p-3.5 rounded-xl border text-center font-bold transition-all ${
-                        isDark ? 'bg-[#162218] border-slate-700 text-slate-200' : 'bg-white border-stone-200 text-stone-800 shadow-3xs'
-                      }`}>
-                        02:30 PM
-                        <span className="block text-[10px] font-normal text-stone-400 mt-0.5">Taller 1</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Bottom Value Pillars */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                    <div className={`p-3 rounded-xl border text-xs ${
-                      isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
-                    }`}>
-                      <span className="font-bold text-stone-900 dark:text-white block">📅 Sin Empalmes</span>
-                      <span className="text-[11px] text-stone-500 dark:text-slate-400">Disponibilidad real por ambiente.</span>
-                    </div>
-                    <div className={`p-3 rounded-xl border text-xs ${
-                      isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
-                    }`}>
-                      <span className="font-bold text-stone-900 dark:text-white block">🔔 Recordatorio WhatsApp</span>
-                      <span className="text-[11px] text-stone-500 dark:text-slate-400">85% menos inasistencias.</span>
-                    </div>
-                    <div className={`p-3 rounded-xl border text-xs ${
-                      isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
-                    }`}>
-                      <span className="font-bold text-stone-900 dark:text-white block">📲 Sincronización Móvil</span>
-                      <span className="text-[11px] text-stone-500 dark:text-slate-400">Google Calendar y Apple iCal.</span>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* TAB 7: PORTAL DE FAMILIAS */}
-              {activeModuleTab === 'family' && (
-                <motion.div
-                  key="family"
-                  initial={{ opacity: 0, y: 14 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -14 }}
-                  transition={{ duration: 0.25 }}
-                  className="space-y-6 text-left min-w-0"
-                >
-                  {/* Top Header */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-[#C4661F] bg-[#C4661F]/10 px-3 py-1 rounded-full border border-[#C4661F]/20 flex items-center gap-1.5">
-                        <Users className="w-3.5 h-3.5" />
-                        Portal de Familias
-                      </span>
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 flex items-center gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        Sin Grupos Caóticos de WhatsApp
-                      </span>
-                    </div>
-                    <h3 className={`text-2xl sm:text-3xl font-serif font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>
-                      Comunicación Institucional y Firmas Digitales
-                    </h3>
-                    <p className={`text-sm leading-relaxed max-w-2xl ${isDark ? 'text-slate-300' : 'text-stone-600'}`}>
-                      Centraliza boletines, permisos escolares y firmas electrónicas de autorización con confirmación de lectura en tiempo real.
-                    </p>
-                  </div>
-
-                  {/* Full-Width Interactive Family Portal Simulator */}
-                  <div className={`p-4 sm:p-5 rounded-2xl border space-y-3 ${
-                    isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200 shadow-sm'
-                  }`}>
-                    <div className="flex items-center justify-between text-xs pb-2 border-b border-stone-200 dark:border-slate-800">
-                      <span className="font-bold text-stone-900 dark:text-white">Portal Familiar • Familia Morales</span>
-                      <span className="text-emerald-500 font-bold text-[10px]">● Sesión Segura</span>
-                    </div>
-                    <div className={`p-4 rounded-xl border space-y-2 ${
-                      isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200 shadow-3xs'
-                    }`}>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-bold text-[#C4661F]">Circular Oficial: Salida Pedagógica al Jardín Botánico</span>
-                        <span className="text-[10px] text-stone-400">Hoy</span>
-                      </div>
-                      <p className="text-xs text-stone-600 dark:text-slate-300">Autorización de transporte y seguro escolar para Santiago Morales.</p>
-                      <div className="pt-2 flex items-center justify-between flex-wrap gap-2 border-t border-stone-100 dark:border-slate-800">
-                        <span className="text-[11px] text-emerald-500 font-bold flex items-center gap-1">
-                          <Check className="w-3.5 h-3.5" />
-                          Firmado digitalmente por ambos tutores
+                {/* TAB 1: FORMULARIOS & SMART KYC */}
+                {activeModuleTab === 'forms' && (
+                  <motion.div
+                    key="forms"
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -14 }}
+                    transition={{ duration: 0.25 }}
+                    className="space-y-6 text-left min-w-0"
+                  >
+                    {/* Top Header */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-[#C4661F] bg-[#C4661F]/10 px-3 py-1 rounded-full border border-[#C4661F]/20 flex items-center gap-1.5">
+                          <FileSpreadsheet className="w-3.5 h-3.5" />
+                          Formularios & KYC Inteligente
                         </span>
-                        <span className="text-[10px] font-mono text-stone-400">12/Sep • 08:30 AM</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Bottom Value Pillars */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                    <div className={`p-3 rounded-xl border text-xs ${
-                      isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
-                    }`}>
-                      <span className="font-bold text-stone-900 dark:text-white block">🔒 Privacidad Total</span>
-                      <span className="text-[11px] text-stone-500 dark:text-slate-400">Sin teléfonos expuestos en grupos.</span>
-                    </div>
-                    <div className={`p-3 rounded-xl border text-xs ${
-                      isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
-                    }`}>
-                      <span className="font-bold text-stone-900 dark:text-white block">✍️ Firmas Móviles</span>
-                      <span className="text-[11px] text-stone-500 dark:text-slate-400">Autorizaciones válidas con valor legal.</span>
-                    </div>
-                    <div className={`p-3 rounded-xl border text-xs ${
-                      isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
-                    }`}>
-                      <span className="font-bold text-stone-900 dark:text-white block">📢 Boletines Oficiales</span>
-                      <span className="text-[11px] text-stone-500 dark:text-slate-400">Con acuse de lectura para el colegio.</span>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* TAB 8: OBSERVACIÓN & 3 TIEMPOS */}
-              {activeModuleTab === 'observation' && (
-                <motion.div
-                  key="observation"
-                  initial={{ opacity: 0, y: 14 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -14 }}
-                  transition={{ duration: 0.25 }}
-                  className="space-y-6 text-left min-w-0"
-                >
-                  {/* Top Header */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-[#C4661F] bg-[#C4661F]/10 px-3 py-1 rounded-full border border-[#C4661F]/20 flex items-center gap-1.5">
-                        <Compass className="w-3.5 h-3.5" />
-                        Observación 3 Tiempos
-                      </span>
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 flex items-center gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        Currículo AMI / AMS
-                      </span>
-                    </div>
-                    <h3 className={`text-2xl sm:text-3xl font-serif font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>
-                      Lección de Tres Tiempos & Registro Cualitativo
-                    </h3>
-                    <p className={`text-sm leading-relaxed max-w-2xl ${isDark ? 'text-slate-300' : 'text-stone-600'}`}>
-                      Registra la presentación, reconocimiento y dominio de cada material sin interferir en la concentración espontánea del niño.
-                    </p>
-                  </div>
-
-                  {/* Full-Width Interactive Observation Simulator */}
-                  <div className={`p-4 sm:p-5 rounded-2xl border space-y-3 ${
-                    isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200 shadow-sm'
-                  }`}>
-                    <div className="flex items-center justify-between text-xs pb-2 border-b border-stone-200 dark:border-slate-800">
-                      <span className="font-bold text-stone-900 dark:text-white">Registro de Material • Casa de Niños 1</span>
-                      <span className="text-[#C4661F] font-bold text-[10px]">Área Sensorial</span>
-                    </div>
-                    <div className={`p-4 rounded-xl border space-y-2.5 ${
-                      isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200 shadow-3xs'
-                    }`}>
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-xs sm:text-sm text-stone-900 dark:text-white">Torre Rosa • Santiago Morales (4a 2m)</span>
-                        <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500 font-bold">
-                          3er Tiempo: Dominio
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          Validación RENAPO en Vivo
                         </span>
                       </div>
-                      <div className="w-full bg-stone-200 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
-                        <div className="bg-emerald-500 h-full w-[90%] rounded-full" />
-                      </div>
-                      <p className="text-xs text-stone-500 dark:text-slate-400 leading-relaxed pt-1">
-                        Demostró discriminación visual tridimensional perfecta y retorno espontáneo al estante sin requerir intervención del adulto.
+                      <h3 className={`text-2xl sm:text-3xl font-serif font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>
+                        Gestor de Formularios Pro & Biometría
+                      </h3>
+                      <p className={`text-sm leading-relaxed max-w-2xl ${isDark ? 'text-slate-300' : 'text-stone-600'}`}>
+                        Crea formularios con validación oficial de CURP ante RENAPO en segundo plano, biometría KYC para tutores y 3 modos de presentación interactiva.
                       </p>
                     </div>
-                  </div>
 
-                  {/* Bottom Value Pillars */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                    <div className={`p-3 rounded-xl border text-xs ${
-                      isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
-                    }`}>
-                      <span className="font-bold text-stone-900 dark:text-white block">⏳ 3 Tiempos AMI</span>
-                      <span className="text-[11px] text-stone-500 dark:text-slate-400">Presentación, Reconocimiento, Dominio.</span>
-                    </div>
-                    <div className={`p-3 rounded-xl border text-xs ${
-                      isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
-                    }`}>
-                      <span className="font-bold text-stone-900 dark:text-white block">📈 Sin Calificaciones</span>
-                      <span className="text-[11px] text-stone-500 dark:text-slate-400">Evaluación puramente formativa.</span>
-                    </div>
-                    <div className={`p-3 rounded-xl border text-xs ${
-                      isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
-                    }`}>
-                      <span className="font-bold text-stone-900 dark:text-white block">📁 Bitácora Histórica</span>
-                      <span className="text-[11px] text-stone-500 dark:text-slate-400">Trazabilidad de todo el ciclo escolar.</span>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* TAB 9: GUÍAS & ROLES */}
-              {activeModuleTab === 'staff' && (
-                <motion.div
-                  key="staff"
-                  initial={{ opacity: 0, y: 14 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -14 }}
-                  transition={{ duration: 0.25 }}
-                  className="space-y-6 text-left min-w-0"
-                >
-                  {/* Top Header */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-[#C4661F] bg-[#C4661F]/10 px-3 py-1 rounded-full border border-[#C4661F]/20 flex items-center gap-1.5">
-                        <Users className="w-3.5 h-3.5" />
-                        Guías & Roles de Equipo
-                      </span>
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 flex items-center gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        Permisos por Ambiente
-                      </span>
-                    </div>
-                    <h3 className={`text-2xl sm:text-3xl font-serif font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>
-                      Matriz de Seguridad & Memoria Institucional
-                    </h3>
-                    <p className={`text-sm leading-relaxed max-w-2xl ${isDark ? 'text-slate-300' : 'text-stone-600'}`}>
-                      Asigna permisos por aula preparada y asegura que el historial pedagógico de cada alumno permanezca en la escuela frente a relevos de guías.
-                    </p>
-                  </div>
-
-                  {/* Full-Width Interactive Roles Matrix */}
-                  <div className={`p-4 sm:p-5 rounded-2xl border space-y-3 ${
-                    isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200 shadow-sm'
-                  }`}>
-                    <div className="flex items-center justify-between text-xs pb-2 border-b border-stone-200 dark:border-slate-800">
-                      <span className="font-bold text-stone-900 dark:text-white">Matriz de Roles & Ambientes Preparados</span>
-                      <span className="text-emerald-500 font-bold text-[10px]">● 4 Roles Activos</span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
-                      <div className={`p-3 rounded-xl border flex items-center justify-between ${
-                        isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200 shadow-3xs'
+                    {/* Full-Width Interactive Form Simulator */}
+                    <div className={`p-4 sm:p-5 rounded-2xl border space-y-4 ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200 shadow-sm'
                       }`}>
-                        <div>
-                          <span className="font-bold block text-stone-900 dark:text-white">Guía Titular AMI</span>
-                          <span className="text-[10px] text-stone-400">Observaciones y 3 Tiempos</span>
+                      {/* Mode Selector Tabs */}
+                      <div className={`p-1 rounded-xl border grid grid-cols-3 gap-1 text-xs font-bold ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-stone-200/70 border-stone-300'
+                        }`}>
+                        <button
+                          type="button"
+                          onClick={() => setFormPresentationMode('smart_fields')}
+                          className={`py-2 px-2 rounded-lg text-center transition-all cursor-pointer truncate ${formPresentationMode === 'smart_fields'
+                              ? 'bg-white dark:bg-[#162218] text-[#C4661F] shadow-xs font-bold'
+                              : 'text-stone-600 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white'
+                            }`}
+                        >
+                          ⚡ Campos Inteligentes
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setFormPresentationMode('wizard')}
+                          className={`py-2 px-2 rounded-lg text-center transition-all cursor-pointer truncate ${formPresentationMode === 'wizard'
+                              ? 'bg-white dark:bg-[#162218] text-[#C4661F] shadow-xs font-bold'
+                              : 'text-stone-600 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white'
+                            }`}
+                        >
+                          📋 Modo Wizard
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setFormPresentationMode('fluid')}
+                          className={`py-2 px-2 rounded-lg text-center transition-all cursor-pointer truncate ${formPresentationMode === 'fluid'
+                              ? 'bg-white dark:bg-[#162218] text-[#C4661F] shadow-xs font-bold'
+                              : 'text-stone-600 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white'
+                            }`}
+                        >
+                          💬 Modo Fluid
+                        </button>
+                      </div>
+
+                      {/* Mode 1: Smart Fields */}
+                      {formPresentationMode === 'smart_fields' && (
+                        <div className="space-y-3.5">
+                          {/* CURP Field */}
+                          <div className={`p-4 rounded-xl border space-y-2.5 ${isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200 shadow-3xs'
+                            }`}>
+                            <div className="flex items-center justify-between gap-2 flex-wrap text-xs">
+                              <span className="font-bold flex items-center gap-1.5 text-stone-900 dark:text-white">
+                                <Fingerprint className="w-4 h-4 text-[#C4661F]" />
+                                Campo Inteligente: CURP Oficial (México)
+                              </span>
+                              <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                Conexión RENAPO en segundo plano
+                              </span>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                              <div className={`p-2.5 rounded-xl border font-mono flex-1 ${isDark ? 'bg-slate-900/80 border-slate-800 text-slate-200' : 'bg-stone-50 border-stone-200 text-stone-800'
+                                }`}>
+                                <span className="text-[10px] text-stone-400 block font-sans font-semibold">Entrada de la Familia:</span>
+                                <span className="font-bold text-sm tracking-wider">MOSS180512HDFRRN04</span>
+                              </div>
+                              <div className={`p-2.5 rounded-xl border flex-1 flex items-center justify-between ${isDark ? 'bg-emerald-950/30 border-emerald-900/60 text-emerald-300' : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                                }`}>
+                                <div>
+                                  <span className="text-[10px] block font-semibold text-emerald-600 dark:text-emerald-400">Datos Verificados Automáticamente:</span>
+                                  <span className="font-bold text-xs">Santiago Morales Suárez • 12/05/2018</span>
+                                </div>
+                                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 ml-2" />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* KYC & Biometrics Field */}
+                          <div className={`p-4 rounded-xl border space-y-2.5 ${isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200 shadow-3xs'
+                            }`}>
+                            <div className="flex items-center justify-between gap-2 flex-wrap text-xs">
+                              <span className="font-bold flex items-center gap-1.5 text-stone-900 dark:text-white">
+                                <ScanFace className="w-4 h-4 text-[#C4661F]" />
+                                Prueba de Vida & Verificación KYC de Tutores
+                              </span>
+                              <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 font-bold">
+                                Facial Match: 99.4%
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                              <div className={`p-3 rounded-xl border flex items-center gap-3 ${isDark ? 'bg-slate-900/80 border-slate-800 text-slate-300' : 'bg-stone-50 border-stone-200 text-stone-700'
+                                }`}>
+                                <FileCheck className="w-5 h-5 text-emerald-500 shrink-0" />
+                                <div>
+                                  <span className="font-bold block text-xs">Identificación Oficial (INE)</span>
+                                  <span className="text-[11px] text-stone-400">Documento verificado y legible</span>
+                                </div>
+                              </div>
+                              <div className={`p-3 rounded-xl border flex items-center gap-3 ${isDark ? 'bg-slate-900/80 border-slate-800 text-slate-300' : 'bg-stone-50 border-stone-200 text-stone-700'
+                                }`}>
+                                <Camera className="w-5 h-5 text-[#C4661F] shrink-0" />
+                                <div>
+                                  <span className="font-bold block text-xs">Selfie / Prueba de Vida</span>
+                                  <span className="text-[11px] text-emerald-500 font-semibold">● Coincidencia facial aprobada</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                        <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-[#C4661F]/15 text-[#C4661F] font-bold">
-                          Ambientes 1 & 2
+                      )}
+
+                      {/* Mode 2: Wizard */}
+                      {formPresentationMode === 'wizard' && (
+                        <div className={`p-4 rounded-xl border space-y-3 ${isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200'
+                          }`}>
+                          <div className="flex items-center justify-between text-xs font-bold gap-2">
+                            <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                              <span className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center text-[10px]">✓</span>
+                              <span>1. Aspirante</span>
+                            </div>
+                            <div className="h-0.5 flex-1 bg-[#C4661F]" />
+                            <div className="flex items-center gap-1.5 text-[#C4661F]">
+                              <span className="w-5 h-5 rounded-full bg-[#C4661F] text-white flex items-center justify-center text-[10px]">2</span>
+                              <span>2. RENAPO & KYC</span>
+                            </div>
+                            <div className="h-0.5 flex-1 bg-stone-300 dark:bg-slate-700" />
+                            <div className="flex items-center gap-1.5 text-stone-400">
+                              <span className="w-5 h-5 rounded-full bg-stone-200 dark:bg-slate-800 flex items-center justify-center text-[10px]">3</span>
+                              <span>3. Firma Digital</span>
+                            </div>
+                          </div>
+                          <p className="text-xs text-stone-500 dark:text-slate-400 leading-relaxed pt-1">
+                            El modo Wizard divide admisiones complejas en pasos digeribles, reduciendo el abandono de registro en un 42% y validando la identidad antes de almacenar.
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Mode 3: Fluid */}
+                      {formPresentationMode === 'fluid' && (
+                        <div className={`p-4 rounded-xl border text-xs space-y-3 ${isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200'
+                          }`}>
+                          <div className="flex items-center justify-between text-[11px] text-[#C4661F] font-bold">
+                            <span>Pregunta 3 de 7 • Modo Conversacional</span>
+                            <span>45% completado</span>
+                          </div>
+                          <p className="text-sm font-serif font-bold text-stone-900 dark:text-white">
+                            ¿A qué ambiente Montessori deseas postular a tu hijo/a?
+                          </p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            <div className="p-3 rounded-xl border bg-[#C4661F]/10 border-[#C4661F] font-bold text-xs text-[#C4661F] flex items-center justify-between">
+                              <span>A) Casa de Niños (3-6 años)</span>
+                              <Check className="w-4 h-4" />
+                            </div>
+                            <div className="p-3 rounded-xl border text-stone-600 dark:text-slate-400 border-stone-200 dark:border-slate-800 text-xs">
+                              <span>B) Taller 1 (6-9 años)</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Bottom Value Pillars */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
+                        }`}>
+                        <span className="font-bold text-stone-900 dark:text-white block">🏛️ Consulta RENAPO</span>
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Autorrellenado sin errores de captura.</span>
+                      </div>
+                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
+                        }`}>
+                        <span className="font-bold text-stone-900 dark:text-white block">🛡️ Biometría KYC</span>
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Prueba de vida y cotejo de INE.</span>
+                      </div>
+                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
+                        }`}>
+                        <span className="font-bold text-stone-900 dark:text-white block">⚡ Sincronización Total</span>
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Directo al expediente del alumno.</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* TAB 2: GALERÍA INTELIGENTE */}
+                {activeModuleTab === 'gallery' && (
+                  <motion.div
+                    key="gallery"
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -14 }}
+                    transition={{ duration: 0.25 }}
+                    className="space-y-6 text-left min-w-0"
+                  >
+                    {/* Top Header */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-[#C4661F] bg-[#C4661F]/10 px-3 py-1 rounded-full border border-[#C4661F]/20 flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5" />
+                          IA Pedagógica & Narrativa
+                        </span>
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 bg-purple-500/10 px-3 py-1 rounded-full border border-purple-500/20 flex items-center gap-1">
+                          <Camera className="w-3.5 h-3.5" />
+                          Reconocimiento de Materiales AMI
                         </span>
                       </div>
-                      <div className={`p-3 rounded-xl border flex items-center justify-between ${
-                        isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200 shadow-3xs'
+                      <h3 className={`text-2xl sm:text-3xl font-serif font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>
+                        Galería Inteligente & Observaciones
+                      </h3>
+                      <p className={`text-sm leading-relaxed max-w-2xl ${isDark ? 'text-slate-300' : 'text-stone-600'}`}>
+                        Solo sube la foto del aula: la IA reconoce el material didáctico y redacta la observación pedagógica describiendo la actividad, concentración y emocionalidad del niño.
+                      </p>
+                    </div>
+
+                    {/* Full-Width Interactive Gallery Showcase */}
+                    <div className={`p-4 sm:p-5 rounded-2xl border space-y-4 ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200 shadow-sm'
                       }`}>
-                        <div>
-                          <span className="font-bold block text-stone-900 dark:text-white">Dirección General</span>
-                          <span className="text-[10px] text-stone-400">Finanzas, Admisiones y Auditoría</span>
+                      {/* Child Selection: 2 Clean Full-Width Buttons */}
+                      <div className="grid grid-cols-2 gap-2 w-full">
+                        {[
+                          { id: 'santiago', name: 'Santiago (Torre Rosa • Sensorial)' },
+                          { id: 'elena', name: 'Elena (Decanomio • Matemáticas)' },
+                        ].map((child) => (
+                          <button
+                            key={child.id}
+                            type="button"
+                            onClick={() => setGallerySelectedChild(child.id as any)}
+                            className={`py-2 px-2.5 rounded-xl text-xs font-medium transition-all cursor-pointer border text-center truncate ${gallerySelectedChild === child.id
+                                ? 'bg-[#C4661F] text-white border-[#C4661F] font-bold shadow-xs'
+                                : isDark ? 'bg-slate-900/80 text-slate-300 border-slate-800 hover:bg-slate-800' : 'bg-white text-stone-700 border-stone-200 hover:bg-stone-100 shadow-3xs'
+                              }`}
+                          >
+                            {child.name}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Photo & Pedagogical Analysis Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-stretch">
+                        {/* Photo Thumbnail */}
+                        <div className="md:col-span-5 relative rounded-xl overflow-hidden border border-stone-200 dark:border-slate-800 bg-stone-900 min-h-[190px] flex items-center justify-center">
+                          <div className={`absolute inset-0 bg-gradient-to-br ${gallerySelectedChild === 'santiago'
+                              ? 'from-amber-950/60 via-stone-900 to-emerald-950/80'
+                              : gallerySelectedChild === 'elena'
+                                ? 'from-blue-950/60 via-stone-900 to-indigo-950/80'
+                                : 'from-orange-950/60 via-stone-900 to-rose-950/80'
+                            } flex items-center justify-center p-4 text-center`}>
+                            <div className="space-y-1.5">
+                              <Camera className="w-8 h-8 text-[#C4661F] mx-auto opacity-75" />
+                              <div className="text-xs font-medium text-stone-300">
+                                Foto del Ambiente Montessori
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Badges on Photo */}
+                          <div className="absolute top-2.5 left-2.5">
+                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-md text-white border border-white/20 flex items-center gap-1">
+                              <Camera className="w-3 h-3 text-[#C4661F]" />
+                              #OBS-402
+                            </span>
+                          </div>
+
+                          <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between flex-wrap gap-1.5">
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-950/90 backdrop-blur-md text-emerald-200 border border-emerald-500/60 flex items-center gap-1">
+                              <Check className="w-3 h-3 text-emerald-400 shrink-0" />
+                              Analizado en 1.2s
+                            </span>
+                            <span className="text-[10px] font-mono text-stone-300 bg-black/60 px-2 py-0.5 rounded">
+                              {gallerySelectedChild === 'santiago' ? 'Casa de Niños' : gallerySelectedChild === 'elena' ? 'Taller 1' : 'Comunidad Infantil'}
+                            </span>
+                          </div>
                         </div>
-                        <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-purple-500/15 text-purple-600 dark:text-purple-400 font-bold">
-                          Acceso Global
+
+                        {/* Pedagogical Narrative Result */}
+                        <div className="md:col-span-7 flex flex-col justify-between p-4 rounded-xl border space-y-3 bg-white dark:bg-[#162218] border-stone-200 dark:border-slate-700 shadow-3xs">
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between flex-wrap gap-1.5">
+                              <span className="text-[11px] font-bold uppercase tracking-wider text-[#C4661F] flex items-center gap-1.5">
+                                <Sparkles className="w-3.5 h-3.5" />
+                                Narrativa Pedagógica Montessori
+                              </span>
+                              <span className="text-[10px] font-mono text-stone-400 dark:text-slate-400 bg-stone-100 dark:bg-slate-800 px-2 py-0.5 rounded">
+                                Modelo AMI
+                              </span>
+                            </div>
+
+                            <p className="text-xs sm:text-sm italic font-serif leading-relaxed text-stone-700 dark:text-slate-200 border-l-2 border-[#C4661F] pl-3 py-1">
+                              {gallerySelectedChild === 'santiago' && (
+                                '“Santiago (4a 2m) experimenta profunda concentración con la Torre Rosa. Gradúa los 10 cubos con serenidad y persevera en el control de error sin intervención del adulto.”'
+                              )}
+                              {gallerySelectedChild === 'elena' && (
+                                '“Elena (5a 8m) explora con gran curiosidad la geometría de los decanomios, compartiendo deducciones espaciales con gracia y cortesía.”'
+                              )}
+                              {gallerySelectedChild === 'mateo' && (
+                                '“Mateo (2a 10m) ejercita su coordinación motriz fina abotonando el Marco de Vestir con serenidad y orden espontáneo.”'
+                              )}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-stone-100 dark:border-slate-800 text-[11px]">
+                            <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium">
+                              ✓ Registrado en Bitácora
+                            </span>
+                            <span className="px-2.5 py-1 rounded-lg bg-[#C4661F]/10 text-[#C4661F] font-medium">
+                              ✓ Portafolio Familiar Actualizado
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bottom Value Pillars */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
+                        }`}>
+                        <span className="font-bold text-stone-900 dark:text-white block">✨ Redacción Automática</span>
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Describe el desarrollo sin notas numéricas.</span>
+                      </div>
+                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
+                        }`}>
+                        <span className="font-bold text-stone-900 dark:text-white block">🌿 Filosofía AMI Integrada</span>
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Enfocado en concentración y autonomía.</span>
+                      </div>
+                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
+                        }`}>
+                        <span className="font-bold text-stone-900 dark:text-white block">📁 Portafolio Familiar</span>
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Las familias reciben reportes de valor real.</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* TAB 3: WEB BUILDER INSTITUCIONAL */}
+                {activeModuleTab === 'webbuilder' && (
+                  <motion.div
+                    key="webbuilder"
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -14 }}
+                    transition={{ duration: 0.25 }}
+                    className="space-y-6 text-left min-w-0"
+                  >
+                    {/* Top Header */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-[#C4661F] bg-[#C4661F]/10 px-3 py-1 rounded-full border border-[#C4661F]/20 flex items-center gap-1.5">
+                          <Globe className="w-3.5 h-3.5" />
+                          Web Builder Institucional
+                        </span>
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          Multiidioma & SSL Incluido
+                        </span>
+                      </div>
+                      <h3 className={`text-2xl sm:text-3xl font-serif font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>
+                        Constructor Web Modular para tu Escuela
+                      </h3>
+                      <p className={`text-sm leading-relaxed max-w-2xl ${isDark ? 'text-slate-300' : 'text-stone-600'}`}>
+                        Crea y actualiza la página oficial de tu colegio con bloques modulares Montessori sin necesidad de diseñadores ni programadores.
+                      </p>
+                    </div>
+
+                    {/* Full-Width Interactive Web Builder Sandbox */}
+                    <div className={`p-4 sm:p-5 rounded-2xl border space-y-4 ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200 shadow-sm'
+                      }`}>
+                      {/* Navigation Tabs */}
+                      <div className={`p-1 rounded-xl border grid grid-cols-3 gap-1 text-xs font-bold ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-stone-200/70 border-stone-300'
+                        }`}>
+                        <button
+                          type="button"
+                          onClick={() => setBuilderActiveTab('sections')}
+                          className={`py-2 px-2 rounded-lg text-center transition-all cursor-pointer truncate ${builderActiveTab === 'sections'
+                              ? 'bg-white dark:bg-[#162218] text-[#C4661F] shadow-xs font-bold'
+                              : 'text-stone-600 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white'
+                            }`}
+                        >
+                          🧱 Secciones Modulares
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setBuilderActiveTab('style')}
+                          className={`py-2 px-2 rounded-lg text-center transition-all cursor-pointer truncate ${builderActiveTab === 'style'
+                              ? 'bg-white dark:bg-[#162218] text-[#C4661F] shadow-xs font-bold'
+                              : 'text-stone-600 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white'
+                            }`}
+                        >
+                          🎨 Paleta & Marca
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setBuilderActiveTab('integrations')}
+                          className={`py-2 px-2 rounded-lg text-center transition-all cursor-pointer truncate ${builderActiveTab === 'integrations'
+                              ? 'bg-white dark:bg-[#162218] text-[#C4661F] shadow-xs font-bold'
+                              : 'text-stone-600 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white'
+                            }`}
+                        >
+                          🔗 Integraciones
+                        </button>
+                      </div>
+
+                      {/* Content Area */}
+                      {builderActiveTab === 'sections' && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                          {builderSections.map((sec) => (
+                            <div
+                              key={sec.id}
+                              className={`p-3 rounded-xl border flex items-center justify-between text-xs transition-all ${sec.active
+                                  ? isDark ? 'bg-[#162218] border-slate-700 text-white' : 'bg-white border-stone-200 text-stone-800 shadow-3xs'
+                                  : 'opacity-40 bg-stone-100 dark:bg-slate-900 border-dashed border-stone-300 dark:border-slate-800'
+                                }`}
+                            >
+                              <div className="flex items-center gap-2 truncate">
+                                <GripVertical className="w-4 h-4 text-stone-400 shrink-0 cursor-grab" />
+                                <span className="font-bold text-xs truncate">{sec.name}</span>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#C4661F]/10 text-[#C4661F] font-bold">
+                                  {sec.badge}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleBuilderSection(sec.id)}
+                                  className="p-1 text-stone-400 hover:text-[#C4661F] transition-colors cursor-pointer"
+                                  title={sec.active ? 'Ocultar sección' : 'Mostrar sección'}
+                                >
+                                  {sec.active ? <Eye className="w-4 h-4 text-emerald-500" /> : <EyeOff className="w-4 h-4 text-stone-400" />}
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {builderActiveTab === 'style' && (
+                        <div className={`p-4 rounded-xl border space-y-3 ${isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200'
+                          }`}>
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="font-bold text-stone-900 dark:text-white">Tema y Tipografía Institucional Activa:</span>
+                            <span className="text-[11px] font-bold text-[#C4661F] uppercase">{activeBuilderTheme}</span>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2.5">
+                            <button
+                              type="button"
+                              onClick={() => setActiveBuilderTheme('terracotta')}
+                              className={`h-9 px-4 rounded-xl text-xs font-bold transition-all border flex items-center gap-2 cursor-pointer ${activeBuilderTheme === 'terracotta'
+                                  ? 'bg-[#C4661F] text-white border-[#C4661F] shadow-xs'
+                                  : isDark ? 'bg-slate-900 border-slate-800 text-slate-300' : 'bg-stone-100 border-stone-200 text-stone-700'
+                                }`}
+                            >
+                              <span className="w-3 h-3 rounded-full bg-[#C4661F] border border-white" />
+                              Alloy Orange & Serif Clásica
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setActiveBuilderTheme('sage')}
+                              className={`h-9 px-4 rounded-xl text-xs font-bold transition-all border flex items-center gap-2 cursor-pointer ${activeBuilderTheme === 'sage'
+                                  ? 'bg-[#5F6F52] text-white border-[#5F6F52] shadow-xs'
+                                  : isDark ? 'bg-slate-900 border-slate-800 text-slate-300' : 'bg-stone-100 border-stone-200 text-stone-700'
+                                }`}
+                            >
+                              <span className="w-3 h-3 rounded-full bg-[#5F6F52] border border-white" />
+                              Olive Sage & Minimalista
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setActiveBuilderTheme('navy')}
+                              className={`h-9 px-4 rounded-xl text-xs font-bold transition-all border flex items-center gap-2 cursor-pointer ${activeBuilderTheme === 'navy'
+                                  ? 'bg-[#B99470] text-white border-[#B99470] shadow-xs'
+                                  : isDark ? 'bg-slate-900 border-slate-800 text-slate-300' : 'bg-stone-100 border-stone-200 text-stone-700'
+                                }`}
+                            >
+                              <span className="w-3 h-3 rounded-full bg-[#B99470] border border-white" />
+                              Camel Terra & Orgánico
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {builderActiveTab === 'integrations' && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                          <div className={`p-3.5 rounded-xl border flex items-start gap-3 ${isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200'
+                            }`}>
+                            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                            <div>
+                              <span className="font-bold block text-stone-900 dark:text-white">Pipeline de Admisiones Directo</span>
+                              <span className="text-[11px] text-stone-500 dark:text-slate-400">Las solicitudes del formulario web ingresan automáticamente a la etapa "Nueva Solicitud" del Kanban.</span>
+                            </div>
+                          </div>
+                          <div className={`p-3.5 rounded-xl border flex items-start gap-3 ${isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200'
+                            }`}>
+                            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                            <div>
+                              <span className="font-bold block text-stone-900 dark:text-white">Portal de Familias & Calendario</span>
+                              <span className="text-[11px] text-stone-500 dark:text-slate-400">Acceso autenticado y agenda de visitas sincronizada con confirmación automática.</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Bottom Value Pillars */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
+                        }`}>
+                        <span className="font-bold text-stone-900 dark:text-white block">🧱 Arrastra & Publica</span>
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Bloques modulares listos para usar.</span>
+                      </div>
+                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
+                        }`}>
+                        <span className="font-bold text-stone-900 dark:text-white block">🎨 Identidad Única</span>
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Paletas y tipografías a tu medida.</span>
+                      </div>
+                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
+                        }`}>
+                        <span className="font-bold text-stone-900 dark:text-white block">🔗 Conexión al Sistema</span>
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Admisiones directo al expediente.</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* TAB 4: COBRANZA & FACTURACIÓN */}
+                {activeModuleTab === 'finances' && (
+                  <motion.div
+                    key="finances"
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -14 }}
+                    transition={{ duration: 0.25 }}
+                    className="space-y-6 text-left min-w-0"
+                  >
+                    {/* Top Header */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-[#C4661F] bg-[#C4661F]/10 px-3 py-1 rounded-full border border-[#C4661F]/20 flex items-center gap-1.5">
+                          <CreditCard className="w-3.5 h-3.5" />
+                          Cobranza & Facturación
+                        </span>
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          Stripe · Mercado Pago · SPEI
+                        </span>
+                      </div>
+                      <h3 className={`text-2xl sm:text-3xl font-serif font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>
+                        Gestión Financiera & Recurrencia Automática
+                      </h3>
+                      <p className={`text-sm leading-relaxed max-w-2xl ${isDark ? 'text-slate-300' : 'text-stone-600'}`}>
+                        Automatiza el cobro de colegiaturas, emite facturas electrónicas y envía recordatorios cordiales por WhatsApp reduciendo la morosidad hasta un 68%.
+                      </p>
+                    </div>
+
+                    {/* Full-Width Interactive Billing Dashboard */}
+                    <div className={`p-4 sm:p-5 rounded-2xl border space-y-4 ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200 shadow-sm'
+                      }`}>
+                      <div className="flex items-center justify-between text-xs pb-2 border-b border-stone-200 dark:border-slate-800">
+                        <span className="font-bold text-stone-900 dark:text-white">Tablero de Colegiaturas • Ciclo Escolar Activo</span>
+                        <span className="text-emerald-500 font-bold text-[11px]">● Conciliación 95.6%</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                        <div className={`p-3.5 rounded-xl border ${isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200 shadow-3xs'
+                          }`}>
+                          <span className="text-stone-400 text-[10px] block font-semibold">Total Cobrado</span>
+                          <span className="text-xl font-bold text-emerald-500">$38,250 USD</span>
+                        </div>
+                        <div className={`p-3.5 rounded-xl border ${isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200 shadow-3xs'
+                          }`}>
+                          <span className="text-stone-400 text-[10px] block font-semibold">Pendiente por Cobrar</span>
+                          <span className="text-xl font-bold text-amber-500">$1,750 USD</span>
+                        </div>
+                        <div className={`p-3.5 rounded-xl border ${isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200 shadow-3xs'
+                          }`}>
+                          <span className="text-stone-400 text-[10px] block font-semibold">Tasa de Morosidad</span>
+                          <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400">1.8% (Mínima)</span>
+                        </div>
+                      </div>
+
+                      <div className={`p-3.5 rounded-xl border flex items-center justify-between text-xs ${isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200 shadow-3xs'
+                        }`}>
+                        <div className="flex items-center gap-2.5">
+                          <MessageCircle className="w-4 h-4 text-emerald-500 shrink-0" />
+                          <span className="font-semibold text-stone-900 dark:text-white">Recordatorio automático por WhatsApp (3 días antes del vencimiento)</span>
+                        </div>
+                        <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold shrink-0">
+                          Activo en Piloto
                         </span>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Bottom Value Pillars */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                    <div className={`p-3 rounded-xl border text-xs ${
-                      isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
-                    }`}>
-                      <span className="font-bold text-stone-900 dark:text-white block">🔑 Aislamiento por Aula</span>
-                      <span className="text-[11px] text-stone-500 dark:text-slate-400">Solo ven a sus propios alumnos.</span>
+                    {/* Bottom Value Pillars */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
+                        }`}>
+                        <span className="font-bold text-stone-900 dark:text-white block">💳 Cargo Recurrente</span>
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Tarjetas, SPEI y pasarelas globales.</span>
+                      </div>
+                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
+                        }`}>
+                        <span className="font-bold text-stone-900 dark:text-white block">💬 Mensajes Cordiales</span>
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Vía WhatsApp con enlace de pago.</span>
+                      </div>
+                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
+                        }`}>
+                        <span className="font-bold text-stone-900 dark:text-white block">📊 Facturación Instantánea</span>
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Comprobantes y conciliación al día.</span>
+                      </div>
                     </div>
-                    <div className={`p-3 rounded-xl border text-xs ${
-                      isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
-                    }`}>
-                      <span className="font-bold text-stone-900 dark:text-white block">📚 Memoria Viva</span>
-                      <span className="text-[11px] text-stone-500 dark:text-slate-400">El historial se queda en la escuela.</span>
+                  </motion.div>
+                )}
+
+                {/* TAB 5: PIPELINES & KANBAN */}
+                {activeModuleTab === 'pipelines' && (
+                  <motion.div
+                    key="pipelines"
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -14 }}
+                    transition={{ duration: 0.25 }}
+                    className="space-y-6 text-left min-w-0"
+                  >
+                    {/* Top Header */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-[#C4661F] bg-[#C4661F]/10 px-3 py-1 rounded-full border border-[#C4661F]/20 flex items-center gap-1.5">
+                          <GitPullRequest className="w-3.5 h-3.5" />
+                          Pipelines & Kanban
+                        </span>
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          Automatizaciones por Etapa
+                        </span>
+                      </div>
+                      <h3 className={`text-2xl sm:text-3xl font-serif font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>
+                        Tableros de Admisiones & Seguimiento
+                      </h3>
+                      <p className={`text-sm leading-relaxed max-w-2xl ${isDark ? 'text-slate-300' : 'text-stone-600'}`}>
+                        Visualiza el flujo de cada familia desde la primera solicitud hasta la bienvenida en el aula, con contratos y fichas de pago automáticas.
+                      </p>
                     </div>
-                    <div className={`p-3 rounded-xl border text-xs ${
-                      isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
-                    }`}>
-                      <span className="font-bold text-stone-900 dark:text-white block">🤝 Relevos Transparentes</span>
-                      <span className="text-[11px] text-stone-500 dark:text-slate-400">Continuidad pedagógica garantizada.</span>
+
+                    {/* Full-Width Interactive Kanban Board */}
+                    <div className={`p-4 sm:p-5 rounded-2xl border space-y-3.5 ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200 shadow-sm'
+                      }`}>
+                      <div className="flex items-center justify-between text-xs pb-2 border-b border-stone-200 dark:border-slate-800">
+                        <span className="font-bold text-stone-900 dark:text-white">Tablero Kanban • Admisiones Ciclo 2026-2027</span>
+                        <span className="text-[#C4661F] text-[11px] font-bold bg-[#C4661F]/10 px-2.5 py-0.5 rounded-full">
+                          18 Aspirantes en Proceso
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                        {/* Column 1: Solicitud */}
+                        <div className={`p-3 rounded-xl border space-y-2.5 ${isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200 shadow-3xs'
+                          }`}>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-bold text-stone-500 dark:text-slate-400 uppercase">
+                              1. Solicitud (4)
+                            </span>
+                            <span className="w-2 h-2 rounded-full bg-amber-400" />
+                          </div>
+                          <div className="p-3 rounded-xl bg-stone-50 dark:bg-slate-800/90 border border-stone-200 dark:border-slate-700 space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-xs text-stone-900 dark:text-white">Mateo Luna</span>
+                              <span className="text-[10px] text-stone-400">Hace 2h</span>
+                            </div>
+                            <span className="inline-block text-[10px] font-medium text-stone-600 dark:text-slate-300 bg-stone-200/70 dark:bg-slate-700 px-2 py-0.5 rounded-md">
+                              Comunidad Infantil
+                            </span>
+                            <p className="text-[10px] text-stone-400">Formulario web completado</p>
+                          </div>
+                        </div>
+
+                        {/* Column 2: Entrevista */}
+                        <div className={`p-3 rounded-xl border space-y-2.5 ${isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200 shadow-3xs'
+                          }`}>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-bold text-[#C4661F] uppercase">
+                              2. Entrevista (2)
+                            </span>
+                            <span className="w-2 h-2 rounded-full bg-[#C4661F]" />
+                          </div>
+                          <div className="p-3 rounded-xl bg-[#C4661F]/5 border border-[#C4661F]/30 space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-xs text-[#C4661F]">Santiago Morales</span>
+                              <span className="text-[10px] text-[#C4661F] font-bold">Mañana</span>
+                            </div>
+                            <span className="inline-block text-[10px] font-medium text-[#C4661F] bg-[#C4661F]/15 px-2 py-0.5 rounded-md">
+                              Casa de Niños
+                            </span>
+                            <p className="text-[10px] text-stone-500 dark:text-slate-400">Cita confirmada por WhatsApp</p>
+                          </div>
+                        </div>
+
+                        {/* Column 3: Matriculado */}
+                        <div className={`p-3 rounded-xl border space-y-2.5 ${isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200 shadow-3xs'
+                          }`}>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase">
+                              3. Matriculado (12)
+                            </span>
+                            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                          </div>
+                          <div className="p-3 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-xs text-emerald-800 dark:text-emerald-300">Valentina Ruiz</span>
+                              <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                            </div>
+                            <span className="inline-block text-[10px] font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/60 px-2 py-0.5 rounded-md">
+                              Taller 1
+                            </span>
+                            <p className="text-[10px] text-emerald-600/80 dark:text-emerald-400/80">Contrato y pago formalizados</p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+
+                    {/* Bottom Value Pillars */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
+                        }`}>
+                        <span className="font-bold text-stone-900 dark:text-white block">📋 Control Visual</span>
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Seguimiento etapa por etapa.</span>
+                      </div>
+                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
+                        }`}>
+                        <span className="font-bold text-stone-900 dark:text-white block">⚡ Disparadores</span>
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Contratos y fichas automáticas.</span>
+                      </div>
+                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
+                        }`}>
+                        <span className="font-bold text-stone-900 dark:text-white block">🎒 Múltiples Flujos</span>
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Admisiones, personal o psicopedagógico.</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* TAB 6: CALENDARIO & CITAS */}
+                {activeModuleTab === 'calendar' && (
+                  <motion.div
+                    key="calendar"
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -14 }}
+                    transition={{ duration: 0.25 }}
+                    className="space-y-6 text-left min-w-0"
+                  >
+                    {/* Top Header */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-[#C4661F] bg-[#C4661F]/10 px-3 py-1 rounded-full border border-[#C4661F]/20 flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5" />
+                          Calendario & Citas
+                        </span>
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          Google & Apple Sync
+                        </span>
+                      </div>
+                      <h3 className={`text-2xl sm:text-3xl font-serif font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>
+                        Agenda de Observaciones y Entrevistas
+                      </h3>
+                      <p className={`text-sm leading-relaxed max-w-2xl ${isDark ? 'text-slate-300' : 'text-stone-600'}`}>
+                        Permite a las familias reservar visitas al ambiente según la disponibilidad real del equipo docente, eliminando empalmes y cancelaciones.
+                      </p>
+                    </div>
+
+                    {/* Full-Width Interactive Calendar Simulator */}
+                    <div className={`p-4 sm:p-5 rounded-2xl border space-y-3 ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200 shadow-sm'
+                      }`}>
+                      <div className="flex items-center justify-between text-xs pb-2 border-b border-stone-200 dark:border-slate-800">
+                        <span className="font-bold text-stone-900 dark:text-white">Visita de Observación al Ambiente</span>
+                        <span className="text-emerald-500 font-bold text-[10px]">● 3 Horarios Disponibles</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                        <button type="button" className={`p-3.5 rounded-xl border text-center font-bold transition-all ${isDark ? 'bg-[#162218] border-slate-700 text-slate-200' : 'bg-white border-stone-200 text-stone-800 shadow-3xs'
+                          }`}>
+                          09:00 AM
+                          <span className="block text-[10px] font-normal text-stone-400 mt-0.5">Casa de Niños 1</span>
+                        </button>
+                        <button type="button" className="p-3.5 rounded-xl border border-[#C4661F] bg-[#C4661F]/15 text-[#C4661F] text-center font-bold shadow-xs">
+                          11:00 AM (Seleccionado)
+                          <span className="block text-[10px] font-normal mt-0.5">Casa de Niños 2</span>
+                        </button>
+                        <button type="button" className={`p-3.5 rounded-xl border text-center font-bold transition-all ${isDark ? 'bg-[#162218] border-slate-700 text-slate-200' : 'bg-white border-stone-200 text-stone-800 shadow-3xs'
+                          }`}>
+                          02:30 PM
+                          <span className="block text-[10px] font-normal text-stone-400 mt-0.5">Taller 1</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Bottom Value Pillars */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
+                        }`}>
+                        <span className="font-bold text-stone-900 dark:text-white block">📅 Sin Empalmes</span>
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Disponibilidad real por ambiente.</span>
+                      </div>
+                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
+                        }`}>
+                        <span className="font-bold text-stone-900 dark:text-white block">🔔 Recordatorio WhatsApp</span>
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400">85% menos inasistencias.</span>
+                      </div>
+                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
+                        }`}>
+                        <span className="font-bold text-stone-900 dark:text-white block">📲 Sincronización Móvil</span>
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Google Calendar y Apple iCal.</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* TAB 7: PORTAL DE FAMILIAS */}
+                {activeModuleTab === 'family' && (
+                  <motion.div
+                    key="family"
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -14 }}
+                    transition={{ duration: 0.25 }}
+                    className="space-y-6 text-left min-w-0"
+                  >
+                    {/* Top Header */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-[#C4661F] bg-[#C4661F]/10 px-3 py-1 rounded-full border border-[#C4661F]/20 flex items-center gap-1.5">
+                          <Users className="w-3.5 h-3.5" />
+                          Portal de Familias
+                        </span>
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          Sin Grupos Caóticos de WhatsApp
+                        </span>
+                      </div>
+                      <h3 className={`text-2xl sm:text-3xl font-serif font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>
+                        Comunicación Institucional y Firmas Digitales
+                      </h3>
+                      <p className={`text-sm leading-relaxed max-w-2xl ${isDark ? 'text-slate-300' : 'text-stone-600'}`}>
+                        Centraliza boletines, permisos escolares y firmas electrónicas de autorización con confirmación de lectura en tiempo real.
+                      </p>
+                    </div>
+
+                    {/* Full-Width Interactive Family Portal Simulator */}
+                    <div className={`p-4 sm:p-5 rounded-2xl border space-y-3 ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200 shadow-sm'
+                      }`}>
+                      <div className="flex items-center justify-between text-xs pb-2 border-b border-stone-200 dark:border-slate-800">
+                        <span className="font-bold text-stone-900 dark:text-white">Portal Familiar • Familia Morales</span>
+                        <span className="text-emerald-500 font-bold text-[10px]">● Sesión Segura</span>
+                      </div>
+                      <div className={`p-4 rounded-xl border space-y-2 ${isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200 shadow-3xs'
+                        }`}>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-[#C4661F]">Circular Oficial: Salida Pedagógica al Jardín Botánico</span>
+                          <span className="text-[10px] text-stone-400">Hoy</span>
+                        </div>
+                        <p className="text-xs text-stone-600 dark:text-slate-300">Autorización de transporte y seguro escolar para Santiago Morales.</p>
+                        <div className="pt-2 flex items-center justify-between flex-wrap gap-2 border-t border-stone-100 dark:border-slate-800">
+                          <span className="text-[11px] text-emerald-500 font-bold flex items-center gap-1">
+                            <Check className="w-3.5 h-3.5" />
+                            Firmado digitalmente por ambos tutores
+                          </span>
+                          <span className="text-[10px] font-mono text-stone-400">12/Sep • 08:30 AM</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bottom Value Pillars */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
+                        }`}>
+                        <span className="font-bold text-stone-900 dark:text-white block">🔒 Privacidad Total</span>
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Sin teléfonos expuestos en grupos.</span>
+                      </div>
+                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
+                        }`}>
+                        <span className="font-bold text-stone-900 dark:text-white block">✍️ Firmas Móviles</span>
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Autorizaciones válidas con valor legal.</span>
+                      </div>
+                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
+                        }`}>
+                        <span className="font-bold text-stone-900 dark:text-white block">📢 Boletines Oficiales</span>
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Con acuse de lectura para el colegio.</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* TAB 8: OBSERVACIÓN & 3 TIEMPOS */}
+                {activeModuleTab === 'observation' && (
+                  <motion.div
+                    key="observation"
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -14 }}
+                    transition={{ duration: 0.25 }}
+                    className="space-y-6 text-left min-w-0"
+                  >
+                    {/* Top Header */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-[#C4661F] bg-[#C4661F]/10 px-3 py-1 rounded-full border border-[#C4661F]/20 flex items-center gap-1.5">
+                          <Compass className="w-3.5 h-3.5" />
+                          Observación 3 Tiempos
+                        </span>
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          Currículo AMI / AMS
+                        </span>
+                      </div>
+                      <h3 className={`text-2xl sm:text-3xl font-serif font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>
+                        Lección de Tres Tiempos & Registro Cualitativo
+                      </h3>
+                      <p className={`text-sm leading-relaxed max-w-2xl ${isDark ? 'text-slate-300' : 'text-stone-600'}`}>
+                        Registra la presentación, reconocimiento y dominio de cada material sin interferir en la concentración espontánea del niño.
+                      </p>
+                    </div>
+
+                    {/* Full-Width Interactive Observation Simulator */}
+                    <div className={`p-4 sm:p-5 rounded-2xl border space-y-3 ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200 shadow-sm'
+                      }`}>
+                      <div className="flex items-center justify-between text-xs pb-2 border-b border-stone-200 dark:border-slate-800">
+                        <span className="font-bold text-stone-900 dark:text-white">Registro de Material • Casa de Niños 1</span>
+                        <span className="text-[#C4661F] font-bold text-[10px]">Área Sensorial</span>
+                      </div>
+                      <div className={`p-4 rounded-xl border space-y-2.5 ${isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200 shadow-3xs'
+                        }`}>
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-xs sm:text-sm text-stone-900 dark:text-white">Torre Rosa • Santiago Morales (4a 2m)</span>
+                          <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500 font-bold">
+                            3er Tiempo: Dominio
+                          </span>
+                        </div>
+                        <div className="w-full bg-stone-200 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                          <div className="bg-emerald-500 h-full w-[90%] rounded-full" />
+                        </div>
+                        <p className="text-xs text-stone-500 dark:text-slate-400 leading-relaxed pt-1">
+                          Demostró discriminación visual tridimensional perfecta y retorno espontáneo al estante sin requerir intervención del adulto.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Bottom Value Pillars */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
+                        }`}>
+                        <span className="font-bold text-stone-900 dark:text-white block">⏳ 3 Tiempos AMI</span>
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Presentación, Reconocimiento, Dominio.</span>
+                      </div>
+                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
+                        }`}>
+                        <span className="font-bold text-stone-900 dark:text-white block">📈 Sin Calificaciones</span>
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Evaluación puramente formativa.</span>
+                      </div>
+                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
+                        }`}>
+                        <span className="font-bold text-stone-900 dark:text-white block">📁 Bitácora Histórica</span>
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Trazabilidad de todo el ciclo escolar.</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* TAB 9: GUÍAS & ROLES */}
+                {activeModuleTab === 'staff' && (
+                  <motion.div
+                    key="staff"
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -14 }}
+                    transition={{ duration: 0.25 }}
+                    className="space-y-6 text-left min-w-0"
+                  >
+                    {/* Top Header */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-[#C4661F] bg-[#C4661F]/10 px-3 py-1 rounded-full border border-[#C4661F]/20 flex items-center gap-1.5">
+                          <Users className="w-3.5 h-3.5" />
+                          Guías & Roles de Equipo
+                        </span>
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          Permisos por Ambiente
+                        </span>
+                      </div>
+                      <h3 className={`text-2xl sm:text-3xl font-serif font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>
+                        Matriz de Seguridad & Memoria Institucional
+                      </h3>
+                      <p className={`text-sm leading-relaxed max-w-2xl ${isDark ? 'text-slate-300' : 'text-stone-600'}`}>
+                        Asigna permisos por aula preparada y asegura que el historial pedagógico de cada alumno permanezca en la escuela frente a relevos de guías.
+                      </p>
+                    </div>
+
+                    {/* Full-Width Interactive Roles Matrix */}
+                    <div className={`p-4 sm:p-5 rounded-2xl border space-y-3 ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200 shadow-sm'
+                      }`}>
+                      <div className="flex items-center justify-between text-xs pb-2 border-b border-stone-200 dark:border-slate-800">
+                        <span className="font-bold text-stone-900 dark:text-white">Matriz de Roles & Ambientes Preparados</span>
+                        <span className="text-emerald-500 font-bold text-[10px]">● 4 Roles Activos</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                        <div className={`p-3 rounded-xl border flex items-center justify-between ${isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200 shadow-3xs'
+                          }`}>
+                          <div>
+                            <span className="font-bold block text-stone-900 dark:text-white">Guía Titular AMI</span>
+                            <span className="text-[10px] text-stone-400">Observaciones y 3 Tiempos</span>
+                          </div>
+                          <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-[#C4661F]/15 text-[#C4661F] font-bold">
+                            Ambientes 1 & 2
+                          </span>
+                        </div>
+                        <div className={`p-3 rounded-xl border flex items-center justify-between ${isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200 shadow-3xs'
+                          }`}>
+                          <div>
+                            <span className="font-bold block text-stone-900 dark:text-white">Dirección General</span>
+                            <span className="text-[10px] text-stone-400">Finanzas, Admisiones y Auditoría</span>
+                          </div>
+                          <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-purple-500/15 text-purple-600 dark:text-purple-400 font-bold">
+                            Acceso Global
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bottom Value Pillars */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
+                        }`}>
+                        <span className="font-bold text-stone-900 dark:text-white block">🔑 Aislamiento por Aula</span>
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Solo ven a sus propios alumnos.</span>
+                      </div>
+                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
+                        }`}>
+                        <span className="font-bold text-stone-900 dark:text-white block">📚 Memoria Viva</span>
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400">El historial se queda en la escuela.</span>
+                      </div>
+                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
+                        }`}>
+                        <span className="font-bold text-stone-900 dark:text-white block">🤝 Relevos Transparentes</span>
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Continuidad pedagógica garantizada.</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </div>
@@ -4945,13 +4831,12 @@ export const MontessoriNexusLanding: React.FC = () => {
                 <button
                   key={key}
                   onClick={() => setActiveArea(key as any)}
-                  className={`px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer border flex items-center justify-center text-center shrink-0 whitespace-nowrap select-none ${
-                    isActive
+                  className={`px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer border flex items-center justify-center text-center shrink-0 whitespace-nowrap select-none ${isActive
                       ? 'bg-[#C4661F] text-white border-[#C4661F] shadow-lg shadow-[#C4661F]/25 ring-2 ring-[#C4661F]/20'
                       : isDark
-                      ? 'bg-slate-800/90 text-slate-300 border-slate-700/80 hover:bg-slate-700 hover:text-white'
-                      : 'bg-white text-stone-700 border-stone-300 hover:bg-stone-50 hover:border-stone-400 shadow-2xs'
-                  }`}
+                        ? 'bg-slate-800/90 text-slate-300 border-slate-700/80 hover:bg-slate-700 hover:text-white'
+                        : 'bg-white text-stone-700 border-stone-300 hover:bg-stone-50 hover:border-stone-400 shadow-2xs'
+                    }`}
                 >
                   {getAreaIcon(key)}
                   <span>{label}</span>
@@ -4961,9 +4846,8 @@ export const MontessoriNexusLanding: React.FC = () => {
           </div>
 
           {/* Area Card */}
-          <div className={`rounded-3xl p-6 sm:p-10 border shadow-sm max-w-4xl mx-auto text-left space-y-6 ${
-            isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-300'
-          }`}>
+          <div className={`rounded-3xl p-6 sm:p-10 border shadow-sm max-w-4xl mx-auto text-left space-y-6 ${isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-300'
+            }`}>
             {activeArea === 'practica' && (
               <div className="space-y-4">
                 <div className={`flex items-center justify-between pb-3 border-b ${isDark ? 'border-slate-800' : 'border-stone-200'}`}>
@@ -5108,27 +4992,24 @@ export const MontessoriNexusLanding: React.FC = () => {
             <div
               key={idx}
               onClick={() => setActiveCycleStep(idx)}
-              className={`p-8 rounded-3xl border-2 transition-all cursor-pointer ${
-                activeCycleStep === idx
+              className={`p-8 rounded-3xl border-2 transition-all cursor-pointer ${activeCycleStep === idx
                   ? 'bg-[#C4661F]/10 border-[#C4661F] shadow-lg scale-[1.02]'
                   : isDark
-                  ? 'bg-[#162218]/60 border-slate-800 hover:bg-[#162218]'
-                  : 'bg-[#F9EBC7]/60 border-stone-300/80 hover:bg-white'
-              }`}
+                    ? 'bg-[#162218]/60 border-slate-800 hover:bg-[#162218]'
+                    : 'bg-[#F9EBC7]/60 border-stone-300/80 hover:bg-white'
+                }`}
             >
               <div className="flex items-center justify-between mb-4">
                 <span className="text-3xl font-serif font-bold text-[#C4661F]">{item.step}</span>
-                <span className={`text-xs font-mono font-bold px-2.5 py-1 rounded-md border ${
-                  isDark ? 'bg-slate-800 text-slate-300 border-slate-700' : 'bg-stone-100 text-stone-600 border-stone-200'
-                }`}>
+                <span className={`text-xs font-mono font-bold px-2.5 py-1 rounded-md border ${isDark ? 'bg-slate-800 text-slate-300 border-slate-700' : 'bg-stone-100 text-stone-600 border-stone-200'
+                  }`}>
                   {item.time}
                 </span>
               </div>
               <h4 className={`text-xl font-serif font-bold mb-2 ${isDark ? 'text-white' : 'text-[#162218]'}`}>{item.title}</h4>
               <p className={`text-xs leading-relaxed mb-4 ${isDark ? 'text-slate-300' : 'text-stone-600'}`}>{item.desc}</p>
-              <div className={`p-3 rounded-xl border text-xs font-medium flex items-start gap-2 ${
-                isDark ? 'bg-[#0e1710] border-[#C4661F]/30 text-slate-200' : 'bg-[#C4661F]/10 border-[#C4661F]/25 text-[#162218]'
-              }`}>
+              <div className={`p-3 rounded-xl border text-xs font-medium flex items-start gap-2 ${isDark ? 'bg-[#0e1710] border-[#C4661F]/30 text-slate-200' : 'bg-[#C4661F]/10 border-[#C4661F]/25 text-[#162218]'
+                }`}>
                 <Sparkles className="w-4 h-4 text-[#C4661F] shrink-0 mt-0.5" />
                 <span><strong>Nexus:</strong> {item.software}</span>
               </div>
@@ -5154,9 +5035,8 @@ export const MontessoriNexusLanding: React.FC = () => {
             </p>
           </div>
 
-          <div className={`p-8 sm:p-12 rounded-3xl border shadow-xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center ${
-            isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-300'
-          }`}>
+          <div className={`p-8 sm:p-12 rounded-3xl border shadow-xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center ${isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-300'
+            }`}>
             {/* Left Column: Input Form (Currency, Avg Tuition, Student count) */}
             <div className="lg:col-span-6 space-y-5 text-left">
               {/* Input 1: Custom Currency Selector */}
@@ -5170,13 +5050,12 @@ export const MontessoriNexusLanding: React.FC = () => {
                     onClick={() => setCurrencyDropdownOpen(!currencyDropdownOpen)}
                     aria-haspopup="listbox"
                     aria-expanded={currencyDropdownOpen}
-                    className={`w-full px-4 py-3 rounded-2xl text-sm font-bold border cursor-pointer transition-all flex items-center justify-between ${
-                      currencyDropdownOpen
+                    className={`w-full px-4 py-3 rounded-2xl text-sm font-bold border cursor-pointer transition-all flex items-center justify-between ${currencyDropdownOpen
                         ? 'border-[#C4661F] ring-2 ring-[#C4661F]/20 bg-white dark:bg-[#0e1710] text-stone-900 dark:text-white'
                         : isDark
-                        ? 'bg-[#0e1710] text-white border-slate-700 hover:border-slate-600'
-                        : 'bg-[#FEFAE0] text-stone-900 border-stone-300 hover:border-stone-400'
-                    }`}
+                          ? 'bg-[#0e1710] text-white border-slate-700 hover:border-slate-600'
+                          : 'bg-[#FEFAE0] text-stone-900 border-stone-300 hover:border-stone-400'
+                      }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0 pr-2">
                       <span className="font-mono text-xs px-2.5 py-0.5 rounded-lg bg-[#C4661F]/15 text-[#C4661F] font-black shrink-0">
@@ -5187,9 +5066,8 @@ export const MontessoriNexusLanding: React.FC = () => {
                       </span>
                     </div>
                     <ChevronDown
-                      className={`w-4 h-4 text-stone-400 shrink-0 transition-transform duration-200 ${
-                        currencyDropdownOpen ? 'rotate-180 text-[#C4661F]' : ''
-                      }`}
+                      className={`w-4 h-4 text-stone-400 shrink-0 transition-transform duration-200 ${currencyDropdownOpen ? 'rotate-180 text-[#C4661F]' : ''
+                        }`}
                     />
                   </button>
 
@@ -5200,11 +5078,10 @@ export const MontessoriNexusLanding: React.FC = () => {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 6, scale: 0.98 }}
                         transition={{ duration: 0.15 }}
-                        className={`absolute left-0 right-0 mt-2 max-h-60 overflow-y-auto rounded-2xl shadow-2xl border p-1.5 z-50 ${
-                          isDark
+                        className={`absolute left-0 right-0 mt-2 max-h-60 overflow-y-auto rounded-2xl shadow-2xl border p-1.5 z-50 ${isDark
                             ? 'bg-[#162218] border-slate-700 text-white shadow-black/60'
                             : 'bg-white border-stone-200 text-stone-900 shadow-stone-300/50'
-                        }`}
+                          }`}
                       >
                         {CURRENCIES.map((curr) => {
                           const isSelected = curr.code === selectedCurrencyCode;
@@ -5217,21 +5094,19 @@ export const MontessoriNexusLanding: React.FC = () => {
                                 setAvgTuition(curr.defaultTuition);
                                 setCurrencyDropdownOpen(false);
                               }}
-                              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-colors cursor-pointer text-left ${
-                                isSelected
+                              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-colors cursor-pointer text-left ${isSelected
                                   ? 'bg-[#C4661F]/15 text-[#C4661F]'
                                   : isDark
-                                  ? 'hover:bg-slate-800 text-slate-200'
-                                  : 'hover:bg-stone-100 text-stone-700'
-                              }`}
+                                    ? 'hover:bg-slate-800 text-slate-200'
+                                    : 'hover:bg-stone-100 text-stone-700'
+                                }`}
                             >
                               <div className="flex items-center gap-2.5 min-w-0 pr-2">
                                 <span
-                                  className={`font-mono text-xs px-2 py-0.5 rounded-md font-black shrink-0 ${
-                                    isSelected
+                                  className={`font-mono text-xs px-2 py-0.5 rounded-md font-black shrink-0 ${isSelected
                                       ? 'bg-[#C4661F] text-white'
                                       : 'bg-stone-200/70 dark:bg-slate-800 text-stone-700 dark:text-slate-300'
-                                  }`}
+                                    }`}
                                 >
                                   {curr.code} ({curr.symbol})
                                 </span>
@@ -5263,11 +5138,10 @@ export const MontessoriNexusLanding: React.FC = () => {
                     min={1}
                     value={avgTuition}
                     onChange={(e) => setAvgTuition(Math.max(0, Number(e.target.value)))}
-                    className={`w-full pl-10 pr-16 py-3 rounded-2xl text-base font-mono font-bold border transition-colors ${
-                      isDark
+                    className={`w-full pl-10 pr-16 py-3 rounded-2xl text-base font-mono font-bold border transition-colors ${isDark
                         ? 'bg-[#0e1710] text-white border-slate-700 focus:border-[#C4661F]'
                         : 'bg-[#FEFAE0] text-stone-900 border-stone-300 focus:border-[#C4661F]'
-                    }`}
+                      }`}
                   />
                   <span className="absolute right-4 text-xs font-mono font-bold text-stone-400">
                     {selectedCurrency.code}
@@ -5375,26 +5249,23 @@ export const MontessoriNexusLanding: React.FC = () => {
           </p>
 
           {/* Toggle Monthly / Annual */}
-          <div className={`inline-flex items-center p-1.5 rounded-2xl border mt-4 shadow-xs ${
-            isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-stone-300'
-          }`}>
+          <div className={`inline-flex items-center p-1.5 rounded-2xl border mt-4 shadow-xs ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-stone-300'
+            }`}>
             <button
               onClick={() => setBillingCycle('monthly')}
-              className={`px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
-                billingCycle === 'monthly'
+              className={`px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${billingCycle === 'monthly'
                   ? 'bg-[#C4661F] text-white shadow-xs'
                   : isDark ? 'text-slate-300 hover:text-white' : 'text-stone-600 hover:text-stone-900'
-              }`}
+                }`}
             >
               {t.pricing.monthly}
             </button>
             <button
               onClick={() => setBillingCycle('annual')}
-              className={`px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                billingCycle === 'annual'
+              className={`px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 cursor-pointer ${billingCycle === 'annual'
                   ? 'bg-[#C4661F] text-white shadow-xs'
                   : isDark ? 'text-slate-300 hover:text-white' : 'text-stone-600 hover:text-stone-900'
-              }`}
+                }`}
             >
               {t.pricing.annual}
               <span className="px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black">
@@ -5409,9 +5280,8 @@ export const MontessoriNexusLanding: React.FC = () => {
           {/* Left Column: Configurator Steps (8 Cols) */}
           <div className="lg:col-span-7 xl:col-span-8 space-y-6 text-left">
             {/* Step 1: Environment Stepper */}
-            <div className={`p-6 sm:p-8 rounded-3xl border shadow-sm space-y-4 ${
-              isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-300'
-            }`}>
+            <div className={`p-6 sm:p-8 rounded-3xl border shadow-sm space-y-4 ${isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-300'
+              }`}>
               <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div>
                   <h3 className={`text-xl font-serif font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>
@@ -5427,9 +5297,8 @@ export const MontessoriNexusLanding: React.FC = () => {
               </div>
 
               {/* Stepper Controls */}
-              <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
-                isDark ? 'bg-[#0e1710] border-slate-800' : 'bg-[#FEFAE0] border-stone-200'
-              }`}>
+              <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${isDark ? 'bg-[#0e1710] border-slate-800' : 'bg-[#FEFAE0] border-stone-200'
+                }`}>
                 <div>
                   <span className={`text-xs font-bold block ${isDark ? 'text-white' : 'text-stone-800'}`}>
                     {t.pricing.envCountLabel}
@@ -5466,9 +5335,8 @@ export const MontessoriNexusLanding: React.FC = () => {
             </div>
 
             {/* Step 2: Optional Modules Checkboxes */}
-            <div className={`p-6 sm:p-8 rounded-3xl border shadow-sm space-y-4 ${
-              isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-300'
-            }`}>
+            <div className={`p-6 sm:p-8 rounded-3xl border shadow-sm space-y-4 ${isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-300'
+              }`}>
               <div>
                 <h3 className={`text-xl font-serif font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>
                   {t.pricing.optionalModulesTitle}
@@ -5480,11 +5348,10 @@ export const MontessoriNexusLanding: React.FC = () => {
 
               <div className="space-y-3">
                 {/* Cobranza & Finanzas */}
-                <label className={`p-3.5 sm:p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 cursor-pointer transition-all ${
-                  selectedOptionalModules.finances
+                <label className={`p-3.5 sm:p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 cursor-pointer transition-all ${selectedOptionalModules.finances
                     ? 'border-[#C4661F] bg-[#C4661F]/10'
                     : isDark ? 'border-slate-800 bg-[#0e1710]' : 'border-stone-200 bg-[#FEFAE0]'
-                }`}>
+                  }`}>
                   <div className="flex items-start gap-3">
                     <input
                       type="checkbox"
@@ -5507,11 +5374,10 @@ export const MontessoriNexusLanding: React.FC = () => {
                 </label>
 
                 {/* Website + Web Builder + Analytics */}
-                <label className={`p-3.5 sm:p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 cursor-pointer transition-all ${
-                  selectedOptionalModules.websiteBuilder
+                <label className={`p-3.5 sm:p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 cursor-pointer transition-all ${selectedOptionalModules.websiteBuilder
                     ? 'border-[#C4661F] bg-[#C4661F]/10'
                     : isDark ? 'border-slate-800 bg-[#0e1710]' : 'border-stone-200 bg-[#FEFAE0]'
-                }`}>
+                  }`}>
                   <div className="flex items-start gap-3">
                     <input
                       type="checkbox"
@@ -5534,11 +5400,10 @@ export const MontessoriNexusLanding: React.FC = () => {
                 </label>
 
                 {/* Gestor de Formularios Pro */}
-                <label className={`p-3.5 sm:p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 cursor-pointer transition-all ${
-                  selectedOptionalModules.forms
+                <label className={`p-3.5 sm:p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 cursor-pointer transition-all ${selectedOptionalModules.forms
                     ? 'border-[#C4661F] bg-[#C4661F]/10'
                     : isDark ? 'border-slate-800 bg-[#0e1710]' : 'border-stone-200 bg-[#FEFAE0]'
-                }`}>
+                  }`}>
                   <div className="flex items-start gap-3">
                     <input
                       type="checkbox"
@@ -5568,11 +5433,10 @@ export const MontessoriNexusLanding: React.FC = () => {
                 </label>
 
                 {/* Pipelines de Procesos Configurables (Depends on Forms) */}
-                <label className={`p-3.5 sm:p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 cursor-pointer transition-all ${
-                  selectedOptionalModules.pipelines
+                <label className={`p-3.5 sm:p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 cursor-pointer transition-all ${selectedOptionalModules.pipelines
                     ? 'border-[#C4661F] bg-[#C4661F]/10'
                     : isDark ? 'border-slate-800 bg-[#0e1710]' : 'border-stone-200 bg-[#FEFAE0]'
-                }`}>
+                  }`}>
                   <div className="flex items-start gap-3">
                     <input
                       type="checkbox"
@@ -5607,11 +5471,10 @@ export const MontessoriNexusLanding: React.FC = () => {
                 </label>
 
                 {/* SMTP / Newsletter Dedicado */}
-                <label className={`p-3.5 sm:p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 cursor-pointer transition-all ${
-                  selectedOptionalModules.newsletterSmtp
+                <label className={`p-3.5 sm:p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 cursor-pointer transition-all ${selectedOptionalModules.newsletterSmtp
                     ? 'border-[#C4661F] bg-[#C4661F]/10'
                     : isDark ? 'border-slate-800 bg-[#0e1710]' : 'border-stone-200 bg-[#FEFAE0]'
-                }`}>
+                  }`}>
                   <div className="flex items-start gap-3">
                     <input
                       type="checkbox"
@@ -5636,9 +5499,8 @@ export const MontessoriNexusLanding: React.FC = () => {
             </div>
 
             {/* Step 3: Storage Selection */}
-            <div className={`p-6 sm:p-8 rounded-3xl border shadow-sm space-y-4 ${
-              isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-300'
-            }`}>
+            <div className={`p-6 sm:p-8 rounded-3xl border shadow-sm space-y-4 ${isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-300'
+              }`}>
               <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div>
                   <h3 className={`text-xl font-serif font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>
@@ -5692,44 +5554,39 @@ export const MontessoriNexusLanding: React.FC = () => {
                       key={tier.id}
                       type="button"
                       onClick={() => setStorageTier(tier.id as any)}
-                      className={`p-4 rounded-2xl border text-left flex items-center justify-between gap-3 transition-all cursor-pointer ${
-                        isSelected
+                      className={`p-4 rounded-2xl border text-left flex items-center justify-between gap-3 transition-all cursor-pointer ${isSelected
                           ? 'border-[#C4661F] bg-[#C4661F]/15 ring-2 ring-[#C4661F]/30 shadow-xs'
                           : isDark
-                          ? 'border-slate-800 bg-[#0e1710] hover:border-slate-700 hover:bg-[#0e1710]/80'
-                          : 'border-stone-200 bg-[#FEFAE0] hover:border-stone-400 hover:bg-amber-50/50'
-                      }`}
+                            ? 'border-slate-800 bg-[#0e1710] hover:border-slate-700 hover:bg-[#0e1710]/80'
+                            : 'border-stone-200 bg-[#FEFAE0] hover:border-stone-400 hover:bg-amber-50/50'
+                        }`}
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-colors ${
-                          isSelected
+                        <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-colors ${isSelected
                             ? 'border-[#C4661F] bg-[#C4661F]'
                             : isDark ? 'border-slate-600 bg-slate-800' : 'border-stone-300 bg-white'
-                        }`}>
+                          }`}>
                           {isSelected && <Check className="w-3 h-3 text-white stroke-[3]" />}
                         </div>
                         <div className="min-w-0">
-                          <span className={`text-xs font-bold block truncate ${
-                            isSelected
+                          <span className={`text-xs font-bold block truncate ${isSelected
                               ? 'text-[#C4661F] font-black'
                               : isDark ? 'text-slate-100' : 'text-stone-900'
-                          }`}>
+                            }`}>
                             {tier.label}
                           </span>
-                          <span className={`text-[10px] block truncate mt-0.5 ${
-                            isSelected
+                          <span className={`text-[10px] block truncate mt-0.5 ${isSelected
                               ? isDark ? 'text-slate-300' : 'text-stone-600'
                               : isDark ? 'text-slate-400' : 'text-stone-500'
-                          }`}>
+                            }`}>
                             {tier.desc}
                           </span>
                         </div>
                       </div>
-                      <span className={`text-xs font-mono font-bold shrink-0 ${
-                        isSelected
+                      <span className={`text-xs font-mono font-bold shrink-0 ${isSelected
                           ? 'text-[#C4661F]'
                           : isDark ? 'text-amber-400' : 'text-[#783D19]'
-                      }`}>
+                        }`}>
                         {tier.price}
                       </span>
                     </button>
@@ -5739,9 +5596,8 @@ export const MontessoriNexusLanding: React.FC = () => {
             </div>
 
             {/* Step 4: Core Base Included Features */}
-            <div className={`p-6 sm:p-8 rounded-3xl border shadow-sm space-y-5 ${
-              isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-300'
-            }`}>
+            <div className={`p-6 sm:p-8 rounded-3xl border shadow-sm space-y-5 ${isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-300'
+              }`}>
               <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div>
                   <h3 className={`text-xl font-serif font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>
@@ -5774,9 +5630,8 @@ export const MontessoriNexusLanding: React.FC = () => {
                   return (
                     <div
                       key={idx}
-                      className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 transition-all ${
-                        isDark ? 'bg-[#0e1710] border-slate-800' : 'bg-[#FEFAE0] border-stone-200'
-                      }`}
+                      className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 transition-all ${isDark ? 'bg-[#0e1710] border-slate-800' : 'bg-[#FEFAE0] border-stone-200'
+                        }`}
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/20">
@@ -5798,11 +5653,10 @@ export const MontessoriNexusLanding: React.FC = () => {
               </div>
 
               {/* AI & BYOK Feature Highlight Card */}
-              <div className={`p-4 sm:p-5 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all ${
-                isDark
+              <div className={`p-4 sm:p-5 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all ${isDark
                   ? 'bg-linear-to-r from-[#1b2b1e] to-[#142016] border-[#C4661F]/40'
                   : 'bg-linear-to-r from-amber-50 to-[#FEFAE0] border-[#C4661F]/30'
-              }`}>
+                }`}>
                 <div className="flex items-start gap-3.5">
                   <div className="w-10 h-10 rounded-2xl bg-[#C4661F]/15 text-[#C4661F] flex items-center justify-center shrink-0 border border-[#C4661F]/30 mt-0.5">
                     <Brain className="w-5 h-5" />
@@ -5842,9 +5696,8 @@ export const MontessoriNexusLanding: React.FC = () => {
             </div>
 
             {/* Mobile Inline Summary & Action (Visible on small screens before footer) */}
-            <div className={`p-6 rounded-3xl border-2 border-[#C4661F] shadow-lg block lg:hidden ${
-              isDark ? 'bg-[#162218]' : 'bg-white'
-            }`}>
+            <div className={`p-6 rounded-3xl border-2 border-[#C4661F] shadow-lg block lg:hidden ${isDark ? 'bg-[#162218]' : 'bg-white'
+              }`}>
               <div className="flex items-center justify-between gap-2 mb-3">
                 <span className="text-xs font-bold uppercase tracking-wider text-[#C4661F]">
                   {t.pricing.summaryTitle}
@@ -5867,10 +5720,10 @@ export const MontessoriNexusLanding: React.FC = () => {
                   {lang === 'en'
                     ? `Billed annually: $${pricingSummary.annualBilledTotal} USD (Save 2 months)`
                     : lang === 'es'
-                    ? `Facturado anualmente: $${pricingSummary.annualBilledTotal} USD (Ahorras 2 meses)`
-                    : lang === 'pt'
-                    ? `Faturado anualmente: $${pricingSummary.annualBilledTotal} USD (Economize 2 meses)`
-                    : `Facturé annuellement : ${pricingSummary.annualBilledTotal} $ USD (Économisez 2 mois)`}
+                      ? `Facturado anualmente: $${pricingSummary.annualBilledTotal} USD (Ahorras 2 meses)`
+                      : lang === 'pt'
+                        ? `Faturado anualmente: $${pricingSummary.annualBilledTotal} USD (Economize 2 meses)`
+                        : `Facturé annuellement : ${pricingSummary.annualBilledTotal} $ USD (Économisez 2 mois)`}
                 </p>
               )}
               <button
@@ -5915,138 +5768,136 @@ export const MontessoriNexusLanding: React.FC = () => {
                     : '0 35px 70px -15px rgba(196, 102, 31, 0.35), 0 20px 40px rgba(0, 0, 0, 0.15)'
                 }}
                 transition={{ type: 'spring', stiffness: 280, damping: 18 }}
-                className={`p-8 rounded-3xl border-2 border-[#C4661F] shadow-2xl relative transition-all duration-200 ${
-                  isDark ? 'bg-[#162218]' : 'bg-white'
-                }`}
+                className={`p-8 rounded-3xl border-2 border-[#C4661F] shadow-2xl relative transition-all duration-200 ${isDark ? 'bg-[#162218]' : 'bg-white'
+                  }`}
               >
-              <div className="absolute top-0 right-0 px-4 py-1.5 rounded-tr-[22px] rounded-bl-2xl bg-[#C4661F] text-white text-[10px] font-black uppercase tracking-wider shadow-md">
-                {lang === 'en' ? 'Custom' : lang === 'es' ? 'Personalizado' : lang === 'pt' ? 'Sob Medida' : 'Sur Mesure'}
-              </div>
+                <div className="absolute top-0 right-0 px-4 py-1.5 rounded-tr-[22px] rounded-bl-2xl bg-[#C4661F] text-white text-[10px] font-black uppercase tracking-wider shadow-md">
+                  {lang === 'en' ? 'Custom' : lang === 'es' ? 'Personalizado' : lang === 'pt' ? 'Sob Medida' : 'Sur Mesure'}
+                </div>
 
-              <h4 className={`text-2xl font-serif font-bold mb-4 ${isDark ? 'text-white' : 'text-[#162218]'}`}>
-                {t.pricing.summaryTitle}
-              </h4>
+                <h4 className={`text-2xl font-serif font-bold mb-4 ${isDark ? 'text-white' : 'text-[#162218]'}`}>
+                  {t.pricing.summaryTitle}
+                </h4>
 
-              {/* Price Tag */}
-              <div className="pb-6 border-b border-stone-200 dark:border-slate-700">
-                <div className="flex items-baseline gap-1.5">
-                  <AnimatedPriceCounter
-                    value={billingCycle === 'annual' ? pricingSummary.annualEquivalentMonthly : pricingSummary.monthlyTotal}
-                    className="text-5xl font-serif font-black text-[#C4661F]"
-                  />
-                  <span className="text-sm font-bold text-stone-400">
-                    USD / {lang === 'en' ? 'mo' : lang === 'es' ? 'mes' : lang === 'pt' ? 'mês' : 'mois'}
+                {/* Price Tag */}
+                <div className="pb-6 border-b border-stone-200 dark:border-slate-700">
+                  <div className="flex items-baseline gap-1.5">
+                    <AnimatedPriceCounter
+                      value={billingCycle === 'annual' ? pricingSummary.annualEquivalentMonthly : pricingSummary.monthlyTotal}
+                      className="text-5xl font-serif font-black text-[#C4661F]"
+                    />
+                    <span className="text-sm font-bold text-stone-400">
+                      USD / {lang === 'en' ? 'mo' : lang === 'es' ? 'mes' : lang === 'pt' ? 'mês' : 'mois'}
+                    </span>
+                  </div>
+                  {billingCycle === 'annual' ? (
+                    <p className="text-xs font-semibold text-emerald-500 mt-1.5">
+                      {lang === 'en'
+                        ? `Billed annually: $${pricingSummary.annualBilledTotal} USD (Save 2 full months)`
+                        : lang === 'es'
+                          ? `Facturado anualmente: $${pricingSummary.annualBilledTotal} USD (Ahorras 2 meses completos)`
+                          : lang === 'pt'
+                            ? `Faturado anualmente: $${pricingSummary.annualBilledTotal} USD (Economize 2 meses inteiros)`
+                            : `Facturé annuellement : ${pricingSummary.annualBilledTotal} $ USD (Économisez 2 mois)`}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-stone-400 mt-1.5">
+                      {lang === 'en'
+                        ? 'Flexible monthly billing. Cancel anytime.'
+                        : lang === 'es'
+                          ? 'Facturación mensual flexible. Cancela cuando quieras.'
+                          : lang === 'pt'
+                            ? 'Cobrança mensal flexível. Cancele quando quiser.'
+                            : 'Facturation mensuelle flexible. Sans engagement.'}
+                    </p>
+                  )}
+                </div>
+
+                {/* Itemized list */}
+                <div className="py-5 space-y-2.5 text-xs border-b border-stone-200 dark:border-slate-700">
+                  <div className="flex justify-between items-center text-stone-500 dark:text-slate-400">
+                    <span>{lang === 'en' ? 'Core Base Membership:' : lang === 'es' ? 'Membresía Base Esencial:' : lang === 'pt' ? 'Assinatura Base Essencial:' : 'Abonnement de Base :'}</span>
+                    <AnimatedPriceCounter
+                      value={pricingSummary.coreBaseTotal}
+                      suffix=" USD"
+                      className="font-mono font-bold text-stone-800 dark:text-slate-200"
+                    />
+                  </div>
+                  <div className="flex justify-between items-center text-stone-500 dark:text-slate-400">
+                    <span>{environmentsCount} {lang === 'en' ? 'Environments' : lang === 'es' ? 'Ambientes' : lang === 'pt' ? 'Ambientes' : 'Ambiances'}:</span>
+                    <AnimatedPriceCounter
+                      value={pricingSummary.environmentsCost}
+                      suffix=" USD"
+                      className="font-mono font-bold text-stone-800 dark:text-slate-200"
+                    />
+                  </div>
+                  {pricingSummary.optionalModulesCost > 0 && (
+                    <div className="flex justify-between items-center text-stone-500 dark:text-slate-400">
+                      <span>{lang === 'en' ? 'Optional Modules:' : lang === 'es' ? 'Módulos Opcionales:' : lang === 'pt' ? 'Módulos Opcionais:' : 'Modules Optionnels :'}</span>
+                      <AnimatedPriceCounter
+                        value={pricingSummary.optionalModulesCost}
+                        prefix="+$"
+                        suffix=" USD"
+                        className="font-mono font-bold text-stone-800 dark:text-slate-200"
+                      />
+                    </div>
+                  )}
+                  {pricingSummary.storageCost > 0 && (
+                    <div className="flex justify-between items-center text-stone-500 dark:text-slate-400">
+                      <span>{lang === 'en' ? 'Extra Cloud Storage:' : lang === 'es' ? 'Almacenamiento Adicional:' : lang === 'pt' ? 'Armazenamento Extra:' : 'Stockage Supplémentaire :'}</span>
+                      <AnimatedPriceCounter
+                        value={pricingSummary.storageCost}
+                        prefix="+$"
+                        suffix=" USD"
+                        className="font-mono font-bold text-stone-800 dark:text-slate-200"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Trial Notice */}
+                <div className="py-4">
+                  <span className="text-xs font-bold text-amber-500 flex items-center justify-center gap-1.5 bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/20">
+                    <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                    {t.pricing.trialNotice}
                   </span>
                 </div>
-                {billingCycle === 'annual' ? (
-                  <p className="text-xs font-semibold text-emerald-500 mt-1.5">
-                    {lang === 'en'
-                      ? `Billed annually: $${pricingSummary.annualBilledTotal} USD (Save 2 full months)`
-                      : lang === 'es'
-                      ? `Facturado anualmente: $${pricingSummary.annualBilledTotal} USD (Ahorras 2 meses completos)`
-                      : lang === 'pt'
-                      ? `Faturado anualmente: $${pricingSummary.annualBilledTotal} USD (Economize 2 meses inteiros)`
-                      : `Facturé annuellement : ${pricingSummary.annualBilledTotal} $ USD (Économisez 2 mois)`}
-                  </p>
-                ) : (
-                  <p className="text-xs text-stone-400 mt-1.5">
-                    {lang === 'en'
-                      ? 'Flexible monthly billing. Cancel anytime.'
-                      : lang === 'es'
-                      ? 'Facturación mensual flexible. Cancela cuando quieras.'
-                      : lang === 'pt'
-                      ? 'Cobrança mensal flexível. Cancele quando quiser.'
-                      : 'Facturation mensuelle flexible. Sans engagement.'}
-                  </p>
-                )}
-              </div>
 
-              {/* Itemized list */}
-              <div className="py-5 space-y-2.5 text-xs border-b border-stone-200 dark:border-slate-700">
-                <div className="flex justify-between items-center text-stone-500 dark:text-slate-400">
-                  <span>{lang === 'en' ? 'Core Base Membership:' : lang === 'es' ? 'Membresía Base Esencial:' : lang === 'pt' ? 'Assinatura Base Essencial:' : 'Abonnement de Base :'}</span>
-                  <AnimatedPriceCounter
-                    value={pricingSummary.coreBaseTotal}
-                    suffix=" USD"
-                    className="font-mono font-bold text-stone-800 dark:text-slate-200"
-                  />
+                {/* Action Button */}
+                <div className="relative z-30">
+                  <button
+                    type="button"
+                    onMouseEnter={() => setIsDesktopCtaHovered(true)}
+                    onMouseLeave={() => setIsDesktopCtaHovered(false)}
+                    onClick={() => {
+                      setDemoForm({
+                        ...demoForm,
+                        environments: `${environmentsCount} ${lang === 'en' ? 'environments' : 'ambientes'} (${billingCycle === 'annual' ? `$${pricingSummary.annualEquivalentMonthly}/mo` : `$${pricingSummary.monthlyTotal}/mo`})`
+                      });
+                      setDemoModalOpen(true);
+                    }}
+                    className="w-full py-4 sm:py-5 px-4 sm:px-6 text-white font-bold text-sm sm:text-base rounded-2xl shadow-xl hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-150 cursor-pointer flex items-center justify-center gap-2 border border-white/20 text-center leading-snug"
+                    style={{
+                      backgroundColor: isDesktopCtaHovered ? '#8D410F' : '#C4661F',
+                      cursor: 'pointer',
+                      pointerEvents: 'auto'
+                    }}
+                  >
+                    <span>{t.pricing.ctaBtn}</span>
+                    <ArrowRight className={`w-4 h-4 transition-transform duration-200 shrink-0 ${isDesktopCtaHovered ? 'translate-x-1' : ''}`} />
+                  </button>
                 </div>
-                <div className="flex justify-between items-center text-stone-500 dark:text-slate-400">
-                  <span>{environmentsCount} {lang === 'en' ? 'Environments' : lang === 'es' ? 'Ambientes' : lang === 'pt' ? 'Ambientes' : 'Ambiances'}:</span>
-                  <AnimatedPriceCounter
-                    value={pricingSummary.environmentsCost}
-                    suffix=" USD"
-                    className="font-mono font-bold text-stone-800 dark:text-slate-200"
-                  />
-                </div>
-                {pricingSummary.optionalModulesCost > 0 && (
-                  <div className="flex justify-between items-center text-stone-500 dark:text-slate-400">
-                    <span>{lang === 'en' ? 'Optional Modules:' : lang === 'es' ? 'Módulos Opcionales:' : lang === 'pt' ? 'Módulos Opcionais:' : 'Modules Optionnels :'}</span>
-                    <AnimatedPriceCounter
-                      value={pricingSummary.optionalModulesCost}
-                      prefix="+$"
-                      suffix=" USD"
-                      className="font-mono font-bold text-stone-800 dark:text-slate-200"
-                    />
-                  </div>
-                )}
-                {pricingSummary.storageCost > 0 && (
-                  <div className="flex justify-between items-center text-stone-500 dark:text-slate-400">
-                    <span>{lang === 'en' ? 'Extra Cloud Storage:' : lang === 'es' ? 'Almacenamiento Adicional:' : lang === 'pt' ? 'Armazenamento Extra:' : 'Stockage Supplémentaire :'}</span>
-                    <AnimatedPriceCounter
-                      value={pricingSummary.storageCost}
-                      prefix="+$"
-                      suffix=" USD"
-                      className="font-mono font-bold text-stone-800 dark:text-slate-200"
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Trial Notice */}
-              <div className="py-4">
-                <span className="text-xs font-bold text-amber-500 flex items-center justify-center gap-1.5 bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/20">
-                  <Sparkles className="w-3.5 h-3.5 shrink-0" />
-                  {t.pricing.trialNotice}
-                </span>
-              </div>
-
-              {/* Action Button */}
-              <div className="relative z-30">
-                <button
-                  type="button"
-                  onMouseEnter={() => setIsDesktopCtaHovered(true)}
-                  onMouseLeave={() => setIsDesktopCtaHovered(false)}
-                  onClick={() => {
-                    setDemoForm({
-                      ...demoForm,
-                      environments: `${environmentsCount} ${lang === 'en' ? 'environments' : 'ambientes'} (${billingCycle === 'annual' ? `$${pricingSummary.annualEquivalentMonthly}/mo` : `$${pricingSummary.monthlyTotal}/mo`})`
-                    });
-                    setDemoModalOpen(true);
-                  }}
-                  className="w-full py-4 sm:py-5 px-4 sm:px-6 text-white font-bold text-sm sm:text-base rounded-2xl shadow-xl hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-150 cursor-pointer flex items-center justify-center gap-2 border border-white/20 text-center leading-snug"
-                  style={{
-                    backgroundColor: isDesktopCtaHovered ? '#8D410F' : '#C4661F',
-                    cursor: 'pointer',
-                    pointerEvents: 'auto'
-                  }}
-                >
-                  <span>{t.pricing.ctaBtn}</span>
-                  <ArrowRight className={`w-4 h-4 transition-transform duration-200 shrink-0 ${isDesktopCtaHovered ? 'translate-x-1' : ''}`} />
-                </button>
-              </div>
-            </motion.div>
+              </motion.div>
+            </div>
           </div>
         </div>
-      </div>
 
         {/* Mobile Bottom Fixed Floating Summary Bar */}
         <div
-          className={`fixed bottom-0 inset-x-0 z-50 p-3.5 sm:p-4 bg-white/95 dark:bg-[#142016]/95 backdrop-blur-xl border-t border-stone-200 dark:border-slate-800 shadow-[0_-8px_30px_rgba(0,0,0,0.15)] block lg:hidden transition-all duration-300 transform ${
-            isPricingInView
+          className={`fixed bottom-0 inset-x-0 z-50 p-3.5 sm:p-4 bg-white/95 dark:bg-[#142016]/95 backdrop-blur-xl border-t border-stone-200 dark:border-slate-800 shadow-[0_-8px_30px_rgba(0,0,0,0.15)] block lg:hidden transition-all duration-300 transform ${isPricingInView
               ? 'translate-y-0 opacity-100'
               : 'translate-y-full opacity-0 pointer-events-none'
-          }`}
+            }`}
         >
           <div className="max-w-md mx-auto flex items-center justify-between gap-3">
             <div className="min-w-0">
@@ -6105,10 +5956,10 @@ export const MontessoriNexusLanding: React.FC = () => {
               {lang === 'es'
                 ? 'Resolvemos las dudas principales sobre licenciamiento modular, ambientes, pasarelas y privacidad de datos.'
                 : lang === 'pt'
-                ? 'Tire suas principais dúvidas sobre licenciamento modular, ambientes, meios de pagamento e privacidade.'
-                : lang === 'fr'
-                ? 'Toutes les réponses sur la tarification modulaire, les ambiances, les passerelles et la sécurité.'
-                : 'Key answers regarding modular licensing, classroom environments, payment gateways, and data privacy.'}
+                  ? 'Tire suas principais dúvidas sobre licenciamento modular, ambientes, meios de pagamento e privacidade.'
+                  : lang === 'fr'
+                    ? 'Toutes les réponses sur la tarification modulaire, les ambiances, les passerelles et la sécurité.'
+                    : 'Key answers regarding modular licensing, classroom environments, payment gateways, and data privacy.'}
             </p>
           </div>
 
@@ -6118,40 +5969,36 @@ export const MontessoriNexusLanding: React.FC = () => {
               return (
                 <div
                   key={idx}
-                  className={`rounded-3xl border overflow-hidden shadow-xs transition-all duration-200 ${
-                    isOpen
+                  className={`rounded-3xl border overflow-hidden shadow-xs transition-all duration-200 ${isOpen
                       ? isDark
                         ? 'bg-[#162218] border-[#C4661F]/60 ring-1 ring-[#C4661F]/30 shadow-md'
                         : 'bg-white border-[#C4661F]/60 ring-1 ring-[#C4661F]/20 shadow-md'
                       : isDark
-                      ? 'bg-[#162218]/80 border-slate-800 hover:border-slate-700'
-                      : 'bg-white border-stone-300 hover:border-stone-400'
-                  }`}
+                        ? 'bg-[#162218]/80 border-slate-800 hover:border-slate-700'
+                        : 'bg-white border-stone-300 hover:border-stone-400'
+                    }`}
                 >
                   <button
                     type="button"
                     onClick={() => toggleFaq(idx)}
-                    className={`w-full p-6 text-left flex items-start justify-between gap-4 font-serif font-bold transition-colors cursor-pointer ${
-                      isOpen
+                    className={`w-full p-6 text-left flex items-start justify-between gap-4 font-serif font-bold transition-colors cursor-pointer ${isOpen
                         ? 'text-[#C4661F]'
                         : isDark
-                        ? 'text-white hover:text-[#C4661F]'
-                        : 'text-[#162218] hover:text-[#C4661F]'
-                    }`}
+                          ? 'text-white hover:text-[#C4661F]'
+                          : 'text-[#162218] hover:text-[#C4661F]'
+                      }`}
                   >
                     <span className="text-base sm:text-lg leading-snug">{faq.q}</span>
-                    <span className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-transform duration-200 mt-0.5 ${
-                      isOpen
+                    <span className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-transform duration-200 mt-0.5 ${isOpen
                         ? 'bg-[#C4661F] text-white rotate-180'
                         : isDark ? 'bg-slate-800 text-slate-400' : 'bg-stone-100 text-stone-600'
-                    }`}>
+                      }`}>
                       <ChevronDown className="w-4 h-4" />
                     </span>
                   </button>
                   {isOpen && (
-                    <div className={`px-6 pb-6 text-sm leading-relaxed border-t pt-4 ${
-                      isDark ? 'text-slate-300 border-slate-800/80' : 'text-stone-600 border-stone-200'
-                    }`}>
+                    <div className={`px-6 pb-6 text-sm leading-relaxed border-t pt-4 ${isDark ? 'text-slate-300 border-slate-800/80' : 'text-stone-600 border-stone-200'
+                      }`}>
                       {faq.a}
                     </div>
                   )}
@@ -6192,9 +6039,8 @@ export const MontessoriNexusLanding: React.FC = () => {
       {/* ========================================================================= */}
       {/* 13. FOOTER */}
       {/* ========================================================================= */}
-      <footer className={`pt-14 pb-0 text-xs border-t overflow-hidden ${
-        isDark ? 'bg-[#101811] text-slate-400 border-slate-800' : 'bg-[#121c13] text-stone-400 border-[#243226]'
-      }`}>
+      <footer className={`pt-14 pb-0 text-xs border-t overflow-hidden ${isDark ? 'bg-[#101811] text-slate-400 border-slate-800' : 'bg-[#121c13] text-stone-400 border-[#243226]'
+        }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8 mb-10 text-left">
           <div className="space-y-3">
             <div className="flex items-center gap-3">
@@ -6230,11 +6076,10 @@ export const MontessoriNexusLanding: React.FC = () => {
           </div>
         </div>
 
-        <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 border-t flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] ${
-          isDark ? 'border-slate-800/80' : 'border-[#243226]/60'
-        }`}>
+        <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 border-t flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] ${isDark ? 'border-slate-800/80' : 'border-[#243226]/60'
+          }`}>
           <div className="space-y-1 text-center sm:text-left">
-            <p>© {new Date().getFullYear()} MontessoriNexus OS. {t.footer.rights}</p>
+            <p>© {new Date().getFullYear()} MontessoriNexus. {t.footer.rights}</p>
             <p className="text-stone-500 dark:text-slate-400">
               Un producto de <span className="font-semibold text-stone-300 dark:text-slate-200">CHAMBAPRO SAPI DE CV</span> •{' '}
               <a
@@ -6262,11 +6107,10 @@ export const MontessoriNexusLanding: React.FC = () => {
               {"MontessoriNexus".split("").map((char, index) => (
                 <span
                   key={index}
-                  className={`inline-block transition-colors duration-200 cursor-pointer ${
-                    isDark
+                  className={`inline-block transition-colors duration-200 cursor-pointer ${isDark
                       ? 'text-white/20 hover:text-[#FFA05C] hover:drop-shadow-[0_0_35px_rgba(255,160,92,0.95)]'
                       : 'text-white/25 hover:text-[#FFA05C] hover:drop-shadow-[0_0_35px_rgba(196,102,31,0.95)]'
-                  }`}
+                    }`}
                 >
                   {char}
                 </span>
@@ -6288,15 +6132,13 @@ export const MontessoriNexusLanding: React.FC = () => {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className={`border rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative text-left ${
-                isDark ? 'bg-[#162218] border-slate-700 text-white' : 'bg-white border-stone-300 text-[#162218]'
-              }`}
+              className={`border rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative text-left ${isDark ? 'bg-[#162218] border-slate-700 text-white' : 'bg-white border-stone-300 text-[#162218]'
+                }`}
             >
               <button
                 onClick={() => setDemoModalOpen(false)}
-                className={`absolute top-4 right-4 p-2 rounded-full transition-colors ${
-                  isDark ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-stone-400 hover:text-stone-800 hover:bg-stone-100'
-                }`}
+                className={`absolute top-4 right-4 p-2 rounded-full transition-colors ${isDark ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-stone-400 hover:text-stone-800 hover:bg-stone-100'
+                  }`}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -6339,11 +6181,10 @@ export const MontessoriNexusLanding: React.FC = () => {
                         value={demoForm.name}
                         onChange={(e) => setDemoForm({ ...demoForm, name: e.target.value })}
                         placeholder={t.modal.namePlaceholder}
-                        className={`w-full px-3.5 py-2 rounded-xl text-sm focus:border-[#C4661F] ${
-                          isDark
+                        className={`w-full px-3.5 py-2 rounded-xl text-sm focus:border-[#C4661F] ${isDark
                             ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500'
                             : 'bg-stone-50 border-stone-300 text-stone-900 focus:bg-white'
-                        }`}
+                          }`}
                       />
                     </div>
 
@@ -6358,11 +6199,10 @@ export const MontessoriNexusLanding: React.FC = () => {
                           value={demoForm.school}
                           onChange={(e) => setDemoForm({ ...demoForm, school: e.target.value })}
                           placeholder={t.modal.schoolPlaceholder}
-                          className={`w-full px-3.5 py-2 rounded-xl text-sm focus:border-[#C4661F] ${
-                            isDark
+                          className={`w-full px-3.5 py-2 rounded-xl text-sm focus:border-[#C4661F] ${isDark
                               ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500'
                               : 'bg-stone-50 border-stone-300 text-stone-900 focus:bg-white'
-                          }`}
+                            }`}
                         />
                       </div>
                       <div>
@@ -6373,11 +6213,10 @@ export const MontessoriNexusLanding: React.FC = () => {
                           type="text"
                           value={demoForm.environments}
                           onChange={(e) => setDemoForm({ ...demoForm, environments: e.target.value })}
-                          className={`w-full px-3.5 py-2 rounded-xl text-sm font-semibold focus:border-[#C4661F] ${
-                            isDark
+                          className={`w-full px-3.5 py-2 rounded-xl text-sm font-semibold focus:border-[#C4661F] ${isDark
                               ? 'bg-slate-800 border-slate-700 text-white'
                               : 'bg-stone-50 border-stone-300 text-stone-900 focus:bg-white'
-                          }`}
+                            }`}
                         />
                       </div>
                     </div>
@@ -6393,11 +6232,10 @@ export const MontessoriNexusLanding: React.FC = () => {
                           value={demoForm.email}
                           onChange={(e) => setDemoForm({ ...demoForm, email: e.target.value })}
                           placeholder={t.modal.emailPlaceholder}
-                          className={`w-full px-3.5 py-2 rounded-xl text-sm focus:border-[#C4661F] ${
-                            isDark
+                          className={`w-full px-3.5 py-2 rounded-xl text-sm focus:border-[#C4661F] ${isDark
                               ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500'
                               : 'bg-stone-50 border-stone-300 text-stone-900 focus:bg-white'
-                          }`}
+                            }`}
                         />
                       </div>
                       <div>
@@ -6410,11 +6248,10 @@ export const MontessoriNexusLanding: React.FC = () => {
                           value={demoForm.phone}
                           onChange={(e) => setDemoForm({ ...demoForm, phone: e.target.value })}
                           placeholder={t.modal.phonePlaceholder}
-                          className={`w-full px-3.5 py-2 rounded-xl text-sm focus:border-[#C4661F] ${
-                            isDark
+                          className={`w-full px-3.5 py-2 rounded-xl text-sm focus:border-[#C4661F] ${isDark
                               ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500'
                               : 'bg-stone-50 border-stone-300 text-stone-900 focus:bg-white'
-                          }`}
+                            }`}
                         />
                       </div>
                     </div>

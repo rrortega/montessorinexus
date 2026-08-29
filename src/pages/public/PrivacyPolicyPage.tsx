@@ -332,13 +332,11 @@ export const PrivacyPolicyPage: React.FC = () => {
   const t = content[lang] || content.es;
 
   return (
-    <div className={`min-h-screen font-sans antialiased transition-colors duration-300 ${
-      isDark ? 'bg-[#0f1710] text-slate-100' : 'bg-[#FAF8F5] text-stone-900'
-    }`}>
-      {/* Top Header */}
-      <header className={`sticky top-0 z-40 backdrop-blur-md border-b transition-colors ${
-        isDark ? 'bg-[#0f1710]/90 border-slate-800' : 'bg-[#FAF8F5]/90 border-stone-200 shadow-xs'
+    <div className={`min-h-screen font-sans antialiased transition-colors duration-300 ${isDark ? 'bg-[#0f1710] text-slate-100' : 'bg-[#FAF8F5] text-stone-900'
       }`}>
+      {/* Top Header */}
+      <header className={`sticky top-0 z-40 backdrop-blur-md border-b transition-colors ${isDark ? 'bg-[#0f1710]/90 border-slate-800' : 'bg-[#FAF8F5]/90 border-stone-200 shadow-xs'
+        }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 group">
             <MontessoriNexusLogo size={32} />
@@ -358,9 +356,8 @@ export const PrivacyPolicyPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setLangMenuOpen(!langMenuOpen)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
-                  isDark ? 'bg-slate-800/80 border-slate-700 text-white' : 'bg-white border-stone-300 text-stone-800 shadow-3xs'
-                }`}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${isDark ? 'bg-slate-800/80 border-slate-700 text-white' : 'bg-white border-stone-300 text-stone-800 shadow-3xs'
+                  }`}
               >
                 <LanguageFlag code={lang} className="w-4 h-3 rounded-[2px]" />
                 <span>{LANGUAGES.find(l => l.code === lang)?.codeShort}</span>
@@ -368,9 +365,8 @@ export const PrivacyPolicyPage: React.FC = () => {
               </button>
 
               {langMenuOpen && (
-                <div className={`absolute right-0 mt-2 w-36 rounded-xl shadow-xl border p-1 z-50 ${
-                  isDark ? 'bg-[#162218] border-slate-700 text-white' : 'bg-white border-stone-200 text-stone-900'
-                }`}>
+                <div className={`absolute right-0 mt-2 w-36 rounded-xl shadow-xl border p-1 z-50 ${isDark ? 'bg-[#162218] border-slate-700 text-white' : 'bg-white border-stone-200 text-stone-900'
+                  }`}>
                   {LANGUAGES.map((item) => (
                     <button
                       key={item.code}
@@ -379,11 +375,10 @@ export const PrivacyPolicyPage: React.FC = () => {
                         setLang(item.code);
                         setLangMenuOpen(false);
                       }}
-                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-                        lang === item.code
+                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${lang === item.code
                           ? 'bg-[#C4661F]/15 text-[#C4661F]'
                           : isDark ? 'hover:bg-slate-800' : 'hover:bg-stone-100'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center gap-2">
                         <LanguageFlag code={item.code} className="w-4 h-3 rounded-[2px]" />
@@ -399,9 +394,8 @@ export const PrivacyPolicyPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsDark(!isDark)}
-              className={`p-2 rounded-xl border transition-colors ${
-                isDark ? 'bg-slate-800 border-slate-700 text-amber-300' : 'bg-white border-stone-300 text-stone-700 shadow-3xs'
-              }`}
+              className={`p-2 rounded-xl border transition-colors ${isDark ? 'bg-slate-800 border-slate-700 text-amber-300' : 'bg-white border-stone-300 text-stone-700 shadow-3xs'
+                }`}
               aria-label="Toggle Theme"
             >
               {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -444,9 +438,8 @@ export const PrivacyPolicyPage: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           {/* Sidebar TOC */}
           <aside className="lg:col-span-4 text-left">
-            <div className={`sticky top-24 p-5 rounded-2xl border space-y-3 ${
-              isDark ? 'bg-[#162218] border-slate-800' : 'bg-white border-stone-200 shadow-sm'
-            }`}>
+            <div className={`sticky top-24 p-5 rounded-2xl border space-y-3 ${isDark ? 'bg-[#162218] border-slate-800' : 'bg-white border-stone-200 shadow-sm'
+              }`}>
               <h4 className="font-serif font-bold text-sm text-stone-900 dark:text-white flex items-center gap-2">
                 <FileText className="w-4 h-4 text-[#C4661F]" />
                 {t.tocTitle}
@@ -499,9 +492,8 @@ export const PrivacyPolicyPage: React.FC = () => {
             </section>
 
             {/* S3: Child Protection */}
-            <section id="menores" className={`p-6 rounded-2xl border space-y-4 ${
-              isDark ? 'bg-amber-950/20 border-amber-900/40' : 'bg-amber-50/70 border-amber-200'
-            }`}>
+            <section id="menores" className={`p-6 rounded-2xl border space-y-4 ${isDark ? 'bg-amber-950/20 border-amber-900/40' : 'bg-amber-50/70 border-amber-200'
+              }`}>
               <h2 className="text-xl sm:text-2xl font-serif font-bold text-amber-900 dark:text-amber-300 flex items-center gap-2">
                 <Camera className="w-5 h-5 text-[#C4661F]" />
                 {t.s3_title}
@@ -628,7 +620,7 @@ export const PrivacyPolicyPage: React.FC = () => {
       {/* Footer */}
       <footer className="py-10 border-t border-stone-200 dark:border-slate-800 text-xs text-stone-500 dark:text-slate-400 text-center">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p>© {new Date().getFullYear()} MontessoriNexus OS • CHAMBAPRO SAPI DE CV</p>
+          <p>© {new Date().getFullYear()} MontessoriNexus • CHAMBAPRO SAPI DE CV</p>
           <div className="flex gap-4">
             <Link to="/terminos" className="hover:text-[#C4661F]">Términos de Servicio</Link>
             <Link to="/" className="hover:text-[#C4661F]">Inicio</Link>
