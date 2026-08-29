@@ -1808,11 +1808,23 @@ export const MontessoriNexusLanding: React.FC = () => {
   });
 
   const [lang, setLang] = useState<Language>(() => {
-    const saved = localStorage.getItem('montessori_nexus_lang') as Language;
-    if (['en', 'es', 'pt', 'fr'].includes(saved)) {
-      return saved;
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlLang = params.get('lang')?.toLowerCase() as Language;
+      if (['en', 'es', 'pt', 'fr'].includes(urlLang)) {
+        return urlLang;
+      }
+      const saved = localStorage.getItem('montessori_nexus_lang') as Language;
+      if (['en', 'es', 'pt', 'fr'].includes(saved)) {
+        return saved;
+      }
+      const navLang = navigator.language?.toLowerCase() || '';
+      if (navLang.startsWith('es')) return 'es';
+      if (navLang.startsWith('pt')) return 'pt';
+      if (navLang.startsWith('fr')) return 'fr';
+      if (navLang.startsWith('en')) return 'en';
     }
-    return 'en'; // Default English as requested
+    return 'es'; // Default to Spanish
   });
 
   // Navigation & Scroll State
@@ -1931,7 +1943,7 @@ export const MontessoriNexusLanding: React.FC = () => {
       ogTitle: 'Montessori Nexus | El Sistema Operativo para Colegios Montessori Auténticos',
       ogDescription: 'Software escolar y pedagógico para comunidades Montessori. Registro de tres tiempos, seguimiento visual de materiales, admisiones y suite de IA ética.',
       ogImage: '/images/og-montessorinexus-es.png',
-      locale: 'es_ES',
+        locale: 'es_ES',
       keywords: 'montessori, software montessori, colegio montessori, sistema escolar montessori, registro tres tiempos montessori, seguimiento de materiales, portal de admisiones montessori, inteligencia artificial etica montessori',
     },
     en: {
@@ -1961,6 +1973,15 @@ export const MontessoriNexusLanding: React.FC = () => {
       locale: 'it_IT',
       keywords: 'software montessori, scuola montessori, lezione in tre tempi, tracciamento materiali montessori, registro presenze montessori, portale iscrizioni, ia etica montessori',
     },
+    fr: {
+      title: 'Montessori Nexus | Le Système d’Exploitation pour Écoles Montessori Authentiques',
+      description: 'Logiciel scolaire et pédagogique pour communautés Montessori. Présentations en trois temps, suivi visuel du matériel, registre des présences, portail d’admissions et suite d’IA éthique.',
+      ogTitle: 'Montessori Nexus | Le Système d’Exploitation pour Écoles Montessori Authentiques',
+      ogDescription: 'Logiciel pédagogique pour communautés Montessori. Leçons en trois temps, suivi du matériel, admissions et suite d’IA éthique.',
+      ogImage: '/images/og-montessorinexus-fr.png',
+      locale: 'fr_FR',
+      keywords: 'logiciel montessori, ecole montessori, lecon en trois temps, suivi materiel montessori, admissions scolaires montessori, ia ethique montessori',
+    },
   };
 
   useEffect(() => {
@@ -1969,6 +1990,14 @@ export const MontessoriNexusLanding: React.FC = () => {
 
   useEffect(() => {
     localStorage.setItem('montessori_nexus_lang', lang);
+
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (url.searchParams.get('lang') !== lang) {
+        url.searchParams.set('lang', lang);
+        window.history.replaceState({}, '', url.toString());
+      }
+    }
 
     if (typeof document !== 'undefined') {
       const seo = SEO_BY_LANG[lang] || SEO_BY_LANG.en;

@@ -13898,14 +13898,90 @@ if (activeQueues.length > 0) {
   console.warn('📊 [BULL BOARD] No active queues found. Dashboard not initialized.');
 }
 
-// Fallback for SPA routing
-app.use((req, res) => {
-  const indexPath = path.join(rootDir, 'dist', 'index.html');
-  if (fs.existsSync(indexPath)) {
-    res.sendFile(indexPath);
-  } else {
-    res.send('CEIBA Roots Backend Multi-Tenant API Server Running.');
+// Multilingual SEO metadata dictionary for server-side HTML pre-rendering
+const SAAS_OG_METAS = {
+  es: {
+    lang: 'es',
+    title: 'Montessori Nexus | El Sistema Operativo para Colegios Montessori Auténticos',
+    description: 'Software escolar y pedagógico para comunidades Montessori. Registro de tres tiempos, seguimiento visual de materiales, control de asistencias, portal de admisiones y suite de IA ética.',
+    image: '/images/og-montessorinexus-es.png',
+    locale: 'es_ES'
+  },
+  en: {
+    lang: 'en',
+    title: 'Montessori Nexus | The Operating System for Authentic Montessori Schools',
+    description: 'Comprehensive pedagogical and operational software for Montessori schools. Three-period lesson tracking, visual material progression, attendance radar, admissions portal and ethical AI suite.',
+    image: '/images/og-montessorinexus-en.png',
+    locale: 'en_US'
+  },
+  pt: {
+    lang: 'pt',
+    title: 'Montessori Nexus | O Sistema Operacional para Escolas Montessori Autênticas',
+    description: 'Software escolar e pedagógico completo para comunidades Montessori. Registro de três tempos, acompanhamento visual de materiales, frequência, portal de matrículas e suíte de IA ética.',
+    image: '/images/og-montessorinexus-pt.png',
+    locale: 'pt_BR'
+  },
+  fr: {
+    lang: 'fr',
+    title: 'Montessori Nexus | Le Système d’Exploitation pour Écoles Montessori Authentiques',
+    description: 'Logiciel scolaire et pédagogique pour communautés Montessori. Présentations en trois temps, suivi visuel du matériel, registre des présences, portail d’admissions et suite d’IA éthique.',
+    image: '/images/og-montessorinexus-fr.png',
+    locale: 'fr_FR'
   }
+};
+
+// Fallback for SPA routing with Dynamic Multilingual OpenGraph Pre-rendering
+app.use((req, res) => {
+  const distIndexPath = path.join(rootDir, 'dist', 'index.html');
+  const rootIndexPath = path.join(rootDir, 'index.html');
+  const targetPath = fs.existsSync(distIndexPath) ? distIndexPath : (fs.existsSync(rootIndexPath) ? rootIndexPath : null);
+
+  if (targetPath) {
+    try {
+      let html = fs.readFileSync(targetPath, 'utf8');
+
+      // Detect language from query param (?lang=) or Accept-Language header
+      const rawQueryLang = String(req.query.lang || '').toLowerCase().trim();
+      const acceptLang = String(req.headers['accept-language'] || '').toLowerCase();
+      let detectedLang = 'es';
+
+      if (['en', 'es', 'pt', 'fr'].includes(rawQueryLang)) {
+        detectedLang = rawQueryLang;
+      } else if (acceptLang.startsWith('pt')) {
+        detectedLang = 'pt';
+      } else if (acceptLang.startsWith('fr')) {
+        detectedLang = 'fr';
+      } else if (acceptLang.startsWith('en')) {
+        detectedLang = 'en';
+      } else if (acceptLang.startsWith('es')) {
+        detectedLang = 'es';
+      }
+
+      const meta = SAAS_OG_METAS[detectedLang] || SAAS_OG_METAS.es;
+      const host = req.headers['x-forwarded-host'] || req.headers.host || 'montessorinexus.com';
+      const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+      const fullOgImageUrl = `${protocol}://${host}${meta.image}`;
+      const fullCanonicalUrl = `${protocol}://${host}${req.originalUrl || '/'}`;
+
+      html = html.replace(/<html lang="[^"]*"/, `<html lang="${meta.lang}"`);
+      html = html.replace(/<title>[^<]*<\/title>/, `<title>${meta.title}</title>`);
+      html = html.replace(/<meta name="description" content="[^"]*"\s*\/?>/, `<meta name="description" content="${meta.description}" />`);
+      html = html.replace(/<meta property="og:title" content="[^"]*"\s*\/?>/, `<meta property="og:title" content="${meta.title}" />`);
+      html = html.replace(/<meta property="og:description" content="[^"]*"\s*\/?>/, `<meta property="og:description" content="${meta.description}" />`);
+      html = html.replace(/<meta property="og:image" content="[^"]*"\s*\/?>/, `<meta property="og:image" content="${fullOgImageUrl}" />`);
+      html = html.replace(/<meta name="twitter:title" content="[^"]*"\s*\/?>/, `<meta name="twitter:title" content="${meta.title}" />`);
+      html = html.replace(/<meta name="twitter:description" content="[^"]*"\s*\/?>/, `<meta name="twitter:description" content="${meta.description}" />`);
+      html = html.replace(/<meta name="twitter:image" content="[^"]*"\s*\/?>/, `<meta name="twitter:image" content="${fullOgImageUrl}" />`);
+
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      return res.send(html);
+    } catch (err) {
+      console.error('Error injecting multilingual SEO tags:', err);
+      return res.sendFile(targetPath);
+    }
+  }
+
+  res.send('CEIBA Roots Backend Multi-Tenant API Server Running.');
 });
 
 app.listen(PORT, async () => {
