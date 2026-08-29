@@ -9073,6 +9073,7 @@ export const WebBuilderSection: React.FC = () => {
                 section={targetSection}
                 enabledLangsStr={headerEnabledLangs}
                 editorLang={builderEditorLang}
+                themeMode={themeMode}
                 onSelectEditorLang={setBuilderEditorLang}
                 onUpdateSection={(updates) => {
                   setPageSections(prev => prev.map(s => s.id === targetSection.id ? { ...s, ...updates } : s));

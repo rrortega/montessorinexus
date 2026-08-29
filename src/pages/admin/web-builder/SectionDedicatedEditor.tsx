@@ -392,6 +392,8 @@ export const CustomHoverPicker: React.FC<{
   );
 };
 
+export const SectionThemeContext = React.createContext<'light' | 'dark'>('light');
+
 interface FieldTypographyAndColorBarProps {
   fontValue?: string;
   onChangeFont: (fontId: string) => void;
@@ -401,6 +403,7 @@ interface FieldTypographyAndColorBarProps {
   onChangeColorDark: (hex: string) => void;
   defaultColorLight?: string;
   defaultColorDark?: string;
+  themeMode?: 'light' | 'dark';
 }
 
 const FieldTypographyAndColorBar: React.FC<FieldTypographyAndColorBarProps> = ({
@@ -411,10 +414,17 @@ const FieldTypographyAndColorBar: React.FC<FieldTypographyAndColorBarProps> = ({
   colorDark,
   onChangeColorDark,
   defaultColorLight = '#1b3b2b',
-  defaultColorDark = '#ffffff'
+  defaultColorDark = '#ffffff',
+  themeMode: themeModeProp
 }) => {
-  const activeLight = colorLight || defaultColorLight;
-  const activeDark = colorDark || defaultColorDark;
+  const contextTheme = React.useContext(SectionThemeContext);
+  const themeMode = themeModeProp || contextTheme || 'light';
+  const isDark = themeMode === 'dark';
+
+  const currentColor = isDark ? (colorDark || '') : (colorLight || '');
+  const currentDefault = isDark ? defaultColorDark : defaultColorLight;
+  const activeColorHex = currentColor || currentDefault;
+  const onColorChange = isDark ? onChangeColorDark : onChangeColorLight;
 
   return (
     <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/90 shadow-3xs space-y-2">
@@ -430,47 +440,37 @@ const FieldTypographyAndColorBar: React.FC<FieldTypographyAndColorBarProps> = ({
           />
         </div>
 
-        {/* Color Light & Dark Controls */}
-        <div className="flex items-center gap-2.5 shrink-0">
-          {/* Light Color */}
-          <div className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-lg border border-slate-200 shadow-3xs">
-            <Sun className="w-3.5 h-3.5 text-amber-500 shrink-0" title="Color en Modo Claro" />
+        {/* Dynamic Single Color Control for Active Theme Mode */}
+        <div className="flex items-center shrink-0">
+          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border shadow-3xs transition-colors ${
+            isDark
+              ? 'bg-slate-900 text-white border-slate-800'
+              : 'bg-white text-slate-800 border-slate-200'
+          }`}>
+            {isDark ? (
+              <Moon className="w-3.5 h-3.5 text-sky-400 shrink-0" title="Color para Modo Oscuro (Activo)" />
+            ) : (
+              <Sun className="w-3.5 h-3.5 text-amber-500 shrink-0" title="Color para Modo Claro (Activo)" />
+            )}
             <div className="relative flex items-center">
               <input
                 type="color"
-                value={activeLight.startsWith('#') && activeLight.length === 7 ? activeLight : '#1b3b2b'}
-                onChange={(e) => onChangeColorLight(e.target.value)}
-                className="w-5 h-5 rounded-md border border-slate-300 cursor-pointer p-0 appearance-none bg-transparent"
-                title="Elegir color claro"
+                value={activeColorHex.startsWith('#') && activeColorHex.length === 7 ? activeColorHex : (isDark ? '#ffffff' : '#1b3b2b')}
+                onChange={(e) => onColorChange(e.target.value)}
+                className={`w-5 h-5 rounded-md border cursor-pointer p-0 appearance-none bg-transparent ${
+                  isDark ? 'border-slate-600' : 'border-slate-300'
+                }`}
+                title={`Elegir color para ${isDark ? 'Modo Oscuro' : 'Modo Claro'}`}
               />
             </div>
             <input
               type="text"
-              value={colorLight || ''}
-              onChange={(e) => onChangeColorLight(e.target.value)}
-              placeholder={defaultColorLight}
-              className="w-16 text-[10px] font-mono uppercase text-slate-700 bg-transparent border-0 focus:outline-none"
-            />
-          </div>
-
-          {/* Dark Color */}
-          <div className="flex items-center gap-1.5 bg-slate-900 text-white px-2 py-1 rounded-lg border border-slate-800 shadow-3xs">
-            <Moon className="w-3.5 h-3.5 text-sky-400 shrink-0" title="Color en Modo Oscuro" />
-            <div className="relative flex items-center">
-              <input
-                type="color"
-                value={activeDark.startsWith('#') && activeDark.length === 7 ? activeDark : '#ffffff'}
-                onChange={(e) => onChangeColorDark(e.target.value)}
-                className="w-5 h-5 rounded-md border border-slate-600 cursor-pointer p-0 appearance-none bg-transparent"
-                title="Elegir color oscuro"
-              />
-            </div>
-            <input
-              type="text"
-              value={colorDark || ''}
-              onChange={(e) => onChangeColorDark(e.target.value)}
-              placeholder={defaultColorDark}
-              className="w-16 text-[10px] font-mono uppercase text-slate-200 bg-transparent border-0 focus:outline-none"
+              value={currentColor}
+              onChange={(e) => onColorChange(e.target.value)}
+              placeholder={currentDefault}
+              className={`w-16 text-[10px] font-mono uppercase bg-transparent border-0 focus:outline-none ${
+                isDark ? 'text-slate-200' : 'text-slate-700'
+              }`}
             />
           </div>
         </div>
@@ -902,6 +902,7 @@ interface SectionDedicatedEditorProps {
   section: WebSectionItem;
   enabledLangsStr?: string;
   editorLang?: string;
+  themeMode?: 'light' | 'dark';
   onSelectEditorLang?: (lang: string) => void;
   onUpdateSection: (updates: Partial<WebSectionItem>) => void;
   onDuplicateSection?: () => void;
@@ -912,6 +913,7 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
   section,
   enabledLangsStr = 'es,en',
   editorLang: editorLangProp,
+  themeMode = 'light',
   onSelectEditorLang,
   onUpdateSection,
   onDuplicateSection,
@@ -1018,17 +1020,18 @@ const fullKey = editorLang === 'es' ? key : `${key}_${editorLang}`;
   };
 
   return (
-    <SectionAccordionContext.Provider value={{ activeId: activeAccordionId, toggle: toggleAccordion }}>
-      <div className="space-y-3.5 text-xs text-slate-800 animate-in fade-in duration-200">
-        
-        {/* 1. GENERAL HEADINGS & TEXTS */}
-        <SectionAccordionItem
-          id="headings"
-          title={`Titulares & Textos (${currentLangObj.name})`}
-          subtitle="Identificador, badge, título, subtítulo, tipografías y alineación"
-          icon={Type}
-          badge={`${currentLangObj.flag} ${currentLangObj.code.toUpperCase()}`}
-        >
+    <SectionThemeContext.Provider value={themeMode}>
+      <SectionAccordionContext.Provider value={{ activeId: activeAccordionId, toggle: toggleAccordion }}>
+        <div className="space-y-3.5 text-xs text-slate-800 animate-in fade-in duration-200">
+          
+          {/* 1. GENERAL HEADINGS & TEXTS */}
+          <SectionAccordionItem
+            id="headings"
+            title={`Titulares & Textos (${currentLangObj.name})`}
+            subtitle="Identificador, badge, título, subtítulo, tipografías y alineación"
+            icon={Type}
+            badge={`${currentLangObj.flag} ${currentLangObj.code.toUpperCase()}`}
+          >
           {/* 1.1 Nombre de la Sección */}
           <div className="space-y-1">
             <label className="text-[10px] font-bold text-slate-700">
@@ -1621,70 +1624,108 @@ const fullKey = editorLang === 'es' ? key : `${key}_${editorLang}`;
 
                             {/* Color de Fondo de la Tarjeta */}
                             <div className="space-y-2 pt-2 border-t border-slate-100">
-                              <label className="text-[10px] font-bold text-slate-700 block">
-                                Color de Fondo de la Tarjeta:
-                              </label>
+                              <div className="flex items-center justify-between">
+                                <label className="text-[10px] font-bold text-slate-700 block">
+                                  Color de Fondo de la Tarjeta ({themeMode === 'dark' ? 'Modo Oscuro' : 'Modo Claro'}):
+                                </label>
+                                <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1 ${
+                                  themeMode === 'dark' ? 'bg-slate-900 text-sky-400 border border-slate-800' : 'bg-amber-50 text-amber-800 border border-amber-200'
+                                }`}>
+                                  {themeMode === 'dark' ? <Moon className="w-2.5 h-2.5" /> : <Sun className="w-2.5 h-2.5" />}
+                                  <span>{themeMode === 'dark' ? 'Oscuro' : 'Claro'}</span>
+                                </span>
+                              </div>
 
                               {/* Presets */}
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                {[
-                                  { hex: '#f4f8f5', label: 'Sage' },
-                                  { hex: '#fbf6ee', label: 'Crema' },
-                                  { hex: '#f1f5f9', label: 'Sky' },
-                                  { hex: '#fef3f2', label: 'Rose' },
-                                  { hex: '#ecfdf5', label: 'Mint' },
-                                  { hex: '#faf5ff', label: 'Lavender' },
-                                  { hex: '#ffffff', label: 'Blanco' },
-                                  { hex: '#1e293b', label: 'Slate' }
-                                ].map(p => (
-                                  <button
-                                    key={p.hex}
-                                    type="button"
-                                    onClick={() => handleUpdateSingleCard(card.id, { bgColor: p.hex })}
-                                    style={{ backgroundColor: p.hex }}
-                                    className={`w-6 h-6 rounded-lg border transition-all cursor-pointer ${
-                                      card.bgColor === p.hex
-                                        ? 'border-forest ring-2 ring-forest/30 scale-110 shadow-3xs'
-                                        : 'border-slate-300 hover:scale-105'
-                                    }`}
-                                    title={p.label}
-                                  />
-                                ))}
+                                {(themeMode === 'dark'
+                                  ? [
+                                      { hex: '#14251c', label: 'Bosque Profundo' },
+                                      { hex: '#0f172a', label: 'Slate Oscuro' },
+                                      { hex: '#18181b', label: 'Zinc Oscuro' },
+                                      { hex: '#1e293b', label: 'Azul Noche' },
+                                      { hex: '#262626', label: 'Neutral' },
+                                      { hex: '#3b0764', label: 'Púrpura Profundo' },
+                                      { hex: '#451a03', label: 'Ámbar Oscuro' },
+                                      { hex: '#000000', label: 'Negro Puro' }
+                                    ]
+                                  : [
+                                      { hex: '#f4f8f5', label: 'Sage' },
+                                      { hex: '#fbf6ee', label: 'Crema' },
+                                      { hex: '#f1f5f9', label: 'Sky' },
+                                      { hex: '#fef3f2', label: 'Rose' },
+                                      { hex: '#ecfdf5', label: 'Mint' },
+                                      { hex: '#faf5ff', label: 'Lavender' },
+                                      { hex: '#ffffff', label: 'Blanco' },
+                                      { hex: '#e2e8f0', label: 'Gris Suave' }
+                                    ]
+                                ).map(p => {
+                                  const activeCardBg = themeMode === 'dark' ? (card.bgColorDark || '#14251c') : (card.bgColor || '#f4f8f5');
+                                  return (
+                                    <button
+                                      key={p.hex}
+                                      type="button"
+                                      onClick={() => {
+                                        if (themeMode === 'dark') {
+                                          handleUpdateSingleCard(card.id, { bgColorDark: p.hex });
+                                        } else {
+                                          handleUpdateSingleCard(card.id, { bgColor: p.hex });
+                                        }
+                                      }}
+                                      style={{ backgroundColor: p.hex }}
+                                      className={`w-6 h-6 rounded-lg border transition-all cursor-pointer ${
+                                        activeCardBg === p.hex
+                                          ? 'border-forest ring-2 ring-forest/30 scale-110 shadow-3xs'
+                                          : 'border-slate-300 hover:scale-105'
+                                      }`}
+                                      title={p.label}
+                                    />
+                                  );
+                                })}
                               </div>
 
-                              {/* Pickers Claro & Oscuro */}
+                              {/* Single Dynamic Color Picker */}
                               <div className="flex items-center gap-3 pt-1">
-                                <div className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-lg border border-slate-200 shadow-3xs">
-                                  <Sun className="w-3.5 h-3.5 text-amber-500 shrink-0" title="Modo Claro" />
+                                <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border shadow-3xs ${
+                                  themeMode === 'dark' ? 'bg-slate-900 text-white border-slate-800' : 'bg-white text-slate-800 border-slate-200'
+                                }`}>
+                                  {themeMode === 'dark' ? (
+                                    <Moon className="w-3.5 h-3.5 text-sky-400 shrink-0" title="Modo Oscuro" />
+                                  ) : (
+                                    <Sun className="w-3.5 h-3.5 text-amber-500 shrink-0" title="Modo Claro" />
+                                  )}
                                   <input
                                     type="color"
-                                    value={card.bgColor?.startsWith('#') && card.bgColor.length === 7 ? card.bgColor : '#f4f8f5'}
-                                    onChange={(e) => handleUpdateSingleCard(card.id, { bgColor: e.target.value })}
-                                    className="w-5 h-5 rounded border border-slate-300 cursor-pointer p-0 appearance-none bg-transparent"
+                                    value={
+                                      themeMode === 'dark'
+                                        ? (card.bgColorDark?.startsWith('#') && card.bgColorDark.length === 7 ? card.bgColorDark : '#14251c')
+                                        : (card.bgColor?.startsWith('#') && card.bgColor.length === 7 ? card.bgColor : '#f4f8f5')
+                                    }
+                                    onChange={(e) => {
+                                      if (themeMode === 'dark') {
+                                        handleUpdateSingleCard(card.id, { bgColorDark: e.target.value });
+                                      } else {
+                                        handleUpdateSingleCard(card.id, { bgColor: e.target.value });
+                                      }
+                                    }}
+                                    className={`w-5 h-5 rounded border cursor-pointer p-0 appearance-none bg-transparent ${
+                                      themeMode === 'dark' ? 'border-slate-600' : 'border-slate-300'
+                                    }`}
                                   />
                                   <input
                                     type="text"
-                                    value={card.bgColor || ''}
-                                    onChange={(e) => handleUpdateSingleCard(card.id, { bgColor: e.target.value })}
-                                    placeholder="#f4f8f5"
-                                    className="w-16 text-[10px] font-mono uppercase bg-transparent border-0 focus:outline-none"
-                                  />
-                                </div>
-
-                                <div className="flex items-center gap-1.5 bg-slate-900 text-white px-2 py-1 rounded-lg border border-slate-800 shadow-3xs">
-                                  <Moon className="w-3.5 h-3.5 text-sky-400 shrink-0" title="Modo Oscuro" />
-                                  <input
-                                    type="color"
-                                    value={card.bgColorDark?.startsWith('#') && card.bgColorDark.length === 7 ? card.bgColorDark : '#14251c'}
-                                    onChange={(e) => handleUpdateSingleCard(card.id, { bgColorDark: e.target.value })}
-                                    className="w-5 h-5 rounded border border-slate-600 cursor-pointer p-0 appearance-none bg-transparent"
-                                  />
-                                  <input
-                                    type="text"
-                                    value={card.bgColorDark || ''}
-                                    onChange={(e) => handleUpdateSingleCard(card.id, { bgColorDark: e.target.value })}
-                                    placeholder="#14251c"
-                                    className="w-16 text-[10px] font-mono uppercase text-slate-200 bg-transparent border-0 focus:outline-none"
+                                    value={themeMode === 'dark' ? (card.bgColorDark || '') : (card.bgColor || '')}
+                                    onChange={(e) => {
+                                      if (themeMode === 'dark') {
+                                        handleUpdateSingleCard(card.id, { bgColorDark: e.target.value });
+                                      } else {
+                                        handleUpdateSingleCard(card.id, { bgColor: e.target.value });
+                                      }
+                                    }}
+                                    placeholder={themeMode === 'dark' ? '#14251c' : '#f4f8f5'}
+                                    className={`w-16 text-[10px] font-mono uppercase bg-transparent border-0 focus:outline-none ${
+                                      themeMode === 'dark' ? 'text-slate-200' : 'text-slate-700'
+                                    }`}
                                   />
                                 </div>
                               </div>
@@ -1896,8 +1937,8 @@ const fullKey = editorLang === 'es' ? key : `${key}_${editorLang}`;
           )}
         </div>
 
-      </div>
-    </SectionAccordionContext.Provider>
+        </div>
+      </SectionAccordionContext.Provider>
+    </SectionThemeContext.Provider>
   );
 };
-
