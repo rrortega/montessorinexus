@@ -2355,6 +2355,19 @@ export const WebBuilderSection: React.FC = () => {
     setDrawerOpen(true);
   };
 
+  useEffect(() => {
+    const handleChildMessage = (event: MessageEvent) => {
+      if (event.data && event.data.type === 'OPEN_SECTION_DRAWER') {
+        const targetTab = event.data.targetTab as DesignerTab;
+        if (targetTab) {
+          handleOpenConfigTab(targetTab);
+        }
+      }
+    };
+    window.addEventListener('message', handleChildMessage);
+    return () => window.removeEventListener('message', handleChildMessage);
+  }, []);
+
   const handleCopy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast.success(`${label} copiado al portapapeles`);
