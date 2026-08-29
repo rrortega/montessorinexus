@@ -219,10 +219,10 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
 
   const handleAddCard = () => {
     const newCard: PillarCardItem = {
-      id: `pillar_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      id: `card_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
       icon: 'Sparkles',
-      title: 'Nuevo Pilar Pedagógico',
-      subtitle: 'Descripción formativa del pilar y su propósito para el niño.',
+      title: 'Nueva Tarjeta',
+      subtitle: 'Descripción o detalle informativo del contenido de esta tarjeta.',
       bgColor: '#f4f8f5',
       bgColorDark: '#14251c',
       shape: 'rounded',
@@ -772,15 +772,15 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
               )}
             </div>
 
-            {/* Bloque Destacado de Misión */}
+            {/* Bloque Destacado / Banner Informativo */}
             <div className="space-y-4 pt-3 border-t border-slate-100">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <h5 className="font-bold text-xs text-slate-800">
-                    Tarjeta Destacada de Misión
+                    Tarjeta Destacada / Banner Informativo
                   </h5>
                   <p className="text-[10px] text-muted-foreground">
-                    Banner panorámico para resaltar el propósito pedagógico
+                    Banner panorámico para resaltar un mensaje clave, propósito o llamado principal
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -796,16 +796,30 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
 
               {section.config?.showMission !== false && (
                 <div className="space-y-4 p-4 rounded-xl bg-slate-50/80 border border-slate-200 animate-in fade-in duration-150">
-                  {/* Texto de la misión */}
+                  {/* Etiqueta superior opcional */}
                   <div className="space-y-1">
                     <label className="text-[10px] font-bold text-slate-700 block">
-                      Texto de la Misión ({currentLangObj.name}):
+                      Etiqueta Superior del Banner (Opcional - {currentLangObj.name}):
+                    </label>
+                    <input
+                      type="text"
+                      value={getConfigLangValue('missionBadgeText', '')}
+                      onChange={(e) => setConfigLangValue('missionBadgeText', e.target.value)}
+                      placeholder={`Ej: Nuestra Misión, Compromiso, Aviso Especial...`}
+                      className="w-full px-3 py-1.5 text-xs text-slate-800 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-forest/20 focus:border-forest"
+                    />
+                  </div>
+
+                  {/* Texto principal del banner */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-700 block">
+                      Texto Principal del Mensaje ({currentLangObj.name}):
                     </label>
                     <textarea
-                      value={getConfigLangValue('missionText', 'En nuestra escuela nos comprometemos a entender la infancia para ayudar a los niños a desarrollar la grandeza de sus potencialidades.')}
+                      value={getConfigLangValue('missionText', 'Comprometidos con el desarrollo integral, la excelencia formativa y el máximo potencial de cada estudiante.')}
                       onChange={(e) => setConfigLangValue('missionText', e.target.value)}
                       rows={2}
-                      placeholder={`Texto de misión en ${currentLangObj.name}...`}
+                      placeholder={`Mensaje o cita destacada en ${currentLangObj.name}...`}
                       className="w-full px-3 py-2 text-xs text-slate-800 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-forest/20 focus:border-forest"
                     />
                   </div>
@@ -885,7 +899,7 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
                   {/* Color de Fondo de la Tarjeta Destacada */}
                   <div className="space-y-2 pt-2 border-t border-slate-200/70">
                     <label className="text-[10px] font-bold text-slate-700 block">
-                      Color de Fondo de la Tarjeta:
+                      Color de Fondo del Banner:
                     </label>
 
                     {/* Presets */}
@@ -959,7 +973,7 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
             </div>
           </div>
 
-          {/* 4.2 GESTOR DE TARJETAS DE PILARES */}
+          {/* 4.2 GESTOR DE TARJETAS DE CONTENIDO */}
           <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -968,10 +982,10 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
                 </div>
                 <div>
                   <h4 className="font-bold text-forest text-xs sm:text-sm">
-                    Tarjetas de Pilares ({currentCards.length})
+                    Tarjetas de Contenido ({currentCards.length})
                   </h4>
                   <p className="text-[11px] text-muted-foreground">
-                    Añadí, reordená y personalizá el contenido, iconos, formas y colores de cada tarjeta
+                    Añadí, reordená y personalizá el contenido, iconos o imágenes, formas y colores de cada tarjeta
                   </p>
                 </div>
               </div>
@@ -1090,7 +1104,7 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
                         {/* Título de la tarjeta */}
                         <div className="space-y-1 pt-2">
                           <label className="text-[10px] font-bold text-slate-700">
-                            Título del Pilar ({currentLangObj.name}):
+                            Título de la Tarjeta ({currentLangObj.name}):
                           </label>
                           <input
                             type="text"
@@ -1111,7 +1125,7 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
                         {/* Subtítulo / Descripción */}
                         <div className="space-y-1">
                           <label className="text-[10px] font-bold text-slate-700">
-                            Descripción / Detalle del Pilar ({currentLangObj.name}):
+                            Descripción / Detalle de la Tarjeta ({currentLangObj.name}):
                           </label>
                           <textarea
                             value={cardSubtitle}
@@ -1124,7 +1138,7 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
                               }
                             }}
                             rows={2}
-                            placeholder={`Explicación formativa en ${currentLangObj.name}...`}
+                            placeholder={`Detalle informativo en ${currentLangObj.name}...`}
                             className="w-full px-3 py-2 text-xs text-slate-800 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-forest/20 focus:border-forest"
                           />
                         </div>

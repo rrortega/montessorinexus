@@ -474,10 +474,12 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
               <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl pointer-events-none" />
               <div className="relative z-10 flex flex-col md:flex-row items-center gap-6 justify-between">
                 <div className={`space-y-2 flex flex-col ${missionAlignClass} max-w-3xl flex-1`}>
-                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider opacity-80">
-                    <Sparkles className="w-4 h-4 text-amber-300 shrink-0" />
-                    <span>Nuestra Misión & Compromiso Pedagógico</span>
-                  </div>
+                  {config.missionBadgeText && (
+                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider opacity-80">
+                      <Sparkles className="w-4 h-4 text-amber-300 shrink-0" />
+                      <span>{getLocalizedText(config, 'missionBadgeText', '')}</span>
+                    </div>
+                  )}
                   <p
                     style={{ fontFamily: missionFontFamily, color: missionColor }}
                     className="text-base sm:text-lg md:text-xl font-display font-medium leading-relaxed text-balance"
@@ -505,7 +507,7 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
         {/* Dynamic Cards Grid */}
         <div className={getGridColsClass()}>
           {cards.map((card, index) => {
-            const cardTitle = getLocalizedText(card, 'title', `Pilar ${index + 1}`);
+            const cardTitle = getLocalizedText(card, 'title', `Tarjeta ${index + 1}`);
             const cardSubtitle = getLocalizedText(card, 'subtitle', '');
             const IconComponent = card.icon && PILLAR_ICONS_MAP[card.icon] ? PILLAR_ICONS_MAP[card.icon] : Compass;
             const shapeClass = getShapeClass(card.shape);
@@ -543,7 +545,7 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
                       )}
 
                       <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-black/5 text-slate-500">
-                        0{index + 1}
+                        {String(index + 1).padStart(2, '0')}
                       </span>
                     </div>
 
@@ -560,10 +562,12 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
                     </div>
                   </div>
 
-                  {/* Decorative Subtle Accent Indicator */}
+                  {/* Decorative Subtle Indicator */}
                   <div className="pt-4 mt-4 border-t border-black/5 flex items-center justify-between text-[11px] font-bold text-forest/70 group-hover:text-forest transition-colors">
-                    <span className="text-[10px] uppercase tracking-wider">Esencia Montessori</span>
-                    <Check className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      {card.badge || ''}
+                    </span>
+                    <Check className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-forest" />
                   </div>
                 </motion.div>
               </FadeInScroll>

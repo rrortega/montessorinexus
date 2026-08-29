@@ -75,16 +75,16 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
   // 1. Estructura & Metodología
   {
     type: 'pillars_mosaic',
-    name: 'Mosaico de Tarjetas & Pilares',
+    name: 'Mosaico de Tarjetas en Cuadrícula',
     category: 'methodology',
     categoryLabel: 'Estructura & Metodología',
-    description: 'Cuadrícula de 6 tarjetas de colores con iconos, pilares formativos y bloque destacado de misión.',
+    description: 'Cuadrícula flexible de tarjetas de colores con iconos o fotos, textos informativos y banner destacado opcional.',
     icon: Grid,
-    badgeDefault: 'Nuestros Pilares',
-    titleDefault: 'Quiénes somos y qué nos representa',
-    subtitleDefault: 'Los principios formativos que guían cada jornada en nuestro colegio.',
+    badgeDefault: 'Aspectos Destacados',
+    titleDefault: 'Valores y Características Clave',
+    subtitleDefault: 'Explorá los elementos fundamentales que definen nuestra propuesta.',
     ctaDefault: '',
-    tag: 'Mosaico 2x3'
+    tag: 'Grid Modular'
   },
   {
     type: 'feature_cards_row',
@@ -319,14 +319,14 @@ export const DEFAULT_PAGE_SECTIONS: WebSectionItem[] = [
   {
     id: 'sec_pillars',
     type: 'pillars_mosaic',
-    name: 'Pilares Pedagógicos & Misión',
-    badge: 'Nuestros Pilares',
-    title: 'Quiénes somos y qué nos representa',
-    subtitle: 'Los principios formativos que guían cada jornada.',
+    name: 'Mosaico de Tarjetas',
+    badge: 'Aspectos Clave',
+    title: 'Valores y Características Principales',
+    subtitle: 'Los principios y elementos fundamentales que definen nuestra propuesta.',
     isEnabled: true,
     showInMenu: true,
-    menuLabel: 'Nuestro Método',
-    menuLabel_en: 'Our Method'
+    menuLabel: 'Nuestra Propuesta',
+    menuLabel_en: 'Our Proposal'
   },
   {
     id: 'sec_quote',
