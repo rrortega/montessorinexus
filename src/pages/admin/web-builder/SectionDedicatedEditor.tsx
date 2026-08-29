@@ -286,6 +286,8 @@ const FieldTypographyAndColorBar: React.FC<FieldTypographyAndColorBarProps> = ({
 interface SectionDedicatedEditorProps {
   section: WebSectionItem;
   enabledLangsStr?: string;
+  editorLang?: string;
+  onSelectEditorLang?: (lang: string) => void;
   onUpdateSection: (updates: Partial<WebSectionItem>) => void;
   onDuplicateSection?: () => void;
   onDeleteSection?: () => void;
@@ -294,6 +296,8 @@ interface SectionDedicatedEditorProps {
 export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
   section,
   enabledLangsStr = 'es,en',
+  editorLang: editorLangProp,
+  onSelectEditorLang,
   onUpdateSection,
   onDuplicateSection,
   onDeleteSection
@@ -303,8 +307,9 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
     .map(s => s.trim().toLowerCase())
     .filter(Boolean);
 
-  const activeLanguages = activeCodes.map(code => getLanguageByCode(code));
-  const [editorLang, setEditorLang] = useState<string>(activeCodes[0] || 'es');
+  const [internalEditorLang, setInternalEditorLang] = useState<string>(activeCodes[0] || 'es');
+  const editorLang = editorLangProp || internalEditorLang;
+  const setEditorLang = onSelectEditorLang || setInternalEditorLang;
   const currentLangObj = getLanguageByCode(editorLang);
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
 
@@ -393,84 +398,7 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
 
   return (
     <div className="space-y-6 text-xs text-slate-800 animate-in fade-in duration-200">
-      
-      {/* 1. TOP HEADER PROFILE & STATUS */}
-      <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-3xs flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0 flex-1">
-          <div className="w-10 h-10 rounded-2xl bg-forest/10 text-forest flex items-center justify-center shadow-3xs shrink-0">
-            <IconComp className="w-5 h-5" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-bold text-sm text-slate-900 truncate">
-                {getLangValue('name') || section.name}
-              </h3>
-              {template?.tag && (
-                <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-forest/10 text-forest border border-forest/20">
-                  {template.tag}
-                </span>
-              )}
-            </div>
-            <p className="text-[11px] text-muted-foreground line-clamp-1">
-              {template?.description || 'Personalizá todos los parámetros de este bloque.'}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-1.5 shrink-0">
-          <button
-            type="button"
-            onClick={() => onUpdateSection({ isEnabled: !section.isEnabled })}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-              section.isEnabled
-                ? 'bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 shadow-3xs'
-                : 'bg-slate-100 border border-slate-200 text-slate-500 hover:bg-slate-200'
-            }`}
-          >
-            {section.isEnabled ? <Eye className="w-3.5 h-3.5 text-emerald-600" /> : <EyeOff className="w-3.5 h-3.5" />}
-            <span>{section.isEnabled ? 'Activa' : 'Oculta'}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* LANGUAGE SELECTOR SWITCH (DYNAMIC TO ALL ENABLED SITE LANGUAGES) */}
-      <div className="p-3 rounded-2xl bg-gradient-to-r from-forest/5 via-forest/10 to-amber-500/5 border border-forest/20 shadow-3xs space-y-2.5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-forest text-white flex items-center justify-center shadow-3xs">
-              <Globe className="w-4 h-4" />
-            </div>
-            <div>
-              <span className="text-xs font-extrabold text-slate-900 block">Idioma de Edición</span>
-              <span className="text-[10px] text-muted-foreground">Configurando textos para {currentLangObj.name}</span>
-            </div>
-          </div>
-
-          <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-white border border-slate-200 text-slate-700 shadow-3xs">
-            {currentLangObj.flag} {currentLangObj.code.toUpperCase()}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200 shadow-3xs flex-wrap">
-          {activeLanguages.map((l) => (
-            <button
-              key={l.code}
-              type="button"
-              onClick={() => setEditorLang(l.code)}
-              className={`px-3 py-1.5 text-xs font-extrabold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
-                editorLang === l.code
-                  ? 'bg-forest text-white shadow-3xs scale-100'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-            >
-              <span>{l.flag}</span>
-              <span>{l.name}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* 2. GENERAL HEADINGS & TEXTS */}
+      {/* 1. GENERAL HEADINGS & TEXTS */}
       <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

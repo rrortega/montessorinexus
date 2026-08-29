@@ -7,6 +7,7 @@ export interface SlideOverDrawerProps {
   title: React.ReactNode;
   description?: React.ReactNode;
   icon?: React.ReactNode;
+  headerActions?: React.ReactNode;
   children: React.ReactNode;
   footer?: React.ReactNode;
   footerClassName?: string;
@@ -21,6 +22,7 @@ export const SlideOverDrawer: React.FC<SlideOverDrawerProps> = ({
   title,
   description,
   icon,
+  headerActions,
   children,
   footer,
   footerClassName,
@@ -223,14 +225,17 @@ export const SlideOverDrawer: React.FC<SlideOverDrawerProps> = ({
               </div>
             </div>
 
-            <button
-              onClick={onClose}
-              className="flex p-2 rounded-full text-muted-foreground hover:text-forest hover:bg-forest/5 transition-colors shrink-0"
-              aria-label="Cerrar panel lateral"
-              title="Cerrar (Esc)"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-2 shrink-0">
+              {headerActions}
+              <button
+                onClick={onClose}
+                className="flex p-2 rounded-full text-muted-foreground hover:text-forest hover:bg-forest/5 transition-colors shrink-0"
+                aria-label="Cerrar panel lateral"
+                title="Cerrar (Esc)"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </div>
 

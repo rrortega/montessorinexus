@@ -59,6 +59,7 @@ import { toast } from 'sonner';
 import { SectionsManagerTab, WebSectionItem, DEFAULT_PAGE_SECTIONS, SECTION_TEMPLATES } from './web-builder/SectionsManagerTab';
 import { SectionDedicatedEditor } from './web-builder/SectionDedicatedEditor';
 import { LanguagesAndSeoTab } from './web-builder/LanguagesAndSeoTab';
+import { getLanguageByCode } from './web-builder/languages';
 
 export interface TopBarItem {
   id: string;
@@ -681,6 +682,7 @@ export const WebBuilderSection: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<DesignerTab>('domain');
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [builderEditorLang, setBuilderEditorLang] = useState<string>('es');
   const [viewport, setViewport] = useState<ViewportMode>('desktop');
   const [saving, setSaving] = useState(false);
   const [verifyingDns, setVerifyingDns] = useState(false);
@@ -4610,8 +4612,16 @@ export const WebBuilderSection: React.FC = () => {
       </div>
 
       {/* 3. RIGHT CONFIGURATION DRAWER (SLIDEOVER) */}
-      <SlideOverDrawer
-        isOpen={drawerOpen}
+      {(() => {
+        const activeDrawerLangsList = headerEnabledLangs
+          .split(',')
+          .map(s => s.trim().toLowerCase())
+          .filter(Boolean)
+          .map(code => getLanguageByCode(code));
+
+        return (
+          <SlideOverDrawer
+            isOpen={drawerOpen}
             onClose={handleCloseDrawerWithoutSaving}
             maxWidthClass="max-w-md lg:max-w-xl"
             hideBackdrop
@@ -4633,7 +4643,7 @@ export const WebBuilderSection: React.FC = () => {
               activeTab === 'header' ? 'Diseño del Header & Barra Superior' :
               activeTab === 'hero' ? 'Hero Banner' :
               activeTab === 'sections' ? 'Estructura & Posición de Secciones' :
-              activeTab.startsWith('section:') ? `Editar: ${activeSection?.name || 'Sección'}` :
+              activeTab.startsWith('section:') ? (activeSection?.name || 'Sección') :
               activeTab === 'navigation' ? 'Menú & Navegación' :
               'Contacto & CTA'
             }
@@ -4647,6 +4657,31 @@ export const WebBuilderSection: React.FC = () => {
               activeTab.startsWith('section:') ? 'Personalizá los contenidos, titulares, disposición y elementos de esta sección.' :
               activeTab === 'navigation' ? 'Gestioná la visibilidad de enlaces en la barra pública.' :
               'Configurá el modo de atención por WhatsApp o formulario.'
+            }
+            headerActions={
+              (activeTab.startsWith('section:') || activeTab === 'hero' || activeTab === 'cta') && activeDrawerLangsList.length > 1 ? (
+                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/80 shadow-3xs">
+                  {activeDrawerLangsList.map(lang => {
+                    const isSelected = builderEditorLang === lang.code;
+                    return (
+                      <button
+                        key={lang.code}
+                        type="button"
+                        onClick={() => setBuilderEditorLang(lang.code)}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                          isSelected
+                            ? 'bg-white text-forest shadow-3xs ring-1 ring-forest/20'
+                            : 'text-slate-500 hover:text-slate-900'
+                        }`}
+                        title={`Editar textos en ${lang.name}`}
+                      >
+                        <span className="text-xs leading-none">{lang.flag}</span>
+                        <span className="font-mono uppercase text-[10px]">{lang.code}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : undefined
             }
         footer={
           <div className="flex items-center justify-between w-full gap-3">
@@ -8876,6 +8911,8 @@ export const WebBuilderSection: React.FC = () => {
               <SectionDedicatedEditor
                 section={targetSection}
                 enabledLangsStr={headerEnabledLangs}
+                editorLang={builderEditorLang}
+                onSelectEditorLang={setBuilderEditorLang}
                 onUpdateSection={(updates) => {
                   setPageSections(prev => prev.map(s => s.id === targetSection.id ? { ...s, ...updates } : s));
                 }}
@@ -8997,6 +9034,8 @@ export const WebBuilderSection: React.FC = () => {
 
         </div>
       </SlideOverDrawer>
+    );
+  })()}
 
     </div>
   );
