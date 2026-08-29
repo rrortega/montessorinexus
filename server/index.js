@@ -7536,7 +7536,7 @@ app.get('/api/storage/stream', async (req, res) => {
     }
 
     // Tenant isolation: if school context is available, pass it
-    const schoolId = req.school?.id || null;
+    const schoolId = req.query.schoolId || req.headers['x-school-id'] || req.school?.id || null;
     await streamPrivateAsset({ schoolId, relativePath: String(filePath), req, res, prisma });
   } catch (e) {
     console.error('Error streaming private asset:', e);

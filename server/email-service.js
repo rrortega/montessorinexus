@@ -16,10 +16,12 @@ export function cleanSchoolSenderSlug(nameOrSlug) {
   let cleaned = String(nameOrSlug)
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/ñ/gi, 'n');
 
-  cleaned = cleaned.replace(/\b(montessori|school|college|escuela|colegio)\b/gi, '');
-  cleaned = cleaned.replace(/(montessori|school|college|escuela|colegio)/gi, '');
+  // Strip stop words: escuela, colegio, school, colage, college, academi, academia, academy, instituto, institucion, montessori, etc.
+  cleaned = cleaned.replace(/\b(escuela|escuelas|colegio|colegios|school|schools|college|colage|colages|academy|academi|acadamia|academia|academias|instituto|institucion|montessori|campus|centro|infantil|comunidad)\b/gi, '');
+  cleaned = cleaned.replace(/(escuela|escuelas|colegio|colegios|school|schools|college|colage|academy|academi|acadamia|academia|instituto|institucion|montessori)/gi, '');
   cleaned = cleaned.replace(/[^a-z0-9]/g, '');
 
   return cleaned || 'colegio';
@@ -39,19 +41,21 @@ export async function getSchoolSmtpTransporter(schoolId, prisma) {
         select: { slug: true, name: true }
       });
       if (sch) {
-        schoolSlug = cleanSchoolSenderSlug(sch.slug || sch.name);
+        schoolSlug = cleanSchoolSenderSlug(sch.name || sch.slug);
         schoolName = sch.name || 'Comunidad Montessori';
       }
     }
 
     const emailDomain = process.env.EMAIL_SENDER_DOMAIN || process.env.DEFAULT_EMAIL_DOMAIN || 'montessorinexus.com';
-    const defaultFromEmail = `noreply-${schoolSlug}@${emailDomain}`;
+    const defaultFromEmail = `${schoolSlug}@${emailDomain}`;
 
     const settings = await prisma.siteSetting.findMany({
       where: {
         schoolId,
         key: {
           in: [
+            'email_driver',
+            'smtp_driver',
             'smtp_host',
             'smtp_port',
             'smtp_user',
@@ -67,15 +71,17 @@ export async function getSchoolSmtpTransporter(schoolId, prisma) {
     const map = {};
     settings.forEach(s => { map[s.key] = s.value; });
 
-    let host = map.smtp_host || process.env.SMTP_HOST;
-    let port = parseInt(map.smtp_port || process.env.SMTP_PORT || '587', 10);
-    let user = map.smtp_user || process.env.SMTP_USER;
-    let pass = map.smtp_pass || process.env.SMTP_PASS;
-    let secure = (map.smtp_secure === 'true' || process.env.SMTP_SECURE === 'true' || port === 465);
-    const fromName = map.smtp_from_name || process.env.SMTP_FROM_NAME || schoolName;
-    const fromEmail = map.smtp_from_email || process.env.SMTP_FROM_EMAIL || defaultFromEmail;
+    const isNexusManaged = (map.email_driver === 'nexus' || map.email_driver === 'managed' || !map.email_driver || !map.smtp_host);
 
-    // Platform-wide fallback to Resend SMTP if school has not configured custom SMTP
+    let host = isNexusManaged ? (process.env.SMTP_HOST || (process.env.RESEND_API_KEY ? 'smtp.resend.com' : null)) : map.smtp_host;
+    let port = parseInt((isNexusManaged ? (process.env.SMTP_PORT || (process.env.RESEND_API_KEY ? '465' : '587')) : map.smtp_port) || '587', 10);
+    let user = isNexusManaged ? (process.env.SMTP_USER || (process.env.RESEND_API_KEY ? 'resend' : null)) : map.smtp_user;
+    let pass = isNexusManaged ? (process.env.SMTP_PASS || process.env.RESEND_API_KEY) : map.smtp_pass;
+    let secure = isNexusManaged ? (process.env.SMTP_SECURE === 'true' || port === 465) : (map.smtp_secure === 'true' || port === 465);
+    const fromName = map.smtp_from_name || process.env.SMTP_FROM_NAME || schoolName;
+    const fromEmail = isNexusManaged ? defaultFromEmail : (map.smtp_from_email || defaultFromEmail);
+
+    // Platform-wide fallback to Resend SMTP if host is not yet resolved
     if (!host && process.env.RESEND_API_KEY) {
       host = 'smtp.resend.com';
       port = 465;
@@ -113,7 +119,7 @@ export async function getSchoolSmtpTransporter(schoolId, prisma) {
   }
 
   const emailDomain = process.env.EMAIL_SENDER_DOMAIN || process.env.DEFAULT_EMAIL_DOMAIN || 'montessorinexus.com';
-  const defaultFromEmail = `noreply-${schoolSlug}@${emailDomain}`;
+  const defaultFromEmail = `${schoolSlug}@${emailDomain}`;
   return {
     transporter: null,
     from: `"${schoolName}" <${defaultFromEmail}>`,

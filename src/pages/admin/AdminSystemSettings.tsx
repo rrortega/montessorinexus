@@ -38,7 +38,11 @@ import {
   ChevronDown,
   ChevronUp,
   Search,
-  X
+  X,
+  Server,
+  BarChart3,
+  ArrowUpRight,
+  Lock
 } from 'lucide-react';
 import { useSiteSettings } from '@/context/SettingsContext';
 import {
@@ -46,14 +50,32 @@ import {
   testSmtpConnection,
   testStorageConnection,
   testStorageWebhook,
-  testCalendarWebhook
+  testCalendarWebhook,
+  getSchoolUsage,
+  SchoolUsageStats
 } from '@/lib/sqlite';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { findModelPricing, isModelCompatibleWithType, ModelPricingEntry } from '@/lib/ai-model-pricing';
 
 type SystemTab = 'ai' | 'email' | 'storage' | 'webhooks';
+
+export function cleanSchoolEmailSenderSlug(nameOrSlug?: string): string {
+  if (!nameOrSlug) return 'colegio';
+  let cleaned = String(nameOrSlug)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/ñ/gi, 'n');
+
+  // Strip stop words: escuela, colegio, school, colage, college, academi, academia, academy, instituto, institucion, montessori, etc.
+  cleaned = cleaned.replace(/\b(escuela|escuelas|colegio|colegios|school|schools|college|colage|colages|academy|academi|acadamia|academia|academias|instituto|institucion|montessori|campus|centro|infantil|comunidad)\b/gi, '');
+  cleaned = cleaned.replace(/(escuela|escuelas|colegio|colegios|school|schools|college|colage|academy|academi|acadamia|academia|instituto|institucion|montessori)/gi, '');
+  cleaned = cleaned.replace(/[^a-z0-9]/g, '');
+
+  return cleaned || 'colegio';
+}
 
 interface AiPreset {
   name: string;
@@ -738,13 +760,16 @@ const SearchableModelSelect: React.FC<SearchableModelSelectProps> = ({
 };
 
 export const AdminSystemSettings: React.FC = () => {
-  const { role, user } = useAuth();
+  const { role, user, activeMembership } = useAuth();
   const isOwnerOrAdmin = role === 'OWNER' || role === 'ADMIN';
+  const navigate = useNavigate();
 
   const { settings, updateSettings } = useSiteSettings();
   const [formData, setFormData] = useState<Record<string, any>>(settings);
   const [saving, setSaving] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const schoolEmailSender = `${cleanSchoolEmailSenderSlug(formData.schoolName || activeMembership?.school?.name || activeMembership?.school?.slug)}@montessorinexus.com`;
 
   // AI Provider & Dynamic Models State
   const [fetchingModels, setFetchingModels] = useState(false);
@@ -762,6 +787,22 @@ export const AdminSystemSettings: React.FC = () => {
   const [showS3Secret, setShowS3Secret] = useState(false);
   const [testingStorageWebhook, setTestingStorageWebhook] = useState(false);
 
+  // Storage Usage & Quota State
+  const [usageStats, setUsageStats] = useState<SchoolUsageStats | null>(null);
+  const [loadingUsage, setLoadingUsage] = useState(false);
+
+  const loadUsage = useCallback(async () => {
+    setLoadingUsage(true);
+    try {
+      const data = await getSchoolUsage();
+      setUsageStats(data);
+    } catch (e) {
+      console.warn('Error loading storage usage:', e);
+    } finally {
+      setLoadingUsage(false);
+    }
+  }, []);
+
   // Calendar Webhook State
   const [testingCalendarWebhook, setTestingCalendarWebhook] = useState(false);
 
@@ -773,6 +814,12 @@ export const AdminSystemSettings: React.FC = () => {
   };
 
   const activeTab = (searchParams.get('tab') as SystemTab) || 'ai';
+
+  useEffect(() => {
+    if (activeTab === 'storage') {
+      loadUsage();
+    }
+  }, [activeTab, loadUsage]);
 
   // Horizontal Tabs Scroll Navigation State
   const tabsContainerRef = useRef<HTMLDivElement>(null);
@@ -899,6 +946,64 @@ export const AdminSystemSettings: React.FC = () => {
     if (!isOwnerOrAdmin) return;
     setSaving(true);
     try {
+      // If Amazon S3 or MinIO is selected, verify connection in the background first
+      if (formData.storage_driver === 's3' || formData.storage_driver === 'minio') {
+        const isMinio = formData.storage_driver === 'minio';
+        if (isMinio && !formData.s3_endpoint?.trim()) {
+          toast.error('Debes ingresar el Endpoint de MinIO antes de guardar');
+          setSaving(false);
+          return;
+        }
+        if (!formData.s3_bucket?.trim() || !formData.s3_access_key_id?.trim() || !formData.s3_secret_access_key?.trim()) {
+          toast.error('Completa los campos obligatorios del Bucket (Nombre, Access Key y Secret Key)');
+          setSaving(false);
+          return;
+        }
+
+        // Test connection in background
+        const res = await testStorageConnection({
+          driver: formData.storage_driver,
+          s3Endpoint: formData.s3_endpoint,
+          s3Region: formData.s3_region || 'us-east-1',
+          s3Bucket: formData.s3_bucket,
+          s3AccessKeyId: formData.s3_access_key_id,
+          s3SecretAccessKey: formData.s3_secret_access_key,
+          s3ForcePathStyle: formData.s3_force_path_style === 'true' || formData.s3_force_path_style === true || isMinio
+        });
+
+        if (!res || res.success === false) {
+          toast.error(res?.message || 'Error en la prueba de conexión con el bucket. No se guardaron los cambios.');
+          setSaving(false);
+          return;
+        }
+      }
+
+      // If Custom SMTP is selected, verify connection in the background first
+      if (formData.email_driver === 'smtp') {
+        if (!formData.smtp_host?.trim() || !formData.smtp_user?.trim() || !formData.smtp_pass?.trim()) {
+          toast.error('Completa los campos obligatorios del servidor SMTP (Host, Usuario y Contraseña)');
+          setSaving(false);
+          return;
+        }
+
+        const res = await testSmtpConnection({
+          host: formData.smtp_host.trim(),
+          port: formData.smtp_port || '587',
+          user: formData.smtp_user.trim(),
+          pass: formData.smtp_pass,
+          secure: formData.smtp_secure === 'true' || formData.smtp_port === '465',
+          fromName: formData.smtp_from_name || formData.schoolName || 'Montessori',
+          fromEmail: formData.smtp_from_email || formData.smtp_user.trim(),
+          testEmail: user?.email || formData.smtp_from_email || formData.smtp_user.trim()
+        });
+
+        if (!res || res.success === false) {
+          toast.error(res?.message || 'Error en la prueba de conexión SMTP. No se guardaron los cambios.');
+          setSaving(false);
+          return;
+        }
+      }
+
       // Sync duplicate compatibility keys and default auto OCR and normalization
       const dataToSave = {
         ...formData,
@@ -910,6 +1015,7 @@ export const AdminSystemSettings: React.FC = () => {
       };
       await updateSettings(dataToSave);
       toast.success('Configuración del sistema guardada exitosamente');
+      loadUsage();
     } catch (error: any) {
       toast.error(error.message || 'Error al guardar configuración del sistema');
     } finally {
@@ -944,27 +1050,6 @@ export const AdminSystemSettings: React.FC = () => {
       toast.error(e.message || 'Fallo al probar la conexión SMTP');
     } finally {
       setTestingSmtp(false);
-    }
-  };
-
-  const handleTestStorage = async () => {
-    setTestingStorage(true);
-    try {
-      const res = await testStorageConnection({
-        driver: formData.storage_driver || 'local',
-        localRoot: formData.storage_local_root,
-        s3Endpoint: formData.s3_endpoint,
-        s3Region: formData.s3_region || 'us-east-1',
-        s3Bucket: formData.s3_bucket,
-        s3AccessKeyId: formData.s3_access_key_id,
-        s3SecretAccessKey: formData.s3_secret_access_key,
-        s3ForcePathStyle: formData.s3_force_path_style === 'true' || formData.s3_force_path_style === true
-      });
-      toast.success(res.message || 'Prueba de almacenamiento exitosa');
-    } catch (e: any) {
-      toast.error(e.message || 'Error al probar conexión de almacenamiento');
-    } finally {
-      setTestingStorage(false);
     }
   };
 
@@ -1091,7 +1176,7 @@ export const AdminSystemSettings: React.FC = () => {
             }`}
           >
             <Mail className="w-4 h-4" />
-            <span>Servidor de Correo (SMTP)</span>
+            <span>Envío de Emails</span>
           </button>
 
           <button
@@ -1104,7 +1189,7 @@ export const AdminSystemSettings: React.FC = () => {
             }`}
           >
             <HardDrive className="w-4 h-4" />
-            <span>Almacenamiento (S3 / Local)</span>
+            <span>Almacenamiento</span>
           </button>
 
           <button
@@ -1429,24 +1514,135 @@ export const AdminSystemSettings: React.FC = () => {
         )}
 
         {/* ========================================================================= */}
-        {/* TAB 2: SERVIDOR DE CORREO (SMTP) */}
+        {/* TAB 2: ENVÍO DE EMAILS (MONTESSORI NEXUS MANAGED & SMTP PROPIO) */}
         {/* ========================================================================= */}
         {activeTab === 'email' && (
-          <div className="space-y-6 animate-in fade-in">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-              {/* SMTP Connection Configuration */}
-              <div className="bg-white/90 rounded-3xl p-6 border border-forest/10 shadow-xs space-y-4">
-                <h3 className="font-display font-bold text-forest text-sm flex items-center gap-2 border-b border-forest/10 pb-3">
-                  <Mail className="w-4 h-4 text-forest" />
-                  <span>Configuración del Servidor SMTP</span>
+          <div className="w-full space-y-6 animate-in fade-in">
+            {/* Email Provider Selector Card */}
+            <div className="bg-white/90 rounded-3xl p-6 sm:p-8 border border-forest/10 shadow-xs space-y-6">
+              <div className="space-y-1 border-b border-forest/10 pb-4">
+                <h3 className="font-display font-bold text-forest text-sm sm:text-base flex items-center gap-2">
+                  <Mail className="w-5 h-5 text-forest" />
+                  <span>Canal de Envío de Emails</span>
                 </h3>
-
                 <p className="text-xs text-muted-foreground">
-                  Configura las credenciales del servidor de correo para el envío seguro de códigos de verificación OTP para tutores y notificaciones de admisiones.
+                  Selecciona el canal para la entrega confiable de correos transaccionales, códigos de seguridad OTP para tutores y notificaciones de admisiones.
                 </p>
+              </div>
 
-                <div className="space-y-4 text-xs">
+              {/* Driver Selection Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Montessori Nexus Managed Email Card */}
+                <button
+                  type="button"
+                  onClick={() => handleInputChange('email_driver', 'nexus')}
+                  className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-3 ${(formData.email_driver || 'nexus') === 'nexus' || formData.email_driver === 'managed'
+                    ? 'bg-forest/10 border-forest text-forest shadow-xs'
+                    : 'bg-white border-forest/15 hover:border-forest/40 text-muted-foreground'
+                    }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <Server className={`w-6 h-6 ${(formData.email_driver || 'nexus') === 'nexus' || formData.email_driver === 'managed' ? 'text-forest' : 'text-slate-400'}`} />
+                    {((formData.email_driver || 'nexus') === 'nexus' || formData.email_driver === 'managed') && (
+                      <span className="w-2.5 h-2.5 rounded-full bg-forest animate-pulse" />
+                    )}
+                  </div>
+                  <div>
+                    <span className="font-bold text-xs sm:text-sm block text-forest">Envío manejado por MontessoriNexus</span>
+                    <span className="text-[11px] text-muted-foreground block mt-0.5 font-mono">
+                      Sender: {schoolEmailSender} • Límite según suscripción
+                    </span>
+                  </div>
+                </button>
+
+                {/* Custom SMTP Card */}
+                <button
+                  type="button"
+                  onClick={() => handleInputChange('email_driver', 'smtp')}
+                  className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-3 ${formData.email_driver === 'smtp'
+                    ? 'bg-forest/10 border-forest text-forest shadow-xs'
+                    : 'bg-white border-forest/15 hover:border-forest/40 text-muted-foreground'
+                    }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <Key className={`w-6 h-6 ${formData.email_driver === 'smtp' ? 'text-forest' : 'text-slate-400'}`} />
+                    {formData.email_driver === 'smtp' && (
+                      <span className="w-2.5 h-2.5 rounded-full bg-forest animate-pulse" />
+                    )}
+                  </div>
+                  <div>
+                    <span className="font-bold text-xs sm:text-sm block text-forest">SMTP Propio</span>
+                    <span className="text-[11px] text-muted-foreground block mt-0.5">Servidor de correo privado / Dedicado (BYOS)</span>
+                  </div>
+                </button>
+              </div>
+
+              {/* MONTESSORI NEXUS MANAGED EMAIL INFO & PERFORMANCE HIGHLIGHTS */}
+              {((formData.email_driver || 'nexus') === 'nexus' || formData.email_driver === 'managed') && (
+                <div className="space-y-4 pt-2 text-xs">
+                  {/* Informational description */}
+                  <div className="p-4 rounded-2xl bg-forest/[0.04] border border-forest/15 space-y-2">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-2 font-bold text-forest text-xs sm:text-sm">
+                        <Server className="w-4 h-4 text-forest shrink-0" />
+                        <span>Infraestructura Transaccional de MontessoriNexus</span>
+                      </div>
+                      <span className="font-mono text-[10px] bg-forest/10 text-forest px-2.5 py-0.5 rounded-full font-bold">
+                        {schoolEmailSender}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      No requiere ninguna configuración técnica. Los correos se envían de forma optimizada y transparente desde la dirección exclusiva de tu colegio (<strong className="font-mono text-forest">{schoolEmailSender}</strong>) utilizando los servidores de alta reputación de MontessoriNexus.
+                    </p>
+                  </div>
+
+                  {/* Highlights Grid: Anti-Spam, High Availability & Quotas */}
+                  <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-emerald-500/[0.06] via-forest/[0.03] to-teal-500/[0.06] border border-emerald-500/20 space-y-3">
+                    <div className="flex items-center gap-2 text-forest font-bold text-xs sm:text-sm">
+                      <div className="p-1.5 rounded-lg bg-emerald-600 text-white shadow-2xs">
+                        <ShieldCheck className="w-4 h-4" />
+                      </div>
+                      <span>Garantía de Entrega y Protección Anti-Spam</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                      <div className="flex items-start gap-2.5 p-3 rounded-xl bg-white/90 border border-emerald-500/15 shadow-2xs">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-bold text-xs text-forest block">Garantía Anti-Spam 98%</span>
+                          <span className="text-[10px] text-muted-foreground leading-tight block mt-0.5">
+                            Firmas criptográficas DKIM, registro SPF y DMARC verificadas para máxima tasa de apertura en bandeja de entrada.
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2.5 p-3 rounded-xl bg-white/90 border border-emerald-500/15 shadow-2xs">
+                        <Cloud className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-bold text-xs text-forest block">Alta Disponibilidad</span>
+                          <span className="text-[10px] text-muted-foreground leading-tight block mt-0.5">
+                            Servidores de entrega en milisegundos con balanceo de carga y reintentos automáticos para códigos OTP.
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2.5 p-3 rounded-xl bg-white/90 border border-emerald-500/15 shadow-2xs">
+                        <BarChart3 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-bold text-xs text-forest block">Límites según Suscripción</span>
+                          <span className="text-[10px] text-muted-foreground leading-tight block mt-0.5">
+                            Cupo mensual adaptado y escalable según el plan activo de tu institución.
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* CUSTOM SMTP CONFIG */}
+              {formData.email_driver === 'smtp' && (
+                <div className="space-y-4 pt-2 text-xs">
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="sm:col-span-2 space-y-1">
                       <label className="block text-forest font-bold">Host SMTP *</label>
@@ -1455,7 +1651,7 @@ export const AdminSystemSettings: React.FC = () => {
                         value={formData.smtp_host || ''}
                         onChange={(e) => handleInputChange('smtp_host', e.target.value)}
                         placeholder="smtp.gmail.com o smtp.resend.com"
-                        className="w-full p-2.5 rounded-xl border border-forest/20 text-forest bg-white font-mono text-xs focus:outline-none focus:ring-2 focus:ring-forest"
+                        className="w-full p-2.5 rounded-xl border border-forest/20 text-forest bg-white font-mono text-xs focus:outline-none focus:ring-2 focus:ring-forest shadow-2xs"
                       />
                     </div>
                     <div className="space-y-1">
@@ -1465,7 +1661,7 @@ export const AdminSystemSettings: React.FC = () => {
                         value={formData.smtp_port || '587'}
                         onChange={(e) => handleInputChange('smtp_port', e.target.value)}
                         placeholder="587 o 465"
-                        className="w-full p-2.5 rounded-xl border border-forest/20 text-forest bg-white font-mono text-xs focus:outline-none focus:ring-2 focus:ring-forest"
+                        className="w-full p-2.5 rounded-xl border border-forest/20 text-forest bg-white font-mono text-xs focus:outline-none focus:ring-2 focus:ring-forest shadow-2xs"
                       />
                     </div>
                   </div>
@@ -1478,7 +1674,7 @@ export const AdminSystemSettings: React.FC = () => {
                         value={formData.smtp_user || ''}
                         onChange={(e) => handleInputChange('smtp_user', e.target.value)}
                         placeholder="contacto@ceibamontessori.edu.mx"
-                        className="w-full p-2.5 rounded-xl border border-forest/20 text-forest bg-white font-mono text-xs focus:outline-none focus:ring-2 focus:ring-forest"
+                        className="w-full p-2.5 rounded-xl border border-forest/20 text-forest bg-white font-mono text-xs focus:outline-none focus:ring-2 focus:ring-forest shadow-2xs"
                       />
                     </div>
                     <div className="space-y-1">
@@ -1489,7 +1685,7 @@ export const AdminSystemSettings: React.FC = () => {
                           value={formData.smtp_pass || ''}
                           onChange={(e) => handleInputChange('smtp_pass', e.target.value)}
                           placeholder="••••••••••••••••"
-                          className="w-full p-2.5 pr-10 rounded-xl border border-forest/20 text-forest bg-white font-mono text-xs focus:outline-none focus:ring-2 focus:ring-forest"
+                          className="w-full p-2.5 pr-10 rounded-xl border border-forest/20 text-forest bg-white font-mono text-xs focus:outline-none focus:ring-2 focus:ring-forest shadow-2xs"
                         />
                         <button
                           type="button"
@@ -1510,7 +1706,7 @@ export const AdminSystemSettings: React.FC = () => {
                         value={formData.smtp_from_name || ''}
                         onChange={(e) => handleInputChange('smtp_from_name', e.target.value)}
                         placeholder={formData.schoolName || 'Escuela Montessori'}
-                        className="w-full p-2.5 rounded-xl border border-forest/20 text-forest bg-white text-xs focus:outline-none focus:ring-2 focus:ring-forest"
+                        className="w-full p-2.5 rounded-xl border border-forest/20 text-forest bg-white text-xs focus:outline-none focus:ring-2 focus:ring-forest shadow-2xs"
                       />
                     </div>
                     <div className="space-y-1">
@@ -1520,61 +1716,76 @@ export const AdminSystemSettings: React.FC = () => {
                         value={formData.smtp_from_email || ''}
                         onChange={(e) => handleInputChange('smtp_from_email', e.target.value)}
                         placeholder={formData.contactEmail || 'admisiones@ceibamontessori.edu.mx'}
-                        className="w-full p-2.5 rounded-xl border border-forest/20 text-forest bg-white text-xs focus:outline-none focus:ring-2 focus:ring-forest"
+                        className="w-full p-2.5 rounded-xl border border-forest/20 text-forest bg-white text-xs focus:outline-none focus:ring-2 focus:ring-forest shadow-2xs"
                       />
                     </div>
                   </div>
-                </div>
-              </div>
 
-              {/* Test SMTP Connection Diagnostics */}
-              <div className="bg-white/90 rounded-3xl p-6 border border-forest/10 shadow-xs space-y-4 flex flex-col justify-between">
-                <div className="space-y-4">
-                  <h3 className="font-display font-bold text-forest text-sm flex items-center gap-2 border-b border-forest/10 pb-3">
-                    <ShieldCheck className="w-4 h-4 text-forest" />
-                    <span>Diagnóstico y Prueba de Envío</span>
-                  </h3>
-
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    Realiza una verificación de enlace directo con tu servidor de correo y envía un mensaje de prueba para garantizar que los tutores recibirán sus códigos de acceso.
-                  </p>
-
-                  <div className="p-4 rounded-2xl bg-forest/5 border border-forest/10 space-y-2 text-xs text-forest">
-                    <span className="font-bold block flex items-center gap-1.5">
-                      <Key className="w-3.5 h-3.5 text-forest" /> Sugerencia de Proveedores:
-                    </span>
-                    <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                      <li><strong>Gmail:</strong> Host <code className="font-mono text-forest">smtp.gmail.com</code>, Puerto 587, requiere <em>Contraseña de Aplicación de 16 caracteres</em>.</li>
-                      <li><strong>Resend / SendGrid / Postmark:</strong> Host <code className="font-mono text-forest">smtp.resend.com</code>, Puerto 587, Usuario <code className="font-mono text-forest">resend</code>.</li>
-                      <li><strong>Outlook / Office 365:</strong> Host <code className="font-mono text-forest">smtp.office365.com</code>, Puerto 587.</li>
-                    </ul>
+                  <div className="space-y-1">
+                    <label className="block text-forest font-bold">Seguridad de Conexión</label>
+                    <select
+                      value={formData.smtp_secure === 'true' || formData.smtp_secure === true || formData.smtp_port === '465' ? 'true' : 'false'}
+                      onChange={(e) => handleInputChange('smtp_secure', e.target.value)}
+                      className="w-full p-2.5 rounded-xl border border-forest/20 text-forest bg-white text-xs font-semibold focus:outline-none cursor-pointer shadow-2xs"
+                    >
+                      <option value="false">STARTTLS / TLS (Puerto 587 - Estándar recomendado)</option>
+                      <option value="true">SSL Directo (Puerto 465)</option>
+                    </select>
                   </div>
 
-                  <div className="space-y-1.5 text-xs pt-2">
-                    <label className="block text-forest font-bold">Enviar Correo de Prueba a:</label>
-                    <input
-                      type="email"
-                      value={testEmail}
-                      onChange={(e) => setTestEmail(e.target.value)}
-                      placeholder="tucorreo@ejemplo.com"
-                      className="w-full p-2.5 rounded-xl border border-forest/20 text-forest bg-white text-xs focus:outline-none focus:ring-2 focus:ring-forest shadow-2xs"
-                    />
+                  {/* Security, Encryption & Full Data Control Banner (SMTP - 4 cards) */}
+                  <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-emerald-500/[0.06] via-forest/[0.03] to-teal-500/[0.06] border border-emerald-500/20 space-y-3 mt-4">
+                    <div className="flex items-center gap-2 text-forest font-bold text-xs sm:text-sm">
+                      <div className="p-1.5 rounded-lg bg-emerald-600 text-white shadow-2xs">
+                        <ShieldCheck className="w-4 h-4" />
+                      </div>
+                      <span>Seguridad, Dominio Propio & Control Total en SMTP</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-1">
+                      <div className="flex items-start gap-2.5 p-3 rounded-xl bg-white/90 border border-emerald-500/15 shadow-2xs">
+                        <Lock className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-bold text-xs text-forest block">Encriptación TLS / SSL</span>
+                          <span className="text-[10px] text-muted-foreground leading-tight block mt-0.5">
+                            Conexión punto a punto cifrada en tránsito mediante STARTTLS (puerto 587) o SSL (puerto 465).
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2.5 p-3 rounded-xl bg-white/90 border border-emerald-500/15 shadow-2xs">
+                        <Globe className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-bold text-xs text-forest block">Dominio Institucional</span>
+                          <span className="text-[10px] text-muted-foreground leading-tight block mt-0.5">
+                            Tus mensajes salen directamente bajo la identidad y dominio institucional de tu colegio.
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2.5 p-3 rounded-xl bg-white/90 border border-emerald-500/15 shadow-2xs">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-bold text-xs text-forest block">Protección de Datos</span>
+                          <span className="text-[10px] text-muted-foreground leading-tight block mt-0.5">
+                            Cumple con políticas internas de auditoría y retención de comunicaciones escolares.
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2.5 p-3 rounded-xl bg-white/90 border border-emerald-500/15 shadow-2xs">
+                        <Key className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-bold text-xs text-forest block">Privacidad & Control Total</span>
+                          <span className="text-[10px] text-muted-foreground leading-tight block mt-0.5">
+                            Más privado: control soberano de registros, credenciales y servidores sin intermediarios.
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-
-                <div className="pt-4 border-t border-forest/10">
-                  <button
-                    type="button"
-                    onClick={handleTestSmtp}
-                    disabled={testingSmtp}
-                    className="w-full py-3 px-4 bg-forest hover:bg-forest/90 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all hover:scale-102 active:scale-98 disabled:opacity-50 cursor-pointer"
-                  >
-                    <Send className="w-4 h-4" />
-                    <span>{testingSmtp ? 'Verificando y Enviando...' : 'Probar Conexión y Enviar Correo de Prueba'}</span>
-                  </button>
-                </div>
-              </div>
-
+              )}
             </div>
           </div>
         )}
@@ -1583,256 +1794,399 @@ export const AdminSystemSettings: React.FC = () => {
         {/* TAB 3: ALMACENAMIENTO (STORAGE DRIVER & CLOUD CONFIG) */}
         {/* ========================================================================= */}
         {activeTab === 'storage' && (
-          <div className="space-y-6 animate-in fade-in">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="w-full space-y-6 animate-in fade-in">
+            {/* Storage Driver Selector & Parameters Card */}
+            <div className="bg-white/90 rounded-3xl p-6 sm:p-8 border border-forest/10 shadow-xs space-y-6">
+              <div className="space-y-1 border-b border-forest/10 pb-4">
+                <h3 className="font-display font-bold text-forest text-sm sm:text-base flex items-center gap-2">
+                  <HardDrive className="w-5 h-5 text-forest" />
+                  <span>Proveedor de Almacenamiento (Storage Driver)</span>
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Selecciona dónde se almacenarán los expedientes digitales, constancias oficiales de CURP, firmas y documentos adjuntos de admisión.
+                </p>
+              </div>
 
-              {/* Storage Driver Selector & Parameters */}
-              <div className="bg-white/90 rounded-3xl p-6 border border-forest/10 shadow-xs space-y-6">
-                <div className="space-y-1 border-b border-forest/10 pb-3">
-                  <h3 className="font-display font-bold text-forest text-sm flex items-center gap-2">
-                    <HardDrive className="w-4 h-4 text-forest" />
-                    <span>Proveedor de Almacenamiento (Storage Driver)</span>
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    Selecciona dónde se almacenarán los expedientes digitales, constancias oficiales de CURP, firmas y documentos adjuntos de admisión.
-                  </p>
-                </div>
-
-                {/* Driver Selection Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {/* Local Disk Card */}
-                  <button
-                    type="button"
-                    onClick={() => handleInputChange('storage_driver', 'local')}
-                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-3 ${(formData.storage_driver || 'local') === 'local'
-                      ? 'bg-forest/10 border-forest text-forest shadow-xs'
-                      : 'bg-white border-forest/15 hover:border-forest/40 text-muted-foreground'
-                      }`}
-                  >
-                    <div className="flex items-center justify-between w-full">
-                      <Folder className={`w-6 h-6 ${(formData.storage_driver || 'local') === 'local' ? 'text-forest' : 'text-slate-400'}`} />
-                      {(formData.storage_driver || 'local') === 'local' && (
-                        <span className="w-2.5 h-2.5 rounded-full bg-forest animate-pulse" />
-                      )}
-                    </div>
-                    <div>
-                      <span className="font-bold text-xs block text-forest">Disco Local</span>
-                      <span className="text-[10px] text-muted-foreground block mt-0.5">Almacenamiento en servidor</span>
-                    </div>
-                  </button>
-
-                  {/* Amazon S3 Card */}
-                  <button
-                    type="button"
-                    onClick={() => handleInputChange('storage_driver', 's3')}
-                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-3 ${formData.storage_driver === 's3'
-                      ? 'bg-forest/10 border-forest text-forest shadow-xs'
-                      : 'bg-white border-forest/15 hover:border-forest/40 text-muted-foreground'
-                      }`}
-                  >
-                    <div className="flex items-center justify-between w-full">
-                      <Cloud className={`w-6 h-6 ${formData.storage_driver === 's3' ? 'text-forest' : 'text-slate-400'}`} />
-                      {formData.storage_driver === 's3' && (
-                        <span className="w-2.5 h-2.5 rounded-full bg-forest animate-pulse" />
-                      )}
-                    </div>
-                    <div>
-                      <span className="font-bold text-xs block text-forest">Amazon S3</span>
-                      <span className="text-[10px] text-muted-foreground block mt-0.5">AWS Cloud Bucket</span>
-                    </div>
-                  </button>
-
-                  {/* MinIO Card */}
-                  <button
-                    type="button"
-                    onClick={() => handleInputChange('storage_driver', 'minio')}
-                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-3 ${formData.storage_driver === 'minio'
-                      ? 'bg-forest/10 border-forest text-forest shadow-xs'
-                      : 'bg-white border-forest/15 hover:border-forest/40 text-muted-foreground'
-                      }`}
-                  >
-                    <div className="flex items-center justify-between w-full">
-                      <Database className={`w-6 h-6 ${formData.storage_driver === 'minio' ? 'text-forest' : 'text-slate-400'}`} />
-                      {formData.storage_driver === 'minio' && (
-                        <span className="w-2.5 h-2.5 rounded-full bg-forest animate-pulse" />
-                      )}
-                    </div>
-                    <div>
-                      <span className="font-bold text-xs block text-forest">MinIO / S3 Compat</span>
-                      <span className="text-[10px] text-muted-foreground block mt-0.5">Self-hosted / R2 / Wasabi</span>
-                    </div>
-                  </button>
-                </div>
-
-                {/* LOCAL DRIVER CONFIG */}
-                {(formData.storage_driver || 'local') === 'local' && (
-                  <div className="space-y-4 pt-2 text-xs">
-                    <div className="space-y-1">
-                      <label className="block text-forest font-bold">Directorio Raíz Local Privado (storage_local_root)</label>
-                      <input
-                        type="text"
-                        value={formData.storage_local_root || './storage'}
-                        onChange={(e) => handleInputChange('storage_local_root', e.target.value)}
-                        placeholder="./storage"
-                        className="w-full p-2.5 rounded-xl border border-forest/20 text-forest bg-white font-mono text-xs focus:outline-none focus:ring-2 focus:ring-forest shadow-2xs"
-                      />
-                      <p className="text-[10px] text-muted-foreground leading-relaxed">
-                        Directorio privado en el servidor (fuera de la carpeta web pública). Solo los usuarios autenticados o autorizados pueden visualizar los archivos a través del proxy seguro del sistema.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* S3 OR MINIO CONFIG */}
-                {(formData.storage_driver === 's3' || formData.storage_driver === 'minio') && (
-                  <div className="space-y-4 pt-2 text-xs">
-                    {/* MinIO Endpoint if MinIO */}
-                    {formData.storage_driver === 'minio' && (
-                      <div className="space-y-1">
-                        <label className="block text-forest font-bold">Endpoint de MinIO / S3 Compatible *</label>
-                        <input
-                          type="text"
-                          value={formData.s3_endpoint || ''}
-                          onChange={(e) => handleInputChange('s3_endpoint', e.target.value)}
-                          placeholder="https://minio.tudominio.com o http://192.168.1.50:9000"
-                          className="w-full p-2.5 rounded-xl border border-forest/20 text-forest bg-white font-mono text-xs focus:outline-none focus:ring-2 focus:ring-forest shadow-2xs"
-                        />
-                      </div>
+              {/* Driver Selection Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* Montessori Nexus Server Storage Card */}
+                <button
+                  type="button"
+                  onClick={() => handleInputChange('storage_driver', 'local')}
+                  className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-3 ${(formData.storage_driver || 'local') === 'local' || formData.storage_driver === 'nexus'
+                    ? 'bg-forest/10 border-forest text-forest shadow-xs'
+                    : 'bg-white border-forest/15 hover:border-forest/40 text-muted-foreground'
+                    }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <Server className={`w-6 h-6 ${(formData.storage_driver || 'local') === 'local' || formData.storage_driver === 'nexus' ? 'text-forest' : 'text-slate-400'}`} />
+                    {((formData.storage_driver || 'local') === 'local' || formData.storage_driver === 'nexus') && (
+                      <span className="w-2.5 h-2.5 rounded-full bg-forest animate-pulse" />
                     )}
+                  </div>
+                  <div>
+                    <span className="font-bold text-xs sm:text-sm block text-forest">Storage en Montessori Nexus server</span>
+                    <span className="text-[11px] text-muted-foreground block mt-0.5">Límite según suscripción</span>
+                  </div>
+                </button>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <label className="block text-forest font-bold">Nombre del Bucket Privado *</label>
-                        <input
-                          type="text"
-                          value={formData.s3_bucket || ''}
-                          onChange={(e) => handleInputChange('s3_bucket', e.target.value)}
-                          placeholder="ceiba-roots-admissions"
-                          className="w-full p-2.5 rounded-xl border border-forest/20 text-forest bg-white font-mono text-xs focus:outline-none focus:ring-2 focus:ring-forest shadow-2xs"
-                        />
+                {/* Amazon S3 Card */}
+                <button
+                  type="button"
+                  onClick={() => handleInputChange('storage_driver', 's3')}
+                  className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-3 ${formData.storage_driver === 's3'
+                    ? 'bg-forest/10 border-forest text-forest shadow-xs'
+                    : 'bg-white border-forest/15 hover:border-forest/40 text-muted-foreground'
+                    }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <Cloud className={`w-6 h-6 ${formData.storage_driver === 's3' ? 'text-forest' : 'text-slate-400'}`} />
+                    {formData.storage_driver === 's3' && (
+                      <span className="w-2.5 h-2.5 rounded-full bg-forest animate-pulse" />
+                    )}
+                  </div>
+                  <div>
+                    <span className="font-bold text-xs sm:text-sm block text-forest">Amazon S3</span>
+                    <span className="text-[11px] text-muted-foreground block mt-0.5">AWS Cloud Bucket (BYOS)</span>
+                  </div>
+                </button>
+
+                {/* MinIO Card */}
+                <button
+                  type="button"
+                  onClick={() => handleInputChange('storage_driver', 'minio')}
+                  className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-3 ${formData.storage_driver === 'minio'
+                    ? 'bg-forest/10 border-forest text-forest shadow-xs'
+                    : 'bg-white border-forest/15 hover:border-forest/40 text-muted-foreground'
+                    }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <Database className={`w-6 h-6 ${formData.storage_driver === 'minio' ? 'text-forest' : 'text-slate-400'}`} />
+                    {formData.storage_driver === 'minio' && (
+                      <span className="w-2.5 h-2.5 rounded-full bg-forest animate-pulse" />
+                    )}
+                  </div>
+                  <div>
+                    <span className="font-bold text-xs sm:text-sm block text-forest">MinIO</span>
+                    <span className="text-[11px] text-muted-foreground block mt-0.5">Self-hosted / S3 Compat</span>
+                  </div>
+                </button>
+              </div>
+
+              {/* MONTESSORI NEXUS SERVER STORAGE INFO & USAGE DISPLAY */}
+              {((formData.storage_driver || 'local') === 'local' || formData.storage_driver === 'nexus') && (
+                <div className="space-y-4 pt-2 text-xs">
+                  {/* Informational description */}
+                  <div className="p-4 rounded-2xl bg-forest/[0.04] border border-forest/15 space-y-2">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-2 font-bold text-forest text-xs sm:text-sm">
+                        <Server className="w-4 h-4 text-forest shrink-0" />
+                        <span>Almacenamiento Gestionado por Montessori Nexus</span>
+                      </div>
+                      <span className="font-mono text-[10px] bg-forest/10 text-forest px-2.5 py-0.5 rounded-full font-bold">
+                        schools/{activeMembership?.school?.id || 'id_del_colegio'}/
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      No requiere configuración técnica alguna. El colegio genera automáticamente una carpeta aislada con su ID dentro del almacenamiento central de Montessori Nexus (en disco de alta velocidad, S3 o MinIO según la infraestructura general del servidor).
+                    </p>
+                  </div>
+
+                  {/* Live Storage Usage & Quota Box */}
+                  <div className="p-5 rounded-2xl bg-white border border-forest/15 shadow-2xs space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <BarChart3 className="w-4 h-4 text-forest" />
+                        <span className="font-bold text-forest text-xs sm:text-sm">Uso de Almacenamiento del Colegio</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={loadUsage}
+                        disabled={loadingUsage}
+                        className="flex items-center gap-1.5 text-xs font-semibold text-forest hover:text-forest/80 cursor-pointer disabled:opacity-50"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${loadingUsage ? 'animate-spin' : ''}`} />
+                        <span>{loadingUsage ? 'Actualizando...' : 'Recargar'}</span>
+                      </button>
+                    </div>
+
+                    {/* Usage Progress Bar */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs font-medium text-slate-700">
+                        <span>
+                          <strong className="text-slate-900">
+                            {usageStats?.storage
+                              ? (usageStats.storage.usedMb < 1024
+                                ? `${usageStats.storage.usedMb} MB`
+                                : `${usageStats.storage.usedGb} GB`)
+                              : '0 MB'}
+                          </strong>{' '}
+                          <span className="text-muted-foreground font-normal">ocupados</span>
+                        </span>
+                        <span className="font-bold text-forest">
+                          {usageStats?.storage?.limitGb || 2} GB <span className="text-muted-foreground font-normal">límite</span>
+                        </span>
                       </div>
 
-                      <div className="space-y-1">
-                        <label className="block text-forest font-bold">Región *</label>
-                        <input
-                          type="text"
-                          value={formData.s3_region || 'us-east-1'}
-                          onChange={(e) => handleInputChange('s3_region', e.target.value)}
-                          placeholder="us-east-1"
-                          className="w-full p-2.5 rounded-xl border border-forest/20 text-forest bg-white font-mono text-xs focus:outline-none focus:ring-2 focus:ring-forest shadow-2xs"
+                      <div className="h-4 w-full bg-slate-100 rounded-full overflow-hidden p-0.5 border border-forest/15 relative">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${usageStats?.storage && usageStats.storage.percentage > 90
+                            ? 'bg-rose-500'
+                            : usageStats?.storage && usageStats.storage.percentage > 75
+                              ? 'bg-amber-500'
+                              : 'bg-forest'
+                            }`}
+                          style={{
+                            width: `${Math.min(100, Math.max(usageStats?.storage && usageStats.storage.percentage > 0 ? 3 : 0, usageStats?.storage?.percentage || 0))}%`
+                          }}
+                          title={`Uso: ${usageStats?.storage?.percentage || 0}%`}
                         />
                       </div>
                     </div>
 
+                    {/* Metric Tiles */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
+                      <div className="p-3 rounded-xl bg-forest/[0.03] border border-forest/10 text-center">
+                        <span className="text-[11px] text-muted-foreground block">Espacio Usado</span>
+                        <span className="font-bold text-sm text-forest">
+                          {usageStats?.storage
+                            ? (usageStats.storage.usedMb < 1024
+                              ? `${usageStats.storage.usedMb} MB`
+                              : `${usageStats.storage.usedGb} GB`)
+                            : '0 MB'}
+                        </span>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-forest/[0.03] border border-forest/10 text-center">
+                        <span className="text-[11px] text-muted-foreground block">Límite Plan</span>
+                        <span className="font-bold text-sm text-forest">
+                          {usageStats?.storage?.limitGb || 2} GB
+                        </span>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-forest/[0.03] border border-forest/10 text-center">
+                        <span className="text-[11px] text-muted-foreground block">Disponible</span>
+                        <span className="font-bold text-sm text-emerald-700">
+                          {usageStats?.storage?.remainingGb !== undefined ? `${usageStats.storage.remainingGb} GB` : '2 GB'}
+                        </span>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-forest/[0.03] border border-forest/10 text-center">
+                        <span className="text-[11px] text-muted-foreground block">% Ocupado</span>
+                        <span className={`font-bold text-sm ${usageStats?.storage && usageStats.storage.percentage > 90
+                          ? 'text-rose-600'
+                          : usageStats?.storage && usageStats.storage.percentage > 75
+                            ? 'text-amber-600'
+                            : 'text-forest'
+                          }`}>
+                          {usageStats?.storage?.percentage || 0}%
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Subscription Upgrade Note */}
+                    <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-forest/10">
+                      <span>Límite determinado según tu plan de suscripción activa.</span>
+                      <button
+                        type="button"
+                        onClick={() => navigate('/panel/pricing')}
+                        className="font-bold text-forest hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>Ampliar cupo</span>
+                        <ArrowUpRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Security & Amazon Cloud Compliance Banner */}
+                  <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-emerald-500/[0.06] via-forest/[0.03] to-teal-500/[0.06] border border-emerald-500/20 space-y-3">
+                    <div className="flex items-center gap-2 text-forest font-bold text-xs sm:text-sm">
+                      <div className="p-1.5 rounded-lg bg-emerald-600 text-white shadow-2xs">
+                        <ShieldCheck className="w-4 h-4" />
+                      </div>
+                      <span>Seguridad & Encriptación en la Nube de Amazon (AWS)</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                      <div className="flex items-start gap-2.5 p-3 rounded-xl bg-white/90 border border-emerald-500/15 shadow-2xs">
+                        <Lock className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-bold text-xs text-forest block">Encriptación AES-256</span>
+                          <span className="text-[10px] text-muted-foreground leading-tight block mt-0.5">
+                            Archivos encriptados automáticamente en reposo y protegidos en tránsito con TLS 1.3.
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2.5 p-3 rounded-xl bg-white/90 border border-emerald-500/15 shadow-2xs">
+                        <Cloud className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-bold text-xs text-forest block">Infraestructura AWS</span>
+                          <span className="text-[10px] text-muted-foreground leading-tight block mt-0.5">
+                            Alojamiento seguro en centros de datos certificados con 99.999999999% de durabilidad.
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2.5 p-3 rounded-xl bg-white/90 border border-emerald-500/15 shadow-2xs">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-bold text-xs text-forest block">Protección de Datos</span>
+                          <span className="text-[10px] text-muted-foreground leading-tight block mt-0.5">
+                            Cumple con normativas de privacidad y resguardo de información escolar sensible.
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* S3 OR MINIO CONFIG */}
+              {(formData.storage_driver === 's3' || formData.storage_driver === 'minio') && (
+                <div className="space-y-4 pt-2 text-xs">
+                  {/* MinIO Endpoint if MinIO */}
+                  {formData.storage_driver === 'minio' && (
                     <div className="space-y-1">
-                      <label className="block text-forest font-bold">Access Key ID *</label>
+                      <label className="block text-forest font-bold">Endpoint de MinIO / S3 Compatible *</label>
                       <input
                         type="text"
-                        value={formData.s3_access_key_id || ''}
-                        onChange={(e) => handleInputChange('s3_access_key_id', e.target.value)}
-                        placeholder="AKIAIOSFODNN7EXAMPLE"
+                        value={formData.s3_endpoint || ''}
+                        onChange={(e) => handleInputChange('s3_endpoint', e.target.value)}
+                        placeholder="https://minio.tudominio.com o http://192.168.1.50:9000"
+                        className="w-full p-2.5 rounded-xl border border-forest/20 text-forest bg-white font-mono text-xs focus:outline-none focus:ring-2 focus:ring-forest shadow-2xs"
+                      />
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="block text-forest font-bold">Nombre del Bucket Privado *</label>
+                      <input
+                        type="text"
+                        value={formData.s3_bucket || ''}
+                        onChange={(e) => handleInputChange('s3_bucket', e.target.value)}
+                        placeholder="montessori-expedientes"
                         className="w-full p-2.5 rounded-xl border border-forest/20 text-forest bg-white font-mono text-xs focus:outline-none focus:ring-2 focus:ring-forest shadow-2xs"
                       />
                     </div>
 
                     <div className="space-y-1">
-                      <label className="block text-forest font-bold">Secret Access Key *</label>
-                      <div className="relative">
-                        <input
-                          type={showS3Secret ? 'text' : 'password'}
-                          value={formData.s3_secret_access_key || ''}
-                          onChange={(e) => handleInputChange('s3_secret_access_key', e.target.value)}
-                          placeholder="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
-                          className="w-full p-2.5 pr-10 rounded-xl border border-forest/20 text-forest bg-white font-mono text-xs focus:outline-none focus:ring-2 focus:ring-forest shadow-2xs"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowS3Secret(!showS3Secret)}
-                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-forest cursor-pointer"
-                        >
-                          {showS3Secret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
+                      <label className="block text-forest font-bold">Región *</label>
+                      <input
+                        type="text"
+                        value={formData.s3_region || 'us-east-1'}
+                        onChange={(e) => handleInputChange('s3_region', e.target.value)}
+                        placeholder="us-east-1"
+                        className="w-full p-2.5 rounded-xl border border-forest/20 text-forest bg-white font-mono text-xs focus:outline-none focus:ring-2 focus:ring-forest shadow-2xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-forest font-bold">Access Key ID *</label>
+                    <input
+                      type="text"
+                      value={formData.s3_access_key_id || ''}
+                      onChange={(e) => handleInputChange('s3_access_key_id', e.target.value)}
+                      placeholder="AKIAIOSFODNN7EXAMPLE"
+                      className="w-full p-2.5 rounded-xl border border-forest/20 text-forest bg-white font-mono text-xs focus:outline-none focus:ring-2 focus:ring-forest shadow-2xs"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-forest font-bold">Secret Access Key *</label>
+                    <div className="relative">
+                      <input
+                        type={showS3Secret ? 'text' : 'password'}
+                        value={formData.s3_secret_access_key || ''}
+                        onChange={(e) => handleInputChange('s3_secret_access_key', e.target.value)}
+                        placeholder="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+                        className="w-full p-2.5 pr-10 rounded-xl border border-forest/20 text-forest bg-white font-mono text-xs focus:outline-none focus:ring-2 focus:ring-forest shadow-2xs"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowS3Secret(!showS3Secret)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-forest cursor-pointer"
+                      >
+                        {showS3Secret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-forest font-bold">Forzar Path Style (S3 Force Path Style)</label>
+                    <select
+                      value={formData.s3_force_path_style === 'true' || formData.s3_force_path_style === true || formData.storage_driver === 'minio' ? 'true' : 'false'}
+                      onChange={(e) => handleInputChange('s3_force_path_style', e.target.value)}
+                      className="w-full p-2.5 rounded-xl border border-forest/20 text-forest bg-white text-xs font-semibold focus:outline-none cursor-pointer shadow-2xs"
+                    >
+                      <option value="true">Activado (Requerido para MinIO)</option>
+                      <option value="false">Desactivado (Estándar AWS S3)</option>
+                    </select>
+                  </div>
+
+                  {/* Security, Encryption & Full Data Control Banner (BYOS - 4 cards) */}
+                  <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-emerald-500/[0.06] via-forest/[0.03] to-teal-500/[0.06] border border-emerald-500/20 space-y-3 mt-4">
+                    <div className="flex items-center gap-2 text-forest font-bold text-xs sm:text-sm">
+                      <div className="p-1.5 rounded-lg bg-emerald-600 text-white shadow-2xs">
+                        <ShieldCheck className="w-4 h-4" />
+                      </div>
+                      <span>
+                        {formData.storage_driver === 's3'
+                          ? 'Seguridad, Encriptación & Control Total en Amazon S3'
+                          : 'Seguridad, Encriptación & Control Total en MinIO'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-1">
+                      <div className="flex items-start gap-2.5 p-3 rounded-xl bg-white/90 border border-emerald-500/15 shadow-2xs">
+                        <Lock className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-bold text-xs text-forest block">Encriptación AES-256</span>
+                          <span className="text-[10px] text-muted-foreground leading-tight block mt-0.5">
+                            Archivos encriptados automáticamente en reposo y protegidos en tránsito con TLS 1.3.
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2.5 p-3 rounded-xl bg-white/90 border border-emerald-500/15 shadow-2xs">
+                        <Cloud className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-bold text-xs text-forest block">
+                            {formData.storage_driver === 's3' ? 'Infraestructura AWS' : 'Servidor Dedicado'}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground leading-tight block mt-0.5">
+                            {formData.storage_driver === 's3'
+                              ? 'Alojamiento en tu propio bucket de AWS S3 de alta disponibilidad y durabilidad.'
+                              : 'Almacenamiento en tu propia infraestructura privada autohospedada MinIO.'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2.5 p-3 rounded-xl bg-white/90 border border-emerald-500/15 shadow-2xs">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-bold text-xs text-forest block">Protección de Datos</span>
+                          <span className="text-[10px] text-muted-foreground leading-tight block mt-0.5">
+                            Cumple con normativas de privacidad y resguardo de información escolar sensible.
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2.5 p-3 rounded-xl bg-white/90 border border-emerald-500/15 shadow-2xs">
+                        <Key className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-bold text-xs text-forest block">Privacidad & Control Total</span>
+                          <span className="text-[10px] text-muted-foreground leading-tight block mt-0.5">
+                            Más privado: soberanía absoluta de llaves, retención y control directo sobre los datos sin intermediarios.
+                          </span>
+                        </div>
                       </div>
                     </div>
-
-                    <div className="space-y-1">
-                      <label className="block text-forest font-bold">Forzar Path Style (S3 Force Path Style)</label>
-                      <select
-                        value={formData.s3_force_path_style === 'true' || formData.s3_force_path_style === true || formData.storage_driver === 'minio' ? 'true' : 'false'}
-                        onChange={(e) => handleInputChange('s3_force_path_style', e.target.value)}
-                        className="w-full p-2.5 rounded-xl border border-forest/20 text-forest bg-white text-xs font-semibold focus:outline-none cursor-pointer shadow-2xs"
-                      >
-                        <option value="true">Activado (Requerido para MinIO)</option>
-                        <option value="false">Desactivado (Estándar AWS S3)</option>
-                      </select>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Storage Architecture Info & Diagnostics Test */}
-              <div className="bg-white/90 rounded-3xl p-6 border border-forest/10 shadow-xs space-y-4 flex flex-col justify-between">
-                <div className="space-y-4">
-                  <h3 className="font-display font-bold text-forest text-sm flex items-center gap-2 border-b border-forest/10 pb-3">
-                    <ShieldCheck className="w-4 h-4 text-forest" />
-                    <span>Seguridad Privada & Diagnóstico</span>
-                  </h3>
-
-                  {/* Privacy Badge */}
-                  <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-900 space-y-1">
-                    <span className="font-bold flex items-center gap-1.5 text-amber-800">
-                      <ShieldCheck className="w-4 h-4 text-amber-600" />
-                      <span>Almacenamiento 100% Aislado y Seguro:</span>
-                    </span>
-                    <p className="text-[11px] text-amber-800/90 leading-relaxed">
-                      Ningún archivo ni documento sensible (CURP, INE, actas de nacimiento, firmas) se expone a la web pública. El acceso se realiza exclusivamente mediante endpoints con verificación de identidad y pertenencia al colegio.
-                    </p>
-                  </div>
-
-                  {/* Tree Diagram */}
-                  <div className="p-4 rounded-2xl bg-slate-900 text-emerald-300 font-mono text-[11px] space-y-1 border border-slate-800 shadow-inner overflow-x-auto">
-                    <div className="text-slate-400 font-bold flex items-center gap-1.5 pb-1 border-b border-slate-800">
-                      <FolderCheck className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>Jerarquía de Archivos del Expediente:</span>
-                    </div>
-                    <div>📁 storage/ [PRIVADO]</div>
-                    <div>└── 📁 schools/</div>
-                    <div>&nbsp;&nbsp;&nbsp;&nbsp;└── 📁 &#123;schoolId&#125;/</div>
-                    <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── 📁 admissions/</div>
-                    <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── 📁 &#123;admissionApplicationId&#125;/</div>
-                    <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── 📁 forms/</div>
-                    <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── 📁 &#123;formId&#125;/</div>
-                    <div className="text-emerald-400 font-bold pl-12">├── 📄 Formulario_Firmado.pdf</div>
-                    <div className="text-emerald-400 font-bold pl-12">├── 📄 CURP_Oficial_RENAPO.pdf</div>
-                    <div className="text-emerald-400 font-bold pl-12">├── 🖼️ firma_tutor.png</div>
-                    <div className="text-emerald-400 font-bold pl-12">└── 📎 [archivos_subidos...]</div>
-                  </div>
-
-                  <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 text-xs text-emerald-900 space-y-1">
-                    <span className="font-bold block flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" />
-                      <span>Ciclo de Vida & Exportación ZIP:</span>
-                    </span>
-                    <p className="text-[11px] text-emerald-800/90 leading-relaxed">
-                      Los expedientes pueden exportarse en lote como paquetes ZIP firmados. Si se da de baja un proceso de admisión, su carpeta física completa es eliminada automáticamente del disco o bucket.
-                    </p>
                   </div>
                 </div>
-
-                {/* Diagnostic Test Button */}
-                <div className="pt-4 border-t border-forest/10">
-                  <button
-                    type="button"
-                    onClick={handleTestStorage}
-                    disabled={testingStorage}
-                    className="w-full py-3 px-4 bg-forest hover:bg-forest/90 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all hover:scale-102 active:scale-98 disabled:opacity-50 cursor-pointer"
-                  >
-                    <RefreshCw className={`w-4 h-4 ${testingStorage ? 'animate-spin' : ''}`} />
-                    <span>{testingStorage ? 'Verificando Conexión Privada...' : 'Probar Conexión de Almacenamiento'}</span>
-                  </button>
-                </div>
-              </div>
-
+              )}
             </div>
           </div>
         )}

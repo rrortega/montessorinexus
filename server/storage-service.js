@@ -1,7 +1,15 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
+import { 
+  S3Client, 
+  PutObjectCommand, 
+  GetObjectCommand, 
+  DeleteObjectCommand, 
+  ListObjectsV2Command,
+  HeadBucketCommand,
+  CreateBucketCommand
+} from '@aws-sdk/client-s3';
 import { ZipArchive } from 'archiver';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -15,15 +23,52 @@ if (!fs.existsSync(DEFAULT_LOCAL_ROOT)) {
 }
 
 /**
+ * Returns a compliant S3/MinIO bucket name for a school
+ */
+export function getBucketNameForSchool(schoolId, customBucket = null) {
+  if (customBucket && typeof customBucket === 'string' && customBucket.trim()) {
+    return customBucket.trim().toLowerCase().replace(/_/g, '-');
+  }
+  if (!schoolId) {
+    return (process.env.S3_BUCKET || 'montessorinexus-storage').toLowerCase().replace(/_/g, '-');
+  }
+  const cleanId = String(schoolId).trim().toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/^-+|-+$/g, '');
+  return cleanId.startsWith('school-') ? cleanId : `school-${cleanId}`;
+}
+
+/**
+ * Automatically creates the bucket on MinIO/S3 if it doesn't already exist
+ */
+export async function ensureBucketExists(s3Client, bucketName) {
+  if (!bucketName) return;
+  try {
+    await s3Client.send(new HeadBucketCommand({ Bucket: bucketName }));
+  } catch (err) {
+    if (
+      err.name === 'NotFound' || 
+      err.name === 'NoSuchBucket' || 
+      err.$metadata?.httpStatusCode === 404 || 
+      err.$metadata?.httpStatusCode === 400
+    ) {
+      try {
+        await s3Client.send(new CreateBucketCommand({ Bucket: bucketName }));
+        console.log(`[STORAGE] MinIO/S3 Bucket "${bucketName}" auto-created successfully.`);
+      } catch (createErr) {
+        console.warn(`[STORAGE] Note on bucket creation for "${bucketName}":`, createErr.message);
+      }
+    }
+  }
+}
+
+/**
  * Loads storage configuration for a specific school from DB settings or process.env
- * All storages are 100% PRIVATE with zero public URLs.
  */
 export async function getStorageConfigForSchool(schoolId, prisma = null) {
-  let driver = (process.env.STORAGE_DRIVER || (process.env.S3_ACCESS_KEY_ID && process.env.S3_BUCKET ? 's3' : 'local')).toLowerCase().trim();
+  let driver = (process.env.STORAGE_DRIVER || (process.env.S3_ACCESS_KEY_ID && (process.env.S3_BUCKET || process.env.S3_ENDPOINT) ? 's3' : 'local')).toLowerCase().trim();
   let localRoot = process.env.STORAGE_LOCAL_ROOT || DEFAULT_LOCAL_ROOT;
   let s3Endpoint = process.env.S3_ENDPOINT || '';
   let s3Region = process.env.S3_REGION || 'us-east-1';
-  let s3Bucket = process.env.S3_BUCKET || 'montessori-nexus';
+  let s3Bucket = getBucketNameForSchool(schoolId, process.env.S3_BUCKET);
   let s3AccessKeyId = process.env.S3_ACCESS_KEY_ID || '';
   let s3SecretAccessKey = process.env.S3_SECRET_ACCESS_KEY || '';
   let s3ForcePathStyle = process.env.S3_FORCE_PATH_STYLE === 'true';
@@ -55,7 +100,7 @@ export async function getStorageConfigForSchool(schoolId, prisma = null) {
         driver = settingMap.storage_driver.toLowerCase().trim();
         if (settingMap.s3_endpoint) s3Endpoint = settingMap.s3_endpoint.trim();
         if (settingMap.s3_region) s3Region = settingMap.s3_region.trim();
-        if (settingMap.s3_bucket) s3Bucket = settingMap.s3_bucket.trim();
+        s3Bucket = getBucketNameForSchool(schoolId, settingMap.s3_bucket);
         if (settingMap.s3_access_key_id) s3AccessKeyId = settingMap.s3_access_key_id.trim();
         if (settingMap.s3_secret_access_key) s3SecretAccessKey = settingMap.s3_secret_access_key.trim();
         if (settingMap.s3_force_path_style !== undefined) {
@@ -63,8 +108,9 @@ export async function getStorageConfigForSchool(schoolId, prisma = null) {
         }
       } else {
         // 'nexus', 'local', or unset: Montessori Nexus managed server storage
-        driver = (process.env.STORAGE_DRIVER || (process.env.S3_ACCESS_KEY_ID && process.env.S3_BUCKET ? 's3' : 'local')).toLowerCase().trim();
+        driver = (process.env.STORAGE_DRIVER || (process.env.S3_ACCESS_KEY_ID && (process.env.S3_BUCKET || process.env.S3_ENDPOINT) ? 's3' : 'local')).toLowerCase().trim();
         localRoot = process.env.STORAGE_LOCAL_ROOT || DEFAULT_LOCAL_ROOT;
+        s3Bucket = getBucketNameForSchool(schoolId, process.env.S3_BUCKET);
       }
     } catch (e) {
       console.warn('[STORAGE CONFIG DB WARNING]', e.message);
@@ -72,7 +118,7 @@ export async function getStorageConfigForSchool(schoolId, prisma = null) {
   }
 
   // Auto-enable force path style for MinIO / Localhost
-  if (s3Endpoint && (s3Endpoint.includes('localhost') || s3Endpoint.includes('127.0.0.1') || s3Endpoint.includes('minio') || s3Endpoint.includes(':9000'))) {
+  if (s3Endpoint && (s3Endpoint.includes('localhost') || s3Endpoint.includes('127.0.0.1') || s3Endpoint.includes('minio') || s3Endpoint.includes(':9000') || s3Endpoint.includes('easypanel'))) {
     s3ForcePathStyle = true;
   }
 
@@ -81,7 +127,7 @@ export async function getStorageConfigForSchool(schoolId, prisma = null) {
     localRoot: localRoot || DEFAULT_LOCAL_ROOT,
     s3Endpoint,
     s3Region: s3Region || 'us-east-1',
-    s3Bucket: s3Bucket || 'montessori-nexus',
+    s3Bucket: s3Bucket || getBucketNameForSchool(schoolId),
     s3AccessKeyId,
     s3SecretAccessKey,
     s3ForcePathStyle
@@ -406,8 +452,24 @@ export async function streamPrivateAsset({ schoolId, relativePath, req = null, r
   // Extract schoolId from path if not explicitly provided (e.g. schools/school_123/...)
   const targetSchoolId = schoolId || (cleanPath.startsWith('schools/') ? cleanPath.split('/')[1] : null);
 
-  // Verify school tenant isolation if schoolId provided
-  if (schoolId && !cleanPath.startsWith(`schools/${schoolId}/`)) {
+  const isPublicMedia = (
+    cleanPath.includes('/gallery/') || 
+    cleanPath.includes('/stickers/') || 
+    cleanPath.includes('/hero') || 
+    cleanPath.includes('/brand/') ||
+    cleanPath.includes('/logo') ||
+    cleanPath.includes('/pillars/') ||
+    cleanPath.endsWith('.png') ||
+    cleanPath.endsWith('.jpg') ||
+    cleanPath.endsWith('.jpeg') ||
+    cleanPath.endsWith('.webp') ||
+    cleanPath.endsWith('.svg') ||
+    cleanPath.endsWith('.gif') ||
+    cleanPath.endsWith('.ico')
+  );
+
+  // Verify school tenant isolation for private documents only
+  if (!isPublicMedia && schoolId && !cleanPath.startsWith(`schools/${schoolId}/`)) {
     res.status(403).json({ error: 'Acceso denegado a este archivo' });
     return;
   }
@@ -420,6 +482,7 @@ export async function streamPrivateAsset({ schoolId, relativePath, req = null, r
     cleanFilename.endsWith('.png') ? 'image/png' :
     cleanFilename.endsWith('.jpg') || cleanFilename.endsWith('.jpeg') ? 'image/jpeg' :
     cleanFilename.endsWith('.webp') ? 'image/webp' :
+    cleanFilename.endsWith('.svg') ? 'image/svg+xml' :
     cleanFilename.endsWith('.webm') ? 'video/webm' :
     cleanFilename.endsWith('.mp4') ? 'video/mp4' :
     cleanFilename.endsWith('.mov') ? 'video/quicktime' :
@@ -431,7 +494,11 @@ export async function streamPrivateAsset({ schoolId, relativePath, req = null, r
 
   res.setHeader('Accept-Ranges', 'bytes');
   res.setHeader('Content-Disposition', `inline; filename="${path.basename(cleanPath)}"`);
-  res.setHeader('Cache-Control', 'private, no-cache, no-store, must-revalidate');
+  if (isPublicMedia) {
+    res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=604800');
+  } else {
+    res.setHeader('Cache-Control', 'private, no-cache, no-store, must-revalidate');
+  }
 
   if (config.driver === 's3' || config.driver === 'minio') {
     try {
@@ -445,6 +512,7 @@ export async function streamPrivateAsset({ schoolId, relativePath, req = null, r
         forcePathStyle: config.s3ForcePathStyle
       });
 
+      let s3Obj = null;
       const s3Params = {
         Bucket: config.s3Bucket,
         Key: cleanPath
@@ -454,7 +522,28 @@ export async function streamPrivateAsset({ schoolId, relativePath, req = null, r
         s3Params.Range = req.headers.range;
       }
 
-      const s3Obj = await s3.send(new GetObjectCommand(s3Params));
+      try {
+        s3Obj = await s3.send(new GetObjectCommand(s3Params));
+      } catch (err1) {
+        // Fallback 1: try default bucket montessorinexus-storage
+        const fallbackBucket = (process.env.S3_BUCKET || 'montessorinexus-storage').toLowerCase().replace(/_/g, '-');
+        if (fallbackBucket !== config.s3Bucket) {
+          try {
+            s3Obj = await s3.send(new GetObjectCommand({ ...s3Params, Bucket: fallbackBucket }));
+          } catch (err2) {
+            // Fallback 2: try key without schools/{schoolId}/ prefix
+            const strippedKey = cleanPath.replace(/^schools\/[^\/]+\//, '');
+            try {
+              s3Obj = await s3.send(new GetObjectCommand({ ...s3Params, Bucket: config.s3Bucket, Key: strippedKey }));
+            } catch (err3) {
+              s3Obj = await s3.send(new GetObjectCommand({ ...s3Params, Bucket: fallbackBucket, Key: strippedKey }));
+            }
+          }
+        } else {
+          const strippedKey = cleanPath.replace(/^schools\/[^\/]+\//, '');
+          s3Obj = await s3.send(new GetObjectCommand({ ...s3Params, Bucket: config.s3Bucket, Key: strippedKey }));
+        }
+      }
 
       if (s3Obj.ContentRange) {
         res.status(206);
@@ -469,6 +558,12 @@ export async function streamPrivateAsset({ schoolId, relativePath, req = null, r
       return;
     } catch (e) {
       console.error('[STORAGE S3 STREAM ERROR]', e.message);
+      // If S3 fails, check local fallback
+      const fullPath = path.join(config.localRoot, cleanPath);
+      if (fs.existsSync(fullPath)) {
+        res.setHeader('Content-Type', detectedMime);
+        return fs.createReadStream(fullPath).pipe(res);
+      }
       res.status(404).json({ error: 'Archivo no encontrado en almacenamiento seguro' });
       return;
     }
@@ -768,6 +863,9 @@ export async function saveGenericFile({ schoolId, relativePath, buffer, mimeType
       },
       forcePathStyle: config.s3ForcePathStyle
     });
+
+    // Automatically create bucket if it doesn't exist on MinIO
+    await ensureBucketExists(s3, config.s3Bucket);
 
     await s3.send(new PutObjectCommand({
       Bucket: config.s3Bucket,
