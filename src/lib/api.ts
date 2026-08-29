@@ -1,6 +1,6 @@
 export async function uploadPhysicalFile(
   file: File, 
-  folder: 'gallery' | 'documents',
+  folder: 'gallery' | 'documents' = 'gallery',
   title?: string
 ): Promise<{ url: string; fileName: string; size: number }> {
   const formData = new FormData();
@@ -10,13 +10,22 @@ export async function uploadPhysicalFile(
     formData.append('title', title);
   }
 
+  const schoolId = localStorage.getItem('ceiba_active_school_id') || '';
+  const schoolSlug = localStorage.getItem('ceiba_active_school_slug') || 'ceiba';
+
+  const headers: Record<string, string> = {};
+  if (schoolId) headers['x-school-id'] = schoolId;
+  if (schoolSlug) headers['x-school-slug'] = schoolSlug;
+
   const res = await fetch('/api/upload', {
     method: 'POST',
+    headers,
     body: formData,
   });
 
   if (!res.ok) {
-    throw new Error(`Error en el servidor al subir archivo (${res.status})`);
+    const err = await res.json().catch(() => ({ error: `Error en el servidor (${res.status})` }));
+    throw new Error(err.error || `Error en el servidor al subir archivo (${res.status})`);
   }
 
   const data = await res.json();
@@ -32,16 +41,21 @@ export async function uploadPhysicalFile(
 }
 
 export async function deletePhysicalFile(url: string): Promise<boolean> {
-  if (!url || (!url.startsWith('/gallery/') && !url.startsWith('/documents/'))) {
-    return false;
-  }
+  if (!url || typeof url !== 'string') return false;
+
+  const schoolId = localStorage.getItem('ceiba_active_school_id') || '';
+  const schoolSlug = localStorage.getItem('ceiba_active_school_slug') || 'ceiba';
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  if (schoolId) headers['x-school-id'] = schoolId;
+  if (schoolSlug) headers['x-school-slug'] = schoolSlug;
 
   try {
-    const res = await fetch('/api/file', {
+    const res = await fetch('/api/storage', {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({ url }),
     });
 
@@ -50,6 +64,43 @@ export async function deletePhysicalFile(url: string): Promise<boolean> {
     console.warn('Could not delete physical file on server', e);
     return false;
   }
+}
+
+export async function generateGalleryMetadata(params: {
+  imageUrl?: string;
+  categoryId?: string;
+  categoryLabel?: string;
+  existingTitle?: string;
+  languages?: string[];
+}): Promise<{
+  title: string;
+  titleEn: string;
+  description: string;
+  descriptionEn: string;
+  translations?: Record<string, { title: string; description: string }>;
+  source?: string;
+}> {
+  const schoolId = localStorage.getItem('ceiba_active_school_id') || '';
+  const schoolSlug = localStorage.getItem('ceiba_active_school_slug') || 'ceiba';
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  if (schoolId) headers['x-school-id'] = schoolId;
+  if (schoolSlug) headers['x-school-slug'] = schoolSlug;
+
+  const res = await fetch('/api/gallery/generate-metadata', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(params),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Error al generar metadatos' }));
+    throw new Error(err.error || 'Error al generar metadatos con IA');
+  }
+
+  return await res.json();
 }
 
 export async function fetchServerDB(): Promise<Uint8Array | null> {

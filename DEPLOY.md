@@ -1,158 +1,151 @@
-# 🚀 Guía de Despliegue en Producción (Easypanel + GitHub Actions)
+# 🚀 Guía de Despliegue en Producción (Easypanel + GitHub Actions + Vercel/Cloudflare)
 
-Esta guía detalla paso a paso cómo configurar la integración continua (CI/CD) con **GitHub Actions**, el registro de imágenes en **GitHub Container Registry (GHCR)** y el despliegue desacoplado del **Servicio Web** y el **Servicio Worker** en **Easypanel**.
-
----
-
-## 🏗️ Arquitectura de Producción
-
-El sistema se compone de los siguientes servicios en Easypanel:
-
-1. **PostgreSQL**: Base de datos relacional principal.
-2. **Redis**: Gestor de colas en tiempo real (BullMQ) para tareas asíncronas, webhooks y envíos masivos.
-3. **Servicio Web (`montessorinexus-web`)**:
-   - Expone la aplicación web React + API Express en el puerto `3001`.
-   - Variable de entorno: `SERVICE_ROLE=web` (o `SERVICE_ROLE=all`).
-4. **Servicio Worker (`montessorinexus-worker`)**:
-   - Procesa trabajos de fondo en segundo plano (Xvfb + Playwright headless, generación de reportes, sincronizaciones).
-   - Variable de entorno: `SERVICE_ROLE=worker`.
+Esta guía detalla paso a paso cómo desplegar la plataforma **Montessori Nexus**, soportando tanto una arquitectura en contenedores desacoplados (**Easypanel / VPS**) como una arquitectura 100% desacoplada con frontend en el Edge (**Vercel / Cloudflare Pages**) y backend + workers en contenedores.
 
 ---
 
-## ⚙️ 1. Configuración de GitHub Actions & Registro GHCR
+## 🏗️ Topologías de Arquitectura Soportadas
 
-El flujo de trabajo automatizado se encuentra en [.github/workflows/docker-publish.yml](.github/workflows/docker-publish.yml).
+```mermaid
+flowchart TD
+    subgraph OpcionA ["Topología 1: Desacoplada en Contenedores (Easypanel / VPS)"]
+        WEB1["Servicio Web & API<br/>(SERVICE_ROLE=web)"]
+        WRK1["Servicio Worker Asíncrono<br/>(SERVICE_ROLE=worker)"]
+    end
 
-### A. Permisos del Repositorio en GitHub
-1. En tu repositorio de GitHub, ve a **Settings** -> **Actions** -> **General**.
-2. En la sección **Workflow permissions**, selecciona **Read and write permissions**.
-3. Guarda los cambios.
+    subgraph OpcionB ["Topología 2: 100% Desacoplada (Edge + API + Workers)"]
+        VCL["Frontend SPA en Edge<br/>(Vercel / Cloudflare Pages)"]
+        API2["Servicio API REST<br/>(SERVICE_ROLE=web)"]
+        WRK2["Servicio Worker Asíncrono<br/>(SERVICE_ROLE=worker)"]
+    end
 
-### B. Configuración de GitHub Secrets (Webhooks de Easypanel)
-Para que GitHub Actions notifique a Easypanel automáticamente después de construir la imagen:
+    subgraph Infra ["Infraestructura Compartida"]
+        PG[("PostgreSQL")]
+        REDIS[("Redis (BullMQ)")]
+        S3[("S3 / Cloudflare R2")]
+    end
 
-1. Ve a **Settings** -> **Secrets and variables** -> **Actions** -> **New repository secret**.
-2. Agrega los siguientes secretos (opcionales pero recomendados para Auto-Deploy):
+    WEB1 --> PG & REDIS & S3
+    WRK1 --> PG & REDIS & S3
+
+    VCL -->|"HTTP / REST"| API2
+    API2 --> PG & REDIS & S3
+    WRK2 --> PG & REDIS & S3
+```
+
+---
+
+## 📌 Roles de Servicio (`SERVICE_ROLE`)
+
+El contenedor Docker utiliza el script de arranque [`server/start.sh`](server/start.sh) que activa componentes según la variable `SERVICE_ROLE`:
+
+| Valor de `SERVICE_ROLE` | ¿Qué ejecuta? | Uso Recomendado |
+| :--- | :--- | :--- |
+| `web` | **Únicamente Express API y Frontend SPA** (`node server/index.js`). | Servicio Web / API en producción. |
+| `worker` | **Únicamente procesador de colas BullMQ** (`node server/worker.js`) con pantalla virtual Xvfb para Playwright. | Servicio Worker en producción. |
+| `all` *(default)* | **Ejecuta Web + Worker simultáneamente** en el mismo contenedor. | Entornos de desarrollo, staging o despliegue single-node. |
+
+---
+
+## ⚙️ 1. Configuración de CI/CD (GitHub Actions & GHCR)
+
+El flujo de trabajo automatizado se encuentra en [`.github/workflows/docker-publish.yml`](.github/workflows/docker-publish.yml).
+
+### A. Permisos en GitHub
+1. En tu repositorio: **Settings** -> **Actions** -> **General**.
+2. En **Workflow permissions**, selecciona **Read and write permissions** y guarda.
+
+### B. Secretos en GitHub (Webhooks de Easypanel)
+Ve a **Settings** -> **Secrets and variables** -> **Actions** -> **New repository secret**:
 
 | Secret | Descripción | Requerido |
 | :--- | :--- | :--- |
-| `EASYPANEL_WEB_WEBHOOK_URL` | URL del Webhook de despliegue del servicio Web generado en Easypanel. | Opcional |
-| `EASYPANEL_WORKER_WEBHOOK_URL` | URL del Webhook de despliegue del servicio Worker generado en Easypanel. | Opcional |
+| `EASYPANEL_WEB_WEBHOOK_URL` | Webhook de despliegue del servicio Web en Easypanel. | Opcional |
+| `EASYPANEL_WORKER_WEBHOOK_URL` | Webhook de despliegue del servicio Worker en Easypanel. | Opcional |
 
 > [!NOTE]
-> Si estos secretos **no están configurados**, el flujo de GitHub Actions **no fallará**. Simplemente construirá y publicará la imagen en GHCR y dejará un registro en los logs indicando que los webhooks fueron omitidos.
+> Si los webhooks no están definidos, GitHub Actions construirá y subirá la imagen a `ghcr.io` sin fallar.
 
 ---
 
-## 📦 2. Visibilidad y Autenticación de GHCR
+## 🖥️ 2. Despliegue en Easypanel (Servicio Web + Worker)
 
-La imagen se publica bajo el registro de contenedores de GitHub:
-`ghcr.io/rrortega/montessorinexus:latest`
-
-### Si el repositorio o paquete es Privado:
-Easypanel necesitará credenciales para descargar la imagen:
-1. En GitHub: Ve a tu perfil -> **Settings** -> **Developer Settings** -> **Personal Access Tokens** -> **Tokens (classic)**.
-2. Genera un nuevo token con el scope: `read:packages`.
-3. Guarda el token generado.
+### Paso 1: Servicios de Base de Datos y Colas
+1. **PostgreSQL**: Crear servicio `PostgreSQL` -> Guardar `DATABASE_URL`.
+2. **Redis**: Crear servicio `Redis` -> Guardar `REDIS_URL` (ej. `redis://default:pass@redis:6379`).
 
 ---
 
-## 🖥️ 3. Configuración Paso a Paso en Easypanel
-
-### Paso 1: Crear Servicios de Base de Datos
-1. En tu proyecto de Easypanel, haz clic en **+ Service** -> **PostgreSQL**.
-   - Nombre: `postgres`
-   - Guarda la URL de conexión interna generada (`DATABASE_URL`).
-2. Haz clic en **+ Service** -> **Redis**.
-   - Nombre: `redis`
-   - Guarda la URL de conexión interna generada (`REDIS_URL`, ej. `redis://default:password@redis:6379`).
-
----
-
-### Paso 2: Crear el Servicio Web (`montessorinexus-web`)
-
-1. Haz clic en **+ Service** -> **App**.
-2. Nombre: `web` (o `montessorinexus-web`).
-3. En la pestaña **Source**:
-   - **Type**: `Docker Image`
-   - **Image Name**: `ghcr.io/rrortega/montessorinexus:latest`
-4. En la pestaña **Registry** (solo si el paquete es privado):
-   - **Server**: `ghcr.io`
-   - **Username**: Tu usuario de GitHub (ej. `mayo11`)
-   - **Password**: El Personal Access Token (PAT) con permiso `read:packages`.
-5. En la pestaña **Environment**:
+### Paso 2: Servicio Web (`montessorinexus-web`)
+1. **+ Service** -> **App**. Nombre: `web`.
+2. **Source**: `Docker Image` -> `ghcr.io/rrortega/montessorinexus:latest`.
+3. **Environment**:
    ```env
    NODE_ENV=production
    PORT=3001
    SERVICE_ROLE=web
-   DATABASE_URL=postgres://usuario:password@postgres:5432/database
-   REDIS_URL=redis://default:password@redis:6379
-   SESSION_SECRET=generar_una_clave_aleatoria_segura
-   JWT_SECRET=generar_otra_clave_aleatoria_segura
+   DATABASE_URL=postgres://usuario:pass@postgres:5432/database
+   REDIS_URL=redis://default:pass@redis:6379
+   SESSION_SECRET=clave_segura_de_sesion
+   JWT_SECRET=clave_segura_jwt
    DEFAULT_EMAIL_DOMAIN=montessorinexus.com
    EMAIL_SENDER_DOMAIN=montessorinexus.com
-   RESEND_API_KEY=re_tu_api_key_de_resend
+   RESEND_API_KEY=re_tu_api_key
 
-   # Configuración de Almacenamiento Multi-inquilino (S3 / Cloud Storage)
-   # Cada colegio tiene sus archivos aislados bajo la ruta: schools/<schoolId>/...
+   # Storage S3 / R2 (Multi-tenant)
    STORAGE_DRIVER=s3
-   S3_ENDPOINT=""
    S3_REGION="us-east-1"
    S3_BUCKET="montessorinexus-storage"
    S3_ACCESS_KEY_ID="tu_access_key_id"
    S3_SECRET_ACCESS_KEY="tu_secret_access_key"
    S3_FORCE_PATH_STYLE=false
    ```
-6. En la pestaña **Domains / Ports**:
-   - Agrega tu dominio (ej. `app.montessorinexus.com` o `colegio.tudominio.com`).
-   - **Port**: `3001`
-7. En la pestaña **Mounts / Persistent Storage**:
-   - **Si usas S3 / Cloud Storage (`STORAGE_DRIVER=s3`)**: **NO se requiere ningún volumen persistente**. Todos los archivos de cada colegio se guardan y transmiten de forma privada y directa hacia el bucket de S3.
-   - **Si usas almacenamiento local (`STORAGE_DRIVER=local`)**: Mapea el volumen persistente en:
-     - `/app/storage` -> Volumen persistente (ej. `montessori_storage`)
-8. En la pestaña **Deploy**:
-   - Copia la **Webhook URL** proporcionada por Easypanel y pégala en GitHub Secrets como `EASYPANEL_WEB_WEBHOOK_URL`.
+4. **Domains / Ports**: Dominio (ej. `app.montessorinexus.com`) en puerto `3001`.
+5. **Deploy**: Copiar Webhook URL a `EASYPANEL_WEB_WEBHOOK_URL` en GitHub Secrets.
 
 ---
 
-### Paso 3: Crear el Servicio Worker (`montessorinexus-worker`)
-
-1. Haz clic en **+ Service** -> **App**.
-2. Nombre: `worker` (o `montessorinexus-worker`).
-3. En la pestaña **Source**:
-   - **Type**: `Docker Image`
-   - **Image Name**: `ghcr.io/rrortega/montessorinexus:latest`
-4. En la pestaña **Registry** (si es privado):
-   - Mismas credenciales que el servicio Web (`ghcr.io`).
-5. En la pestaña **Environment**:
+### Paso 3: Servicio Worker (`montessorinexus-worker`)
+1. **+ Service** -> **App**. Nombre: `worker`.
+2. **Source**: `Docker Image` -> `ghcr.io/rrortega/montessorinexus:latest`.
+3. **Environment**:
    ```env
    NODE_ENV=production
    SERVICE_ROLE=worker
-   DATABASE_URL=postgres://usuario:password@postgres:5432/database
-   REDIS_URL=redis://default:password@redis:6379
+   DATABASE_URL=postgres://usuario:pass@postgres:5432/database
+   REDIS_URL=redis://default:pass@redis:6379
    SESSION_SECRET=misma_clave_que_en_web
    JWT_SECRET=misma_clave_que_en_web
-   DEFAULT_EMAIL_DOMAIN=montessorinexus.com
-   EMAIL_SENDER_DOMAIN=montessorinexus.com
-   RESEND_API_KEY=re_tu_api_key_de_resend
-
-   # Mismas variables de Storage que en Web
    STORAGE_DRIVER=s3
-   S3_ENDPOINT=""
    S3_REGION="us-east-1"
    S3_BUCKET="montessorinexus-storage"
    S3_ACCESS_KEY_ID="tu_access_key_id"
    S3_SECRET_ACCESS_KEY="tu_secret_access_key"
-   S3_FORCE_PATH_STYLE=false
    ```
-6. En la pestaña **Domains / Ports**:
-   - **No requiere dominio ni puertos expuestos** (este servicio consume trabajos directamente de Redis).
-7. En la pestaña **Mounts / Persistent Storage**:
-   - Si `STORAGE_DRIVER=local`, monta `/app/storage` -> `montessori_storage` (el mismo volumen que el servicio Web).
-8. En la pestaña **Resources** (Opcional):
-   - Se recomienda asignar al menos 1 CPU y 1GB - 2GB RAM para los procesos headless con Xvfb y Playwright.
-9. En la pestaña **Deploy**:
-   - Copia la **Webhook URL** del Worker y pégala en GitHub Secrets como `EASYPANEL_WORKER_WEBHOOK_URL`.
+4. **Domains / Ports**: **No requiere dominio ni puertos expuestos** (consume tareas de Redis).
+5. **Resources**: Asignar 1-2 CPUs y 1GB-2GB RAM (para Xvfb, Playwright y procesamiento Sharp/PicoJS).
+6. **Deploy**: Copiar Webhook URL a `EASYPANEL_WORKER_WEBHOOK_URL` en GitHub Secrets.
+
+---
+
+## 🌐 3. Despliegue Desacoplado con Frontend en Vercel / Cloudflare Pages
+
+Si decides alojar el frontend estático en **Vercel** o **Cloudflare Pages** y el backend/workers en **Easypanel**:
+
+### Configuración en Vercel / Cloudflare Pages:
+1. **Framework Preset**: `Vite`
+2. **Build Command**: `pnpm build`
+3. **Output Directory**: `dist`
+4. **Environment Variables**:
+   ```env
+   VITE_API_URL=https://api.montessorinexus.com
+   ```
+
+### Configuración en el Backend Express (Easypanel):
+En el servicio `web` de Easypanel, permitir el dominio del frontend en CORS:
+```env
+CORS_ORIGIN=https://montessorinexus.com,https://app.montessorinexus.com
+```
 
 ---
 
@@ -160,31 +153,36 @@ Easypanel necesitará credenciales para descargar la imagen:
 
 ```mermaid
 graph TD
-    A[Push a rama main en GitHub] --> B[GitHub Actions Build & Push]
+    A[Git Push a rama main] --> B[GitHub Actions: Build Docker Image]
     B --> C[Publica imagen en ghcr.io:latest]
     C --> D{¿Webhooks configurados?}
-    D -- Sí --> E1[Webhook Web -> Easypanel Redeploy Web]
-    D -- Sí --> E2[Webhook Worker -> Easypanel Redeploy Worker]
-    D -- No --> F[Log: Webhooks omitidos sin error]
+    D -- Sí --> E1[Webhook Web -> Redeploy Servicio Web]
+    D -- Sí --> E2[Webhook Worker -> Redeploy Servicio Worker]
+    D -- No --> F[Log: Imagen lista en GHCR]
 ```
-
-Cada vez que realizas un `git push origin main`:
-1. GitHub Actions compila el frontend y empaqueta la imagen Docker optimizada.
-2. Publica la imagen en `ghcr.io/rrortega/montessorinexus:latest`.
-3. Dispara los webhooks hacia Easypanel.
-4. Easypanel descarga la nueva imagen y reinicia en caliente tanto el **Servicio Web** como el **Servicio Worker** sin caída de servicio.
 
 ---
 
 ## 🛠️ 5. Comandos Útiles para Pruebas Locales
 
-Si deseas probar la imagen en local antes de desplegar:
-
 ```bash
 # Construir imagen localmente
 docker build -t montessorinexus:local .
 
-# Ejecutar contenedor en modo combinado (Web + Worker)
+# Ejecutar únicamente como Servicio Web
+docker run -p 3001:3001 \
+  -e DATABASE_URL="file:/app/server/data/dev.db" \
+  -e SERVICE_ROLE="web" \
+  montessorinexus:local
+
+# Ejecutar únicamente como Worker
+docker run \
+  -e DATABASE_URL="file:/app/server/data/dev.db" \
+  -e REDIS_URL="redis://localhost:6379" \
+  -e SERVICE_ROLE="worker" \
+  montessorinexus:local
+
+# Ejecutar en modo combinado (Web + Worker)
 docker run -p 3001:3001 \
   -e DATABASE_URL="file:/app/server/data/dev.db" \
   -e SERVICE_ROLE="all" \

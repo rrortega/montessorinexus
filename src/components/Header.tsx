@@ -481,9 +481,9 @@ export function Header({ forceScrolled = false }: HeaderProps) {
                 variant="secondary"
                 size="sm"
                 onClick={() => handleCTA('visit')}
-                className="rounded-full px-3 py-1 text-[11px] font-bold shadow-xs"
+                className="rounded-full px-2.5 sm:px-3 py-1 text-[11px] font-bold shadow-xs max-w-[120px] sm:max-w-[160px] truncate leading-normal min-h-8 shrink-0"
               >
-                {t(ctaText)}
+                <span className="truncate">{t(ctaText)}</span>
               </Button>
             )}
 

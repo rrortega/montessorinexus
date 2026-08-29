@@ -1282,8 +1282,6 @@ export const WebBuilderSection: React.FC = () => {
     parseEffectsArray(settings?.hero_sticker_3_effects, ['pulse', 'rotate-slow'])
   );
 
-  const [heroStickersDeviceTab, setHeroStickersDeviceTab] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
-
   // Specific fine tuning parameters for split-2-col template
   const [heroSplitShowBadge, setHeroSplitShowBadge] = useState<boolean>(settings?.hero_split_show_badge !== 'false');
   const [heroSplitBadgeTitle, setHeroSplitBadgeTitle] = useState<string>(settings?.hero_split_badge_title || 'Admisiones Abiertas');
@@ -4222,47 +4220,45 @@ export const WebBuilderSection: React.FC = () => {
       badge="Universal"
     >
       <div className="space-y-4">
-        {/* Device Switcher Tabs: Desktop, Tablet, Mobile */}
-        <div className="flex p-1 bg-slate-100/90 rounded-xl border border-slate-200/80 gap-1">
-          <button
-            type="button"
-            onClick={() => setHeroStickersDeviceTab('desktop')}
-            className={`flex-1 py-2 px-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              heroStickersDeviceTab === 'desktop'
-                ? 'bg-white text-forest shadow-xs'
-                : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <Laptop className="w-3.5 h-3.5" />
-            <span>Escritorio</span>
-            <span className="text-[9px] px-1 py-0.2 bg-slate-200 text-slate-700 rounded-md font-mono font-bold">&ge;1024px</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setHeroStickersDeviceTab('tablet')}
-            className={`flex-1 py-2 px-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              heroStickersDeviceTab === 'tablet'
-                ? 'bg-white text-forest shadow-xs'
-                : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <Tablet className="w-3.5 h-3.5" />
-            <span>Tablet</span>
-            <span className="text-[9px] px-1 py-0.2 bg-indigo-100 text-indigo-700 rounded-md font-mono font-bold">640-1023px</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setHeroStickersDeviceTab('mobile')}
-            className={`flex-1 py-2 px-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              heroStickersDeviceTab === 'mobile'
-                ? 'bg-white text-forest shadow-xs'
-                : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <Smartphone className="w-3.5 h-3.5" />
-            <span>Móvil</span>
-            <span className="text-[9px] px-1 py-0.2 bg-emerald-100 text-emerald-700 rounded-md font-mono font-bold">&lt;640px</span>
-          </button>
+        {/* Device Dimension Indicator (controlled from drawer header) */}
+        <div className="flex items-center justify-between p-3 bg-slate-100/90 rounded-xl border border-slate-200/80">
+          <div className="flex items-center gap-2.5">
+            <div className={`p-2 rounded-lg ${
+              viewport === 'desktop'
+                ? 'bg-forest/10 text-forest'
+                : viewport === 'tablet'
+                ? 'bg-indigo-100 text-indigo-700'
+                : 'bg-emerald-100 text-emerald-700'
+            }`}>
+              {viewport === 'desktop' && <Laptop className="w-4 h-4" />}
+              {viewport === 'tablet' && <Tablet className="w-4 h-4" />}
+              {viewport === 'mobile' && <Smartphone className="w-4 h-4" />}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-800">
+                  {viewport === 'desktop' ? 'Configurando: Escritorio' : viewport === 'tablet' ? 'Configurando: Tablet' : 'Configurando: Móvil'}
+                </span>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono font-bold ${
+                  viewport === 'desktop'
+                    ? 'bg-slate-200 text-slate-700'
+                    : viewport === 'tablet'
+                    ? 'bg-indigo-100 text-indigo-700'
+                    : 'bg-emerald-100 text-emerald-700'
+                }`}>
+                  {viewport === 'desktop' ? '≥ 1024px' : viewport === 'tablet' ? '640px – 1023px' : '< 640px'}
+                </span>
+              </div>
+              <p className="text-[10px] text-slate-500 font-medium">
+                Cambiá de dispositivo desde los botones en el encabezado del panel lateral.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 px-2 py-1 bg-white rounded-lg border border-slate-200/60 shadow-3xs">
+            <span className={`w-2 h-2 rounded-full transition-all ${viewport === 'desktop' ? 'bg-forest scale-125' : 'bg-slate-300'}`} title="Escritorio" />
+            <span className={`w-2 h-2 rounded-full transition-all ${viewport === 'tablet' ? 'bg-indigo-600 scale-125' : 'bg-slate-300'}`} title="Tablet" />
+            <span className={`w-2 h-2 rounded-full transition-all ${viewport === 'mobile' ? 'bg-emerald-600 scale-125' : 'bg-slate-300'}`} title="Móvil" />
+          </div>
         </div>
 
         {/* Elemento 1 */}
@@ -4288,7 +4284,7 @@ export const WebBuilderSection: React.FC = () => {
               />
 
               {/* 1. Desktop Controls */}
-              {heroStickersDeviceTab === 'desktop' && (
+              {viewport === 'desktop' && (
                 <div className="space-y-3 p-3 bg-white rounded-xl border border-slate-200/70">
                   <div className="flex items-center justify-between pb-1 border-b border-slate-100">
                     <div className="flex items-center gap-1.5">
@@ -4360,7 +4356,7 @@ export const WebBuilderSection: React.FC = () => {
               )}
 
               {/* 2. Tablet Controls */}
-              {heroStickersDeviceTab === 'tablet' && (
+              {viewport === 'tablet' && (
                 <div className="space-y-3 p-3 bg-white rounded-xl border border-indigo-200/80 shadow-2xs">
                   <div className="flex items-center justify-between pb-1 border-b border-slate-100">
                     <div className="flex items-center gap-1.5">
@@ -4432,7 +4428,7 @@ export const WebBuilderSection: React.FC = () => {
               )}
 
               {/* 3. Mobile Controls */}
-              {heroStickersDeviceTab === 'mobile' && (
+              {viewport === 'mobile' && (
                 <div className="space-y-3 p-3 bg-white rounded-xl border border-emerald-200/80 shadow-2xs">
                   <div className="flex items-center justify-between pb-1 border-b border-slate-100">
                     <div className="flex items-center gap-1.5">
@@ -4564,7 +4560,7 @@ export const WebBuilderSection: React.FC = () => {
               />
 
               {/* 1. Desktop Controls */}
-              {heroStickersDeviceTab === 'desktop' && (
+              {viewport === 'desktop' && (
                 <div className="space-y-3 p-3 bg-white rounded-xl border border-slate-200/70">
                   <div className="flex items-center justify-between pb-1 border-b border-slate-100">
                     <div className="flex items-center gap-1.5">
@@ -4636,7 +4632,7 @@ export const WebBuilderSection: React.FC = () => {
               )}
 
               {/* 2. Tablet Controls */}
-              {heroStickersDeviceTab === 'tablet' && (
+              {viewport === 'tablet' && (
                 <div className="space-y-3 p-3 bg-white rounded-xl border border-indigo-200/80 shadow-2xs">
                   <div className="flex items-center justify-between pb-1 border-b border-slate-100">
                     <div className="flex items-center gap-1.5">
@@ -4708,7 +4704,7 @@ export const WebBuilderSection: React.FC = () => {
               )}
 
               {/* 3. Mobile Controls */}
-              {heroStickersDeviceTab === 'mobile' && (
+              {viewport === 'mobile' && (
                 <div className="space-y-3 p-3 bg-white rounded-xl border border-emerald-200/80 shadow-2xs">
                   <div className="flex items-center justify-between pb-1 border-b border-slate-100">
                     <div className="flex items-center gap-1.5">
@@ -4840,7 +4836,7 @@ export const WebBuilderSection: React.FC = () => {
               />
 
               {/* 1. Desktop Controls */}
-              {heroStickersDeviceTab === 'desktop' && (
+              {viewport === 'desktop' && (
                 <div className="space-y-3 p-3 bg-white rounded-xl border border-slate-200/70">
                   <div className="flex items-center justify-between pb-1 border-b border-slate-100">
                     <div className="flex items-center gap-1.5">
@@ -4912,7 +4908,7 @@ export const WebBuilderSection: React.FC = () => {
               )}
 
               {/* 2. Tablet Controls */}
-              {heroStickersDeviceTab === 'tablet' && (
+              {viewport === 'tablet' && (
                 <div className="space-y-3 p-3 bg-white rounded-xl border border-indigo-200/80 shadow-2xs">
                   <div className="flex items-center justify-between pb-1 border-b border-slate-100">
                     <div className="flex items-center gap-1.5">
@@ -4984,7 +4980,7 @@ export const WebBuilderSection: React.FC = () => {
               )}
 
               {/* 3. Mobile Controls */}
-              {heroStickersDeviceTab === 'mobile' && (
+              {viewport === 'mobile' && (
                 <div className="space-y-3 p-3 bg-white rounded-xl border border-emerald-200/80 shadow-2xs">
                   <div className="flex items-center justify-between pb-1 border-b border-slate-100">
                     <div className="flex items-center gap-1.5">

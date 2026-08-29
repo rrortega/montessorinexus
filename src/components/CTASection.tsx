@@ -26,12 +26,12 @@ export function CTASection() {
           <p className="text-primary-foreground/80 text-lg mb-8">
             {t('Únete a una comunidad que valora el desarrollo integral, el respeto por la individualidad y la conexión con la naturaleza.')}
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center">
             <Button 
               variant="accent" 
               size="lg" 
               onClick={() => handleCTA('visit')}
-              className="rounded-full px-10 py-7 text-lg shadow-xl hover:shadow-accent/40 transition-all"
+              className="w-full sm:w-auto rounded-full px-6 sm:px-10 py-3.5 sm:py-5 text-base sm:text-lg shadow-xl hover:shadow-accent/40 transition-all text-center justify-center"
             >
               {t('Agenda una Visita')}
             </Button>
@@ -39,7 +39,7 @@ export function CTASection() {
               variant="hero-outline" 
               size="lg" 
               onClick={() => handleCTA('info')}
-              className="rounded-full px-10 py-7 text-lg border-2 hover:bg-white/10 transition-all"
+              className="w-full sm:w-auto rounded-full px-6 sm:px-10 py-3.5 sm:py-5 text-base sm:text-lg border-2 hover:bg-white/10 transition-all text-center justify-center"
             >
               {t('Contáctanos')}
             </Button>

@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import Index from "./pages/Index";
 import MontessoriNexusLanding from "./pages/public/MontessoriNexusLanding";
+import { PrivacyPolicyPage } from "./pages/public/PrivacyPolicyPage";
+import { TermsOfServicePage } from "./pages/public/TermsOfServicePage";
 import NotFound from "./pages/NotFound";
 import SchoolNotFoundPage from "./pages/SchoolNotFoundPage";
 import PageLoadingIndicator from "./components/ui/PageLoadingIndicator";
@@ -15,7 +17,7 @@ import { AdmissionPortalPage } from "./pages/public/AdmissionPortalPage";
 import { PublicFormPage } from "./pages/public/PublicFormPage";
 import { CTAWidget } from "@/components/CTAWidget";
 
-import { SettingsProvider, useSiteSettings } from "@/context/SettingsContext";
+import { SettingsProvider, useSiteSettings, checkIsPlatformRootSync } from "@/context/SettingsContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { ConfirmDialogProvider } from "@/context/ConfirmDialogContext";
 
@@ -31,8 +33,23 @@ const DomainRoutes: React.FC = () => {
     location.pathname.startsWith('/admin') ||
     location.pathname.startsWith('/console');
 
-  // Prevent flash of unstyled colors on public pages until settings & host are resolved
-  if (loading && !isAdminRoute) {
+  // SaaS platform landing routes should render immediately without a loading indicator
+  const isPlatformLanding =
+    (isPlatformRoot || checkIsPlatformRootSync()) &&
+    (location.pathname === '/' ||
+      location.pathname === '/platform' ||
+      location.pathname === '/nexus' ||
+      location.pathname === '/privacidad' ||
+      location.pathname === '/privacy' ||
+      location.pathname === '/politica-privacidad' ||
+      location.pathname === '/privacy-policy' ||
+      location.pathname === '/terminos' ||
+      location.pathname === '/terms' ||
+      location.pathname === '/terminos-de-servicio' ||
+      location.pathname === '/terms-of-service');
+
+  // Prevent flash of unstyled colors on school pages until settings & host are resolved
+  if (loading && !isAdminRoute && !isPlatformLanding) {
     return <PageLoadingIndicator />;
   }
 
@@ -47,6 +64,14 @@ const DomainRoutes: React.FC = () => {
         <Route path="/" element={isPlatformRoot ? <MontessoriNexusLanding /> : <Index />} />
         <Route path="/platform" element={<MontessoriNexusLanding />} />
         <Route path="/nexus" element={<MontessoriNexusLanding />} />
+        <Route path="/privacidad" element={<PrivacyPolicyPage />} />
+        <Route path="/privacy" element={<PrivacyPolicyPage />} />
+        <Route path="/politica-privacidad" element={<PrivacyPolicyPage />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+        <Route path="/terminos" element={<TermsOfServicePage />} />
+        <Route path="/terms" element={<TermsOfServicePage />} />
+        <Route path="/terminos-de-servicio" element={<TermsOfServicePage />} />
+        <Route path="/terms-of-service" element={<TermsOfServicePage />} />
         <Route path="/colegio/:slug" element={<Index />} />
         <Route path="/school/:slug" element={<Index />} />
         <Route path="/panel" element={<AdminPage />} />

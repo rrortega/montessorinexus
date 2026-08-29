@@ -213,7 +213,7 @@ export const GuidesSection: React.FC = () => {
       const targetMembership = {
         id: `mem_employee_${guide.id}`,
         userId: guide.id,
-        schoolId: activeMembership?.schoolId || 'school_ceiba',
+        schoolId: activeMembership?.schoolId || '',
         role: guide.role || 'TEACHER',
         permissions: guide.permissions || [],
         hasActiveEnrollment: true,

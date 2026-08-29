@@ -119,7 +119,7 @@ export function FeaturedQuote({
                     size="lg" 
                     onClick={handleClick}
                     asChild={!!ctaHref && !intent}
-                    className="rounded-full px-10 py-7 text-sm shadow-xl shadow-black/10 hover:shadow-black/20 hover:-translate-y-1 transition-all font-bold bg-white text-forest hover:bg-white/90"
+                    className="w-full sm:w-auto rounded-full px-6 sm:px-10 py-3.5 sm:py-5 text-sm sm:text-base shadow-xl shadow-black/10 hover:shadow-black/20 hover:-translate-y-1 transition-all font-bold bg-white text-forest hover:bg-white/90 text-center justify-center"
                   >
                     {ctaHref && !intent ? (
                       <a href={ctaHref}>{t(ctaText)}</a>

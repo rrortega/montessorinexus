@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import { 
   S3Client, 
@@ -22,18 +23,159 @@ if (!fs.existsSync(DEFAULT_LOCAL_ROOT)) {
   fs.mkdirSync(DEFAULT_LOCAL_ROOT, { recursive: true });
 }
 
+// Local Cache Directory for S3/MinIO Assets to guarantee ultra-fast delivery and offline caching
+export const STORAGE_CACHE_DIR = path.join(DEFAULT_LOCAL_ROOT, 'cache');
+if (!fs.existsSync(STORAGE_CACHE_DIR)) {
+  fs.mkdirSync(STORAGE_CACHE_DIR, { recursive: true });
+}
+
+export function getCachedFilePath(cleanPath) {
+  return path.join(STORAGE_CACHE_DIR, cleanPath);
+}
+
+export function saveToLocalCache(cleanPath, buffer) {
+  try {
+    const cachedPath = getCachedFilePath(cleanPath);
+    const targetDir = path.dirname(cachedPath);
+    if (!fs.existsSync(targetDir)) {
+      fs.mkdirSync(targetDir, { recursive: true });
+    }
+    fs.writeFileSync(cachedPath, buffer);
+  } catch (err) {
+    console.warn(`[STORAGE CACHE WARNING] Failed to cache ${cleanPath}:`, err.message);
+  }
+}
+
+export function deleteFromLocalCache(cleanPath) {
+  try {
+    const cachedPath = getCachedFilePath(cleanPath);
+    if (fs.existsSync(cachedPath)) {
+      fs.unlinkSync(cachedPath);
+    }
+  } catch (err) {
+    // Ignore cache cleanup errors
+  }
+}
+
+const STORAGE_SIGN_SECRET = process.env.STORAGE_SIGN_SECRET || process.env.JWT_SECRET || 'nexus-super-secure-storage-key-2026';
+
 /**
- * Returns a compliant S3/MinIO bucket name for a school
+ * Checks if a relative storage path is classified as public media (Web Builder, Gallery, Brand, Icons)
  */
-export function getBucketNameForSchool(schoolId, customBucket = null) {
+export function isPublicStorageMedia(relativePath) {
+  if (!relativePath) return false;
+  const cleanPath = String(relativePath).toLowerCase();
+  return (
+    cleanPath.includes('/gallery/') || 
+    cleanPath.includes('/stickers/') || 
+    cleanPath.includes('/hero') || 
+    cleanPath.includes('/brand/') ||
+    cleanPath.includes('/logo') ||
+    cleanPath.includes('/pillars/') ||
+    cleanPath.includes('/public/') ||
+    cleanPath.includes('/web-builder/') ||
+    cleanPath.endsWith('.png') ||
+    cleanPath.endsWith('.jpg') ||
+    cleanPath.endsWith('.jpeg') ||
+    cleanPath.endsWith('.webp') ||
+    cleanPath.endsWith('.svg') ||
+    cleanPath.endsWith('.gif') ||
+    cleanPath.endsWith('.ico') ||
+    cleanPath.endsWith('.css') ||
+    cleanPath.endsWith('.woff') ||
+    cleanPath.endsWith('.woff2')
+  );
+}
+
+/**
+ * Generates a signed token for private storage access
+ */
+export function generateStorageSignature(cleanPath, expires) {
+  return crypto
+    .createHmac('sha256', STORAGE_SIGN_SECRET)
+    .update(`${cleanPath}:${expires}`)
+    .digest('hex');
+}
+
+/**
+ * Verifies if a signed storage token is valid and not expired
+ */
+export function verifyStorageSignature(cleanPath, expires, signature) {
+  if (!cleanPath || !expires || !signature) return false;
+  const expNum = parseInt(expires, 10);
+  if (isNaN(expNum) || expNum < Math.floor(Date.now() / 1000)) {
+    return false; // Expired
+  }
+  const expectedSig = generateStorageSignature(cleanPath, expNum);
+  try {
+    return crypto.timingSafeEqual(Buffer.from(signature, 'hex'), Buffer.from(expectedSig, 'hex'));
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
+ * Extracts a normalized relative path from any full URL, stream URL or relative path string
+ */
+export function extractStorageRelativePath(urlOrPath) {
+  if (!urlOrPath || typeof urlOrPath !== 'string') return null;
+  const raw = urlOrPath.trim();
+
+  // 1. Query based: /api/storage/stream?file=schools%2F...
+  if (raw.includes('/api/storage/stream')) {
+    try {
+      const parsed = new URL(raw, 'http://localhost');
+      const fileParam = parsed.searchParams.get('file');
+      if (fileParam) return path.normalize(fileParam).replace(/^(\.\.[\/\\])+/, '').replace(/\\/g, '/').replace(/^\/+/, '');
+    } catch {}
+  }
+
+  // 2. RESTful URL: http://moots.localhost:8080/api/storage/schools/... or /api/storage/schools/...
+  const storageIndex = raw.indexOf('/api/storage/');
+  if (storageIndex !== -1) {
+    const after = raw.substring(storageIndex + '/api/storage/'.length).split('?')[0];
+    let clean = path.normalize(after).replace(/^(\.\.[\/\\])+/, '').replace(/\\/g, '/').replace(/^\/+/, '');
+    if (!clean.startsWith('schools/')) {
+      clean = `schools/${clean}`;
+    }
+    return clean;
+  }
+
+  if (raw.startsWith('schools/')) {
+    return path.normalize(raw).replace(/^(\.\.[\/\\])+/, '').replace(/\\/g, '/').replace(/^\/+/, '');
+  }
+
+  return null;
+}
+
+/**
+ * Builds a clean RESTful storage URL (e.g. /api/storage/schools/:schoolId/:folder/:file)
+ * Automatically appends HMAC signature only for private documents when requested
+ */
+export function buildStorageUrl(relativePath, options = {}) {
+  const cleanPath = path.normalize(relativePath).replace(/^(\.\.[\/\\])+/, '').replace(/\\/g, '/').replace(/^\/+/, '');
+  const isPublic = isPublicStorageMedia(cleanPath);
+
+  const baseUrl = `/api/storage/${cleanPath}`;
+
+  if (isPublic || !options.signed) {
+    return baseUrl;
+  }
+
+  const expiresIn = options.expiresIn || 86400; // default 24h
+  const expires = Math.floor(Date.now() / 1000) + expiresIn;
+  const hash = generateStorageSignature(cleanPath, expires);
+  return `${baseUrl}?expires=${expires}&hash=${hash}`;
+}
+
+/**
+ * Returns the default SaaS root bucket or custom school bucket
+ */
+export function getBucketNameForSchool(schoolId = null, customBucket = null) {
   if (customBucket && typeof customBucket === 'string' && customBucket.trim()) {
     return customBucket.trim().toLowerCase().replace(/_/g, '-');
   }
-  if (!schoolId) {
-    return (process.env.S3_BUCKET || 'montessorinexus-storage').toLowerCase().replace(/_/g, '-');
-  }
-  const cleanId = String(schoolId).trim().toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/^-+|-+$/g, '');
-  return cleanId.startsWith('school-') ? cleanId : `school-${cleanId}`;
+  return (process.env.S3_BUCKET || 'montessorinexus-storage').toLowerCase().trim().replace(/_/g, '-');
 }
 
 /**
@@ -64,11 +206,12 @@ export async function ensureBucketExists(s3Client, bucketName) {
  * Loads storage configuration for a specific school from DB settings or process.env
  */
 export async function getStorageConfigForSchool(schoolId, prisma = null) {
+  const rootSaaSBucket = (process.env.S3_BUCKET || 'montessorinexus-storage').toLowerCase().trim().replace(/_/g, '-');
   let driver = (process.env.STORAGE_DRIVER || (process.env.S3_ACCESS_KEY_ID && (process.env.S3_BUCKET || process.env.S3_ENDPOINT) ? 's3' : 'local')).toLowerCase().trim();
   let localRoot = process.env.STORAGE_LOCAL_ROOT || DEFAULT_LOCAL_ROOT;
   let s3Endpoint = process.env.S3_ENDPOINT || '';
   let s3Region = process.env.S3_REGION || 'us-east-1';
-  let s3Bucket = getBucketNameForSchool(schoolId, process.env.S3_BUCKET);
+  let s3Bucket = rootSaaSBucket;
   let s3AccessKeyId = process.env.S3_ACCESS_KEY_ID || '';
   let s3SecretAccessKey = process.env.S3_SECRET_ACCESS_KEY || '';
   let s3ForcePathStyle = process.env.S3_FORCE_PATH_STYLE === 'true';
@@ -100,17 +243,17 @@ export async function getStorageConfigForSchool(schoolId, prisma = null) {
         driver = settingMap.storage_driver.toLowerCase().trim();
         if (settingMap.s3_endpoint) s3Endpoint = settingMap.s3_endpoint.trim();
         if (settingMap.s3_region) s3Region = settingMap.s3_region.trim();
-        s3Bucket = getBucketNameForSchool(schoolId, settingMap.s3_bucket);
+        s3Bucket = settingMap.s3_bucket ? settingMap.s3_bucket.trim().toLowerCase().replace(/_/g, '-') : rootSaaSBucket;
         if (settingMap.s3_access_key_id) s3AccessKeyId = settingMap.s3_access_key_id.trim();
         if (settingMap.s3_secret_access_key) s3SecretAccessKey = settingMap.s3_secret_access_key.trim();
         if (settingMap.s3_force_path_style !== undefined) {
           s3ForcePathStyle = settingMap.s3_force_path_style === 'true' || settingMap.s3_force_path_style === true;
         }
       } else {
-        // 'nexus', 'local', or unset: Montessori Nexus managed server storage
+        // 'nexus', 'local', or unset: Montessori Nexus managed SaaS server storage
         driver = (process.env.STORAGE_DRIVER || (process.env.S3_ACCESS_KEY_ID && (process.env.S3_BUCKET || process.env.S3_ENDPOINT) ? 's3' : 'local')).toLowerCase().trim();
         localRoot = process.env.STORAGE_LOCAL_ROOT || DEFAULT_LOCAL_ROOT;
-        s3Bucket = getBucketNameForSchool(schoolId, process.env.S3_BUCKET);
+        s3Bucket = rootSaaSBucket;
       }
     } catch (e) {
       console.warn('[STORAGE CONFIG DB WARNING]', e.message);
@@ -127,7 +270,7 @@ export async function getStorageConfigForSchool(schoolId, prisma = null) {
     localRoot: localRoot || DEFAULT_LOCAL_ROOT,
     s3Endpoint,
     s3Region: s3Region || 'us-east-1',
-    s3Bucket: s3Bucket || getBucketNameForSchool(schoolId),
+    s3Bucket,
     s3AccessKeyId,
     s3SecretAccessKey,
     s3ForcePathStyle
@@ -439,7 +582,7 @@ export async function saveAdmissionAsset({
 }
 
 /**
- * Streams a private asset securely to authorized client
+ * Streams a private/public asset securely with disk caching, CORS headers and ETag support
  */
 export async function streamPrivateAsset({ schoolId, relativePath, req = null, res, prisma = null }) {
   if (!relativePath) {
@@ -447,31 +590,29 @@ export async function streamPrivateAsset({ schoolId, relativePath, req = null, r
     return;
   }
 
-  const cleanPath = path.normalize(relativePath).replace(/^(\.\.[\/\\])+/, '').replace(/\\/g, '/');
+  const cleanPath = path.normalize(relativePath).replace(/^(\.\.[\/\\])+/, '').replace(/\\/g, '/').replace(/^\/+/, '');
 
-  // Extract schoolId from path if not explicitly provided (e.g. schools/school_123/...)
-  const targetSchoolId = schoolId || (cleanPath.startsWith('schools/') ? cleanPath.split('/')[1] : null);
+  // Extract schoolId directly from path first (e.g. schools/{schoolId}/...)
+  const pathSchoolId = cleanPath.startsWith('schools/') ? cleanPath.split('/')[1] : null;
+  const targetSchoolId = pathSchoolId || schoolId;
 
-  const isPublicMedia = (
-    cleanPath.includes('/gallery/') || 
-    cleanPath.includes('/stickers/') || 
-    cleanPath.includes('/hero') || 
-    cleanPath.includes('/brand/') ||
-    cleanPath.includes('/logo') ||
-    cleanPath.includes('/pillars/') ||
-    cleanPath.endsWith('.png') ||
-    cleanPath.endsWith('.jpg') ||
-    cleanPath.endsWith('.jpeg') ||
-    cleanPath.endsWith('.webp') ||
-    cleanPath.endsWith('.svg') ||
-    cleanPath.endsWith('.gif') ||
-    cleanPath.endsWith('.ico')
-  );
+  const isPublic = isPublicStorageMedia(cleanPath);
 
-  // Verify school tenant isolation for private documents only
-  if (!isPublicMedia && schoolId && !cleanPath.startsWith(`schools/${schoolId}/`)) {
-    res.status(403).json({ error: 'Acceso denegado a este archivo' });
-    return;
+  // Private file access authorization
+  if (!isPublic) {
+    const signature = req?.query?.hash || req?.query?.signature || req?.query?.token;
+    const expires = req?.query?.expires;
+    const isSignatureValid = verifyStorageSignature(cleanPath, expires, signature);
+
+    if (!isSignatureValid) {
+      const isSessionAuthorized = schoolId && pathSchoolId && pathSchoolId === schoolId;
+      if (!isSessionAuthorized) {
+        res.status(403).json({
+          error: 'Acceso denegado: Este archivo es confidencial y requiere una URL firmada válida (?hash=...)'
+        });
+        return;
+      }
+    }
   }
 
   const config = await getStorageConfigForSchool(targetSchoolId, prisma);
@@ -492,18 +633,61 @@ export async function streamPrivateAsset({ schoolId, relativePath, req = null, r
     'application/octet-stream'
   );
 
+  // Set universal CORS & streaming headers
   res.setHeader('Accept-Ranges', 'bytes');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   res.setHeader('Content-Disposition', `inline; filename="${path.basename(cleanPath)}"`);
-  if (isPublicMedia) {
-    res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=604800');
+
+  if (isPublic) {
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
   } else {
     res.setHeader('Cache-Control', 'private, no-cache, no-store, must-revalidate');
   }
 
+  // 1. Check local cache or local filesystem first (High-speed zero-latency hit)
+  const cachedFilePath = getCachedFilePath(cleanPath);
+  const localFSPath = path.join(config.localRoot, cleanPath);
+  const resolvedLocalPath = fs.existsSync(cachedFilePath) ? cachedFilePath : (fs.existsSync(localFSPath) ? localFSPath : null);
+
+  if (resolvedLocalPath) {
+    const stat = fs.statSync(resolvedLocalPath);
+    const etag = `"${stat.size}-${Math.floor(stat.mtimeMs)}"`;
+    res.setHeader('ETag', etag);
+
+    if (req?.headers['if-none-match'] === etag) {
+      res.status(304).end();
+      return;
+    }
+
+    const range = req?.headers?.range;
+    if (range && (detectedMime.startsWith('video/') || detectedMime.startsWith('audio/'))) {
+      const parts = range.replace(/bytes=/, '').split('-');
+      const start = parseInt(parts[0], 10);
+      const end = parts[1] ? parseInt(parts[1], 10) : stat.size - 1;
+      const chunksize = (end - start) + 1;
+      const file = fs.createReadStream(resolvedLocalPath, { start, end });
+
+      res.writeHead(206, {
+        'Content-Range': `bytes ${start}-${end}/${stat.size}`,
+        'Accept-Ranges': 'bytes',
+        'Content-Length': chunksize,
+        'Content-Type': detectedMime
+      });
+      file.pipe(res);
+      return;
+    }
+
+    res.setHeader('Content-Type', detectedMime);
+    res.setHeader('Content-Length', stat.size);
+    return fs.createReadStream(resolvedLocalPath).pipe(res);
+  }
+
+  // 2. Fetch from S3/MinIO if remote driver
   if (config.driver === 's3' || config.driver === 'minio') {
     try {
       const s3 = new S3Client({
-        region: config.s3Region,
+        region: config.s3Region || 'us-east-1',
         endpoint: config.s3Endpoint || undefined,
         credentials: {
           accessKeyId: config.s3AccessKeyId,
@@ -513,96 +697,75 @@ export async function streamPrivateAsset({ schoolId, relativePath, req = null, r
       });
 
       let s3Obj = null;
-      const s3Params = {
-        Bucket: config.s3Bucket,
-        Key: cleanPath
-      };
+      const candidates = [
+        { bucket: config.s3Bucket, key: cleanPath },
+        { bucket: process.env.S3_BUCKET || 'montessorinexus-storage', key: cleanPath },
+        { bucket: config.s3Bucket, key: cleanPath.replace(/^schools\/[^\/]+\//, '') },
+        { bucket: process.env.S3_BUCKET || 'montessorinexus-storage', key: cleanPath.replace(/^schools\/[^\/]+\//, '') }
+      ];
 
-      if (req?.headers?.range) {
-        s3Params.Range = req.headers.range;
+      // Remove duplicate candidate configurations
+      const uniqueCandidates = [];
+      const seen = new Set();
+      for (const c of candidates) {
+        const id = `${c.bucket}:${c.key}`;
+        if (!seen.has(id) && c.bucket && c.key) {
+          seen.add(id);
+          uniqueCandidates.push(c);
+        }
       }
 
-      try {
-        s3Obj = await s3.send(new GetObjectCommand(s3Params));
-      } catch (err1) {
-        // Fallback 1: try default bucket montessorinexus-storage
-        const fallbackBucket = (process.env.S3_BUCKET || 'montessorinexus-storage').toLowerCase().replace(/_/g, '-');
-        if (fallbackBucket !== config.s3Bucket) {
-          try {
-            s3Obj = await s3.send(new GetObjectCommand({ ...s3Params, Bucket: fallbackBucket }));
-          } catch (err2) {
-            // Fallback 2: try key without schools/{schoolId}/ prefix
-            const strippedKey = cleanPath.replace(/^schools\/[^\/]+\//, '');
-            try {
-              s3Obj = await s3.send(new GetObjectCommand({ ...s3Params, Bucket: config.s3Bucket, Key: strippedKey }));
-            } catch (err3) {
-              s3Obj = await s3.send(new GetObjectCommand({ ...s3Params, Bucket: fallbackBucket, Key: strippedKey }));
-            }
+      for (const candidate of uniqueCandidates) {
+        try {
+          const s3Params = {
+            Bucket: candidate.bucket,
+            Key: candidate.key
+          };
+          if (req?.headers?.range) {
+            s3Params.Range = req.headers.range;
           }
-        } else {
-          const strippedKey = cleanPath.replace(/^schools\/[^\/]+\//, '');
-          s3Obj = await s3.send(new GetObjectCommand({ ...s3Params, Bucket: config.s3Bucket, Key: strippedKey }));
+          s3Obj = await s3.send(new GetObjectCommand(s3Params));
+          if (s3Obj && s3Obj.Body) break;
+        } catch (candidateErr) {
+          // Continue to next candidate
         }
+      }
+
+      if (!s3Obj || !s3Obj.Body) {
+        throw new Error(`Archivo no encontrado en MinIO/S3 (Bucket: ${config.s3Bucket}, Key: ${cleanPath})`);
       }
 
       if (s3Obj.ContentRange) {
         res.status(206);
         res.setHeader('Content-Range', s3Obj.ContentRange);
       }
+
+      const mimeToUse = s3Obj.ContentType || detectedMime;
+      res.setHeader('Content-Type', mimeToUse);
+
       if (s3Obj.ContentLength) {
         res.setHeader('Content-Length', s3Obj.ContentLength);
       }
 
-      res.setHeader('Content-Type', s3Obj.ContentType || detectedMime);
-      s3Obj.Body.pipe(res);
-      return;
+      // Convert stream to byte array to safely pipe and save into local disk cache
+      const byteArray = await s3Obj.Body.transformToByteArray();
+      const buffer = Buffer.from(byteArray);
+
+      // Cache file locally in background for subsequent high-speed hits
+      saveToLocalCache(cleanPath, buffer);
+
+      const etag = `"${buffer.length}-${Date.now().toString(36)}"`;
+      res.setHeader('ETag', etag);
+
+      return res.end(buffer);
     } catch (e) {
       console.error('[STORAGE S3 STREAM ERROR]', e.message);
-      // If S3 fails, check local fallback
-      const fullPath = path.join(config.localRoot, cleanPath);
-      if (fs.existsSync(fullPath)) {
-        res.setHeader('Content-Type', detectedMime);
-        return fs.createReadStream(fullPath).pipe(res);
-      }
-      res.status(404).json({ error: 'Archivo no encontrado en almacenamiento seguro' });
+      res.status(404).json({ error: 'Archivo no encontrado en almacenamiento seguro: ' + e.message });
       return;
     }
   }
 
-  // Local private stream
-  const fullPath = path.join(config.localRoot, cleanPath);
-  if (!fs.existsSync(fullPath)) {
-    res.status(404).json({ error: 'Archivo no encontrado en disco' });
-    return;
-  }
-
-  const stat = fs.statSync(fullPath);
-  const fileSize = stat.size;
-  const range = req?.headers?.range;
-
-  if (range && (detectedMime.startsWith('video/') || detectedMime.startsWith('audio/'))) {
-    const parts = range.replace(/bytes=/, '').split('-');
-    const start = parseInt(parts[0], 10);
-    const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-    const chunksize = (end - start) + 1;
-    const file = fs.createReadStream(fullPath, { start, end });
-
-    res.writeHead(206, {
-      'Content-Range': `bytes ${start}-${end}/${fileSize}`,
-      'Accept-Ranges': 'bytes',
-      'Content-Length': chunksize,
-      'Content-Type': detectedMime,
-      'Cache-Control': 'private, no-cache, no-store, must-revalidate'
-    });
-    file.pipe(res);
-    return;
-  }
-
-  res.setHeader('Content-Type', detectedMime);
-  res.setHeader('Content-Length', fileSize);
-
-  const stream = fs.createReadStream(fullPath);
-  stream.pipe(res);
+  res.status(404).json({ error: 'Archivo no encontrado en disco' });
 }
 
 /**
@@ -842,151 +1005,403 @@ export async function testStorageConfig({
 }
 
 /**
- * Generic save file abstraction supporting local and S3/MinIO
+ * Utility to format bytes into readable strings
  */
-export async function saveGenericFile({ schoolId, relativePath, buffer, mimeType, prisma = null }) {
-  if (!relativePath || !buffer) {
-    throw new Error('Faltan parámetros requeridos para guardar archivo');
+export function formatBytes(bytes) {
+  if (!bytes || bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+/**
+ * Unified Multi-Tenant School Storage Service
+ * Automatically encapsulates resolution of SaaS Global vs School BYOS settings
+ */
+export class SchoolStorageService {
+  constructor(schoolId, prisma = null) {
+    this.schoolId = String(schoolId || '').trim();
+    this.prisma = prisma;
+    this._config = null;
+    this._s3Client = null;
   }
 
-  const config = await getStorageConfigForSchool(schoolId, prisma);
-  const cleanPath = path.normalize(relativePath).replace(/^(\.\.[\/\\])+/, '').replace(/\\/g, '/');
-  const size = buffer.length;
+  async getConfig() {
+    if (!this._config) {
+      this._config = await getStorageConfigForSchool(this.schoolId, this.prisma);
+    }
+    return this._config;
+  }
 
-  if (config.driver === 's3' || config.driver === 'minio') {
-    const s3 = new S3Client({
-      region: config.s3Region,
-      endpoint: config.s3Endpoint || undefined,
-      credentials: {
-        accessKeyId: config.s3AccessKeyId,
-        secretAccessKey: config.s3SecretAccessKey
-      },
-      forcePathStyle: config.s3ForcePathStyle
-    });
+  async getS3Client() {
+    const config = await this.getConfig();
+    if (config.driver !== 's3' && config.driver !== 'minio') {
+      return null;
+    }
+    if (!this._s3Client) {
+      this._s3Client = new S3Client({
+        region: config.s3Region || 'us-east-1',
+        endpoint: config.s3Endpoint || undefined,
+        credentials: {
+          accessKeyId: config.s3AccessKeyId,
+          secretAccessKey: config.s3SecretAccessKey
+        },
+        forcePathStyle: config.s3ForcePathStyle
+      });
+    }
+    return this._s3Client;
+  }
 
-    // Automatically create bucket if it doesn't exist on MinIO
-    await ensureBucketExists(s3, config.s3Bucket);
+  /**
+   * Uploads a file buffer to storage (S3/MinIO or Local) with automatic local caching
+   */
+  async upload({ relativePath, buffer, mimeType = 'application/octet-stream', metadata = {} }) {
+    if (!relativePath || !buffer) {
+      throw new Error('Faltan parámetros requeridos (relativePath, buffer) para almacenar el archivo');
+    }
 
-    await s3.send(new PutObjectCommand({
-      Bucket: config.s3Bucket,
-      Key: cleanPath,
-      Body: buffer,
-      ContentType: mimeType || 'application/octet-stream'
-    }));
+    const config = await this.getConfig();
+    const cleanPath = path.normalize(relativePath).replace(/^(\.\.[\/\\])+/, '').replace(/\\/g, '/');
+    const size = buffer.length;
+
+    // Immediately cache in local fast disk for zero-latency subsequent reads
+    saveToLocalCache(cleanPath, buffer);
+
+    if (config.driver === 's3' || config.driver === 'minio') {
+      const s3 = await this.getS3Client();
+      await ensureBucketExists(s3, config.s3Bucket);
+
+      await s3.send(new PutObjectCommand({
+        Bucket: config.s3Bucket,
+        Key: cleanPath,
+        Body: buffer,
+        ContentType: mimeType || 'application/octet-stream'
+      }));
+
+      return {
+        success: true,
+        driver: config.driver,
+        bucket: config.s3Bucket,
+        url: buildStorageUrl(cleanPath),
+        relativePath: cleanPath,
+        storedName: path.basename(cleanPath),
+        size,
+        mimeType
+      };
+    }
+
+    // Local filesystem
+    const fullPath = path.join(config.localRoot, cleanPath);
+    const targetDir = path.dirname(fullPath);
+
+    if (!fs.existsSync(targetDir)) {
+      fs.mkdirSync(targetDir, { recursive: true });
+    }
+
+    fs.writeFileSync(fullPath, buffer);
 
     return {
       success: true,
-      url: `/api/storage/stream?file=${encodeURIComponent(cleanPath)}`,
+      driver: 'local',
+      url: buildStorageUrl(cleanPath),
       relativePath: cleanPath,
-      size
+      storedName: path.basename(cleanPath),
+      size,
+      mimeType
     };
   }
 
-  // Local filesystem
-  const fullPath = path.join(config.localRoot, cleanPath);
-  const targetDir = path.dirname(fullPath);
+  /**
+   * Deletes a single file
+   */
+  async deleteFile(relativePath) {
+    if (!relativePath) return { success: false };
+    const config = await this.getConfig();
+    const cleanPath = path.normalize(relativePath).replace(/^(\.\.[\/\\])+/, '').replace(/\\/g, '/');
 
-  if (!fs.existsSync(targetDir)) {
-    fs.mkdirSync(targetDir, { recursive: true });
-  }
+    // Clean from local cache
+    deleteFromLocalCache(cleanPath);
 
-  fs.writeFileSync(fullPath, buffer);
-
-  return {
-    success: true,
-    url: `/api/storage/stream?file=${encodeURIComponent(cleanPath)}`,
-    relativePath: cleanPath,
-    size
-  };
-}
-
-/**
- * Generic delete file abstraction supporting local and S3/MinIO
- */
-export async function deleteGenericFile({ schoolId, relativePath, prisma = null }) {
-  if (!relativePath) return;
-
-  const config = await getStorageConfigForSchool(schoolId, prisma);
-  const cleanPath = path.normalize(relativePath).replace(/^(\.\.[\/\\])+/, '').replace(/\\/g, '/');
-
-  if (config.driver === 's3' || config.driver === 'minio') {
-    try {
-      const s3 = new S3Client({
-        region: config.s3Region,
-        endpoint: config.s3Endpoint || undefined,
-        credentials: {
-          accessKeyId: config.s3AccessKeyId,
-          secretAccessKey: config.s3SecretAccessKey
-        },
-        forcePathStyle: config.s3ForcePathStyle
-      });
-
-      await s3.send(new DeleteObjectCommand({
-        Bucket: config.s3Bucket,
-        Key: cleanPath
-      }));
-    } catch (e) {
-      console.warn('[STORAGE S3 DELETE FILE ERROR]', e.message);
+    if (config.driver === 's3' || config.driver === 'minio') {
+      try {
+        const s3 = await this.getS3Client();
+        await s3.send(new DeleteObjectCommand({
+          Bucket: config.s3Bucket,
+          Key: cleanPath
+        }));
+        return { success: true, relativePath: cleanPath };
+      } catch (e) {
+        console.warn(`[STORAGE ${config.driver.toUpperCase()} DELETE ERROR]`, e.message);
+        return { success: false, error: e.message };
+      }
     }
-    return;
-  }
 
-  // Local filesystem
-  const fullPath = path.join(config.localRoot, cleanPath);
-  if (fs.existsSync(fullPath)) {
-    try {
-      fs.unlinkSync(fullPath);
-    } catch (err) {
-      console.warn(`[STORAGE WARNING] Failed to delete file ${fullPath}:`, err.message);
+    // Local filesystem
+    const fullPath = path.join(config.localRoot, cleanPath);
+    if (fs.existsSync(fullPath)) {
+      try {
+        fs.unlinkSync(fullPath);
+        return { success: true, relativePath: cleanPath };
+      } catch (err) {
+        console.warn(`[STORAGE LOCAL WARNING] Failed to delete file ${fullPath}:`, err.message);
+        return { success: false, error: err.message };
+      }
     }
+    return { success: true, relativePath: cleanPath };
   }
-}
 
-/**
- * Generic delete folder abstraction supporting local and S3/MinIO
- */
-export async function deleteGenericFolder({ schoolId, relativePath, prisma = null }) {
-  if (!relativePath) return;
+  /**
+   * Deletes a folder and all its contents recursively
+   */
+  async deleteFolder(relativePath) {
+    if (!relativePath) return { success: false };
+    const config = await this.getConfig();
+    const cleanPath = path.normalize(relativePath).replace(/^(\.\.[\/\\])+/, '').replace(/\\/g, '/');
 
-  const config = await getStorageConfigForSchool(schoolId, prisma);
-  const cleanPath = path.normalize(relativePath).replace(/^(\.\.[\/\\])+/, '').replace(/\\/g, '/');
+    if (config.driver === 's3' || config.driver === 'minio') {
+      try {
+        const s3 = await this.getS3Client();
+        const prefix = cleanPath.endsWith('/') ? cleanPath : cleanPath + '/';
+        const list = await s3.send(new ListObjectsV2Command({ Bucket: config.s3Bucket, Prefix: prefix }));
+        if (list.Contents && list.Contents.length > 0) {
+          for (const item of list.Contents) {
+            if (item.Key) {
+              await s3.send(new DeleteObjectCommand({ Bucket: config.s3Bucket, Key: item.Key }));
+            }
+          }
+        }
+        return { success: true, relativePath: cleanPath };
+      } catch (e) {
+        console.warn(`[STORAGE ${config.driver.toUpperCase()} DELETE FOLDER ERROR]`, e.message);
+        return { success: false, error: e.message };
+      }
+    }
 
-  if (config.driver === 's3' || config.driver === 'minio') {
-    try {
-      const s3 = new S3Client({
-        region: config.s3Region,
-        endpoint: config.s3Endpoint || undefined,
-        credentials: {
-          accessKeyId: config.s3AccessKeyId,
-          secretAccessKey: config.s3SecretAccessKey
-        },
-        forcePathStyle: config.s3ForcePathStyle
-      });
+    // Local filesystem
+    const fullPath = path.join(config.localRoot, cleanPath);
+    if (fs.existsSync(fullPath)) {
+      try {
+        fs.rmSync(fullPath, { recursive: true, force: true });
+        return { success: true, relativePath: cleanPath };
+      } catch (err) {
+        console.warn(`[STORAGE LOCAL WARNING] Failed to delete folder ${fullPath}:`, err.message);
+        return { success: false, error: err.message };
+      }
+    }
+    return { success: true, relativePath: cleanPath };
+  }
 
-      const prefix = cleanPath.endsWith('/') ? cleanPath : cleanPath + '/';
-      const list = await s3.send(new ListObjectsV2Command({ Bucket: config.s3Bucket, Prefix: prefix }));
-      if (list.Contents && list.Contents.length > 0) {
-        for (const item of list.Contents) {
-          if (item.Key) {
-            await s3.send(new DeleteObjectCommand({ Bucket: config.s3Bucket, Key: item.Key }));
+  /**
+   * Lists files under a given prefix inside the school's storage boundary
+   */
+  async listFiles(subPrefix = '') {
+    const config = await this.getConfig();
+    const cleanSub = subPrefix ? path.normalize(subPrefix).replace(/^(\.\.[\/\\])+/, '').replace(/\\/g, '/') : '';
+    const rootPrefix = `schools/${this.schoolId}/`;
+    const targetPrefix = cleanSub ? (cleanSub.startsWith(rootPrefix) ? cleanSub : `${rootPrefix}${cleanSub.replace(/^\//, '')}`) : rootPrefix;
+
+    if (config.driver === 's3' || config.driver === 'minio') {
+      const s3 = await this.getS3Client();
+      const files = [];
+      let isTruncated = true;
+      let continuationToken = undefined;
+
+      while (isTruncated) {
+        const params = {
+          Bucket: config.s3Bucket,
+          Prefix: targetPrefix,
+          ContinuationToken: continuationToken
+        };
+        const response = await s3.send(new ListObjectsV2Command(params));
+        if (response.Contents) {
+          for (const item of response.Contents) {
+            if (item.Key && !item.Key.endsWith('/')) {
+              files.push({
+                key: item.Key,
+                relativePath: item.Key,
+                name: path.basename(item.Key),
+                size: item.Size || 0,
+                lastModified: item.LastModified,
+                url: buildStorageUrl(item.Key)
+              });
+            }
+          }
+        }
+        isTruncated = Boolean(response.IsTruncated);
+        continuationToken = response.NextContinuationToken;
+      }
+      return files;
+    }
+
+    // Local filesystem
+    const baseDir = path.join(config.localRoot, targetPrefix);
+    const files = [];
+
+    function scanDir(currentDir, relPrefix) {
+      if (!fs.existsSync(currentDir)) return;
+      const entries = fs.readdirSync(currentDir, { withFileTypes: true });
+      for (const entry of entries) {
+        const entryRel = path.join(relPrefix, entry.name).replace(/\\/g, '/');
+        const entryFull = path.join(currentDir, entry.name);
+        if (entry.isDirectory()) {
+          scanDir(entryFull, entryRel);
+        } else {
+          const stats = fs.statSync(entryFull);
+          files.push({
+            key: entryRel,
+            relativePath: entryRel,
+            name: entry.name,
+            size: stats.size,
+            lastModified: stats.mtime,
+            url: buildStorageUrl(entryRel)
+          });
+        }
+      }
+    }
+
+    scanDir(baseDir, targetPrefix);
+    return files;
+  }
+
+  /**
+   * Calculates total storage usage and breakdown by folder for this school
+   */
+  async calculateUsage() {
+    const config = await this.getConfig();
+    const rootPrefix = `schools/${this.schoolId}/`;
+    let totalBytes = 0;
+    let filesCount = 0;
+    const breakdown = {};
+
+    const registerItem = (key, size) => {
+      totalBytes += size;
+      filesCount += 1;
+
+      // Extract section/folder name e.g. "schools/school_123/gallery/img.png" -> "gallery"
+      const afterRoot = key.startsWith(rootPrefix) ? key.slice(rootPrefix.length) : key;
+      const parts = afterRoot.split('/');
+      const section = parts.length > 1 ? parts[0] : 'root';
+
+      if (!breakdown[section]) {
+        breakdown[section] = { bytes: 0, count: 0, formattedSize: '0 Bytes' };
+      }
+      breakdown[section].bytes += size;
+      breakdown[section].count += 1;
+      breakdown[section].formattedSize = formatBytes(breakdown[section].bytes);
+    };
+
+    if (config.driver === 's3' || config.driver === 'minio') {
+      const s3 = await this.getS3Client();
+      let isTruncated = true;
+      let continuationToken = undefined;
+
+      while (isTruncated) {
+        const response = await s3.send(new ListObjectsV2Command({
+          Bucket: config.s3Bucket,
+          Prefix: rootPrefix,
+          ContinuationToken: continuationToken
+        }));
+
+        if (response.Contents) {
+          for (const item of response.Contents) {
+            if (item.Key && !item.Key.endsWith('/')) {
+              registerItem(item.Key, item.Size || 0);
+            }
+          }
+        }
+
+        isTruncated = Boolean(response.IsTruncated);
+        continuationToken = response.NextContinuationToken;
+      }
+    } else {
+      // Local
+      const baseDir = path.join(config.localRoot, rootPrefix);
+      function scanDir(currentDir, relPrefix) {
+        if (!fs.existsSync(currentDir)) return;
+        const entries = fs.readdirSync(currentDir, { withFileTypes: true });
+        for (const entry of entries) {
+          const entryRel = path.join(relPrefix, entry.name).replace(/\\/g, '/');
+          const entryFull = path.join(currentDir, entry.name);
+          if (entry.isDirectory()) {
+            scanDir(entryFull, entryRel);
+          } else {
+            const stats = fs.statSync(entryFull);
+            registerItem(entryRel, stats.size);
           }
         }
       }
-    } catch (e) {
-      console.warn('[STORAGE S3 DELETE FOLDER ERROR]', e.message);
+      scanDir(baseDir, rootPrefix);
     }
-    return;
+
+    return {
+      schoolId: this.schoolId,
+      driver: config.driver,
+      bucket: config.driver === 's3' || config.driver === 'minio' ? config.s3Bucket : null,
+      totalBytes,
+      formattedSize: formatBytes(totalBytes),
+      filesCount,
+      breakdown
+    };
   }
 
-  // Local filesystem
-  const fullPath = path.join(config.localRoot, cleanPath);
-  if (fs.existsSync(fullPath)) {
-    try {
-      fs.rmSync(fullPath, { recursive: true, force: true });
-    } catch (err) {
-      console.warn(`[STORAGE WARNING] Failed to delete folder ${fullPath}:`, err.message);
-    }
+  /**
+   * Streams a file to Express response
+   */
+  async streamToResponse(relativePath, req, res) {
+    return streamPrivateAsset({
+      schoolId: this.schoolId,
+      relativePath,
+      req,
+      res,
+      prisma: this.prisma
+    });
+  }
+
+  /**
+   * Tests connection with active credentials
+   */
+  async testConnection(overrideConfig = null) {
+    const config = overrideConfig || await this.getConfig();
+    return testStorageConfig({
+      ...config,
+      schoolId: this.schoolId
+    });
   }
 }
 
+/**
+ * Storage Service Factory: Returns an initialized SchoolStorageService for a given schoolId
+ */
+export async function storageServiceFor(schoolId, prisma = null) {
+  const service = new SchoolStorageService(schoolId, prisma);
+  await service.getConfig();
+  return service;
+}
+
+/**
+ * Generic save file abstraction (Backwards compatible helper)
+ */
+export async function saveGenericFile({ schoolId, relativePath, buffer, mimeType, prisma = null }) {
+  const service = await storageServiceFor(schoolId, prisma);
+  return service.upload({ relativePath, buffer, mimeType });
+}
+
+/**
+ * Generic delete file abstraction (Backwards compatible helper)
+ */
+export async function deleteGenericFile({ schoolId, relativePath, prisma = null }) {
+  const service = await storageServiceFor(schoolId, prisma);
+  return service.deleteFile(relativePath);
+}
+
+/**
+ * Generic delete folder abstraction (Backwards compatible helper)
+ */
+export async function deleteGenericFolder({ schoolId, relativePath, prisma = null }) {
+  const service = await storageServiceFor(schoolId, prisma);
+  return service.deleteFolder(relativePath);
+}
+
 export const storageLocalRoot = DEFAULT_LOCAL_ROOT;
+

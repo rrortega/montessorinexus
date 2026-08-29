@@ -11,6 +11,10 @@ import { KYC_QUEUE_NAME } from './kyc-queue.js';
 import { detectFaceInDocumentImage } from './kyc-service.js';
 import { scrapeCurp } from './curp-scraper.js';
 import {
+  processGalleryImageFaceConsent,
+  scanAllGalleryImagesForConsents
+} from './face-consent-service.js';
+import {
   processNewsletterDispatch,
   processNewsletterTest,
   processAdmissionOtpEmail,
@@ -18,7 +22,7 @@ import {
 } from './email-service.js';
 
 console.log('====================================================');
-console.log('🚀 Ceiba Roots - Headless Queue Workers Starting...');
+console.log('🚀 Montessori Nexus - Headless Queue Workers Starting...');
 console.log(`🕒 Started at: ${new Date().toISOString()}`);
 console.log(`📌 Process PID: ${process.pid}`);
 console.log('====================================================');
@@ -250,6 +254,20 @@ const kycWorker = new Worker(
 
         const duration = Date.now() - startTime;
         await job.log(`[SUCCESS] CURP verification completed in ${duration}ms`);
+        return result;
+      } else if (job.name === 'verify-gallery-consent') {
+        const { imageId, schoolId } = job.data;
+        await job.log(`Starting face consent analysis for Gallery Image ID: ${imageId}`);
+        const result = await processGalleryImageFaceConsent(imageId, schoolId, prisma);
+        const duration = Date.now() - startTime;
+        await job.log(`[SUCCESS] Face consent analysis completed in ${duration}ms. Result: ${JSON.stringify(result)}`);
+        return result;
+      } else if (job.name === 'scan-all-gallery-consents') {
+        const { schoolId } = job.data;
+        await job.log(`Starting full gallery face consent scan for School ID: ${schoolId}`);
+        const result = await scanAllGalleryImagesForConsents(schoolId, prisma);
+        const duration = Date.now() - startTime;
+        await job.log(`[SUCCESS] Full gallery scan completed in ${duration}ms. Total: ${result.total}`);
         return result;
       }
     } catch (err) {

@@ -93,7 +93,11 @@ export interface ConsentTemplateItem {
   title: string;
   category: 'media' | 'trips' | 'medical' | 'outdoors' | 'general';
   description: string;
+  legalText?: string;
   isRequired?: boolean;
+  requiresSignature?: boolean;
+  isActive?: boolean;
+  isDefault?: boolean;
 }
 
 export interface StudentConsentRecord {
@@ -205,8 +209,36 @@ export interface GalleryCategory {
   id: string;
   label: string;
   label_en?: string;
+  translations?: Record<string, string>;
   created_at: string;
 }
+
+export interface DetectedFaceBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  xPercent: number;
+  yPercent: number;
+  wPercent: number;
+  hPercent: number;
+}
+
+export interface DetectedFaceItem {
+  box: DetectedFaceBox;
+  score?: number;
+  isIdentified?: boolean;
+  studentId?: string | null;
+  studentName?: string;
+  avatarUrl?: string | null;
+  environmentName?: string | null;
+  confidence?: number | null;
+  hasConsent: boolean;
+  consentNotes?: string;
+  isBlurred?: boolean;
+}
+
+export type FaceConsentStatus = 'unchecked' | 'processing' | 'verified_clean' | 'has_violations' | 'no_faces';
 
 export interface GalleryImageItem {
   id: string;
@@ -216,6 +248,15 @@ export interface GalleryImageItem {
   title_en?: string;
   description: string;
   description_en?: string;
+  translations?: Record<string, { title: string; description: string }>;
+  ai_status?: 'PENDING' | 'COMPLETED' | 'FAILED' | 'MANUAL';
+  ai_error?: string | null;
+  consent_status?: FaceConsentStatus;
+  detected_faces?: DetectedFaceItem[];
+  blurred_src?: string | null;
+  has_consent_issues?: boolean;
+  show_on_web?: boolean;
+  show_on_portal?: boolean;
   created_at: string;
 }
 
@@ -874,7 +915,8 @@ export interface AdmissionApplicationItem {
 
 // Multi-tenant header helper
 export const getActiveSchoolId = (): string => {
-  return localStorage.getItem('ceiba_active_school_id') || 'school_ceiba';
+  const saved = localStorage.getItem('ceiba_active_school_id') || '';
+  return saved === 'school_ceiba' ? '' : saved;
 };
 
 export const getActiveSchoolSlug = (): string => {
@@ -887,8 +929,8 @@ export const getAuthHeaders = (): Record<string, string> => {
   const userEmail = localStorage.getItem('ceiba_user_email') || '';
   return {
     'Content-Type': 'application/json',
-    'x-school-id': schoolId,
-    'x-school-slug': schoolSlug,
+    ...(schoolId ? { 'x-school-id': schoolId } : {}),
+    ...(schoolSlug ? { 'x-school-slug': schoolSlug } : {}),
     ...(userEmail ? { 'x-user-email': userEmail } : {})
   };
 };
@@ -938,23 +980,56 @@ const mapApplication = (a: any): ApplicationItem => ({
   })),
 });
 
-const mapGalleryCategory = (c: any): GalleryCategory => ({
-  id: c.id,
-  label: c.label,
-  label_en: c.labelEn || c.label_en || '',
-  created_at: c.createdAt,
-});
+const mapGalleryCategory = (c: any): GalleryCategory => {
+  let parsedTranslations: Record<string, string> = {};
+  if (c.translations) {
+    try {
+      parsedTranslations = typeof c.translations === 'string' ? JSON.parse(c.translations) : c.translations;
+    } catch {}
+  }
+  return {
+    id: c.id,
+    label: c.label,
+    label_en: c.labelEn || c.label_en || '',
+    translations: parsedTranslations,
+    created_at: c.createdAt,
+  };
+};
 
-const mapGalleryImage = (i: any): GalleryImageItem => ({
-  id: i.id,
-  category_id: i.categoryId,
-  src: i.src,
-  title: i.title,
-  title_en: i.titleEn || i.title_en || '',
-  description: i.description || '',
-  description_en: i.descriptionEn || i.description_en || '',
-  created_at: i.createdAt,
-});
+const mapGalleryImage = (i: any): GalleryImageItem => {
+  let parsedTranslations: Record<string, { title: string; description: string }> = {};
+  if (i.translations) {
+    try {
+      parsedTranslations = typeof i.translations === 'string' ? JSON.parse(i.translations) : i.translations;
+    } catch {}
+  }
+  let parsedFaces: DetectedFaceItem[] = [];
+  if (i.detectedFaces || i.detected_faces) {
+    const rawFaces = i.detectedFaces || i.detected_faces;
+    try {
+      parsedFaces = typeof rawFaces === 'string' ? JSON.parse(rawFaces) : rawFaces;
+    } catch {}
+  }
+  return {
+    id: i.id,
+    category_id: i.categoryId || i.category_id,
+    src: i.src,
+    title: i.title,
+    title_en: i.titleEn || i.title_en || '',
+    description: i.description || '',
+    description_en: i.descriptionEn || i.description_en || '',
+    translations: parsedTranslations,
+    ai_status: i.aiStatus || i.ai_status || 'COMPLETED',
+    ai_error: i.aiError || i.ai_error || null,
+    consent_status: (i.consentStatus || i.consent_status || 'unchecked') as FaceConsentStatus,
+    detected_faces: Array.isArray(parsedFaces) ? parsedFaces : [],
+    blurred_src: i.blurredSrc || i.blurred_src || null,
+    has_consent_issues: Boolean(i.hasConsentIssues ?? i.has_consent_issues ?? false),
+    show_on_web: i.showOnWeb ?? i.show_on_web ?? true,
+    show_on_portal: i.showOnPortal ?? i.show_on_portal ?? true,
+    created_at: i.createdAt || i.created_at,
+  };
+};
 
 const mapWaitlistEntry = (w: any): WaitlistEntry => ({
   id: w.id,
@@ -1467,6 +1542,7 @@ export interface ConsentTemplateItem {
   isRequired?: boolean;
   requiresSignature?: boolean;
   isActive?: boolean;
+  isDefault?: boolean;
 }
 
 export async function getConsentTemplates(): Promise<ConsentTemplateItem[]> {
@@ -3211,9 +3287,10 @@ export async function getGalleryCategories(): Promise<GalleryCategory[]> {
 }
 
 export async function createGalleryCategory(cat: {
-  id: string;
+  id?: string;
   label: string;
   label_en?: string;
+  translations?: Record<string, string>;
 }): Promise<GalleryCategory> {
   const res = await fetch('/api/gallery/categories', {
     method: 'POST',
@@ -3222,9 +3299,34 @@ export async function createGalleryCategory(cat: {
       id: cat.id,
       label: cat.label,
       labelEn: cat.label_en || '',
+      translations: cat.translations || {},
     }),
   });
   const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Error al crear la categoría');
+  }
+  return mapGalleryCategory(data);
+}
+
+export async function updateGalleryCategory(id: string, cat: {
+  label?: string;
+  label_en?: string;
+  translations?: Record<string, string>;
+}): Promise<GalleryCategory> {
+  const res = await fetch(`/api/gallery/categories/${id}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({
+      label: cat.label,
+      labelEn: cat.label_en || '',
+      translations: cat.translations || {},
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Error al actualizar la categoría');
+  }
   return mapGalleryCategory(data);
 }
 
@@ -3232,9 +3334,13 @@ export async function deleteGalleryCategory(id: string): Promise<void> {
   await fetch(`/api/gallery/categories/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
 }
 
-export async function getGalleryImages(categoryId?: string): Promise<GalleryImageItem[]> {
+export async function getGalleryImages(categoryId?: string, target?: 'web' | 'portal'): Promise<GalleryImageItem[]> {
   try {
-    const url = categoryId ? `/api/gallery/images?categoryId=${encodeURIComponent(categoryId)}` : '/api/gallery/images';
+    const params = new URLSearchParams();
+    if (categoryId && categoryId !== 'all') params.append('categoryId', categoryId);
+    if (target) params.append('target', target);
+    const qs = params.toString();
+    const url = qs ? `/api/gallery/images?${qs}` : '/api/gallery/images';
     const res = await fetch(url, { headers: getAuthHeaders() });
     if (!res.ok) return [];
     const data = await res.json();
@@ -3248,10 +3354,15 @@ export async function getGalleryImages(categoryId?: string): Promise<GalleryImag
 export async function createGalleryImage(img: {
   category_id: string;
   src: string;
-  title: string;
+  title?: string;
   title_en?: string;
-  description: string;
+  description?: string;
   description_en?: string;
+  translations?: Record<string, { title: string; description: string }>;
+  ai_status?: 'PENDING' | 'COMPLETED' | 'FAILED' | 'MANUAL';
+  aiAutoGenerate?: boolean;
+  show_on_web?: boolean;
+  show_on_portal?: boolean;
 }): Promise<GalleryImageItem> {
   const res = await fetch('/api/gallery/images', {
     method: 'POST',
@@ -3259,10 +3370,15 @@ export async function createGalleryImage(img: {
     body: JSON.stringify({
       categoryId: img.category_id,
       src: img.src,
-      title: img.title,
+      title: img.title || '',
       titleEn: img.title_en || '',
-      description: img.description,
+      description: img.description || '',
       descriptionEn: img.description_en || '',
+      translations: img.translations || {},
+      aiStatus: img.ai_status,
+      aiAutoGenerate: img.aiAutoGenerate,
+      showOnWeb: img.show_on_web !== false,
+      showOnPortal: img.show_on_portal !== false,
     }),
   });
   const data = await res.json();
@@ -3272,25 +3388,84 @@ export async function createGalleryImage(img: {
 export async function updateGalleryImage(id: string, img: {
   category_id: string;
   src?: string;
-  title: string;
+  title?: string;
   title_en?: string;
-  description: string;
+  description?: string;
   description_en?: string;
+  translations?: Record<string, { title: string; description: string }>;
+  ai_status?: 'PENDING' | 'COMPLETED' | 'FAILED' | 'MANUAL';
+  show_on_web?: boolean;
+  show_on_portal?: boolean;
 }): Promise<void> {
   const payload: any = {
     categoryId: img.category_id,
-    title: img.title,
-    titleEn: img.title_en || '',
-    description: img.description,
-    descriptionEn: img.description_en || '',
   };
+  if (img.title !== undefined) payload.title = img.title;
+  if (img.title_en !== undefined) payload.titleEn = img.title_en;
+  if (img.description !== undefined) payload.description = img.description;
+  if (img.description_en !== undefined) payload.descriptionEn = img.description_en;
   if (img.src) payload.src = img.src;
+  if (img.translations) payload.translations = img.translations;
+  if (img.ai_status) payload.aiStatus = img.ai_status;
+  if (img.show_on_web !== undefined) payload.showOnWeb = img.show_on_web;
+  if (img.show_on_portal !== undefined) payload.showOnPortal = img.show_on_portal;
 
   await fetch(`/api/gallery/images/${id}`, {
     method: 'PUT',
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
+}
+
+export async function retryGalleryImageAi(id: string): Promise<{ success: boolean; image?: GalleryImageItem }> {
+  const res = await fetch(`/api/gallery/images/${id}/retry-ai`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+  });
+  const data = await res.json();
+  return {
+    success: data.success,
+    image: data.image ? mapGalleryImage(data.image) : undefined
+  };
+}
+
+export async function retryAllFailedGalleryAi(): Promise<{ success: boolean; count: number }> {
+  const res = await fetch('/api/gallery/images/retry-failed-ai', {
+    method: 'POST',
+    headers: getAuthHeaders(),
+  });
+  const data = await res.json();
+  return {
+    success: data.success,
+    count: data.count || 0
+  };
+}
+
+export async function verifyGalleryImageConsent(id: string): Promise<any> {
+  const res = await fetch(`/api/gallery/images/${id}/verify-consent`, {
+    method: 'POST',
+    headers: getAuthHeaders()
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Error al verificar consentimiento facial');
+  }
+  return {
+    ...data,
+    image: data.image ? mapGalleryImage(data.image) : undefined
+  };
+}
+
+export async function scanAllGalleryConsents(): Promise<{ total: number; results: any[] }> {
+  const res = await fetch('/api/gallery/scan-all-consents', {
+    method: 'POST',
+    headers: getAuthHeaders()
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Error al escanear consentimientos de la galería');
+  }
+  return data;
 }
 
 export async function deleteGalleryImage(id: string): Promise<void> {
@@ -3512,6 +3687,34 @@ export async function uploadFile(file: File, folder: string = 'gallery'): Promis
   }
 
   return await res.json();
+}
+
+export async function deleteUploadedFile(fileUrl: string): Promise<boolean> {
+  if (!fileUrl || typeof fileUrl !== 'string' || !fileUrl.trim()) return false;
+  // Skip data URLs or external CDN assets that don't belong to our storage
+  const isLocalStorageUrl = fileUrl.includes('/api/storage') || fileUrl.includes('/gallery/') || fileUrl.startsWith('schools/');
+  if (!isLocalStorageUrl) return false;
+
+  const schoolId = localStorage.getItem('ceiba_active_school_id') || '';
+  const schoolSlug = localStorage.getItem('ceiba_active_school_slug') || 'ceiba';
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  if (schoolId) headers['x-school-id'] = schoolId;
+  if (schoolSlug) headers['x-school-slug'] = schoolSlug;
+
+  try {
+    const res = await fetch('/api/storage', {
+      method: 'DELETE',
+      headers,
+      body: JSON.stringify({ url: fileUrl }),
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn('[STORAGE DELETE] Failed to delete file:', err);
+    return false;
+  }
 }
 
 // GUIDES & DOCENTES (EQUIPO DOCENTE) API

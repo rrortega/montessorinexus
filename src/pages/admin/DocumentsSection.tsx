@@ -483,7 +483,7 @@ export const DocumentsSection: React.FC = () => {
                   className="px-4 py-2.5 bg-white text-forest hover:bg-white/90 font-bold rounded-xl text-xs flex items-center gap-2 shadow-xs transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
                 >
                   <FilePlus className="w-4 h-4 text-forest" />
-                  <span>+ Subir / Enlazar</span>
+                  <span>Subir / Enlazar</span>
                 </button>
               </>
             ) : (
@@ -518,8 +518,8 @@ export const DocumentsSection: React.FC = () => {
 
             {globalCodeInfo && (
               <span className={`px-3 py-1 rounded-full text-xs font-semibold self-start sm:self-center border ${isGlobalCodeActive
-                  ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20'
-                  : 'bg-destructive/10 text-destructive border-destructive/20'
+                ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20'
+                : 'bg-destructive/10 text-destructive border-destructive/20'
                 }`}>
                 {isGlobalCodeActive ? '● Código Activo' : '✕ Código Caducado'}
               </span>
@@ -620,8 +620,8 @@ export const DocumentsSection: React.FC = () => {
                     key={f.id}
                     onClick={() => setSelectedFolderId(f.id)}
                     className={`w-full text-left p-3.5 rounded-2xl border transition-all flex items-center justify-between group cursor-pointer ${isSelected
-                        ? 'bg-forest/10 border-forest text-forest shadow-sm'
-                        : 'bg-white/60 border-forest/10 hover:bg-forest/5 text-muted-foreground hover:text-forest'
+                      ? 'bg-forest/10 border-forest text-forest shadow-sm'
+                      : 'bg-white/60 border-forest/10 hover:bg-forest/5 text-muted-foreground hover:text-forest'
                       }`}
                   >
                     <div className="flex items-center gap-3 overflow-hidden">
@@ -1055,8 +1055,8 @@ export const DocumentsSection: React.FC = () => {
                   type="button"
                   onClick={() => setDocSourceType('upload')}
                   className={`py-2.5 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-2 transition-all ${docSourceType === 'upload'
-                      ? 'bg-forest text-white border-forest shadow-xs'
-                      : 'bg-cream/40 border-forest/20 text-forest/70 hover:text-forest'
+                    ? 'bg-forest text-white border-forest shadow-xs'
+                    : 'bg-cream/40 border-forest/20 text-forest/70 hover:text-forest'
                     }`}
                 >
                   <Upload className="w-4 h-4" />
@@ -1067,8 +1067,8 @@ export const DocumentsSection: React.FC = () => {
                   type="button"
                   onClick={() => setDocSourceType('external')}
                   className={`py-2.5 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-2 transition-all ${docSourceType === 'external'
-                      ? 'bg-sky-600 text-white border-sky-600 shadow-xs'
-                      : 'bg-cream/40 border-forest/20 text-forest/70 hover:text-forest'
+                    ? 'bg-sky-600 text-white border-sky-600 shadow-xs'
+                    : 'bg-cream/40 border-forest/20 text-forest/70 hover:text-forest'
                     }`}
                 >
                   <LinkIcon className="w-4 h-4" />

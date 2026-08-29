@@ -22,7 +22,17 @@ import {
   verifyAdmissionPortalSignedToken,
   generateAdmissionPortalSignedToken
 } from './email-service.js';
-import { enqueueFaceDetectionJob, enqueueCurpVerificationJob, getKycQueue } from './kyc-queue.js';
+import {
+  enqueueFaceDetectionJob,
+  enqueueCurpVerificationJob,
+  enqueueGalleryConsentJob,
+  enqueueScanAllGalleryConsentsJob,
+  getKycQueue
+} from './kyc-queue.js';
+import {
+  processGalleryImageFaceConsent,
+  scanAllGalleryImagesForConsents
+} from './face-consent-service.js';
 import { getEmailQueue, getRedisConnectionConfig } from './email-queue.js';
 import Redis from 'ioredis';
 import { createBullBoard } from '@bull-board/api';
@@ -39,7 +49,10 @@ import {
   storageLocalRoot,
   saveGenericFile,
   deleteGenericFile,
-  deleteGenericFolder
+  deleteGenericFolder,
+  storageServiceFor,
+  SchoolStorageService,
+  extractStorageRelativePath
 } from './storage-service.js';
 import { extractDocumentDataWithOpenAI } from './document-ocr-service.js';
 import { generateFormSubmissionPdf } from './form-pdf-service.js';
@@ -825,7 +838,7 @@ async function resolveSchool(req, res, next) {
     if (!school) {
       school = await prisma.school.create({
         data: {
-          id: 'school_ceiba',
+          id: crypto.randomUUID(),
           slug: 'ceiba',
           name: 'Ceiba Montessori International',
           logoUrl: '/favicon.png',
@@ -903,7 +916,7 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
     const rawFolder = req.body.folder || req.query.folder || 'gallery';
     const folderType = String(rawFolder).replace(/[^a-zA-Z0-9_\-\/]/g, '') || 'gallery';
     const employeeId = req.body.employeeId || req.query.employeeId;
-    const schoolId = req.body.schoolId || req.query.schoolId || req.headers['x-school-id'] || req.headers['x-tenant-id'] || req.school?.id || 'school_ceiba';
+    const schoolId = req.school?.id || (req.headers['x-school-id'] && req.headers['x-school-id'] !== 'school_ceiba' ? req.headers['x-school-id'] : null) || (req.body.schoolId && req.body.schoolId !== 'school_ceiba' ? req.body.schoolId : null) || 'default';
 
     const ext = path.extname(req.file.originalname).toLowerCase() || '.png';
     const rawTitle = req.body.title || path.basename(req.file.originalname, ext);
@@ -914,16 +927,21 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
     let relativePath = '';
     if (folderType === 'documents' && employeeId) {
       relativePath = `schools/${schoolId}/rrhh/${employeeId}/${cleanFilename}`;
-    } else {
+    } else if (folderType.startsWith('admissions') || folderType.startsWith('rrhh') || folderType.startsWith('private')) {
       relativePath = `schools/${schoolId}/${folderType}/${cleanFilename}`;
+    } else {
+      // All public web media (gallery, stickers, hero, brand, logo, pillars, etc.) are organized under /public/
+      const cleanSubFolder = folderType.startsWith('public/') 
+        ? folderType.slice('public/'.length) 
+        : (folderType === 'public' ? 'gallery' : folderType);
+      relativePath = `schools/${schoolId}/public/${cleanSubFolder}/${cleanFilename}`;
     }
 
-    const result = await saveGenericFile({
-      schoolId,
+    const storage = await storageServiceFor(schoolId, prisma);
+    const result = await storage.upload({
       relativePath,
       buffer: req.file.buffer,
-      mimeType: req.file.mimetype,
-      prisma
+      mimeType: req.file.mimetype
     });
 
     res.json({
@@ -934,6 +952,8 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
       relativePath: result.relativePath,
       size: req.file.size,
       mimetype: req.file.mimetype,
+      driver: result.driver,
+      bucket: result.bucket
     });
   } catch (err) {
     console.error('Error in /api/upload:', err);
@@ -6594,51 +6614,48 @@ app.get('/api/tutor/my-students', async (req, res) => {
 });
 
 // SECURE FILE DELETION ROUTE
-app.delete('/api/file', async (req, res) => {
+// DELETE /api/storage and DELETE /api/file - Unified file deletion endpoint
+async function handleFileDeletion(req, res) {
   try {
-    const fileUrl = req.body.url || req.query.url;
+    const fileUrl = req.body?.url || req.query?.url || req.body?.relativePath || req.query?.relativePath;
     if (!fileUrl || typeof fileUrl !== 'string') {
-      return res.status(400).json({ error: 'File URL parameter is required' });
+      return res.status(400).json({ error: 'URL o ruta del archivo requerida' });
     }
 
-    const schoolId = req.body.schoolId || req.query.schoolId || req.headers['x-school-id'] || req.school?.id || 'school_ceiba';
+    const relativePath = extractStorageRelativePath(fileUrl);
+    console.log(`🗑️ [DELETE /api/storage] Requested: "${fileUrl}" -> Resolved: "${relativePath}"`);
 
-    // 1. Check if it's a storage stream URL (/api/storage/stream?file=...)
-    if (fileUrl.includes('/api/storage/stream')) {
-      try {
-        const parsedUrl = new URL(fileUrl, 'http://localhost');
-        const filePath = parsedUrl.searchParams.get('file');
-        if (filePath) {
-          await deleteGenericFile({ schoolId, relativePath: filePath, prisma });
-          return res.json({ success: true, deleted: fileUrl });
-        }
-      } catch (e) {
-        console.warn('Error parsing storage stream URL for deletion:', e.message);
-      }
+    if (relativePath) {
+      const pathSchoolId = relativePath.startsWith('schools/') ? relativePath.split('/')[1] : null;
+      const schoolId = req.school?.id || pathSchoolId || (req.headers['x-school-id'] && req.headers['x-school-id'] !== 'school_ceiba' ? req.headers['x-school-id'] : null) || 'default';
+
+      const storage = await storageServiceFor(schoolId, prisma);
+      const result = await storage.deleteFile(relativePath);
+      console.log(`✅ [DELETE /api/storage] File successfully deleted from storage:`, result);
+      return res.json({ success: true, deleted: relativePath, ...result });
     }
 
-    // 2. Check if it's a direct relative path (schools/...)
-    if (fileUrl.startsWith('schools/')) {
-      await deleteGenericFile({ schoolId, relativePath: fileUrl, prisma });
-      return res.json({ success: true, deleted: fileUrl });
-    }
-
-    // 3. Fallback for legacy disk paths (/gallery/..., /documents/...)
+    // Fallback for legacy disk paths (/gallery/..., /documents/...)
     const normalizedUrl = path.normalize(fileUrl).replace(/\\/g, '/');
-    const relativePath = normalizedUrl.startsWith('/') ? normalizedUrl.slice(1) : normalizedUrl;
-    const targetPath = path.join(publicDir, relativePath);
+    const diskRelPath = normalizedUrl.startsWith('/') ? normalizedUrl.slice(1) : normalizedUrl;
+    const targetPath = path.join(publicDir, diskRelPath);
 
     if (fs.existsSync(targetPath)) {
       fs.unlinkSync(targetPath);
+      console.log(`✅ [DELETE /api/storage] Legacy file deleted from public disk: ${targetPath}`);
       return res.json({ success: true, deleted: fileUrl });
     }
 
-    return res.json({ success: true, message: 'File deleted or not found' });
+    console.log(`ℹ️ [DELETE /api/storage] File was not found or already deleted: ${fileUrl}`);
+    return res.json({ success: true, message: 'Archivo procesado para eliminación' });
   } catch (err) {
-    console.error('Failed to delete file:', err);
-    res.status(500).json({ error: 'Failed to delete file' });
+    console.error('❌ [DELETE /api/storage ERROR] Failed to delete file:', err);
+    res.status(500).json({ error: 'Error al eliminar archivo: ' + err.message });
   }
-});
+}
+
+app.delete('/api/storage', handleFileDeletion);
+app.delete('/api/file', handleFileDeletion);
 
 // FOLDERS ENDPOINTS
 app.get('/api/folders', async (req, res) => {
@@ -6845,13 +6862,121 @@ app.delete('/api/applications/:id', async (req, res) => {
   }
 });
 
+// DEFAULT MULTILINGUAL MONTESSORI CATEGORIES
+const DEFAULT_MONTESSORI_CATEGORIES = [
+  {
+    id: 'practical',
+    label: 'Vida Práctica',
+    labelEn: 'Practical Life',
+    translations: {
+      es: 'Vida Práctica',
+      en: 'Practical Life',
+      pt: 'Vida Prática',
+      fr: 'Vie Pratique',
+      de: 'Praktisches Leben',
+      ca: 'Vida Pràctica',
+      ru: 'Практическая жизнь'
+    }
+  },
+  {
+    id: 'sensorial',
+    label: 'Sensorial',
+    labelEn: 'Sensorial',
+    translations: {
+      es: 'Sensorial',
+      en: 'Sensorial',
+      pt: 'Sensorial',
+      fr: 'Sensoriel',
+      de: 'Sinneserziehung',
+      ca: 'Sensorial',
+      ru: 'Сенсорика'
+    }
+  },
+  {
+    id: 'language',
+    label: 'Lenguaje',
+    labelEn: 'Language',
+    translations: {
+      es: 'Lenguaje',
+      en: 'Language',
+      pt: 'Linguagem',
+      fr: 'Langage',
+      de: 'Sprache',
+      ca: 'Llenguatge',
+      ru: 'Язык и речь'
+    }
+  },
+  {
+    id: 'math',
+    label: 'Matemáticas',
+    labelEn: 'Mathematics',
+    translations: {
+      es: 'Matemáticas',
+      en: 'Mathematics',
+      pt: 'Matemática',
+      fr: 'Mathématiques',
+      de: 'Mathematik',
+      ca: 'Matemàtiques',
+      ru: 'Математика'
+    }
+  },
+  {
+    id: 'cultural',
+    label: 'Educación Cósmica & Cultural',
+    labelEn: 'Cosmic & Cultural',
+    translations: {
+      es: 'Educación Cósmica & Cultural',
+      en: 'Cosmic & Cultural',
+      pt: 'Educação Cósmica & Cultural',
+      fr: 'Éducation Cosmique & Culture',
+      de: 'Kosmische & Kulturelle Erziehung',
+      ca: 'Educació Còsmica & Cultural',
+      ru: 'Космическое и культурное развитие'
+    }
+  },
+  {
+    id: 'art',
+    label: 'Arte & Creatividad',
+    labelEn: 'Art & Creativity',
+    translations: {
+      es: 'Arte & Creatividad',
+      en: 'Art & Creativity',
+      pt: 'Arte & Criatividade',
+      fr: 'Art & Créativité',
+      de: 'Kunst & Kreativität',
+      ca: 'Art & Creativitat',
+      ru: 'Искусство и творчество'
+    }
+  }
+];
+
 // GALLERY CATEGORIES & IMAGES
 app.get('/api/gallery/categories', async (req, res) => {
   try {
-    const categories = await prisma.galleryCategory.findMany({
+    let categories = await prisma.galleryCategory.findMany({
       where: { schoolId: req.school.id },
       orderBy: { createdAt: 'asc' }
     });
+
+    // Auto-seed default multilingual categories if none exist for this school
+    if (categories.length === 0) {
+      for (const defCat of DEFAULT_MONTESSORI_CATEGORIES) {
+        await prisma.galleryCategory.create({
+          data: {
+            id: defCat.id,
+            schoolId: req.school.id,
+            label: defCat.label,
+            labelEn: defCat.labelEn,
+            translations: JSON.stringify(defCat.translations)
+          }
+        }).catch(() => {});
+      }
+      categories = await prisma.galleryCategory.findMany({
+        where: { schoolId: req.school.id },
+        orderBy: { createdAt: 'asc' }
+      });
+    }
+
     res.json(categories);
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -6860,14 +6985,72 @@ app.get('/api/gallery/categories', async (req, res) => {
 
 app.post('/api/gallery/categories', async (req, res) => {
   try {
-    const { id, label, labelEn } = req.body;
+    const { id, label, labelEn, translations } = req.body || {};
+
+    const parsedTranslations = typeof translations === 'object' && translations !== null
+      ? translations
+      : (typeof translations === 'string' ? JSON.parse(translations || '{}') : {});
+
+    const candidateId = (typeof id === 'string' && id.trim())
+      || (typeof label === 'string' && label.trim())
+      || (typeof parsedTranslations.es === 'string' && parsedTranslations.es.trim())
+      || (typeof parsedTranslations.en === 'string' && parsedTranslations.en.trim())
+      || Object.values(parsedTranslations).find(v => typeof v === 'string' && v.trim())
+      || 'categoria';
+
+    const safeCatId = String(candidateId).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'categoria_' + Date.now().toString(36);
+
+    const safeLabel = (typeof label === 'string' && label.trim())
+      || parsedTranslations.es
+      || parsedTranslations.en
+      || Object.values(parsedTranslations).find(v => typeof v === 'string' && v.trim())
+      || safeCatId;
+
+    const safeLabelEn = (typeof labelEn === 'string' && labelEn.trim())
+      || parsedTranslations.en
+      || safeLabel;
+
+    // Check if ID exists to avoid unique constraint collision
+    const existing = await prisma.galleryCategory.findUnique({
+      where: { id: safeCatId }
+    });
+
+    const finalCatId = existing ? `${safeCatId}_${Date.now().toString(36).slice(-4)}` : safeCatId;
+
     const cat = await prisma.galleryCategory.create({
       data: {
-        id: id.trim().toLowerCase().replace(/\s+/g, '_'),
+        id: finalCatId,
         schoolId: req.school.id,
-        label,
-        labelEn: labelEn || ''
+        label: safeLabel,
+        labelEn: safeLabelEn,
+        translations: JSON.stringify(parsedTranslations)
       }
+    });
+    res.json(cat);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.put('/api/gallery/categories/:id', async (req, res) => {
+  try {
+    const { label, labelEn, translations } = req.body || {};
+    const updateData = {};
+
+    if (translations) {
+      const parsedTranslations = typeof translations === 'object' && translations !== null
+        ? translations
+        : (typeof translations === 'string' ? JSON.parse(translations || '{}') : {});
+      updateData.translations = JSON.stringify(parsedTranslations);
+      if (parsedTranslations.es) updateData.label = parsedTranslations.es;
+      if (parsedTranslations.en) updateData.labelEn = parsedTranslations.en;
+    }
+    if (label !== undefined && typeof label === 'string') updateData.label = label.trim();
+    if (labelEn !== undefined && typeof labelEn === 'string') updateData.labelEn = labelEn.trim();
+
+    const cat = await prisma.galleryCategory.update({
+      where: { id: req.params.id },
+      data: updateData
     });
     res.json(cat);
   } catch (e) {
@@ -6878,12 +7061,19 @@ app.post('/api/gallery/categories', async (req, res) => {
 app.delete('/api/gallery/categories/:id', async (req, res) => {
   try {
     const images = await prisma.galleryImage.findMany({ where: { categoryId: req.params.id } });
+    const storage = await storageServiceFor(req.school.id, prisma);
     for (const img of images) {
-      if (img.src && (img.src.startsWith('/gallery/') || img.src.startsWith('/documents/'))) {
-        const targetPath = path.join(publicDir, img.src.slice(1));
-        if (fs.existsSync(targetPath)) fs.unlinkSync(targetPath);
+      if (img.src) {
+        const relativePath = extractStorageRelativePath(img.src);
+        if (relativePath) {
+          await storage.deleteFile(relativePath);
+        } else if (img.src.startsWith('/gallery/') || img.src.startsWith('/documents/')) {
+          const targetPath = path.join(publicDir, img.src.slice(1));
+          if (fs.existsSync(targetPath)) fs.unlinkSync(targetPath);
+        }
       }
     }
+    await prisma.galleryImage.deleteMany({ where: { categoryId: req.params.id } });
     await prisma.galleryCategory.delete({ where: { id: req.params.id } });
     res.json({ success: true });
   } catch (e) {
@@ -6891,17 +7081,229 @@ app.delete('/api/gallery/categories/:id', async (req, res) => {
   }
 });
 
+// GALLERY AI QUEUE & WORKER
+const galleryAiQueue = [];
+let isProcessingGalleryQueue = false;
+
+async function executeGalleryAiGeneration({
+  schoolId,
+  imageUrl,
+  categoryId,
+  categoryLabel,
+  existingTitle,
+  languages = ['es', 'en'],
+  siteSettings = null
+}) {
+  const targetLangs = Array.isArray(languages) && languages.length > 0
+    ? languages.map(l => l.toLowerCase().trim())
+    : ['es', 'en'];
+
+  // Fetch AI credentials from school settings if not provided
+  const settings = siteSettings || await prisma.siteSetting.findMany({
+    where: {
+      schoolId,
+      key: { in: ['ai_api_key', 'openai_api_key', 'OPENAI_API_KEY', 'ai_base_url', 'openai_base_url', 'ai_model_vision', 'openai_model'] }
+    }
+  });
+
+  const getSetting = (keys, fallback = '') => {
+    const match = settings.find(s => keys.includes(s.key));
+    return match?.value?.trim() || fallback;
+  };
+
+  let apiKey = getSetting(['ai_api_key', 'openai_api_key', 'OPENAI_API_KEY'], process.env.OPENAI_API_KEY || process.env.AI_API_KEY || '');
+  let baseUrl = getSetting(['ai_base_url', 'openai_base_url'], process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1').replace(/\/+$/, '');
+  let visionModel = getSetting(['ai_model_vision', 'openai_model'], process.env.OPENAI_VISION_MODEL || 'gpt-4o-mini').replace(/^models\//, '');
+  const catName = categoryLabel || categoryId || 'Montessori';
+
+  if (!apiKey) {
+    throw new Error('No se ha configurado el proveedor LLM ni la API Key en los ajustes del colegio (Ajustes -> Inteligencia Artificial).');
+  }
+
+  const cleanBaseUrl = baseUrl.replace(/\/models$/, '').replace(/\/chat\/completions$/, '');
+  const prompt = `Eres un experto pedagogo y comunicador de educación Montessori.
+Analiza la siguiente fotografía o información de la categoría "${catName}" (título de referencia: "${existingTitle || 'Sin título previo'}") y genera el título y descripción pedagógica para cada uno de los siguientes códigos de idioma: [${targetLangs.join(', ')}].
+
+Para cada idioma:
+- "title": Un título inspirador y conciso (máximo 6 palabras).
+- "description": Una descripción pedagógica Montessori hermosa, cálida y profesional (1 a 2 oraciones).
+
+Responde ÚNICAMENTE un objeto JSON válido con la siguiente estructura exacta:
+{
+  "translations": {
+    ${targetLangs.map(l => `"${l}": { "title": "...", "description": "..." }`).join(',\n    ')}
+  }
+}`;
+
+  const messages = [
+    { role: 'system', content: 'Eres un generador de metadatos educativos Montessori multilingüe. Devuelve únicamente JSON válido.' },
+    {
+      role: 'user',
+      content: imageUrl && (imageUrl.startsWith('http') || imageUrl.startsWith('data:image'))
+        ? [
+            { type: 'text', text: prompt },
+            { type: 'image_url', image_url: { url: imageUrl } }
+          ]
+        : prompt
+    }
+  ];
+
+  let aiRes;
+  try {
+    aiRes = await fetch(`${cleanBaseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: visionModel,
+        messages,
+        response_format: { type: 'json_object' },
+        temperature: 0.7,
+        max_tokens: 800
+      })
+    });
+  } catch (netErr) {
+    throw new Error(`No se pudo conectar con el proveedor LLM (${cleanBaseUrl}): ${netErr.message}`);
+  }
+
+  if (!aiRes.ok) {
+    const errText = await aiRes.text().catch(() => '');
+    throw new Error(`El proveedor LLM devolvió error (${aiRes.status}): ${errText || aiRes.statusText}`);
+  }
+
+  const data = await aiRes.json();
+  const parsed = JSON.parse(data.choices?.[0]?.message?.content || '{}');
+  const trans = parsed.translations || parsed;
+
+  if (!trans || Object.keys(trans).length === 0) {
+    throw new Error('El modelo LLM no generó traducciones válidas.');
+  }
+
+  const fallbackEs = trans.es?.title || Object.values(trans)[0]?.title || 'Fotografía Montessori';
+  const fallbackEn = trans.en?.title || fallbackEs;
+  return {
+    success: true,
+    source: 'ai',
+    translations: trans,
+    title: trans.es?.title || fallbackEs,
+    titleEn: trans.en?.title || fallbackEn,
+    description: trans.es?.description || '',
+    descriptionEn: trans.en?.description || ''
+  };
+}
+
+async function processSingleGalleryImageAi(imageId, schoolId) {
+  const img = await prisma.galleryImage.findUnique({
+    where: { id: imageId },
+    include: { category: true }
+  });
+  if (!img) return;
+
+  try {
+    const siteSettings = await prisma.siteSetting.findMany({
+      where: {
+        schoolId,
+        key: { in: ['header_enabled_langs', 'ai_api_key', 'openai_api_key', 'OPENAI_API_KEY', 'ai_base_url', 'openai_base_url', 'ai_model_vision', 'openai_model'] }
+      }
+    });
+
+    const getSetting = (keys, fallback = '') => {
+      const match = siteSettings.find(s => keys.includes(s.key));
+      return match?.value?.trim() || fallback;
+    };
+
+    const enabledLangsRaw = getSetting(['header_enabled_langs'], 'es,en');
+    const targetLangs = enabledLangsRaw.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+    if (targetLangs.length === 0) targetLangs.push('es', 'en');
+
+    const meta = await executeGalleryAiGeneration({
+      schoolId,
+      imageUrl: img.src,
+      categoryId: img.categoryId,
+      categoryLabel: img.category?.label,
+      existingTitle: img.title,
+      languages: targetLangs,
+      siteSettings
+    });
+
+    await prisma.galleryImage.update({
+      where: { id: imageId },
+      data: {
+        title: meta.translations.es?.title || meta.title || img.title,
+        titleEn: meta.translations.en?.title || meta.titleEn || img.titleEn,
+        description: meta.translations.es?.description || meta.description || img.description,
+        descriptionEn: meta.translations.en?.description || meta.descriptionEn || img.descriptionEn,
+        translations: JSON.stringify(meta.translations),
+        aiStatus: 'COMPLETED',
+        aiError: null
+      }
+    });
+  } catch (err) {
+    console.error(`[GALLERY AI WORKER] Failed for image ${imageId}:`, err.message);
+    await prisma.galleryImage.update({
+      where: { id: imageId },
+      data: {
+        aiStatus: 'FAILED',
+        aiError: err.message || 'Error en la generación de metadatos'
+      }
+    });
+  }
+}
+
+async function runGalleryQueueWorker() {
+  if (isProcessingGalleryQueue || galleryAiQueue.length === 0) return;
+  isProcessingGalleryQueue = true;
+
+  while (galleryAiQueue.length > 0) {
+    const job = galleryAiQueue.shift();
+    try {
+      await processSingleGalleryImageAi(job.imageId, job.schoolId);
+    } catch (err) {
+      console.error('[GALLERY QUEUE DISPATCH ERROR]', err);
+    }
+  }
+
+  isProcessingGalleryQueue = false;
+}
+
+function triggerGalleryAiProcess(imageId, schoolId) {
+  galleryAiQueue.push({ imageId, schoolId });
+  runGalleryQueueWorker();
+}
+
 app.get('/api/gallery/images', async (req, res) => {
   try {
-    const { categoryId } = req.query;
+    const { categoryId, target } = req.query;
+    const isPublicWeb = target === 'web';
+
     const where = {
       schoolId: req.school.id,
-      ...(categoryId && categoryId !== 'all' && { categoryId: String(categoryId) })
+      ...(categoryId && categoryId !== 'all' && { categoryId: String(categoryId) }),
+      ...(target === 'web' && { showOnWeb: true }),
+      ...(target === 'portal' && { showOnPortal: true })
     };
     const images = await prisma.galleryImage.findMany({
       where,
       orderBy: { createdAt: 'desc' }
     });
+
+    if (isPublicWeb) {
+      // For public web visitors: if image has consent issues and blurredSrc exists, serve ONLY the blurred version!
+      // Also do not expose detectedFaces array to public web.
+      const sanitized = images.map(img => {
+        const safeSrc = (img.hasConsentIssues && img.blurredSrc) ? img.blurredSrc : img.src;
+        return {
+          ...img,
+          src: safeSrc,
+          detectedFaces: '[]',
+          blurredSrc: undefined
+        };
+      });
+      return res.json(sanitized);
+    }
+
     res.json(images);
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -6910,13 +7312,158 @@ app.get('/api/gallery/images', async (req, res) => {
 
 app.post('/api/gallery/images', async (req, res) => {
   try {
+    const {
+      categoryId,
+      src,
+      title,
+      titleEn,
+      description,
+      descriptionEn,
+      translations,
+      aiAutoGenerate,
+      aiStatus,
+      showOnWeb = true,
+      showOnPortal = true
+    } = req.body || {};
+
+    const isPendingAi = aiAutoGenerate === true || aiStatus === 'PENDING';
+
+    const parsedTranslations = typeof translations === 'object' && translations !== null
+      ? translations
+      : (typeof translations === 'string' ? JSON.parse(translations || '{}') : {});
+
+    const finalTitle = parsedTranslations.es?.title || title || (isPendingAi ? 'Procesando con IA...' : 'Fotografía Montessori');
+    const finalTitleEn = parsedTranslations.en?.title || titleEn || (isPendingAi ? 'Processing with AI...' : finalTitle);
+    const finalDescription = parsedTranslations.es?.description || description || '';
+    const finalDescriptionEn = parsedTranslations.en?.description || descriptionEn || '';
+
+    const safeCatId = (typeof categoryId === 'string' && categoryId.trim()) || 'practical';
+    let catExists = await prisma.galleryCategory.findUnique({
+      where: { id: safeCatId }
+    });
+    if (!catExists) {
+      catExists = await prisma.galleryCategory.create({
+        data: {
+          id: safeCatId,
+          schoolId: req.school.id,
+          label: safeCatId,
+          labelEn: safeCatId,
+          translations: JSON.stringify({ es: safeCatId, en: safeCatId })
+        }
+      }).catch(() => null);
+    }
+
     const img = await prisma.galleryImage.create({
       data: {
-        ...req.body,
-        schoolId: req.school.id
+        school: { connect: { id: req.school.id } },
+        category: { connect: { id: safeCatId } },
+        src,
+        title: finalTitle,
+        titleEn: finalTitleEn,
+        description: finalDescription,
+        descriptionEn: finalDescriptionEn,
+        translations: JSON.stringify(parsedTranslations),
+        aiStatus: isPendingAi ? 'PENDING' : (aiStatus || 'COMPLETED'),
+        aiError: null,
+        consentStatus: 'unchecked',
+        detectedFaces: '[]',
+        blurredSrc: null,
+        hasConsentIssues: false,
+        showOnWeb: showOnWeb !== false,
+        showOnPortal: showOnPortal !== false
       }
     });
+
+    if (isPendingAi) {
+      triggerGalleryAiProcess(img.id, req.school.id);
+    }
+
+    // Trigger face consent check in background worker
+    enqueueGalleryConsentJob(img.id, req.school.id).catch(() => {
+      // Fallback: direct background run if redis worker is offline
+      processGalleryImageFaceConsent(img.id, req.school.id, prisma).catch(err => {
+        console.warn('[FACE CONSENT ASYNC ERROR]', err.message);
+      });
+    });
+
     res.json(img);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/gallery/images/:id/verify-consent', async (req, res) => {
+  try {
+    const img = await prisma.galleryImage.findUnique({
+      where: { id: req.params.id }
+    });
+
+    if (!img || img.schoolId !== req.school.id) {
+      return res.status(404).json({ error: 'Fotografía no encontrada' });
+    }
+
+    const result = await processGalleryImageFaceConsent(img.id, req.school.id, prisma);
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/gallery/scan-all-consents', async (req, res) => {
+  try {
+    const result = await scanAllGalleryImagesForConsents(req.school.id, prisma);
+    res.json({ success: true, total: result.total, results: result.results });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/gallery/images/:id/retry-ai', async (req, res) => {
+  try {
+    const img = await prisma.galleryImage.findUnique({
+      where: { id: req.params.id }
+    });
+
+    if (!img || img.schoolId !== req.school.id) {
+      return res.status(404).json({ error: 'Fotografía no encontrada' });
+    }
+
+    const updated = await prisma.galleryImage.update({
+      where: { id: req.params.id },
+      data: {
+        aiStatus: 'PENDING',
+        aiError: null
+      }
+    });
+
+    triggerGalleryAiProcess(updated.id, req.school.id);
+    res.json({ success: true, image: updated });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/gallery/images/retry-failed-ai', async (req, res) => {
+  try {
+    const failedImages = await prisma.galleryImage.findMany({
+      where: {
+        schoolId: req.school.id,
+        aiStatus: 'FAILED'
+      }
+    });
+
+    for (const img of failedImages) {
+      await prisma.galleryImage.update({
+        where: { id: img.id },
+        data: {
+          aiStatus: 'PENDING',
+          aiError: null
+        }
+      });
+      triggerGalleryAiProcess(img.id, req.school.id);
+    }
+
+    res.json({ success: true, count: failedImages.length });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -6924,9 +7471,61 @@ app.post('/api/gallery/images', async (req, res) => {
 
 app.put('/api/gallery/images/:id', async (req, res) => {
   try {
+    const {
+      categoryId,
+      src,
+      title,
+      titleEn,
+      description,
+      descriptionEn,
+      translations,
+      aiStatus,
+      aiError,
+      showOnWeb,
+      showOnPortal
+    } = req.body || {};
+
+    const updateData = {};
+
+    if (categoryId !== undefined && typeof categoryId === 'string' && categoryId.trim()) {
+      const safeCatId = categoryId.trim();
+      let catExists = await prisma.galleryCategory.findUnique({
+        where: { id: safeCatId }
+      });
+      if (!catExists) {
+        catExists = await prisma.galleryCategory.create({
+          data: {
+            id: safeCatId,
+            schoolId: req.school.id,
+            label: safeCatId,
+            labelEn: safeCatId,
+            translations: JSON.stringify({ es: safeCatId, en: safeCatId })
+          }
+        }).catch(() => null);
+      }
+      if (catExists) {
+        updateData.category = { connect: { id: safeCatId } };
+      }
+    }
+
+    if (src !== undefined) updateData.src = src;
+    if (title !== undefined) updateData.title = title;
+    if (titleEn !== undefined) updateData.titleEn = titleEn;
+    if (description !== undefined) updateData.description = description;
+    if (descriptionEn !== undefined) updateData.descriptionEn = descriptionEn;
+    if (translations !== undefined) {
+      updateData.translations = typeof translations === 'object' && translations !== null
+        ? JSON.stringify(translations)
+        : String(translations);
+    }
+    if (aiStatus !== undefined) updateData.aiStatus = aiStatus;
+    if (aiError !== undefined) updateData.aiError = aiError;
+    if (showOnWeb !== undefined) updateData.showOnWeb = Boolean(showOnWeb);
+    if (showOnPortal !== undefined) updateData.showOnPortal = Boolean(showOnPortal);
+
     const img = await prisma.galleryImage.update({
       where: { id: req.params.id },
-      data: req.body
+      data: updateData
     });
     res.json(img);
   } catch (e) {
@@ -6936,15 +7535,52 @@ app.put('/api/gallery/images/:id', async (req, res) => {
 
 app.delete('/api/gallery/images/:id', async (req, res) => {
   try {
-    const img = await prisma.galleryImage.findUnique({ where: { id: req.params.id } });
-    if (img && img.src && (img.src.startsWith('/gallery/') || img.src.startsWith('/documents/'))) {
-      const targetPath = path.join(publicDir, img.src.slice(1));
-      if (fs.existsSync(targetPath)) fs.unlinkSync(targetPath);
+    const existing = await prisma.galleryImage.findUnique({
+      where: { id: req.params.id }
+    });
+
+    if (existing?.src) {
+      const storage = await storageServiceFor(req.school.id, prisma);
+      const relativePath = extractStorageRelativePath(existing.src);
+      if (relativePath) {
+        await storage.deleteFile(relativePath).catch(err => {
+          console.warn('[STORAGE DELETE ERROR] Could not delete image physical asset:', err.message);
+        });
+      } else if (existing.src.startsWith('/gallery/') || existing.src.startsWith('/documents/')) {
+        const targetPath = path.join(publicDir, existing.src.slice(1));
+        if (fs.existsSync(targetPath)) fs.unlinkSync(targetPath);
+      }
     }
+
     await prisma.galleryImage.delete({ where: { id: req.params.id } });
     res.json({ success: true });
   } catch (e) {
     res.status(500).json({ error: e.message });
+  }
+});
+
+// GENERATE GALLERY METADATA WITH AI OR PEDAGOGICAL HEURISTICS
+app.post('/api/gallery/generate-metadata', async (req, res) => {
+  try {
+    const schoolId = req.headers['x-school-id'] || req.school?.id;
+    if (!schoolId) {
+      return res.status(400).json({ error: 'Falta encabezado de escuela (x-school-id)' });
+    }
+
+    const { imageUrl, categoryId, categoryLabel, existingTitle, languages = ['es', 'en'] } = req.body;
+    const result = await executeGalleryAiGeneration({
+      schoolId,
+      imageUrl,
+      categoryId,
+      categoryLabel,
+      existingTitle,
+      languages
+    });
+
+    return res.json(result);
+  } catch (err) {
+    console.error('Error generating gallery metadata:', err);
+    res.status(500).json({ error: 'Error al generar metadatos con IA: ' + err.message });
   }
 });
 
@@ -7527,7 +8163,39 @@ async function emitCalendarWebhookNotification({ schoolId, eventType, data, pris
   }
 }
 
-// GET /api/storage/stream - Secure stream for private documents & form assets
+// GET /api/storage/usage - Returns total storage consumption and breakdown for school
+app.get('/api/storage/usage', async (req, res) => {
+  try {
+    const schoolId = req.school?.id || (req.headers['x-school-id'] && req.headers['x-school-id'] !== 'school_ceiba' ? req.headers['x-school-id'] : null) || req.query.schoolId || 'default';
+    const storage = await storageServiceFor(schoolId, prisma);
+    const usage = await storage.calculateUsage();
+    res.json(usage);
+  } catch (e) {
+    console.error('Error calculating storage usage:', e);
+    res.status(500).json({ error: 'Error al calcular uso de almacenamiento: ' + e.message });
+  }
+});
+
+// GET /api/storage/files - Lists stored files for school under a given prefix
+app.get('/api/storage/files', async (req, res) => {
+  try {
+    const schoolId = req.school?.id || (req.headers['x-school-id'] && req.headers['x-school-id'] !== 'school_ceiba' ? req.headers['x-school-id'] : null) || req.query.schoolId || 'default';
+    const folder = req.query.folder ? String(req.query.folder) : '';
+    const storage = await storageServiceFor(schoolId, prisma);
+    const files = await storage.listFiles(folder);
+    res.json({
+      schoolId,
+      folder,
+      count: files.length,
+      files
+    });
+  } catch (e) {
+    console.error('Error listing storage files:', e);
+    res.status(500).json({ error: 'Error al listar archivos: ' + e.message });
+  }
+});
+
+// GET /api/storage/stream - Backwards compatibility stream endpoint
 app.get('/api/storage/stream', async (req, res) => {
   try {
     const filePath = req.query.file;
@@ -7535,13 +8203,36 @@ app.get('/api/storage/stream', async (req, res) => {
       return res.status(400).json({ error: 'Parámetro "file" requerido' });
     }
 
-    // Tenant isolation: if school context is available, pass it
-    const schoolId = req.query.schoolId || req.headers['x-school-id'] || req.school?.id || null;
+    const schoolId = req.query.schoolId || req.headers['x-school-id'] || null;
     await streamPrivateAsset({ schoolId, relativePath: String(filePath), req, res, prisma });
   } catch (e) {
     console.error('Error streaming private asset:', e);
     if (!res.headersSent) {
       res.status(500).json({ error: 'Error al acceder al archivo privado' });
+    }
+  }
+});
+
+// GET /api/storage/:filepath - Clean RESTful Path Storage Delivery (Express 5 compatible)
+app.get(/^\/api\/storage\/(.+)$/, async (req, res) => {
+  try {
+    const rawPath = req.params[0] || req.path.replace(/^\/api\/storage\/?/, '');
+    if (!rawPath) {
+      return res.status(400).json({ error: 'Ruta de archivo no especificada' });
+    }
+
+    // Normalize: if path starts with schools/, use as is; if format is :schoolId/:folder/:file, map to schools/:schoolId/...
+    let relativePath = rawPath.replace(/^\/+/, '');
+    if (!relativePath.startsWith('schools/')) {
+      relativePath = `schools/${relativePath}`;
+    }
+
+    const schoolId = req.query.schoolId || req.headers['x-school-id'] || null;
+    await streamPrivateAsset({ schoolId, relativePath, req, res, prisma });
+  } catch (e) {
+    console.error('Error streaming REST storage asset:', e);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Error al acceder al archivo: ' + e.message });
     }
   }
 });
@@ -7584,30 +8275,43 @@ const DEFAULT_CONSENT_TEMPLATES = [
     title: 'Uso de Imagen y Fotografía en Redes Sociales & Web',
     category: 'media',
     description: 'Autorización para capturar y publicar fotografías y videos del rostro del alumno en redes sociales institucionales, página web y materiales informativos del colegio.',
-    isRequired: false
+    isRequired: false,
+    requiresSignature: true,
+    isActive: true,
+    isDefault: true
   },
   {
     id: 'consent_trips_excursions',
     title: 'Salidas Pedagógicas y Excursiones Locales',
     category: 'trips',
     description: 'Autorización para que el alumno participe en visitas guiadas, paseos de campo, museos y actividades educativas fuera del plantel escolar.',
-    isRequired: false
+    isRequired: false,
+    requiresSignature: true,
+    isActive: true,
+    isDefault: true
   },
   {
     id: 'consent_first_aid_emergency',
     title: 'Atención de Primeros Auxilios y Traslado de Emergencia Médica',
     category: 'medical',
     description: 'Autorización al personal certificado del colegio para brindar primeros auxilios y, en caso de urgencia médica grave, coordinar el traslado al centro hospitalario designado.',
-    isRequired: true
+    isRequired: true,
+    requiresSignature: true,
+    isActive: true,
+    isDefault: true
   },
   {
     id: 'consent_outdoors_nature',
     title: 'Actividades al Aire Libre, Huerto y Naturaleza',
     category: 'outdoors',
     description: 'Participación en dinámicas de educación cósmica en el huerto escolar, granja, compostaje y actividades al aire libre supervisadas.',
-    isRequired: false
+    isRequired: false,
+    requiresSignature: true,
+    isActive: true,
+    isDefault: true
   }
 ];
+const DEFAULT_CONSENT_IDS = new Set(DEFAULT_CONSENT_TEMPLATES.map(t => t.id));
 
 app.get('/api/consent-templates', async (req, res) => {
   try {
@@ -7616,15 +8320,17 @@ app.get('/api/consent-templates', async (req, res) => {
       select: { consentTemplates: true }
     });
 
-    let templates = [];
+    let templates = DEFAULT_CONSENT_TEMPLATES;
     if (school?.consentTemplates && school.consentTemplates.trim() !== '' && school.consentTemplates !== '[]') {
       try {
-        templates = JSON.parse(school.consentTemplates);
+        const stored = JSON.parse(school.consentTemplates);
+        if (Array.isArray(stored)) {
+          const custom = stored.filter(s => s && s.id && !DEFAULT_CONSENT_IDS.has(s.id));
+          templates = [...DEFAULT_CONSENT_TEMPLATES, ...custom];
+        }
       } catch {
         templates = DEFAULT_CONSENT_TEMPLATES;
       }
-    } else {
-      templates = DEFAULT_CONSENT_TEMPLATES;
     }
 
     res.json(templates);
@@ -7636,14 +8342,19 @@ app.get('/api/consent-templates', async (req, res) => {
 app.post('/api/consent-templates', async (req, res) => {
   try {
     const { templates } = req.body;
-    const jsonString = Array.isArray(templates) ? JSON.stringify(templates) : String(templates || '[]');
+    let inputList = Array.isArray(templates) ? templates : [];
+    
+    // Filter custom templates and ensure the 4 default ones cannot be modified or removed
+    const customList = inputList.filter(item => item && item.id && !DEFAULT_CONSENT_IDS.has(item.id));
+    const mergedList = [...DEFAULT_CONSENT_TEMPLATES, ...customList];
+    const jsonString = JSON.stringify(mergedList);
 
     await prisma.school.update({
       where: { id: req.school.id },
       data: { consentTemplates: jsonString }
     });
 
-    res.json({ success: true, templates: Array.isArray(templates) ? templates : JSON.parse(jsonString) });
+    res.json({ success: true, templates: mergedList });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -13981,7 +14692,7 @@ app.use((req, res) => {
     }
   }
 
-  res.send('CEIBA Roots Backend Multi-Tenant API Server Running.');
+  res.send('Montessori Nexus Backend Multi-Tenant API Server Running.');
 });
 
 app.listen(PORT, async () => {

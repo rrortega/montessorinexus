@@ -319,11 +319,12 @@ model ApplicationLink {
 }
 
 model GalleryCategory {
-  id        String         @id
-  schoolId  String         @map("school_id")
-  label     String
-  labelEn   String?        @default("") @map("label_en")
-  createdAt DateTime       @default(now()) @map("created_at")
+  id           String         @id
+  schoolId     String         @map("school_id")
+  label        String
+  labelEn      String?        @default("") @map("label_en")
+  translations String?        @default("{}")
+  createdAt    DateTime       @default(now()) @map("created_at")
 
   school School         @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   images GalleryImage[]
@@ -340,7 +341,16 @@ model GalleryImage {
   titleEn       String?  @default("") @map("title_en")
   description   String?  @default("")
   descriptionEn String?  @default("") @map("description_en")
-  createdAt     DateTime @default(now()) @map("created_at")
+  translations  String?  @default("{}")
+  aiStatus         String   @default("COMPLETED") @map("ai_status")
+  aiError          String?  @map("ai_error")
+  consentStatus    String   @default("unchecked") @map("consent_status")
+  detectedFaces    String?  @default("[]") @map("detected_faces")
+  blurredSrc       String?  @map("blurred_src")
+  hasConsentIssues Boolean  @default(false) @map("has_consent_issues")
+  showOnWeb        Boolean  @default(true) @map("show_on_web")
+  showOnPortal     Boolean  @default(true) @map("show_on_portal")
+  createdAt        DateTime @default(now()) @map("created_at")
 
   school   School          @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   category GalleryCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)

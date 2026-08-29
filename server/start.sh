@@ -2,7 +2,7 @@
 set -e
 
 echo "===================================================="
-echo "🚀 Ceiba Roots - Production Container Starting..."
+echo "🚀 Montessori Nexus - Production Container Starting..."
 echo "🕒 Timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 echo "📌 Service Role: ${SERVICE_ROLE:-all}"
 echo "===================================================="
@@ -27,9 +27,9 @@ mkdir -p /app/storage /app/server/data
 if [ -n "$DATABASE_URL" ]; then
   echo "📦 Checking and applying database migrations..."
   if [ -f "/app/node_modules/.bin/prisma" ]; then
-    /app/node_modules/.bin/prisma db push --skip-generate || echo "⚠️ Warning: Prisma db push encountered an issue, proceeding..."
+    /app/node_modules/.bin/prisma db push --accept-data-loss || echo "⚠️ Warning: Prisma db push encountered an issue, proceeding..."
   elif command -v prisma >/dev/null 2>&1; then
-    prisma db push --skip-generate || echo "⚠️ Warning: Prisma db push encountered an issue, proceeding..."
+    prisma db push --accept-data-loss || echo "⚠️ Warning: Prisma db push encountered an issue, proceeding..."
   else
     echo "ℹ️ Local Prisma binary not found, skipping db push at boot."
   fi

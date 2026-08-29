@@ -98,7 +98,7 @@ export function AdmissionsSection() {
             variant="default" 
             size="lg" 
             onClick={() => handleCTA('admission')}
-            className="rounded-full px-10 py-7 text-lg shadow-xl hover:shadow-primary/30 transition-all"
+            className="w-full sm:w-auto rounded-full px-6 sm:px-10 py-3.5 sm:py-5 text-base sm:text-lg shadow-xl hover:shadow-primary/30 transition-all text-center justify-center"
           >
             {t('Inicia tu Proceso de Admisión')}
           </Button>

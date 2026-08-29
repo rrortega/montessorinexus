@@ -59,6 +59,7 @@ WORKDIR /app
 # Install OS dependencies required by Playwright Chromium and Xvfb (virtual display for headless anti-detection)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     xvfb \
+    xauth \
     libnss3 \
     libatk1.0-0 \
     libatk-bridge2.0-0 \
@@ -100,8 +101,8 @@ COPY --from=frontend-build /app/dist ./dist/
 # Copy seed data
 COPY src/data ./src/data/
 
-# Set execute permissions on start script
-RUN chmod +x /app/server/start.sh
+# Set execute permissions on scripts
+RUN chmod +x /app/server/start.sh /app/server/healthcheck.sh
 
 # Create persistent directory for storage, database, and browser binaries
 RUN mkdir -p /app/storage /app/server/data /ms-playwright
@@ -114,9 +115,9 @@ ENV NODE_ENV=production
 ENV PORT=3001
 ENV SERVICE_ROLE=all
 
-# Health check
+# Role-aware health check (works for web, worker, and all roles)
 HEALTHCHECK --interval=20s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:3001/api/health || exit 1
+  CMD /app/server/healthcheck.sh || exit 1
 
 # Start via start.sh (handles Express, BullMQ Queue Worker, Xvfb, and Prisma migrations)
 CMD ["/app/server/start.sh"]

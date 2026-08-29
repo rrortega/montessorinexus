@@ -133,6 +133,38 @@ function hexToHsl(hex: string): { h: number, s: number, l: number } | null {
   };
 }
 
+export function checkIsPlatformRootSync(): boolean {
+  if (typeof window === 'undefined') return true;
+  const hostname = window.location.hostname.toLowerCase();
+  const searchParams = new URLSearchParams(window.location.search);
+  const schoolQuery = searchParams.get('school') || searchParams.get('colegio');
+  const pathname = window.location.pathname;
+  const isSchoolScopedRoute =
+    pathname.startsWith('/colegio/') ||
+    pathname.startsWith('/school/') ||
+    pathname.startsWith('/admision/') ||
+    pathname.startsWith('/admissions/') ||
+    pathname.startsWith('/forms/') ||
+    pathname.startsWith('/f/') ||
+    pathname.startsWith('/formulario/') ||
+    pathname.startsWith('/documentos') ||
+    pathname.startsWith('/documents') ||
+    pathname.startsWith('/aplicativos') ||
+    pathname.startsWith('/applications');
+
+  if (schoolQuery || isSchoolScopedRoute) return false;
+
+  if (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname === 'montessorinexus.com' ||
+    hostname === 'www.montessorinexus.com'
+  ) {
+    return true;
+  }
+  return false;
+}
+
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { activeMembership } = useAuth();
   const [settings, setSettings] = useState<Record<string, string>>({});
@@ -140,7 +172,8 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const [isSchoolNotFound, setIsSchoolNotFound] = useState(false);
   const [unregisteredHost, setUnregisteredHost] = useState('');
-  const [isPlatformRoot, setIsPlatformRoot] = useState(false);
+  const [isPlatformRoot, setIsPlatformRoot] = useState<boolean>(() => checkIsPlatformRootSync());
+
 
   const applyBrandingCss = (primaryHex?: string, secondaryHex?: string, accentHex?: string, radius?: string) => {
     if (typeof document === 'undefined') return;

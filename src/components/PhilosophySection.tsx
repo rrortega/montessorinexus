@@ -877,7 +877,7 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
                   color: ctaColor,
                   fontSize: config.cta_size ? `${config.cta_size}px` : undefined
                 }}
-                className="rounded-full px-9 py-6 text-sm sm:text-base font-bold bg-forest text-white hover:bg-forest/90 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-0.5"
+                className="w-full sm:w-auto rounded-full px-6 sm:px-9 py-3.5 sm:py-5 text-sm sm:text-base font-bold bg-forest text-white hover:bg-forest/90 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-0.5 text-center justify-center"
               >
                 {ctaText}
               </Button>

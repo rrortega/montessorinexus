@@ -10,12 +10,15 @@ import {
   FileText, 
   AlertCircle 
 } from 'lucide-react';
-import { uploadFile } from '@/lib/sqlite';
+import { uploadFile, deleteUploadedFile } from '@/lib/sqlite';
 import { toast } from 'sonner';
 
 interface ImageUploadDropzoneProps {
   value?: string;
-  onChange: (url: string) => void;
+  onChange?: (url: string) => void;
+  currentImageUrl?: string;
+  onImageUploaded?: (url: string) => void;
+  onRemove?: () => void;
   label?: string;
   helperText?: string;
   aspectRatio?: 'landscape' | 'square' | 'portrait' | 'auto';
@@ -25,8 +28,11 @@ interface ImageUploadDropzoneProps {
 }
 
 export const ImageUploadDropzone: React.FC<ImageUploadDropzoneProps> = ({
-  value,
-  onChange,
+  value: propValue,
+  onChange: propOnChange,
+  currentImageUrl,
+  onImageUploaded,
+  onRemove,
   label = 'Fotografía o Imagen',
   helperText = 'Arrastra y suelta tu archivo aquí, o haz clic para explorar (PNG, JPG, WEBP hasta 25MB)',
   aspectRatio = 'landscape',
@@ -34,6 +40,12 @@ export const ImageUploadDropzone: React.FC<ImageUploadDropzoneProps> = ({
   folder = 'gallery',
   maxSizeMB = 25,
 }) => {
+  const value = propValue !== undefined ? propValue : (currentImageUrl || '');
+  const onChange = (url: string) => {
+    if (propOnChange) propOnChange(url);
+    if (onImageUploaded) onImageUploaded(url);
+    if (!url && onRemove) onRemove();
+  };
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -62,6 +74,8 @@ export const ImageUploadDropzone: React.FC<ImageUploadDropzoneProps> = ({
       return;
     }
 
+    const previousUrl = value;
+
     setFileDetails({
       name: file.name,
       size: formatFileSize(file.size),
@@ -79,6 +93,11 @@ export const ImageUploadDropzone: React.FC<ImageUploadDropzoneProps> = ({
       const res = await uploadFile(file, folder);
       clearInterval(progressTimer);
       setUploadProgress(100);
+
+      // Asynchronously delete replaced previous file from storage to avoid orphan garbage
+      if (previousUrl && previousUrl !== res.url) {
+        deleteUploadedFile(previousUrl).catch(() => {});
+      }
 
       setTimeout(() => {
         onChange(res.url);
@@ -115,7 +134,7 @@ export const ImageUploadDropzone: React.FC<ImageUploadDropzoneProps> = ({
       const file = e.dataTransfer.files[0];
       processFile(file);
     }
-  }, []);
+  }, [maxSizeMB, folder]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -126,9 +145,15 @@ export const ImageUploadDropzone: React.FC<ImageUploadDropzoneProps> = ({
 
   const handleRemove = (e: React.MouseEvent) => {
     e.stopPropagation();
+    const oldUrl = value;
     onChange('');
     setFileDetails(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
+
+    // Asynchronously delete removed file from storage
+    if (oldUrl) {
+      deleteUploadedFile(oldUrl).catch(() => {});
+    }
   };
 
   return (

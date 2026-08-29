@@ -1250,7 +1250,7 @@ export function HeroSection() {
                   <button
                     type="button"
                     onClick={() => handleCTA('visit')}
-                    className={`px-8 py-5 text-base sm:text-lg font-bold text-white shadow-xl hover:opacity-95 transition-all flex items-center gap-2 cursor-pointer ${buttonRadiusClass}`}
+                    className={`w-full sm:w-auto px-5 sm:px-8 py-3.5 sm:py-5 text-sm sm:text-base md:text-lg font-bold text-white shadow-xl hover:opacity-95 transition-all flex items-center justify-center gap-2 cursor-pointer text-center ${buttonRadiusClass}`}
                     style={{
                       backgroundColor: ctaBgColor,
                       fontFamily: ctaFont !== 'inherit' ? ctaFont : undefined,
@@ -1258,7 +1258,7 @@ export function HeroSection() {
                     }}
                   >
                     <span>{t(ctaPrimaryText)}</span>
-                    <ArrowRight className="w-5 h-5" />
+                    <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
                   </button>
                 )}
 
@@ -1772,7 +1772,7 @@ export function HeroSection() {
                     variant="accent"
                     size="lg"
                     onClick={() => handleCTA('visit')}
-                    className="rounded-full px-9 py-6 text-base font-extrabold uppercase tracking-wider text-white shadow-xl hover:scale-105 transition-all"
+                    className="w-full sm:w-auto rounded-full px-6 sm:px-9 py-3.5 sm:py-5 text-sm sm:text-base font-extrabold uppercase tracking-wider text-white shadow-xl hover:scale-105 transition-all text-center justify-center"
                     style={{
                       backgroundColor: ctaBgColor,
                       fontFamily: ctaFont !== 'inherit' ? ctaFont : undefined,
@@ -2189,7 +2189,7 @@ export function HeroSection() {
                   variant="secondary"
                   size="lg"
                   onClick={() => handleCTA('visit')}
-                  className="rounded-full px-8 py-6 text-base font-extrabold uppercase tracking-wide bg-white shadow-xl hover:scale-105 transition-all"
+                  className="w-full sm:w-auto rounded-full px-6 sm:px-8 py-3.5 sm:py-5 text-sm sm:text-base font-extrabold uppercase tracking-wide bg-white shadow-xl hover:scale-105 transition-all text-center justify-center"
                   style={{
                     color: brandPrimaryColor || '#1b3b2b',
                     fontSize: ctaSize > 0 ? `${ctaSize}px` : undefined
@@ -2384,7 +2384,7 @@ export function HeroSection() {
                         variant="accent"
                         size="lg"
                         onClick={() => handleCTA('visit')}
-                        className="rounded-full px-9 py-6 text-base sm:text-lg font-bold shadow-xl transition-all hover:-translate-y-0.5 hover:shadow-2xl text-white"
+                        className="w-full sm:w-auto rounded-full px-6 sm:px-9 py-3.5 sm:py-5 text-sm sm:text-base md:text-lg font-bold shadow-xl transition-all hover:-translate-y-0.5 hover:shadow-2xl text-white text-center justify-center"
                         style={{
                           backgroundColor: ctaBgColor,
                           fontFamily: ctaFont !== 'inherit' ? ctaFont : undefined,
@@ -2401,14 +2401,14 @@ export function HeroSection() {
                       <Button
                         variant="hero-outline"
                         size="lg"
-                        className="rounded-full px-9 py-6 text-base sm:text-lg border-white/40 hover:bg-white/10 backdrop-blur-sm transition-all flex items-center gap-2.5 group"
+                        className="w-full sm:w-auto rounded-full px-6 sm:px-9 py-3.5 sm:py-5 text-sm sm:text-base md:text-lg border-white/40 hover:bg-white/10 backdrop-blur-sm transition-all flex items-center justify-center gap-2.5 group text-center"
                         onClick={() => handleCTA('info')}
                         style={{
                           fontFamily: cta2Font !== 'inherit' ? cta2Font : undefined,
                           fontSize: cta2Size > 0 ? `${cta2Size}px` : undefined
                         }}
                       >
-                        <MessageCircle className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+                        <MessageCircle className="w-5 h-5 group-hover:rotate-12 transition-transform shrink-0" />
                         {t(ctaSecondaryText)}
                       </Button>
                     </Magnetic>
@@ -2546,7 +2546,7 @@ export function HeroSection() {
                       variant="accent"
                       size="lg"
                       onClick={() => handleCTA('visit')}
-                      className="rounded-2xl px-8 py-6 text-base font-bold shadow-lg hover:-translate-y-0.5 text-white"
+                      className="w-full sm:w-auto rounded-2xl px-6 sm:px-8 py-3.5 sm:py-5 text-sm sm:text-base font-bold shadow-lg hover:-translate-y-0.5 text-white text-center justify-center"
                       style={{
                         backgroundColor: ctaBgColor,
                         fontFamily: ctaFont !== 'inherit' ? ctaFont : undefined,
@@ -2561,14 +2561,14 @@ export function HeroSection() {
                     <Button
                       variant="hero-outline"
                       size="lg"
-                      className="rounded-2xl px-8 py-6 text-base border-white/30 hover:bg-white/10 backdrop-blur-sm"
+                      className="w-full sm:w-auto rounded-2xl px-6 sm:px-8 py-3.5 sm:py-5 text-sm sm:text-base border-white/30 hover:bg-white/10 backdrop-blur-sm flex items-center justify-center text-center"
                       onClick={() => handleCTA('info')}
                       style={{
                         fontFamily: cta2Font !== 'inherit' ? cta2Font : undefined,
                         fontSize: cta2Size > 0 ? `${cta2Size}px` : undefined
                       }}
                     >
-                      <MessageCircle className="w-5 h-5 mr-2" />
+                      <MessageCircle className="w-5 h-5 mr-2 shrink-0" />
                       {t(ctaSecondaryText)}
                     </Button>
                   )}
@@ -2995,7 +2995,7 @@ export function HeroSection() {
                   variant="accent"
                   size="lg"
                   onClick={() => handleCTA('visit')}
-                  className="rounded-full px-10 py-6 text-base sm:text-lg font-bold shadow-xl hover:scale-105 transition-all text-white"
+                  className="w-full sm:w-auto rounded-full px-6 sm:px-10 py-3.5 sm:py-5 text-sm sm:text-base md:text-lg font-bold shadow-xl hover:scale-105 transition-all text-white text-center justify-center"
                   style={{
                     backgroundColor: ctaBgColor,
                     fontFamily: ctaFont !== 'inherit' ? ctaFont : undefined,
@@ -3010,14 +3010,14 @@ export function HeroSection() {
                 <Button
                   variant="hero-outline"
                   size="lg"
-                  className="rounded-full px-9 py-6 text-base sm:text-lg border-white/30 hover:bg-white/10 backdrop-blur-sm"
+                  className="w-full sm:w-auto rounded-full px-6 sm:px-9 py-3.5 sm:py-5 text-sm sm:text-base md:text-lg border-white/30 hover:bg-white/10 backdrop-blur-sm flex items-center justify-center text-center"
                   onClick={() => handleCTA('info')}
                   style={{
                     fontFamily: cta2Font !== 'inherit' ? cta2Font : undefined,
                     fontSize: cta2Size > 0 ? `${cta2Size}px` : undefined
                   }}
                 >
-                  <MessageCircle className="w-5 h-5 mr-2" />
+                  <MessageCircle className="w-5 h-5 mr-2 shrink-0" />
                   {t(ctaSecondaryText)}
                 </Button>
               )}
@@ -3156,7 +3156,7 @@ export function HeroSection() {
                   variant="accent"
                   size="lg"
                   onClick={() => handleCTA('visit')}
-                  className="rounded-full px-10 py-6 text-base sm:text-lg font-bold shadow-xl hover:-translate-y-1 transition-all text-white"
+                  className="w-full sm:w-auto rounded-full px-6 sm:px-10 py-3.5 sm:py-5 text-sm sm:text-base md:text-lg font-bold shadow-xl hover:-translate-y-1 transition-all text-white text-center justify-center"
                   style={{
                     backgroundColor: ctaBgColor,
                     fontFamily: ctaFont !== 'inherit' ? ctaFont : undefined,
@@ -3171,14 +3171,14 @@ export function HeroSection() {
                 <Button
                   variant="hero-outline"
                   size="lg"
-                  className="rounded-full px-9 py-6 text-base sm:text-lg border-white/30 hover:bg-white/10 backdrop-blur-sm"
+                  className="w-full sm:w-auto rounded-full px-6 sm:px-9 py-3.5 sm:py-5 text-sm sm:text-base md:text-lg border-white/30 hover:bg-white/10 backdrop-blur-sm flex items-center justify-center text-center"
                   onClick={() => handleCTA('info')}
                   style={{
                     fontFamily: cta2Font !== 'inherit' ? cta2Font : undefined,
                     fontSize: cta2Size > 0 ? `${cta2Size}px` : undefined
                   }}
                 >
-                  <MessageCircle className="w-5 h-5 mr-2" />
+                  <MessageCircle className="w-5 h-5 mr-2 shrink-0" />
                   {t(ctaSecondaryText)}
                 </Button>
               )}

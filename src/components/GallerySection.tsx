@@ -12,15 +12,21 @@ interface Category {
   id: string;
   label: string;
   label_en: string;
+  translations?: Record<string, string>;
   icon: LucideIcon;
 }
 
 const ICON_MAP: Record<string, LucideIcon> = {
   all: LayoutGrid,
   practical: Settings,
+  sensorial: Hand,
   sensory: Hand,
   outdoors: Trees,
   arts: Palette,
+  art: Palette,
+  language: LayoutGrid,
+  math: LayoutGrid,
+  cultural: Trees,
 };
 
 export function GallerySection() {
@@ -40,7 +46,7 @@ export function GallerySection() {
     async function fetchGalleryData() {
       try {
         const catRes = await getGalleryCategories();
-        const imgRes = await getGalleryImages();
+        const imgRes = await getGalleryImages(undefined, 'web');
 
         if (catRes && catRes.length > 0) {
           const formattedCats: Category[] = [
@@ -49,6 +55,7 @@ export function GallerySection() {
               id: c.id,
               label: c.label,
               label_en: c.label_en || c.label,
+              translations: c.translations,
               icon: ICON_MAP[c.id] || LayoutGrid,
             }))
           ];
@@ -80,6 +87,18 @@ export function GallerySection() {
     ? dbImages
     : dbImages.filter(img => img.category_id === activeCategory);
 
+  const getLocalizedTitle = (img: GalleryImageItem) => {
+    if (img.translations?.[locale]?.title) return img.translations[locale].title;
+    if (locale === 'en' && img.title_en) return img.title_en;
+    return img.title;
+  };
+
+  const getLocalizedDescription = (img: GalleryImageItem) => {
+    if (img.translations?.[locale]?.description) return img.translations[locale].description;
+    if (locale === 'en' && img.description_en) return img.description_en;
+    return img.description;
+  };
+
   // Limit to 12 images for the grid
   const displayedImages = filteredImages.slice(0, 12);
   const remainingCount = filteredImages.length - 11; // Since the 12th image is the overlay
@@ -90,7 +109,7 @@ export function GallerySection() {
       <div className="relative w-full h-full bg-black overflow-hidden flex items-center justify-center">
         <motion.img
           src={img.src}
-          alt={locale === 'en' && img.title_en ? img.title_en : img.title}
+          alt={getLocalizedTitle(img)}
           initial={{ scale: 1 }}
           animate={{ scale: 1.08 }}
           transition={{ 
@@ -108,11 +127,11 @@ export function GallerySection() {
             className="text-center"
           >
             <h3 className="text-2xl font-bold mb-3 text-amber-200 drop-shadow-md font-display">
-              {locale === 'en' && img.title_en ? img.title_en : img.title}
+              {getLocalizedTitle(img)}
             </h3>
             <div className="w-12 h-0.5 bg-amber-200/50 mx-auto mb-4" />
             <p className="text-base md:text-lg font-medium max-w-lg mx-auto leading-relaxed text-white/95 drop-shadow-sm italic font-body">
-              "{locale === 'en' && img.description_en ? img.description_en : img.description}"
+              "{getLocalizedDescription(img)}"
             </p>
           </motion.div>
         </div>
@@ -153,7 +172,11 @@ export function GallerySection() {
                   }`}
                 >
                   <Icon className="w-4 h-4" />
-                  <span>{locale === 'en' ? cat.label_en : cat.label}</span>
+                  <span>
+                    {cat.id === 'all'
+                      ? (locale === 'en' ? cat.label_en : cat.label)
+                      : (cat.translations?.[locale] || (locale === 'en' ? cat.label_en : cat.label))}
+                  </span>
                 </button>
               </Magnetic>
             );
@@ -165,7 +188,8 @@ export function GallerySection() {
           <AnimatePresence mode="popLayout">
             {displayedImages.map((img, idx) => {
               const isLastItem = idx === 11 && filteredImages.length > 12;
-              const displayTitle = locale === 'en' && img.title_en ? img.title_en : img.title;
+              const displayTitle = getLocalizedTitle(img);
+              const displayDesc = getLocalizedDescription(img);
 
               return (
                 <motion.div
@@ -189,9 +213,11 @@ export function GallerySection() {
                     <h4 className="text-white font-bold text-sm sm:text-base line-clamp-1">
                       {displayTitle}
                     </h4>
-                    <p className="text-white/80 text-xs line-clamp-2 italic">
-                      "{locale === 'en' && img.description_en ? img.description_en : img.description}"
-                    </p>
+                    {displayDesc && (
+                      <p className="text-white/80 text-xs line-clamp-2 italic">
+                        "{displayDesc}"
+                      </p>
+                    )}
                   </div>
 
                   {/* Remaining Count Overlay on 12th card if more exist */}
