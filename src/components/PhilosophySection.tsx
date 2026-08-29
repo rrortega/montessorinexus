@@ -596,7 +596,7 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
           {titleText && (
             <h2
               style={{ fontFamily: titleFontFamily, color: titleColor }}
-              className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-foreground leading-[1.15]"
+              className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-foreground leading-[1.15] whitespace-pre-line"
             >
               {titleText}
             </h2>
@@ -605,7 +605,7 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
           {subtitleText && (
             <p
               style={{ fontFamily: subtitleFontFamily, color: subtitleColor }}
-              className="text-base sm:text-lg text-muted-foreground leading-relaxed"
+              className="text-base sm:text-lg text-muted-foreground leading-relaxed whitespace-pre-line"
             >
               {subtitleText}
             </p>
@@ -637,7 +637,7 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
                   )}
                   <p
                     style={{ fontFamily: missionFontFamily, color: missionColor }}
-                    className="text-base sm:text-lg md:text-xl font-display font-medium leading-relaxed text-balance"
+                    className="text-base sm:text-lg md:text-xl font-display font-medium leading-relaxed text-balance whitespace-pre-line"
                   >
                     "{missionText}"
                   </p>
@@ -710,11 +710,11 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
 
                     {/* Title & Subtitle */}
                     <div className="space-y-2">
-                      <h3 className="font-display text-lg sm:text-xl font-bold text-foreground leading-snug">
+                      <h3 className="font-display text-lg sm:text-xl font-bold text-foreground leading-snug whitespace-pre-line">
                         {cardTitle}
                       </h3>
                       {cardSubtitle && (
-                        <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                        <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
                           {cardSubtitle}
                         </p>
                       )}
