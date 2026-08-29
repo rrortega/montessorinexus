@@ -79,6 +79,19 @@ export const getSectionFontFamily = (fontId?: string): string | undefined => {
   return found ? found.family : undefined;
 };
 
+export const CARD_ICON_CATEGORIES = [
+  { id: 'all', label: 'Todos' },
+  { id: 'edu', label: '🎓 Idiomas/ABC' },
+  { id: 'nature', label: '🌿 Naturaleza' },
+  { id: 'values', label: '✨ Valores' }
+] as const;
+
+export const CARD_ICONS_BY_CAT: Record<string, string[]> = {
+  edu: ['GraduationCap', 'Languages', 'Type', 'SpellCheck', 'BookOpen', 'Library', 'School', 'Pencil', 'PenTool', 'Atom', 'Microscope', 'Calculator', 'Binary'],
+  nature: ['Sprout', 'Leaf', 'Trees', 'TreePine', 'Flower2', 'Sun', 'Sunrise', 'CloudSun', 'Wind', 'Mountain', 'Globe', 'Compass', 'Rainbow', 'Footprints'],
+  values: ['Heart', 'HandHeart', 'Baby', 'Users', 'Smile', 'Sparkles', 'Star', 'Award', 'Trophy', 'Shield', 'Lightbulb', 'Palette', 'Music', 'Puzzle', 'Shapes', 'Clock', 'Anchor', 'Feather', 'Eye', 'Layers']
+};
+
 export const CustomFontPicker: React.FC<{
   value?: string;
   onChange: (fontId: string) => void;
@@ -312,6 +325,7 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
   const setEditorLang = onSelectEditorLang || setInternalEditorLang;
   const currentLangObj = getLanguageByCode(editorLang);
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
+  const [cardIconCategory, setCardIconCategory] = useState<'all' | 'edu' | 'nature' | 'values'>('all');
 
   const template = SECTION_TEMPLATES.find(t => t.type === section.type);
   const IconComp = template?.icon || Layers;
@@ -612,16 +626,22 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
 
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-slate-600">
-              {section.config?.showCta !== false && (Boolean(section.ctaText) || section.config?.showCta === true) ? 'Activado' : 'Desactivado'}
+              {section.showCta !== false && (section.config?.showCta === true || (section.config?.showCta !== false && Boolean(getLangValue('ctaText') || section.ctaText))) ? 'Activado' : 'Desactivado'}
             </span>
             <Switch
-              checked={section.config?.showCta !== false && (Boolean(section.ctaText) || section.config?.showCta === true)}
-              onCheckedChange={(checked) => handleConfigChange('showCta', checked)}
+              checked={section.showCta !== false && (section.config?.showCta === true || (section.config?.showCta !== false && Boolean(getLangValue('ctaText') || section.ctaText)))}
+              onCheckedChange={(checked) => {
+                onUpdateSection({ showCta: checked });
+                handleConfigChange('showCta', checked);
+                if (checked && !getLangValue('ctaText') && !section.ctaText) {
+                  setLangValue('ctaText', 'Conoce Más');
+                }
+              }}
             />
           </div>
         </div>
 
-        {section.config?.showCta !== false && (Boolean(section.ctaText) || section.config?.showCta === true) && (
+        {section.showCta !== false && (section.config?.showCta === true || (section.config?.showCta !== false && Boolean(getLangValue('ctaText') || section.ctaText))) && (
           <div className="space-y-3 pt-3 border-t border-slate-100 animate-in fade-in duration-150">
             <div className="space-y-1">
               <label className="text-[10px] font-bold text-slate-700">
@@ -1192,27 +1212,51 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
                           </label>
                           <div className="space-y-2">
                             {/* Icon Picker Grid */}
-                            <div className="space-y-1">
-                              <span className="text-[10px] text-muted-foreground block">Seleccionar Icono:</span>
-                              <div className="grid grid-cols-6 sm:grid-cols-11 gap-1 bg-white p-2 rounded-xl border border-slate-200 max-h-36 overflow-y-auto">
-                                {Object.entries(PILLAR_ICONS_MAP).map(([iconName, Icon]) => {
-                                  const isSelected = !card.imageUrl && (card.icon || 'Compass') === iconName;
-                                  return (
+                            <div className="space-y-1.5">
+                              <div className="flex items-center justify-between gap-1 flex-wrap">
+                                <span className="text-[10px] text-muted-foreground font-semibold">Seleccionar Icono:</span>
+                                <div className="flex items-center gap-1">
+                                  {CARD_ICON_CATEGORIES.map(cat => (
                                     <button
-                                      key={iconName}
+                                      key={cat.id}
                                       type="button"
-                                      onClick={() => handleUpdateSingleCard(card.id, { icon: iconName, imageUrl: '' })}
-                                      className={`p-2 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
-                                        isSelected
-                                          ? 'bg-forest text-white shadow-3xs scale-105'
-                                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                                      onClick={() => setCardIconCategory(cat.id)}
+                                      className={`px-2 py-0.5 rounded-md text-[9px] font-bold transition-all cursor-pointer ${
+                                        cardIconCategory === cat.id
+                                          ? 'bg-forest text-white shadow-3xs'
+                                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                       }`}
-                                      title={iconName}
                                     >
-                                      <Icon className="w-4 h-4" />
+                                      {cat.label}
                                     </button>
-                                  );
-                                })}
+                                  ))}
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-6 sm:grid-cols-11 gap-1 bg-white p-2 rounded-xl border border-slate-200 max-h-36 overflow-y-auto">
+                                {Object.entries(PILLAR_ICONS_MAP)
+                                  .filter(([iconName]) => {
+                                    if (cardIconCategory === 'all') return true;
+                                    return CARD_ICONS_BY_CAT[cardIconCategory]?.includes(iconName);
+                                  })
+                                  .map(([iconName, Icon]) => {
+                                    const isSelected = !card.imageUrl && (card.icon || 'Compass') === iconName;
+                                    return (
+                                      <button
+                                        key={iconName}
+                                        type="button"
+                                        onClick={() => handleUpdateSingleCard(card.id, { icon: iconName, imageUrl: '' })}
+                                        className={`p-2 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
+                                          isSelected
+                                            ? 'bg-forest text-white shadow-3xs scale-105'
+                                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                                        }`}
+                                        title={iconName}
+                                      >
+                                        <Icon className="w-4 h-4" />
+                                      </button>
+                                    );
+                                  })}
                               </div>
                             </div>
 

@@ -3,27 +3,52 @@ import { motion, useTransform, AnimatePresence } from 'framer-motion';
 import {
   Compass,
   BookOpen,
+  Library,
   Award,
   Globe,
   Leaf,
   Heart,
   Sparkles,
   Sun,
+  Sunrise,
+  CloudSun,
+  Wind,
+  Mountain,
   Users,
   Smile,
   Feather,
   Shield,
   Star,
+  Trophy,
   Lightbulb,
   Eye,
   Layers,
   Anchor,
   Trees,
+  TreePine,
   Flower2,
+  Sprout,
   Music,
   Palette,
   Check,
-  GraduationCap
+  GraduationCap,
+  Languages,
+  Type,
+  SpellCheck,
+  PenTool,
+  Pencil,
+  School,
+  Atom,
+  Microscope,
+  Calculator,
+  Binary,
+  Rainbow,
+  Footprints,
+  HandHeart,
+  Baby,
+  Puzzle,
+  Shapes,
+  Clock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/context/I18nContext';
@@ -53,6 +78,8 @@ export interface PillarCardItem {
   subtitle_de?: string;
   subtitle_ru?: string;
   subtitle_ca?: string;
+  badge?: string;
+  badge_en?: string;
   bgColor?: string;
   bgColorDark?: string;
   textColor?: string;
@@ -62,28 +89,58 @@ export interface PillarCardItem {
 }
 
 export const PILLAR_ICONS_MAP: Record<string, React.ElementType> = {
-  Compass,
+  // Idiomas, Letras & Educación
+  GraduationCap,
+  Languages,
+  Type,
+  SpellCheck,
   BookOpen,
-  Award,
-  Globe,
+  Library,
+  School,
+  Pencil,
+  PenTool,
+  Atom,
+  Microscope,
+  Calculator,
+  Binary,
+
+  // Naturaleza, Tierra & Botánica
+  Sprout,
   Leaf,
-  Heart,
-  Sparkles,
+  Trees,
+  TreePine,
+  Flower2,
   Sun,
+  Sunrise,
+  CloudSun,
+  Wind,
+  Mountain,
+  Globe,
+  Compass,
+  Rainbow,
+  Footprints,
+
+  // Valores, Cuidado, Arte & Comunidad
+  Heart,
+  HandHeart,
+  Baby,
   Users,
   Smile,
-  Feather,
-  Shield,
+  Sparkles,
   Star,
+  Award,
+  Trophy,
+  Shield,
   Lightbulb,
-  Eye,
-  Layers,
-  Anchor,
-  Trees,
-  Flower2,
-  Music,
   Palette,
-  GraduationCap
+  Music,
+  Puzzle,
+  Shapes,
+  Clock,
+  Anchor,
+  Feather,
+  Eye,
+  Layers
 };
 
 export const DEFAULT_PILLAR_CARDS: PillarCardItem[] = [
@@ -178,11 +235,13 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
   const titleFontFamily = getSectionFontFamily(config.title_font);
   const subtitleFontFamily = getSectionFontFamily(config.subtitle_font);
   const missionFontFamily = getSectionFontFamily(config.mission_font);
+  const ctaFontFamily = getSectionFontFamily(config.cta_font);
 
   const badgeColor = config.badge_color || undefined;
   const titleColor = config.title_color || undefined;
   const subtitleColor = config.subtitle_color || undefined;
   const missionColor = config.mission_color || undefined;
+  const ctaColor = config.cta_color || undefined;
 
   // Multi-language text resolution helper
   const getLocalizedText = (obj: any, field: string, defVal: string = '') => {
@@ -206,6 +265,28 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
     'missionText',
     'En nuestra escuela nos comprometemos a entender la infancia para ayudar a los niños a desarrollar la grandeza de sus potencialidades.'
   );
+  const ctaText = getLocalizedText(section, 'ctaText', 'Conoce Más');
+  const isCtaActive = section?.showCta !== false && (config.showCta === true || (config.showCta !== false && (Boolean(section?.ctaText) || Boolean(config.ctaText))));
+  const ctaUrl = section?.ctaUrl || config.ctaUrl || '#contacto';
+
+  const handleCtaClick = () => {
+    if (ctaUrl) {
+      if (ctaUrl.startsWith('http://') || ctaUrl.startsWith('https://') || ctaUrl.startsWith('mailto:') || ctaUrl.startsWith('tel:')) {
+        window.open(ctaUrl, '_blank');
+      } else if (ctaUrl.startsWith('#')) {
+        const el = document.querySelector(ctaUrl);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth' });
+        } else {
+          handleCTA('method');
+        }
+      } else {
+        window.location.href = ctaUrl;
+      }
+    } else {
+      handleCTA('method');
+    }
+  };
 
   const cards: PillarCardItem[] = Array.isArray(config.cards) && config.cards.length > 0
     ? config.cards
@@ -487,15 +568,19 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
                     "{missionText}"
                   </p>
                 </div>
-                {section?.ctaText && (
+                {isCtaActive && (
                   <Magnetic strength={0.15}>
                     <Button
                       variant="secondary"
                       size="lg"
-                      onClick={() => handleCTA('method')}
+                      onClick={handleCtaClick}
+                      style={{
+                        fontFamily: ctaFontFamily,
+                        color: ctaColor
+                      }}
                       className="rounded-full px-7 bg-white text-forest hover:bg-white/90 shadow-md shrink-0 font-bold"
                     >
-                      {getLocalizedText(section, 'ctaText', 'Conoce Más')}
+                      {ctaText}
                     </Button>
                   </Magnetic>
                 )}
@@ -574,6 +659,26 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
             );
           })}
         </div>
+
+        {/* Section Bottom CTA Button (when enabled and no mission card or as primary action) */}
+        {isCtaActive && (
+          <FadeInScroll direction="up" className="mt-12 sm:mt-16 text-center">
+            <Magnetic strength={0.15}>
+              <Button
+                variant="default"
+                size="lg"
+                onClick={handleCtaClick}
+                style={{
+                  fontFamily: ctaFontFamily,
+                  color: ctaColor
+                }}
+                className="rounded-full px-9 py-6 text-sm sm:text-base font-bold bg-forest text-white hover:bg-forest/90 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-0.5"
+              >
+                {ctaText}
+              </Button>
+            </Magnetic>
+          </FadeInScroll>
+        )}
 
       </div>
     </section>
