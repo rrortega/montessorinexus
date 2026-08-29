@@ -2383,6 +2383,32 @@ export const WebBuilderSection: React.FC = () => {
     setDrawerOpen(true);
   };
 
+  // Automatically scroll the iframe preview to the section being edited when drawer opens
+  useEffect(() => {
+    if (!drawerOpen || !iframeRef.current?.contentWindow) return;
+
+    let targetSectionId = '';
+    if (activeTab === 'header') targetSectionId = 'header';
+    else if (activeTab === 'hero') targetSectionId = 'hero';
+    else if (activeTab === 'cta') targetSectionId = 'footer';
+    else if (typeof activeTab === 'string' && activeTab.startsWith('section:')) {
+      targetSectionId = activeTab.replace('section:', '');
+    }
+
+    if (targetSectionId) {
+      const timer = setTimeout(() => {
+        iframeRef.current?.contentWindow?.postMessage(
+          {
+            type: 'SCROLL_TO_SECTION',
+            sectionId: targetSectionId
+          },
+          '*'
+        );
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [activeTab, drawerOpen]);
+
   useEffect(() => {
     const handleChildMessage = (event: MessageEvent) => {
       if (event.data && event.data.type === 'OPEN_SECTION_DRAWER') {

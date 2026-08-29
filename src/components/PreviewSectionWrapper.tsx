@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Pencil } from 'lucide-react';
 
 interface PreviewHoverContextType {
@@ -43,6 +43,35 @@ export const PreviewSectionWrapper: React.FC<PreviewSectionWrapperProps> = ({
   const isThisHovered = hoveredId === id;
   const isAnyHovered = hoveredId !== null;
   const isOtherHovered = isAnyHovered && !isThisHovered;
+
+  // Listen to drawer open events from the parent builder window and scroll into view smoothly
+  useEffect(() => {
+    if (!isBuilderPreview) return;
+
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data && event.data.type === 'SCROLL_TO_SECTION') {
+        const targetId = event.data.sectionId;
+        if (targetId === id) {
+          const el = document.getElementById(id);
+          if (el) {
+            if (id === 'header') {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else {
+              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            setHoveredId(id);
+            // Keep the section highlighted for 3 seconds
+            setTimeout(() => {
+              setHoveredId((current) => current === id ? null : current);
+            }, 3000);
+          }
+        }
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [id, isBuilderPreview, setHoveredId]);
 
   const handleEditClick = (e: React.MouseEvent) => {
     e.stopPropagation();
