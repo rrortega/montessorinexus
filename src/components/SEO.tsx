@@ -1,12 +1,14 @@
 import { useEffect } from 'react';
 import { useI18n } from '@/context/I18nContext';
+import { useSiteSettings } from '@/context/SettingsContext';
 
 export function SEO() {
   const { t, locale } = useI18n();
+  const { settings, schoolName, schoolTagline } = useSiteSettings();
 
   useEffect(() => {
-    const title = t("Ceiba Montessori International | Educación Montessori en Cancún");
-    const description = t("Educación Montessori Internacional en Cancún. Formamos niños independientes, conscientes y preparados para un mundo global, en un entorno natural y bilingüe. Av. Huayacán, Cancún.");
+    const title = settings?.seo_title || `${schoolName || 'Colegio Montessori'} | ${schoolTagline || 'Educación Montessori'}`;
+    const description = settings?.seo_description || t("Educación Montessori Internacional en Cancún. Formamos niños independientes, conscientes y preparados para un mundo global, en un entorno natural y bilingüe. Av. Huayacán, Cancún.");
     
     document.title = title;
     
@@ -19,6 +21,26 @@ export function SEO() {
     }
     metaDescription.setAttribute('content', description);
 
+    // Update Meta Keywords
+    if (settings?.seo_keywords) {
+      let metaKeywords = document.querySelector('meta[name="keywords"]');
+      if (!metaKeywords) {
+        metaKeywords = document.createElement('meta');
+        metaKeywords.setAttribute('name', 'keywords');
+        document.head.appendChild(metaKeywords);
+      }
+      metaKeywords.setAttribute('content', settings.seo_keywords);
+    }
+
+    // Update Robots
+    let metaRobots = document.querySelector('meta[name="robots"]');
+    if (!metaRobots) {
+      metaRobots = document.createElement('meta');
+      metaRobots.setAttribute('name', 'robots');
+      document.head.appendChild(metaRobots);
+    }
+    metaRobots.setAttribute('content', settings?.seo_allow_indexing === 'false' ? 'noindex, nofollow' : 'index, follow');
+
     // Update OG Title
     let ogTitle = document.querySelector('meta[property="og:title"]');
     if (!ogTitle) {
@@ -26,7 +48,7 @@ export function SEO() {
       ogTitle.setAttribute('property', 'og:title');
       document.head.appendChild(ogTitle);
     }
-    ogTitle.setAttribute('content', t("Ceiba Montessori International | Cancún"));
+    ogTitle.setAttribute('content', settings?.og_title || title);
 
     // Update OG Description
     let ogDescription = document.querySelector('meta[property="og:description"]');
@@ -35,7 +57,7 @@ export function SEO() {
       ogDescription.setAttribute('property', 'og:description');
       document.head.appendChild(ogDescription);
     }
-    ogDescription.setAttribute('content', t("Educación Montessori Internacional en Cancún. Formamos niños independientes, conscientes y preparados para un mundo global."));
+    ogDescription.setAttribute('content', settings?.og_description || description);
 
     // Update OG Image
     let ogImage = document.querySelector('meta[property="og:image"]');
@@ -44,8 +66,7 @@ export function SEO() {
       ogImage.setAttribute('property', 'og:image');
       document.head.appendChild(ogImage);
     }
-    // Using the new og-image.png from public folder
-    ogImage.setAttribute('content', `${window.location.origin}/og-image.png`);
+    ogImage.setAttribute('content', settings?.og_image_url || `${window.location.origin}/og-image.png`);
 
     // Update OG URL
     let ogUrl = document.querySelector('meta[property="og:url"]');

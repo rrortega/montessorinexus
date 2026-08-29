@@ -32,9 +32,11 @@ import {
   Languages
 } from 'lucide-react';
 import { ImageUploadDropzone } from '@/components/ui/ImageUploadDropzone';
+import { ALL_SUPPORTED_LANGUAGES, getLanguageByCode } from './languages';
 
 interface SectionDedicatedEditorProps {
   section: WebSectionItem;
+  enabledLangsStr?: string;
   onUpdateSection: (updates: Partial<WebSectionItem>) => void;
   onDuplicateSection?: () => void;
   onDeleteSection?: () => void;
@@ -42,11 +44,20 @@ interface SectionDedicatedEditorProps {
 
 export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
   section,
+  enabledLangsStr = 'es,en',
   onUpdateSection,
   onDuplicateSection,
   onDeleteSection
 }) => {
-  const [editorLang, setEditorLang] = useState<'es' | 'en'>('es');
+  const activeCodes = enabledLangsStr
+    .split(',')
+    .map(s => s.trim().toLowerCase())
+    .filter(Boolean);
+
+  const activeLanguages = activeCodes.map(code => getLanguageByCode(code));
+  const [editorLang, setEditorLang] = useState<string>(activeCodes[0] || 'es');
+  const currentLangObj = getLanguageByCode(editorLang);
+
   const template = SECTION_TEMPLATES.find(t => t.type === section.type);
   const IconComp = template?.icon || Layers;
 
@@ -61,6 +72,30 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
     });
   };
 
+  const getLangValue = (field: 'name' | 'badge' | 'title' | 'subtitle' | 'ctaText'): string => {
+    if (editorLang === 'es') return (section[field] as string) || '';
+    const key = `${field}_${editorLang}` as keyof WebSectionItem;
+    return (section[key] as string) || '';
+  };
+
+  const setLangValue = (field: 'name' | 'badge' | 'title' | 'subtitle' | 'ctaText', value: string) => {
+    if (editorLang === 'es') {
+      onUpdateSection({ [field]: value });
+    } else {
+      onUpdateSection({ [`${field}_${editorLang}`]: value } as any);
+    }
+  };
+
+  const getConfigLangValue = (key: string, defVal: string = ''): string => {
+    const fullKey = editorLang === 'es' ? key : `${key}_${editorLang}`;
+    return section.config?.[fullKey] ?? defVal;
+  };
+
+  const setConfigLangValue = (key: string, val: any) => {
+    const fullKey = editorLang === 'es' ? key : `${key}_${editorLang}`;
+    handleConfigChange(fullKey, val);
+  };
+
   return (
     <div className="space-y-6 text-xs text-slate-800 animate-in fade-in duration-200">
       
@@ -73,7 +108,7 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="font-bold text-sm text-slate-900 truncate">
-                {editorLang === 'en' && section.name_en ? section.name_en : section.name}
+                {getLangValue('name') || section.name}
               </h3>
               {template?.tag && (
                 <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-forest/10 text-forest border border-forest/20">
@@ -103,44 +138,40 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
         </div>
       </div>
 
-      {/* LANGUAGE SELECTOR SWITCH (ESPAÑOL / ENGLISH) */}
-      <div className="flex items-center justify-between p-3 rounded-2xl bg-gradient-to-r from-forest/5 via-forest/10 to-amber-500/5 border border-forest/20 shadow-3xs">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-forest text-white flex items-center justify-center shadow-3xs">
-            <Globe className="w-4 h-4" />
+      {/* LANGUAGE SELECTOR SWITCH (DYNAMIC TO ALL ENABLED SITE LANGUAGES) */}
+      <div className="p-3 rounded-2xl bg-gradient-to-r from-forest/5 via-forest/10 to-amber-500/5 border border-forest/20 shadow-3xs space-y-2.5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-forest text-white flex items-center justify-center shadow-3xs">
+              <Globe className="w-4 h-4" />
+            </div>
+            <div>
+              <span className="text-xs font-extrabold text-slate-900 block">Idioma de Edición</span>
+              <span className="text-[10px] text-muted-foreground">Configurando textos para {currentLangObj.name}</span>
+            </div>
           </div>
-          <div>
-            <span className="text-xs font-extrabold text-slate-900 block">Idioma de Edición</span>
-            <span className="text-[10px] text-muted-foreground">Configurá textos para cada idioma</span>
-          </div>
+
+          <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-white border border-slate-200 text-slate-700 shadow-3xs">
+            {currentLangObj.flag} {currentLangObj.code.toUpperCase()}
+          </span>
         </div>
 
-        <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200 shadow-3xs">
-          <button
-            type="button"
-            onClick={() => setEditorLang('es')}
-            className={`px-3 py-1.5 text-xs font-extrabold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
-              editorLang === 'es'
-                ? 'bg-forest text-white shadow-3xs scale-100'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-            }`}
-          >
-            <span>🇪🇸</span>
-            <span>Español (ES)</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setEditorLang('en')}
-            className={`px-3 py-1.5 text-xs font-extrabold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
-              editorLang === 'en'
-                ? 'bg-forest text-white shadow-3xs scale-100'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-            }`}
-          >
-            <span>🇺🇸</span>
-            <span>English (EN)</span>
-          </button>
+        <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200 shadow-3xs flex-wrap">
+          {activeLanguages.map((l) => (
+            <button
+              key={l.code}
+              type="button"
+              onClick={() => setEditorLang(l.code)}
+              className={`px-3 py-1.5 text-xs font-extrabold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                editorLang === l.code
+                  ? 'bg-forest text-white shadow-3xs scale-100'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              <span>{l.flag}</span>
+              <span>{l.name}</span>
+            </button>
+          ))}
         </div>
       </div>
 
@@ -150,45 +181,37 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-forest/10 text-forest flex items-center justify-center font-bold">1</div>
             <h4 className="font-bold text-forest text-xs sm:text-sm">
-              Titulares & Textos ({editorLang === 'es' ? 'Español' : 'English'})
+              Titulares & Textos ({currentLangObj.name})
             </h4>
           </div>
-          <span className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold ${
-            editorLang === 'es' ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-blue-100 text-blue-800 border border-blue-200'
-          }`}>
-            {editorLang === 'es' ? '🇪🇸 Idioma Español' : '🇺🇸 Idioma Inglés'}
+          <span className="px-2.5 py-0.5 rounded-md text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-200">
+            {currentLangObj.flag} {currentLangObj.name}
           </span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="space-y-1">
             <label className="text-[10px] font-bold text-slate-700">
-              Nombre de la Sección ({editorLang.toUpperCase()}):
+              Nombre de la Sección ({currentLangObj.code.toUpperCase()}):
             </label>
             <input
               type="text"
-              value={editorLang === 'es' ? section.name : (section.name_en || '')}
-              onChange={(e) => {
-                if (editorLang === 'es') onUpdateSection({ name: e.target.value });
-                else onUpdateSection({ name_en: e.target.value });
-              }}
-              placeholder={editorLang === 'es' ? 'Nombre identificador' : 'Section Name in English'}
+              value={getLangValue('name')}
+              onChange={(e) => setLangValue('name', e.target.value)}
+              placeholder={`Nombre en ${currentLangObj.name}`}
               className="w-full px-2.5 py-1.5 text-xs font-semibold text-slate-900 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-forest/20 focus:border-forest"
             />
           </div>
 
           <div className="space-y-1">
             <label className="text-[10px] font-bold text-slate-700">
-              Etiqueta Superior (Badge / Eyebrow {editorLang.toUpperCase()}):
+              Etiqueta Superior (Badge / Eyebrow {currentLangObj.code.toUpperCase()}):
             </label>
             <input
               type="text"
-              value={editorLang === 'es' ? (section.badge || '') : (section.badge_en || '')}
-              onChange={(e) => {
-                if (editorLang === 'es') onUpdateSection({ badge: e.target.value });
-                else onUpdateSection({ badge_en: e.target.value });
-              }}
-              placeholder={editorLang === 'es' ? 'Ej: Nuestra Filosofía' : 'Ex: Our Philosophy'}
+              value={getLangValue('badge')}
+              onChange={(e) => setLangValue('badge', e.target.value)}
+              placeholder={`Ej: Eyebrow en ${currentLangObj.name}`}
               className="w-full px-2.5 py-1.5 text-xs font-semibold text-slate-900 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-forest/20 focus:border-forest"
             />
           </div>
@@ -196,32 +219,26 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
 
         <div className="space-y-1">
           <label className="text-[10px] font-bold text-slate-700">
-            Título Principal de la Sección ({editorLang.toUpperCase()}):
+            Título Principal de la Sección ({currentLangObj.code.toUpperCase()}):
           </label>
           <input
             type="text"
-            value={editorLang === 'es' ? section.title : (section.title_en || '')}
-            onChange={(e) => {
-              if (editorLang === 'es') onUpdateSection({ title: e.target.value });
-              else onUpdateSection({ title_en: e.target.value });
-            }}
-            placeholder={editorLang === 'es' ? 'Título principal en español' : 'Main section title in English'}
+            value={getLangValue('title')}
+            onChange={(e) => setLangValue('title', e.target.value)}
+            placeholder={`Título principal en ${currentLangObj.name}`}
             className="w-full px-3 py-2 text-xs font-bold text-slate-900 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-forest/20 focus:border-forest"
           />
         </div>
 
         <div className="space-y-1">
           <label className="text-[10px] font-bold text-slate-700">
-            Subtítulo / Bajada Descriptiva ({editorLang.toUpperCase()}):
+            Subtítulo / Bajada Descriptiva ({currentLangObj.code.toUpperCase()}):
           </label>
           <textarea
-            value={editorLang === 'es' ? (section.subtitle || '') : (section.subtitle_en || '')}
-            onChange={(e) => {
-              if (editorLang === 'es') onUpdateSection({ subtitle: e.target.value });
-              else onUpdateSection({ subtitle_en: e.target.value });
-            }}
+            value={getLangValue('subtitle')}
+            onChange={(e) => setLangValue('subtitle', e.target.value)}
             rows={2}
-            placeholder={editorLang === 'es' ? 'Descripción introductoria o propósito...' : 'Introductory description or purpose in English...'}
+            placeholder={`Descripción introductoria o propósito en ${currentLangObj.name}...`}
             className="w-full px-3 py-2 text-xs text-slate-800 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-forest/20 focus:border-forest"
           />
         </div>
@@ -262,23 +279,20 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg bg-forest/10 text-forest flex items-center justify-center font-bold">2</div>
           <h4 className="font-bold text-forest text-xs sm:text-sm">
-            Botón de Acción CTA ({editorLang === 'es' ? 'Español' : 'English'})
+            Botón de Acción CTA ({currentLangObj.name})
           </h4>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="space-y-1">
             <label className="text-[10px] font-bold text-slate-700">
-              Texto del Botón ({editorLang.toUpperCase()}):
+              Texto del Botón ({currentLangObj.code.toUpperCase()}):
             </label>
             <input
               type="text"
-              value={editorLang === 'es' ? (section.ctaText || '') : (section.ctaText_en || '')}
-              onChange={(e) => {
-                if (editorLang === 'es') onUpdateSection({ ctaText: e.target.value });
-                else onUpdateSection({ ctaText_en: e.target.value });
-              }}
-              placeholder={editorLang === 'es' ? 'Ej: Quiero una cita o Más Información' : 'Ex: Book a Tour / Learn More'}
+              value={getLangValue('ctaText')}
+              onChange={(e) => setLangValue('ctaText', e.target.value)}
+              placeholder={`Texto del botón en ${currentLangObj.name}`}
               className="w-full px-2.5 py-1.5 text-xs font-semibold text-slate-900 bg-white border border-slate-200 rounded-lg"
             />
           </div>
@@ -319,35 +333,23 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
 
           <div className="space-y-2 pt-2 border-t border-slate-100">
             <label className="text-[11px] font-bold text-slate-700 block">
-              Puntos de Beneficio ({editorLang === 'es' ? 'Español' : 'English'}):
+              Puntos de Beneficio ({currentLangObj.name}):
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {[
-                {
-                  key: editorLang === 'es' ? 'item1' : 'item1_en',
-                  def: editorLang === 'es' ? 'Bilingüe (Inglés vivido naturalmente)' : 'Bilingual (Naturally lived English)'
-                },
-                {
-                  key: editorLang === 'es' ? 'item2' : 'item2_en',
-                  def: editorLang === 'es' ? 'Áreas verdes y contacto con la naturaleza' : 'Green areas and connection with nature'
-                },
-                {
-                  key: editorLang === 'es' ? 'item3' : 'item3_en',
-                  def: editorLang === 'es' ? 'Actividades de vida práctica y sensorial' : 'Practical life and sensorial activities'
-                },
-                {
-                  key: editorLang === 'es' ? 'item4' : 'item4_en',
-                  def: editorLang === 'es' ? 'Desarrollo socioemocional y autonomía' : 'Socio-emotional development & autonomy'
-                }
+                { key: 'item1', def: 'Bilingüe (Inglés vivido naturalmente)' },
+                { key: 'item2', def: 'Áreas verdes y contacto con la naturaleza' },
+                { key: 'item3', def: 'Actividades de vida práctica y sensorial' },
+                { key: 'item4', def: 'Desarrollo socioemocional y autonomía' }
               ].map((item, idx) => (
                 <div key={item.key} className="space-y-0.5">
                   <span className="text-[9px] font-bold text-slate-500">
-                    Beneficio {idx + 1} ({editorLang.toUpperCase()}):
+                    Beneficio {idx + 1} ({currentLangObj.code.toUpperCase()}):
                   </span>
                   <input
                     type="text"
-                    value={section.config?.[item.key] ?? item.def}
-                    onChange={(e) => handleConfigChange(item.key, e.target.value)}
+                    value={getConfigLangValue(item.key, item.def)}
+                    onChange={(e) => setConfigLangValue(item.key, e.target.value)}
                     className="w-full px-2 py-1 text-xs text-slate-900 bg-slate-50 border border-slate-200 rounded-lg"
                   />
                 </div>
@@ -366,19 +368,13 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
 
           <div className="space-y-2">
             <label className="text-[11px] font-bold text-slate-700 block">
-              Texto Destacado de Misión ({editorLang.toUpperCase()}):
+              Texto Destacado de Misión ({currentLangObj.name}):
             </label>
             <textarea
-              value={editorLang === 'es'
-                ? (section.config?.missionText ?? 'En nuestra escuela nos comprometemos a entender la infancia para ayudar a los niños a desarrollar la grandeza de sus potencialidades.')
-                : (section.config?.missionText_en ?? 'At our school, we are committed to understanding childhood to help children develop their full human potential.')
-              }
-              onChange={(e) => {
-                if (editorLang === 'es') handleConfigChange('missionText', e.target.value);
-                else handleConfigChange('missionText_en', e.target.value);
-              }}
+              value={getConfigLangValue('missionText', 'En nuestra escuela nos comprometemos a entender la infancia para ayudar a los niños a desarrollar la grandeza de sus potencialidades.')}
+              onChange={(e) => setConfigLangValue('missionText', e.target.value)}
               rows={3}
-              placeholder={editorLang === 'es' ? 'Texto de misión en español...' : 'Mission statement in English...'}
+              placeholder={`Texto de misión en ${currentLangObj.name}...`}
               className="w-full px-3 py-2 text-xs text-slate-800 bg-slate-50 border border-slate-200 rounded-xl"
             />
           </div>
@@ -394,18 +390,12 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
 
           <div className="space-y-1">
             <label className="text-[10px] font-bold text-slate-700">
-              Dirección Física Completa ({editorLang.toUpperCase()}):
+              Dirección Física Completa ({currentLangObj.name}):
             </label>
             <input
               type="text"
-              value={editorLang === 'es'
-                ? (section.config?.address || 'Av. Principal 123, Zona Escolar, Benito Juárez, Quintana Roo')
-                : (section.config?.address_en || '123 Main Ave, School District, Benito Juarez, Quintana Roo')
-              }
-              onChange={(e) => {
-                if (editorLang === 'es') handleConfigChange('address', e.target.value);
-                else handleConfigChange('address_en', e.target.value);
-              }}
+              value={getConfigLangValue('address', 'Av. Principal 123, Zona Escolar, Benito Juárez, Quintana Roo')}
+              onChange={(e) => setConfigLangValue('address', e.target.value)}
               className="w-full px-2.5 py-1.5 text-xs text-slate-900 bg-white border border-slate-200 rounded-lg"
             />
           </div>

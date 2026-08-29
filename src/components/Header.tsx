@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Menu, X, Globe, Sun, Moon, Phone, Mail, MapPin, Sparkles, Link2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Menu, X, Globe, Sun, Moon, Phone, Mail, MapPin, Sparkles, Link2, ChevronDown, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useI18n } from '@/context/I18nContext';
@@ -33,12 +33,16 @@ function hexToRgba(hex?: string, alpha = 0.95): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
+import { ALL_SUPPORTED_LANGUAGES, getLanguageByCode } from '@/pages/admin/web-builder/languages';
+
 interface HeaderProps {
   forceScrolled?: boolean;
 }
 
 export function Header({ forceScrolled = false }: HeaderProps) {
   const { t, locale, setLocale } = useI18n();
+  const [langDropdownOpen, setLangDropdownOpen] = useState(false);
+  const langDropdownRef = useRef<HTMLDivElement>(null);
   const { handleCTA } = useCTA();
   const {
     settings,
@@ -128,10 +132,24 @@ export function Header({ forceScrolled = false }: HeaderProps) {
     { label: 'Contacto', href: '/#contacto' },
   ];
 
-  const toggleLanguage = () => {
-    const nextLang = locale === 'es' ? 'en' : 'es';
-    setLocale(nextLang);
-  };
+  const enabledLangsRaw = settings?.header_enabled_langs || 'es,en';
+  const activeLangs = enabledLangsRaw
+    .split(',')
+    .map(s => s.trim().toLowerCase())
+    .filter(Boolean)
+    .map(code => getLanguageByCode(code));
+
+  const currentLangObj = getLanguageByCode(locale);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (langDropdownRef.current && !langDropdownRef.current.contains(event.target as Node)) {
+        setLangDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
@@ -349,19 +367,50 @@ export function Header({ forceScrolled = false }: HeaderProps) {
 
           {/* Right Tools (Language Switcher, Theme Toggle, CTA) */}
           <div className={`hidden lg:flex items-center gap-3 ${logoPosition === 'center' ? 'lg:order-3' : logoPosition === 'right' ? 'lg:order-2' : 'lg:order-3'}`}>
-            {/* Language Switcher */}
-            {showLangSwitcher && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleLanguage}
-                className="rounded-full px-2.5 py-1 text-xs font-bold hover:bg-black/10 dark:hover:bg-white/10 transition-all"
-                style={{ color: activeNavTextColor }}
-                title="Cambiar Idioma"
-              >
-                <Globe className="w-3.5 h-3.5 mr-1" style={{ color: brandAccentColor || '#fbbf24' }} />
-                <span>{locale === 'es' ? 'EN' : 'ES'}</span>
-              </Button>
+            {/* Language Custom Choice Dropdown */}
+            {showLangSwitcher && activeLangs.length > 0 && (
+              <div className="relative" ref={langDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setLangDropdownOpen(!langDropdownOpen)}
+                  className="rounded-full px-3 py-1.5 text-xs font-bold hover:bg-black/10 dark:hover:bg-white/10 transition-all flex items-center gap-1.5 cursor-pointer shadow-3xs border border-white/10"
+                  style={{ color: activeNavTextColor }}
+                  title="Seleccionar Idioma"
+                >
+                  <span className="text-sm">{currentLangObj.flag}</span>
+                  <span className="uppercase text-[11px] font-extrabold">{currentLangObj.code}</span>
+                  <ChevronDown className={`w-3.5 h-3.5 opacity-60 transition-transform duration-200 ${langDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {langDropdownOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-1.5 z-[100] animate-in fade-in zoom-in-95 duration-150 space-y-0.5">
+                    {activeLangs.map((l) => {
+                      const isSelected = locale === l.code;
+                      return (
+                        <button
+                          key={l.code}
+                          type="button"
+                          onClick={() => {
+                            setLocale(l.code as any);
+                            setLangDropdownOpen(false);
+                          }}
+                          className={`w-full px-3 py-2 rounded-xl text-left flex items-center justify-between text-xs font-medium transition-colors cursor-pointer ${
+                            isSelected
+                              ? 'bg-forest/10 text-forest font-bold dark:bg-forest/20 dark:text-emerald-400'
+                              : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-base">{l.flag}</span>
+                            <span>{l.nativeName}</span>
+                          </div>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-forest dark:text-emerald-400" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             )}
 
             {/* Theme Switcher */}
@@ -467,15 +516,35 @@ export function Header({ forceScrolled = false }: HeaderProps) {
               </div>
 
               <div className="space-y-3 pt-6 border-t border-white/10">
-                {showLangSwitcher && (
-                  <button
-                    type="button"
-                    onClick={toggleLanguage}
-                    className="w-full py-2.5 px-3 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer"
-                  >
-                    <Globe className="w-4 h-4 text-amber-300" />
-                    <span>{t(locale === 'es' ? 'Cambiar a Inglés (EN)' : 'Cambiar a Español (ES)')}</span>
-                  </button>
+                {showLangSwitcher && activeLangs.length > 0 && (
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-bold text-white/60 uppercase tracking-wider block">
+                      Idioma / Language:
+                    </span>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {activeLangs.map((l) => {
+                        const isSelected = locale === l.code;
+                        return (
+                          <button
+                            key={l.code}
+                            type="button"
+                            onClick={() => {
+                              setLocale(l.code as any);
+                              setIsMobileMenuOpen(false);
+                            }}
+                            className={`p-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                              isSelected
+                                ? 'bg-white text-forest shadow-md font-extrabold'
+                                : 'bg-white/10 text-white hover:bg-white/20'
+                            }`}
+                          >
+                            <span className="text-base">{l.flag}</span>
+                            <span className="truncate">{l.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 )}
 
                 <Button

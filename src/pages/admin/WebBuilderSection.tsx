@@ -58,6 +58,7 @@ import { SlideOverDrawer } from '@/components/ui/SlideOverDrawer';
 import { toast } from 'sonner';
 import { SectionsManagerTab, WebSectionItem, DEFAULT_PAGE_SECTIONS, SECTION_TEMPLATES } from './web-builder/SectionsManagerTab';
 import { SectionDedicatedEditor } from './web-builder/SectionDedicatedEditor';
+import { LanguagesAndSeoTab } from './web-builder/LanguagesAndSeoTab';
 
 export interface TopBarItem {
   id: string;
@@ -806,6 +807,15 @@ export const WebBuilderSection: React.FC = () => {
   );
   const [headerShowLangSwitcher, setHeaderShowLangSwitcher] = useState<boolean>(settings?.header_show_lang_switcher !== 'false');
   const [headerEnabledLangs, setHeaderEnabledLangs] = useState<string>(settings?.header_enabled_langs || 'es,en');
+  const [defaultLocale, setDefaultLocale] = useState<string>(settings?.default_locale || 'es');
+  const [seoTitle, setSeoTitle] = useState<string>(settings?.seo_title || '');
+  const [seoDescription, setSeoDescription] = useState<string>(settings?.seo_description || '');
+  const [seoKeywords, setSeoKeywords] = useState<string>(settings?.seo_keywords || '');
+  const [seoCanonicalUrl, setSeoCanonicalUrl] = useState<string>(settings?.seo_canonical_url || '');
+  const [seoAllowIndexing, setSeoAllowIndexing] = useState<boolean>(settings?.seo_allow_indexing !== 'false');
+  const [ogTitle, setOgTitle] = useState<string>(settings?.og_title || '');
+  const [ogDescription, setOgDescription] = useState<string>(settings?.og_description || '');
+  const [ogImageUrl, setOgImageUrl] = useState<string>(settings?.og_image_url || '');
   const [headerShowThemeToggle, setHeaderShowThemeToggle] = useState<boolean>(settings?.header_show_theme_toggle !== 'false');
   const [headerCtaText, setHeaderCtaText] = useState<string>(settings?.header_cta_text || 'Admisiones');
   const [headerCtaStyle, setHeaderCtaStyle] = useState<'accent' | 'secondary' | 'outline'>(
@@ -1505,6 +1515,15 @@ export const WebBuilderSection: React.FC = () => {
       header_menu_position: headerMenuPosition,
       header_show_lang_switcher: headerShowLangSwitcher ? 'true' : 'false',
       header_enabled_langs: headerEnabledLangs,
+      default_locale: defaultLocale,
+      seo_title: seoTitle.trim(),
+      seo_description: seoDescription.trim(),
+      seo_keywords: seoKeywords.trim(),
+      seo_canonical_url: seoCanonicalUrl.trim(),
+      seo_allow_indexing: seoAllowIndexing ? 'true' : 'false',
+      og_title: ogTitle.trim(),
+      og_description: ogDescription.trim(),
+      og_image_url: ogImageUrl.trim(),
       header_show_theme_toggle: headerShowThemeToggle ? 'true' : 'false',
       header_cta_text: headerCtaText.trim(),
       header_cta_style: headerCtaStyle,
@@ -2297,6 +2316,15 @@ export const WebBuilderSection: React.FC = () => {
     setHeaderMenuPosition((settings?.header_menu_position as any) || 'center');
     setHeaderShowLangSwitcher(settings?.header_show_lang_switcher !== 'false');
     setHeaderEnabledLangs(settings?.header_enabled_langs || 'es,en');
+    setDefaultLocale(settings?.default_locale || 'es');
+    setSeoTitle(settings?.seo_title || '');
+    setSeoDescription(settings?.seo_description || '');
+    setSeoKeywords(settings?.seo_keywords || '');
+    setSeoCanonicalUrl(settings?.seo_canonical_url || '');
+    setSeoAllowIndexing(settings?.seo_allow_indexing !== 'false');
+    setOgTitle(settings?.og_title || '');
+    setOgDescription(settings?.og_description || '');
+    setOgImageUrl(settings?.og_image_url || '');
     setHeaderShowThemeToggle(settings?.header_show_theme_toggle !== 'false');
     setHeaderCtaText(settings?.header_cta_text || 'Admisiones');
     setHeaderCtaStyle((settings?.header_cta_style as any) || 'accent');
@@ -2447,6 +2475,15 @@ export const WebBuilderSection: React.FC = () => {
         header_menu_position: headerMenuPosition,
         header_show_lang_switcher: headerShowLangSwitcher ? 'true' : 'false',
         header_enabled_langs: headerEnabledLangs,
+        default_locale: defaultLocale,
+        seo_title: seoTitle.trim(),
+        seo_description: seoDescription.trim(),
+        seo_keywords: seoKeywords.trim(),
+        seo_canonical_url: seoCanonicalUrl.trim(),
+        seo_allow_indexing: seoAllowIndexing ? 'true' : 'false',
+        og_title: ogTitle.trim(),
+        og_description: ogDescription.trim(),
+        og_image_url: ogImageUrl.trim(),
         header_show_theme_toggle: headerShowThemeToggle ? 'true' : 'false',
         header_cta_text: headerCtaText.trim(),
         header_cta_style: headerCtaStyle,
@@ -4338,6 +4375,19 @@ export const WebBuilderSection: React.FC = () => {
 
           <button
             type="button"
+            onClick={() => handleOpenConfigTab('languages_seo')}
+            className={`p-2.5 rounded-xl transition-all flex items-center justify-center cursor-pointer ${
+              drawerOpen && activeTab === 'languages_seo'
+                ? 'bg-forest text-white shadow-md font-bold'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+            title="Idiomas de la Web, SEO & OpenGraph"
+          >
+            <Languages className="w-4 h-4" />
+          </button>
+
+          <button
+            type="button"
             onClick={() => handleOpenConfigTab('branding')}
             className={`p-2.5 rounded-xl transition-all flex items-center justify-center cursor-pointer ${
               drawerOpen && activeTab === 'branding'
@@ -4522,6 +4572,7 @@ export const WebBuilderSection: React.FC = () => {
             hideBackdrop
             icon={
               activeTab === 'domain' ? <Globe className="w-5 h-5 text-forest" /> :
+              activeTab === 'languages_seo' ? <Languages className="w-5 h-5 text-forest" /> :
               activeTab === 'branding' ? <Palette className="w-5 h-5 text-forest" /> :
               activeTab === 'header' ? <PanelTop className="w-5 h-5 text-forest" /> :
               activeTab === 'hero' ? <Layout className="w-5 h-5 text-forest" /> :
@@ -4532,6 +4583,7 @@ export const WebBuilderSection: React.FC = () => {
             }
             title={
               activeTab === 'domain' ? 'Registro del Dominio' :
+              activeTab === 'languages_seo' ? 'Idiomas de la Web, SEO & OpenGraph' :
               activeTab === 'branding' ? 'Marca, Paletas & Colores' :
               activeTab === 'header' ? 'Diseño del Header & Barra Superior' :
               activeTab === 'hero' ? 'Hero Banner' :
@@ -4542,6 +4594,7 @@ export const WebBuilderSection: React.FC = () => {
             }
             description={
               activeTab === 'domain' ? 'Escribí el subdominio deseado o tu dominio propio con TLD.' :
+              activeTab === 'languages_seo' ? 'Definí los idiomas activos de la web, optimización para Google (SEO) y tarjeta de redes sociales.' :
               activeTab === 'branding' ? 'Elegí entre 9 paletas armónicas Montessori o definí colores a medida en modo claro y oscuro.' :
               activeTab === 'header' ? 'Personalizá el header inicial, flotante, transformación en scroll y diseño móvil.' :
               activeTab === 'hero' ? 'Editá los textos de impacto e imagen principal de portada.' :
@@ -4778,6 +4831,35 @@ export const WebBuilderSection: React.FC = () => {
               )}
 
             </div>
+          )}
+
+          {/* TAB 1B: LANGUAGES, SEO & OPENGRAPH */}
+          {activeTab === 'languages_seo' && (
+            <LanguagesAndSeoTab
+              enabledLangsStr={headerEnabledLangs}
+              onChangeEnabledLangs={(str) => setHeaderEnabledLangs(str)}
+              defaultLocale={defaultLocale}
+              onChangeDefaultLocale={(loc) => setDefaultLocale(loc)}
+              seoTitle={seoTitle}
+              onChangeSeoTitle={(val) => setSeoTitle(val)}
+              seoDescription={seoDescription}
+              onChangeSeoDescription={(val) => setSeoDescription(val)}
+              seoKeywords={seoKeywords}
+              onChangeSeoKeywords={(val) => setSeoKeywords(val)}
+              seoCanonicalUrl={seoCanonicalUrl}
+              onChangeSeoCanonicalUrl={(val) => setSeoCanonicalUrl(val)}
+              seoAllowIndexing={seoAllowIndexing}
+              onChangeSeoAllowIndexing={(val) => setSeoAllowIndexing(val)}
+              ogTitle={ogTitle}
+              onChangeOgTitle={(val) => setOgTitle(val)}
+              ogDescription={ogDescription}
+              onChangeOgDescription={(val) => setOgDescription(val)}
+              ogImageUrl={ogImageUrl}
+              onChangeOgImageUrl={(val) => setOgImageUrl(val)}
+              schoolName={name}
+              schoolTagline={tagline}
+              siteUrl={`https://${activeHostPreview}`}
+            />
           )}
 
           {/* TAB 1: BRANDING, PALETTES & LOGOS */}
@@ -8748,6 +8830,7 @@ export const WebBuilderSection: React.FC = () => {
             return (
               <SectionDedicatedEditor
                 section={targetSection}
+                enabledLangsStr={headerEnabledLangs}
                 onUpdateSection={(updates) => {
                   setPageSections(prev => prev.map(s => s.id === targetSection.id ? { ...s, ...updates } : s));
                 }}

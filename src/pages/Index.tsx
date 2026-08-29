@@ -52,6 +52,14 @@ const Index = () => {
     return DEFAULT_PAGE_SECTIONS;
   })();
 
+  const getSectionText = (section: WebSectionItem, field: 'title' | 'subtitle' | 'badge' | 'ctaText'): string => {
+    if (locale !== 'es') {
+      const locVal = (section as any)[`${field}_${locale}`];
+      if (locVal) return locVal;
+    }
+    return (section[field] as string) || '';
+  };
+
   const renderSectionByType = (section: WebSectionItem) => {
     switch (section.type) {
       case 'split_media_benefits':
@@ -62,9 +70,9 @@ const Index = () => {
       case 'feature_cards_row':
         return <WhyChooseUs key={section.id} />;
       case 'quote_banner_artistic': {
-        const qTitle = locale === 'en' && section.title_en ? section.title_en : section.title;
-        const qAuthor = locale === 'en' && section.subtitle_en ? section.subtitle_en : section.subtitle;
-        const qCta = locale === 'en' && section.ctaText_en ? section.ctaText_en : section.ctaText;
+        const qTitle = getSectionText(section, 'title');
+        const qAuthor = getSectionText(section, 'subtitle');
+        const qCta = getSectionText(section, 'ctaText');
         return (
           <FeaturedQuote
             key={section.id}
