@@ -32,7 +32,8 @@ import {
   Phone,
   Mail,
   ChevronDown,
-  GripVertical
+  GripVertical,
+  Pencil
 } from 'lucide-react';
 
 export interface WebSectionItem {
@@ -695,11 +696,10 @@ export const SectionsManagerTab: React.FC<SectionsManagerTabProps> = ({
                           setEditingSectionId(isEditing ? null : section.id);
                         }
                       }}
-                      className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-forest hover:text-white text-slate-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shadow-3xs"
-                      title="Abrir editor dedicado de la sección"
+                      className="p-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-forest hover:text-white hover:border-forest text-slate-600 transition-all cursor-pointer shadow-3xs"
+                      title="Editar sección"
                     >
-                      <Settings2 className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">Editar</span>
+                      <Pencil className="w-3.5 h-3.5" />
                     </button>
 
                     {/* Duplicate */}
