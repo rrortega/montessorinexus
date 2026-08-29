@@ -704,10 +704,11 @@ export const AdminDashboard: React.FC = () => {
   const isEditingForm = activeTab === 'forms' && (searchParams.has('edit') || searchParams.has('id'));
   const isWebBuilder = activeTab === 'web-builder';
   const isPricingPage = activeTab === 'pricing' || activeTab === 'subscription';
+  const shouldHideSidebar = isPricingPage || isWebBuilder;
 
   const isMarqueeVisible = useMemo(() => {
     if (isGlobalSuperAdmin && !isGhostMode) return false;
-    if (activeTab === 'web-builder' || isPricingPage) return false;
+    if (shouldHideSidebar) return false;
     if (activeAnnouncements.length === 0) return false;
 
     const latestCreatedTime = activeAnnouncements.length > 0
