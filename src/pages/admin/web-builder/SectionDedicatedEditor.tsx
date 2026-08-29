@@ -1500,70 +1500,8 @@ const fullKey = editorLang === 'es' ? key : `${key}_${editorLang}`;
                         {/* Panel de Edición Detallada */}
                         {isExpanded && (
                           <div className="p-4 pt-0 space-y-4 border-t border-slate-200/80 mt-2 animate-in fade-in duration-150">
-                            {/* Título de la tarjeta */}
-                            <div className="space-y-1.5 pt-2">
-                              <label className="text-[10px] font-bold text-slate-700">
-                                Título de la Tarjeta ({currentLangObj.name}):
-                              </label>
-                              <input
-                                type="text"
-                                value={cardTitle}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  if (editorLang === 'es') {
-                                    handleUpdateSingleCard(card.id, { title: val });
-                                  } else {
-                                    handleUpdateSingleCard(card.id, { [`title_${editorLang}`]: val } as any);
-                                  }
-                                }}
-                                placeholder={`Título en ${currentLangObj.name}`}
-                                className="w-full px-3 py-2 text-xs font-bold text-slate-900 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-forest/20 focus:border-forest"
-                              />
-                              <FieldTypographyAndColorBar
-                                fontValue={card.titleFont || 'inherit'}
-                                onChangeFont={(fId) => handleUpdateSingleCard(card.id, { titleFont: fId })}
-                                colorLight={card.titleColor}
-                                onChangeColorLight={(hex) => handleUpdateSingleCard(card.id, { titleColor: hex })}
-                                colorDark={card.titleColorDark}
-                                onChangeColorDark={(hex) => handleUpdateSingleCard(card.id, { titleColorDark: hex })}
-                                defaultColorLight="#0f172a"
-                                defaultColorDark="#ffffff"
-                              />
-                            </div>
-
-                            {/* Subtítulo / Descripción */}
-                            <div className="space-y-1.5">
-                              <label className="text-[10px] font-bold text-slate-700">
-                                Descripción / Detalle de la Tarjeta ({currentLangObj.name}):
-                              </label>
-                              <textarea
-                                value={cardSubtitle}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  if (editorLang === 'es') {
-                                    handleUpdateSingleCard(card.id, { subtitle: val });
-                                  } else {
-                                    handleUpdateSingleCard(card.id, { [`subtitle_${editorLang}`]: val } as any);
-                                  }
-                                }}
-                                rows={2}
-                                placeholder={`Detalle informativo en ${currentLangObj.name}...`}
-                                className="w-full px-3 py-2 text-xs text-slate-800 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-forest/20 focus:border-forest"
-                              />
-                              <FieldTypographyAndColorBar
-                                fontValue={card.subtitleFont || 'inherit'}
-                                onChangeFont={(fId) => handleUpdateSingleCard(card.id, { subtitleFont: fId })}
-                                colorLight={card.subtitleColor || card.textColor}
-                                onChangeColorLight={(hex) => handleUpdateSingleCard(card.id, { subtitleColor: hex, textColor: hex })}
-                                colorDark={card.subtitleColorDark || card.textColorDark}
-                                onChangeColorDark={(hex) => handleUpdateSingleCard(card.id, { subtitleColorDark: hex, textColorDark: hex })}
-                                defaultColorLight="#64748b"
-                                defaultColorDark="#cbd5e1"
-                              />
-                            </div>
-
-                            {/* Icono o Imagen */}
-                            <div className="space-y-2">
+                            {/* 1. Icono o Imagen (Primero, igual que en pantalla) */}
+                            <div className="space-y-2 pt-2">
                               <label className="text-[10px] font-bold text-slate-700 block">
                                 Icono o Fotografía de la Tarjeta:
                               </label>
@@ -1631,6 +1569,68 @@ const fullKey = editorLang === 'es' ? key : `${key}_${editorLang}`;
                                   />
                                 </div>
                               </div>
+                            </div>
+
+                            {/* 2. Título de la tarjeta */}
+                            <div className="space-y-1.5 pt-2 border-t border-slate-100">
+                              <label className="text-[10px] font-bold text-slate-700">
+                                Título de la Tarjeta ({currentLangObj.name}):
+                              </label>
+                              <input
+                                type="text"
+                                value={cardTitle}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (editorLang === 'es') {
+                                    handleUpdateSingleCard(card.id, { title: val });
+                                  } else {
+                                    handleUpdateSingleCard(card.id, { [`title_${editorLang}`]: val } as any);
+                                  }
+                                }}
+                                placeholder={`Título en ${currentLangObj.name}`}
+                                className="w-full px-3 py-2 text-xs font-bold text-slate-900 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-forest/20 focus:border-forest"
+                              />
+                              <FieldTypographyAndColorBar
+                                fontValue={card.titleFont || 'inherit'}
+                                onChangeFont={(fId) => handleUpdateSingleCard(card.id, { titleFont: fId })}
+                                colorLight={card.titleColor}
+                                onChangeColorLight={(hex) => handleUpdateSingleCard(card.id, { titleColor: hex })}
+                                colorDark={card.titleColorDark}
+                                onChangeColorDark={(hex) => handleUpdateSingleCard(card.id, { titleColorDark: hex })}
+                                defaultColorLight="#0f172a"
+                                defaultColorDark="#ffffff"
+                              />
+                            </div>
+
+                            {/* 3. Subtítulo / Descripción */}
+                            <div className="space-y-1.5 pt-2 border-t border-slate-100">
+                              <label className="text-[10px] font-bold text-slate-700">
+                                Descripción / Detalle de la Tarjeta ({currentLangObj.name}):
+                              </label>
+                              <textarea
+                                value={cardSubtitle}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (editorLang === 'es') {
+                                    handleUpdateSingleCard(card.id, { subtitle: val });
+                                  } else {
+                                    handleUpdateSingleCard(card.id, { [`subtitle_${editorLang}`]: val } as any);
+                                  }
+                                }}
+                                rows={2}
+                                placeholder={`Detalle informativo en ${currentLangObj.name}...`}
+                                className="w-full px-3 py-2 text-xs text-slate-800 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-forest/20 focus:border-forest"
+                              />
+                              <FieldTypographyAndColorBar
+                                fontValue={card.subtitleFont || 'inherit'}
+                                onChangeFont={(fId) => handleUpdateSingleCard(card.id, { subtitleFont: fId })}
+                                colorLight={card.subtitleColor || card.textColor}
+                                onChangeColorLight={(hex) => handleUpdateSingleCard(card.id, { subtitleColor: hex, textColor: hex })}
+                                colorDark={card.subtitleColorDark || card.textColorDark}
+                                onChangeColorDark={(hex) => handleUpdateSingleCard(card.id, { subtitleColorDark: hex, textColorDark: hex })}
+                                defaultColorLight="#64748b"
+                                defaultColorDark="#cbd5e1"
+                              />
                             </div>
 
                             {/* Forma de la Tarjeta & Efecto Hover */}
