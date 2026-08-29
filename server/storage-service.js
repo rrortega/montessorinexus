@@ -23,7 +23,7 @@ export async function getStorageConfigForSchool(schoolId, prisma = null) {
   let localRoot = process.env.STORAGE_LOCAL_ROOT || DEFAULT_LOCAL_ROOT;
   let s3Endpoint = process.env.S3_ENDPOINT || '';
   let s3Region = process.env.S3_REGION || 'us-east-1';
-  let s3Bucket = process.env.S3_BUCKET || 'ceiba-roots';
+  let s3Bucket = process.env.S3_BUCKET || 'montessori-nexus';
   let s3AccessKeyId = process.env.S3_ACCESS_KEY_ID || '';
   let s3SecretAccessKey = process.env.S3_SECRET_ACCESS_KEY || '';
   let s3ForcePathStyle = process.env.S3_FORCE_PATH_STYLE === 'true';
@@ -50,15 +50,21 @@ export async function getStorageConfigForSchool(schoolId, prisma = null) {
       const settingMap = {};
       dbSettings.forEach(s => { settingMap[s.key] = s.value; });
 
-      if (settingMap.storage_driver) driver = settingMap.storage_driver.toLowerCase().trim();
-      if (settingMap.storage_local_root) localRoot = settingMap.storage_local_root.trim();
-      if (settingMap.s3_endpoint) s3Endpoint = settingMap.s3_endpoint.trim();
-      if (settingMap.s3_region) s3Region = settingMap.s3_region.trim();
-      if (settingMap.s3_bucket) s3Bucket = settingMap.s3_bucket.trim();
-      if (settingMap.s3_access_key_id) s3AccessKeyId = settingMap.s3_access_key_id.trim();
-      if (settingMap.s3_secret_access_key) s3SecretAccessKey = settingMap.s3_secret_access_key.trim();
-      if (settingMap.s3_force_path_style !== undefined) {
-        s3ForcePathStyle = settingMap.s3_force_path_style === 'true' || settingMap.s3_force_path_style === true;
+      // If school has explicit BYOS (Amazon S3 or MinIO) configured
+      if (settingMap.storage_driver === 's3' || settingMap.storage_driver === 'minio') {
+        driver = settingMap.storage_driver.toLowerCase().trim();
+        if (settingMap.s3_endpoint) s3Endpoint = settingMap.s3_endpoint.trim();
+        if (settingMap.s3_region) s3Region = settingMap.s3_region.trim();
+        if (settingMap.s3_bucket) s3Bucket = settingMap.s3_bucket.trim();
+        if (settingMap.s3_access_key_id) s3AccessKeyId = settingMap.s3_access_key_id.trim();
+        if (settingMap.s3_secret_access_key) s3SecretAccessKey = settingMap.s3_secret_access_key.trim();
+        if (settingMap.s3_force_path_style !== undefined) {
+          s3ForcePathStyle = settingMap.s3_force_path_style === 'true' || settingMap.s3_force_path_style === true;
+        }
+      } else {
+        // 'nexus', 'local', or unset: Montessori Nexus managed server storage
+        driver = (process.env.STORAGE_DRIVER || (process.env.S3_ACCESS_KEY_ID && process.env.S3_BUCKET ? 's3' : 'local')).toLowerCase().trim();
+        localRoot = process.env.STORAGE_LOCAL_ROOT || DEFAULT_LOCAL_ROOT;
       }
     } catch (e) {
       console.warn('[STORAGE CONFIG DB WARNING]', e.message);
@@ -75,7 +81,7 @@ export async function getStorageConfigForSchool(schoolId, prisma = null) {
     localRoot: localRoot || DEFAULT_LOCAL_ROOT,
     s3Endpoint,
     s3Region: s3Region || 'us-east-1',
-    s3Bucket: s3Bucket || 'ceiba-roots',
+    s3Bucket: s3Bucket || 'montessori-nexus',
     s3AccessKeyId,
     s3SecretAccessKey,
     s3ForcePathStyle
@@ -395,6 +401,8 @@ export async function streamPrivateAsset({ schoolId, relativePath, req = null, r
     return;
   }
 
+  const cleanPath = path.normalize(relativePath).replace(/^(\.\.[\/\\])+/, '').replace(/\\/g, '/');
+
   // Extract schoolId from path if not explicitly provided (e.g. schools/school_123/...)
   const targetSchoolId = schoolId || (cleanPath.startsWith('schools/') ? cleanPath.split('/')[1] : null);
 
@@ -664,16 +672,21 @@ export async function testStorageConfig({
   localRoot = DEFAULT_LOCAL_ROOT,
   s3Endpoint = '',
   s3Region = 'us-east-1',
-  s3Bucket = 'ceiba-roots',
+  s3Bucket = 'montessori-nexus',
   s3AccessKeyId = '',
   s3SecretAccessKey = '',
-  s3ForcePathStyle = false
+  s3ForcePathStyle = false,
+  schoolId = null
 }) {
+  const isNexusManaged = driver === 'local' || driver === 'nexus' || driver === 'montessorinexus' || !driver;
   const testFilename = `test_healthcheck_${Date.now()}.txt`;
-  const testContent = Buffer.from(`Ceiba Roots Storage Health Check at ${new Date().toISOString()}`, 'utf-8');
+  const testContent = Buffer.from(`Montessori Nexus Storage Health Check at ${new Date().toISOString()}`, 'utf-8');
 
-  if (driver === 'local') {
-    const targetDir = path.join(localRoot || DEFAULT_LOCAL_ROOT, '_healthcheck');
+  if (isNexusManaged) {
+    const targetDir = schoolId
+      ? path.join(localRoot || DEFAULT_LOCAL_ROOT, 'schools', String(schoolId), '_healthcheck')
+      : path.join(localRoot || DEFAULT_LOCAL_ROOT, '_healthcheck');
+
     if (!fs.existsSync(targetDir)) {
       fs.mkdirSync(targetDir, { recursive: true });
     }
@@ -681,12 +694,12 @@ export async function testStorageConfig({
     fs.writeFileSync(fullPath, testContent);
     const readBack = fs.readFileSync(fullPath, 'utf-8');
     fs.unlinkSync(fullPath);
-    if (!readBack.includes('Ceiba Roots Storage')) {
-      throw new Error('No se pudo verificar la lectura del archivo de prueba en disco local');
+    if (!readBack.includes('Montessori Nexus Storage')) {
+      throw new Error('No se pudo verificar la lectura del archivo de prueba en el servidor');
     }
     return {
       success: true,
-      message: `Conexión privada y permisos de lectura/escritura en disco local verificados exitosamente (${localRoot || DEFAULT_LOCAL_ROOT})`
+      message: `Conexión privada y almacenamiento en Montessori Nexus server verificados exitosamente.`
     };
   } else if (driver === 's3' || driver === 'minio') {
     if (!s3Bucket || !s3Bucket.trim()) {
@@ -706,7 +719,9 @@ export async function testStorageConfig({
       forcePathStyle: Boolean(s3ForcePathStyle || (s3Endpoint && !s3Endpoint.includes('amazonaws.com')))
     });
 
-    const key = `_healthcheck/${testFilename}`;
+    const key = schoolId
+      ? `schools/${schoolId}/_healthcheck/${testFilename}`
+      : `_healthcheck/${testFilename}`;
 
     // 1. Put object
     await s3.send(new PutObjectCommand({
@@ -724,7 +739,7 @@ export async function testStorageConfig({
 
     return {
       success: true,
-      message: `Conexión privada con ${driver === 'minio' ? 'MinIO' : 'Amazon S3'} (Bucket privado: "${s3Bucket}") verificada exitosamente.`
+      message: `Conexión privada con ${driver === 'minio' ? 'MinIO' : 'Amazon S3'} (Bucket: "${s3Bucket}") verificada exitosamente.`
     };
   }
 

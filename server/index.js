@@ -900,20 +900,22 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ error: 'No se subió ningún archivo' });
     }
-    const folderType = req.body.folder || req.query.folder || 'gallery';
+    const rawFolder = req.body.folder || req.query.folder || 'gallery';
+    const folderType = String(rawFolder).replace(/[^a-zA-Z0-9_\-\/]/g, '') || 'gallery';
     const employeeId = req.body.employeeId || req.query.employeeId;
-    const schoolId = req.school?.id || 'school_ceiba';
+    const schoolId = req.body.schoolId || req.query.schoolId || req.headers['x-school-id'] || req.headers['x-tenant-id'] || req.school?.id || 'school_ceiba';
 
-    const ext = path.extname(req.file.originalname).toLowerCase() || '.jpg';
+    const ext = path.extname(req.file.originalname).toLowerCase() || '.png';
     const rawTitle = req.body.title || path.basename(req.file.originalname, ext);
-    const slug = slugify(rawTitle) || 'archivo';
-    const cleanFilename = `${slug}${ext}`;
+    const baseSlug = slugify(rawTitle) || 'archivo';
+    const uniqueSuffix = `${Date.now().toString(36)}-${crypto.randomBytes(3).toString('hex')}`;
+    const cleanFilename = `${baseSlug}-${uniqueSuffix}${ext}`;
 
     let relativePath = '';
     if (folderType === 'documents' && employeeId) {
       relativePath = `schools/${schoolId}/rrhh/${employeeId}/${cleanFilename}`;
     } else {
-      relativePath = `schools/${schoolId}/gallery/${cleanFilename}`;
+      relativePath = `schools/${schoolId}/${folderType}/${cleanFilename}`;
     }
 
     const result = await saveGenericFile({
@@ -929,6 +931,7 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
       url: result.url,
       fileName: req.file.originalname,
       storedName: path.basename(result.relativePath),
+      relativePath: result.relativePath,
       size: req.file.size,
       mimetype: req.file.mimetype,
     });
@@ -1396,19 +1399,23 @@ app.get('/api/schools/current/usage', async (req, res) => {
 
     // 3. Storage calculation
     const isStorageByos = Boolean(
+      settingsMap.storage_driver === 's3' ||
+      settingsMap.storage_driver === 'minio' ||
       feat.storageTier === 'byos_aws' ||
-      settingsMap.storage_driver === 's3'
+      feat.storageTier === 'byos_s3' ||
+      feat.storageTier === 'byos_minio'
     );
 
     let storageLimitGb = 2; // Default 2 GB free base
-    if (feat.storageTier === '12gb') storageLimitGb = 12;
-    else if (feat.storageTier === '22gb') storageLimitGb = 22;
-    else if (feat.storageTier === '52gb') storageLimitGb = 52;
-    else if (feat.storageTier === 'byos_aws') storageLimitGb = 0;
+    if (feat.storageTier === '12gb' || feat.storage_limit === '12gb') storageLimitGb = 12;
+    else if (feat.storageTier === '22gb' || feat.storage_limit === '22gb') storageLimitGb = 22;
+    else if (feat.storageTier === '52gb' || feat.storage_limit === '52gb') storageLimitGb = 52;
+    else if (feat.storageTier === 'byos_aws' || feat.storageTier === 'byos_s3' || feat.storageTier === 'byos_minio') storageLimitGb = 0;
+    else if (feat.storageLimitGb) storageLimitGb = Number(feat.storageLimitGb);
 
     const storageLimitBytes = storageLimitGb * 1024 * 1024 * 1024;
 
-    // Calculate actual documents size
+    // Calculate actual documents size in DB
     const documents = await prisma.document.findMany({
       where: { schoolId },
       select: { fileData: true }
@@ -1431,7 +1438,31 @@ app.get('/api/schools/current/usage', async (req, res) => {
     });
     let galleryBytes = galleryImages.length * 350 * 1024; // avg 350KB per image
 
-    const totalStorageBytes = docsBytes + galleryBytes;
+    // Folder on disk calculation for schools/:schoolId
+    let diskBytes = 0;
+    try {
+      const schoolStorageDir = path.join(DEFAULT_LOCAL_ROOT, 'schools', String(schoolId));
+      if (fs.existsSync(schoolStorageDir)) {
+        const calculateDirSize = (dir) => {
+          let size = 0;
+          const entries = fs.readdirSync(dir, { withFileTypes: true });
+          for (const entry of entries) {
+            const fullPath = path.join(dir, entry.name);
+            if (entry.isDirectory()) {
+              size += calculateDirSize(fullPath);
+            } else if (entry.isFile()) {
+              size += fs.statSync(fullPath).size;
+            }
+          }
+          return size;
+        };
+        diskBytes = calculateDirSize(schoolStorageDir);
+      }
+    } catch (diskErr) {
+      console.warn('[STORAGE USAGE DISK CALC]', diskErr.message);
+    }
+
+    const totalStorageBytes = Math.max(docsBytes + galleryBytes, diskBytes);
     const storageUsedMb = Number((totalStorageBytes / (1024 * 1024)).toFixed(2));
     const storageUsedGb = Number((totalStorageBytes / (1024 * 1024 * 1024)).toFixed(3));
     const storageRemainingGb = isStorageByos ? 0 : Math.max(0, Number((storageLimitGb - storageUsedGb).toFixed(2)));
@@ -6562,55 +6593,50 @@ app.get('/api/tutor/my-students', async (req, res) => {
   }
 });
 
-// FILE UPLOAD & DELETE
-app.post('/api/upload', upload.single('file'), (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
-    }
-
-    const folderType = req.body.folder || req.query.folder || 'gallery';
-    const subFolder = folderType === 'documents' ? 'documents' : 'gallery';
-    const publicUrl = `/${subFolder}/${req.file.filename}`;
-
-    res.json({
-      success: true,
-      url: publicUrl,
-      fileName: req.file.filename,
-      originalName: req.file.originalname,
-      size: req.file.size,
-      mimeType: req.file.mimetype,
-    });
-  } catch (err) {
-    console.error('File upload error:', err);
-    res.status(500).json({ error: 'Failed to process file upload' });
-  }
-});
-
-app.delete('/api/file', (req, res) => {
+// SECURE FILE DELETION ROUTE
+app.delete('/api/file', async (req, res) => {
   try {
     const fileUrl = req.body.url || req.query.url;
     if (!fileUrl || typeof fileUrl !== 'string') {
       return res.status(400).json({ error: 'File URL parameter is required' });
     }
 
-    const normalizedUrl = path.normalize(fileUrl).replace(/\\/g, '/');
-    if (!normalizedUrl.startsWith('/gallery/') && !normalizedUrl.startsWith('/documents/')) {
-      return res.status(400).json({ error: 'Invalid file path for deletion' });
+    const schoolId = req.body.schoolId || req.query.schoolId || req.headers['x-school-id'] || req.school?.id || 'school_ceiba';
+
+    // 1. Check if it's a storage stream URL (/api/storage/stream?file=...)
+    if (fileUrl.includes('/api/storage/stream')) {
+      try {
+        const parsedUrl = new URL(fileUrl, 'http://localhost');
+        const filePath = parsedUrl.searchParams.get('file');
+        if (filePath) {
+          await deleteGenericFile({ schoolId, relativePath: filePath, prisma });
+          return res.json({ success: true, deleted: fileUrl });
+        }
+      } catch (e) {
+        console.warn('Error parsing storage stream URL for deletion:', e.message);
+      }
     }
 
+    // 2. Check if it's a direct relative path (schools/...)
+    if (fileUrl.startsWith('schools/')) {
+      await deleteGenericFile({ schoolId, relativePath: fileUrl, prisma });
+      return res.json({ success: true, deleted: fileUrl });
+    }
+
+    // 3. Fallback for legacy disk paths (/gallery/..., /documents/...)
+    const normalizedUrl = path.normalize(fileUrl).replace(/\\/g, '/');
     const relativePath = normalizedUrl.startsWith('/') ? normalizedUrl.slice(1) : normalizedUrl;
     const targetPath = path.join(publicDir, relativePath);
 
     if (fs.existsSync(targetPath)) {
       fs.unlinkSync(targetPath);
       return res.json({ success: true, deleted: fileUrl });
-    } else {
-      return res.json({ success: true, message: 'File did not exist on server disk' });
     }
+
+    return res.json({ success: true, message: 'File deleted or not found' });
   } catch (err) {
-    console.error('Failed to delete physical file:', err);
-    res.status(500).json({ error: 'Failed to delete file from server disk' });
+    console.error('Failed to delete file:', err);
+    res.status(500).json({ error: 'Failed to delete file' });
   }
 });
 
@@ -7315,6 +7341,7 @@ app.post('/api/settings/test-smtp', async (req, res) => {
 app.post('/api/settings/test-storage', async (req, res) => {
   try {
     const { driver, localRoot, s3Endpoint, s3Region, s3Bucket, s3AccessKeyId, s3SecretAccessKey, s3ForcePathStyle } = req.body;
+    const schoolId = req.school ? req.school.id : null;
     const result = await testStorageConfig({
       driver,
       localRoot,
@@ -7323,7 +7350,8 @@ app.post('/api/settings/test-storage', async (req, res) => {
       s3Bucket,
       s3AccessKeyId,
       s3SecretAccessKey,
-      s3ForcePathStyle
+      s3ForcePathStyle,
+      schoolId
     });
     res.json(result);
   } catch (e) {
