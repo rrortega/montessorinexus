@@ -88,9 +88,9 @@ export const PreviewSectionWrapper: React.FC<PreviewSectionWrapperProps> = ({
         <div className="absolute inset-0 z-40 pointer-events-none border-2 border-dashed border-rose-500 bg-rose-500/5 transition-all animate-in fade-in duration-150 rounded-xl shadow-xs" />
       )}
 
-      {/* Bottom-Right Label Badge & Edit Button */}
+      {/* Bottom-Left Label Badge & Edit Button */}
       {isThisHovered && (
-        <div className="absolute bottom-4 right-4 z-[99999] flex items-center gap-2 bg-rose-600/95 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-2xl border border-rose-400/60 backdrop-blur-md animate-in fade-in zoom-in-95 duration-150 select-none">
+        <div className="absolute bottom-4 left-4 z-[99999] flex items-center gap-2 bg-rose-600/95 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-2xl border border-rose-400/60 backdrop-blur-md animate-in fade-in zoom-in-95 duration-150 select-none">
           <span className="tracking-tight text-white">{name}</span>
           <button
             type="button"
