@@ -877,10 +877,10 @@ export const AdminDashboard: React.FC = () => {
         </div>
       )}
 
-      <div className={`h-screen max-h-screen overflow-hidden bg-cream flex flex-col md:flex-row font-body text-foreground transition-all duration-300 ${(isGlobalSuperAdmin && isGhostMode) ? 'pt-10' : isMarqueeVisible ? 'pt-9' : ''} ${isTrialExpired && !isPricingPage ? 'pb-16' : ''}`}>
+      <div className={`h-screen max-h-screen overflow-hidden bg-cream flex flex-col md:flex-row font-body text-foreground transition-all duration-300 ${(isGlobalSuperAdmin && isGhostMode) ? 'pt-10' : isMarqueeVisible ? 'pt-9' : ''} ${isTrialExpired && !shouldHideSidebar ? 'pb-16' : ''}`}>
 
         {/* FLOATING FIXED MOBILE MENU BUTTON (< md) */}
-        {!isPricingPage && !mobileMenuOpen && (
+        {!shouldHideSidebar && !mobileMenuOpen && (
           <button
             type="button"
             onClick={() => setMobileMenuOpen(true)}
@@ -892,7 +892,7 @@ export const AdminDashboard: React.FC = () => {
         )}
 
         {/* BACKDROP FOR MOBILE (< md) */}
-        {!isPricingPage && mobileMenuOpen && (
+        {!shouldHideSidebar && mobileMenuOpen && (
           <div
             onClick={() => setMobileMenuOpen(false)}
             className="fixed inset-0 bg-black/50 backdrop-blur-xs z-40 md:hidden animate-in fade-in duration-200"
@@ -900,8 +900,8 @@ export const AdminDashboard: React.FC = () => {
           />
         )}
 
-        {/* SIDEBAR CONTAINER (Hidden on Pricing Page for maximum focus and width) */}
-        {!isPricingPage && (
+        {/* SIDEBAR CONTAINER (Hidden on Web Builder and Pricing Page for maximum focus and width) */}
+        {!shouldHideSidebar && (
           <aside
             aria-label="Menú principal de navegación"
             className={`
