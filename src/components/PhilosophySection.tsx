@@ -127,6 +127,8 @@ export interface PillarCardItem {
   subtitleColorDark?: string;
   shape?: 'rounded' | 'blob' | 'arch' | 'squircle' | 'minimal' | 'leaf' | 'pill';
   hoverEffect?: 'lift' | 'scale' | 'glow' | 'tilt' | 'border' | 'none';
+  rotateZ?: number | string;
+  rotation?: number | string;
 }
 
 export const PILLAR_ICONS_MAP: Record<string, React.ElementType> = {
@@ -424,21 +426,21 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
   };
 
   // Hover animation resolver
-  const getHoverAnimation = (hoverEffect?: string) => {
+  const getHoverAnimation = (hoverEffect?: string, baseRotate: number = 0) => {
     switch (hoverEffect) {
       case 'scale':
-        return { scale: 1.05, boxShadow: '0 20px 30px -10px rgba(0, 0, 0, 0.15)', transition: { duration: 0.22, ease: 'easeOut' } };
+        return { scale: 1.05, rotate: baseRotate, boxShadow: '0 20px 30px -10px rgba(0, 0, 0, 0.15)', transition: { duration: 0.22, ease: 'easeOut' } };
       case 'glow':
-        return { y: -6, boxShadow: '0 0 35px 3px rgba(27, 59, 43, 0.35)', transition: { duration: 0.22, ease: 'easeOut' } };
+        return { y: -6, rotate: baseRotate, boxShadow: '0 0 35px 3px rgba(27, 59, 43, 0.35)', transition: { duration: 0.22, ease: 'easeOut' } };
       case 'tilt':
-        return { rotate: 2.5, scale: 1.04, y: -4, boxShadow: '0 20px 30px -10px rgba(0, 0, 0, 0.15)', transition: { duration: 0.22, ease: 'easeOut' } };
+        return { rotate: baseRotate + 2.5, scale: 1.04, y: -4, boxShadow: '0 20px 30px -10px rgba(0, 0, 0, 0.15)', transition: { duration: 0.22, ease: 'easeOut' } };
       case 'border':
-        return { scale: 1.02, y: -4, boxShadow: '0 0 0 3px #1b3b2b, 0 20px 30px -10px rgba(0,0,0,0.15)', transition: { duration: 0.22, ease: 'easeOut' } };
+        return { scale: 1.02, rotate: baseRotate, y: -4, boxShadow: '0 0 0 3px #1b3b2b, 0 20px 30px -10px rgba(0,0,0,0.15)', transition: { duration: 0.22, ease: 'easeOut' } };
       case 'none':
-        return {};
+        return { rotate: baseRotate };
       case 'lift':
       default:
-        return { y: -10, boxShadow: '0 25px 35px -10px rgba(0, 0, 0, 0.18), 0 10px 15px -5px rgba(0, 0, 0, 0.05)', transition: { duration: 0.22, ease: 'easeOut' } };
+        return { y: -10, rotate: baseRotate, boxShadow: '0 25px 35px -10px rgba(0, 0, 0, 0.18), 0 10px 15px -5px rgba(0, 0, 0, 0.05)', transition: { duration: 0.22, ease: 'easeOut' } };
     }
   };
 
@@ -682,7 +684,8 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
             const cardSubtitle = getLocalizedText(card, 'subtitle', '');
             const IconComponent = card.icon && PILLAR_ICONS_MAP[card.icon] ? PILLAR_ICONS_MAP[card.icon] : Compass;
             const shapeClass = getShapeClass(card.shape);
-            const hoverAnim = getHoverAnimation(card.hoverEffect);
+            const cardRotation = Number(card.rotateZ ?? card.rotation ?? 0) || 0;
+            const hoverAnim = getHoverAnimation(card.hoverEffect, cardRotation);
 
             const cardTitleFont = getSectionFontFamily(card.titleFont || config.card_title_font);
             const cardSubtitleFont = getSectionFontFamily(card.subtitleFont || config.card_subtitle_font);
@@ -694,6 +697,7 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
                 direction="up"
               >
                 <motion.div
+                  animate={{ rotate: cardRotation }}
                   whileHover={hoverAnim}
                   style={{
                     backgroundColor: card.bgColor || undefined,

@@ -40,7 +40,8 @@ import {
   Grid,
   Box,
   Check,
-  MousePointerClick
+  MousePointerClick,
+  RotateCw
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { ImageUploadDropzone } from '@/components/ui/ImageUploadDropzone';
@@ -1489,6 +1490,73 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
                               value={card.hoverEffect || 'lift'}
                               onChange={(hoverEffect) => handleUpdateSingleCard(card.id, { hoverEffect: hoverEffect as any })}
                             />
+                          </div>
+                        </div>
+
+                        {/* Rotación Inclinada de la Tarjeta */}
+                        <div className="space-y-2 pt-2 border-t border-slate-100">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                              <RotateCw className="w-3.5 h-3.5 text-forest" />
+                              <label className="text-[10px] font-bold text-slate-700">
+                                Rotación Inclinada de la Tarjeta (°):
+                              </label>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md ${
+                                Number(card.rotateZ ?? card.rotation ?? 0) !== 0
+                                  ? 'bg-forest text-white shadow-3xs'
+                                  : 'bg-slate-100 text-slate-600'
+                              }`}>
+                                {Number(card.rotateZ ?? card.rotation ?? 0) > 0 ? `+${card.rotateZ ?? card.rotation ?? 0}°` : `${card.rotateZ ?? card.rotation ?? 0}°`}
+                              </span>
+                              {Number(card.rotateZ ?? card.rotation ?? 0) !== 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateSingleCard(card.id, { rotateZ: 0, rotation: 0 })}
+                                  className="text-[9px] text-slate-400 hover:text-rose-500 font-bold px-1.5 py-0.5 rounded hover:bg-rose-50 transition-colors cursor-pointer"
+                                  title="Restablecer rotación a 0°"
+                                >
+                                  Reset
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3">
+                            <span className="text-[9px] font-mono text-slate-400 font-bold">-15°</span>
+                            <input
+                              type="range"
+                              min="-15"
+                              max="15"
+                              step="0.5"
+                              value={Number(card.rotateZ ?? card.rotation ?? 0)}
+                              onChange={(e) => {
+                                const val = parseFloat(e.target.value);
+                                handleUpdateSingleCard(card.id, { rotateZ: val, rotation: val });
+                              }}
+                              className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-forest focus:outline-none"
+                            />
+                            <span className="text-[9px] font-mono text-slate-400 font-bold">+15°</span>
+                          </div>
+
+                          {/* Presets de Rotación Rápida */}
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[9px] text-muted-foreground font-semibold">Presets:</span>
+                            {[-6, -3, -1.5, 0, 1.5, 3, 6].map((deg) => (
+                              <button
+                                key={deg}
+                                type="button"
+                                onClick={() => handleUpdateSingleCard(card.id, { rotateZ: deg, rotation: deg })}
+                                className={`px-2 py-0.5 rounded-md text-[9px] font-mono font-bold transition-all cursor-pointer ${
+                                  Number(card.rotateZ ?? card.rotation ?? 0) === deg
+                                    ? 'bg-forest text-white shadow-3xs'
+                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                }`}
+                              >
+                                {deg > 0 ? `+${deg}°` : `${deg}°`}
+                              </button>
+                            ))}
                           </div>
                         </div>
 
