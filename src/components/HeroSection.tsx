@@ -390,7 +390,7 @@ export function HeroSection() {
   const blobRotate = settings?.hero_blob_rotate !== undefined && !isNaN(Number(settings?.hero_blob_rotate))
     ? Number(settings.hero_blob_rotate)
     : -4;
-  const blobRadiusType = settings?.hero_blob_radius_type || 'blob-1'; // 'none' | 'blob-1' | 'blob-2' | 'circle' | 'egg' | 'arch' | 'squircle' | 'leaf'
+  const blobRadiusType = settings?.hero_blob_radius_type || 'blob-1'; // 'none' | 'mosaic' | 'blob-1' | 'blob-2' | 'circle' | 'egg' | 'arch' | 'squircle' | 'leaf'
   const blobAnimateMorph = settings?.hero_blob_animate_morph === 'true';
   const blobMorphShapes = (settings?.hero_blob_morph_shapes || 'blob-1,blob-2,leaf')
     .split(',')
@@ -971,6 +971,8 @@ export function HeroSection() {
   // Organic & Geometric Blob Radii Dictionary
   const blobRadiusDictionary: Record<string, string> = {
     'none': '0px',
+    'mosaic': '0px',
+    'mosaic-capsules': '0px',
     'blob-1': '52% 48% 68% 32% / 42% 58% 42% 58%',
     'blob-2': '60% 40% 30% 70% / 60% 30% 70% 40%',
     'egg': '50% 50% 50% 50% / 60% 60% 40% 40%',
@@ -1143,7 +1145,56 @@ export function HeroSection() {
             <div className={`lg:col-span-6 relative flex justify-center items-center ${layoutInverted ? 'lg:order-1' : 'lg:order-2'}`}>
               <div className="relative w-full max-w-lg aspect-[4/4] sm:aspect-[4/3.8] flex items-center justify-center">
                 
-                {!blobAnimateMorph && blobRadiusType === 'none' ? (
+                {!blobAnimateMorph && (blobRadiusType === 'mosaic' || blobRadiusType === 'mosaic-capsules') ? (
+                  /* MOSAIC OF PILL CAPSULES / COLLAGE GRID */
+                  <div
+                    className="w-full h-full flex items-center justify-center transition-all duration-500"
+                    style={{
+                      transform: `scale(${blobScale / 100}) rotate(${blobRotate}deg)`
+                    }}
+                  >
+                    <svg
+                      viewBox="0 0 500 580"
+                      className="w-full h-full max-h-[580px] drop-shadow-2xl overflow-visible pointer-events-none"
+                      style={{
+                        filter: 'drop-shadow(0 20px 35px rgba(0, 0, 0, 0.14))'
+                      }}
+                    >
+                      <defs>
+                        <mask id="heroCapsuleMosaicMask" maskUnits="userSpaceOnUse">
+                          <rect width="500" height="580" fill="black" />
+                          
+                          {/* Columna 1 (Izquierda) */}
+                          <rect x="100" y="55" width="92" height="80" rx="30" ry="30" fill="white" />
+                          <rect x="42" y="145" width="150" height="130" rx="38" ry="38" fill="white" />
+                          <rect x="100" y="285" width="92" height="98" rx="30" ry="30" fill="white" />
+                          <rect x="100" y="393" width="92" height="90" rx="30" ry="30" fill="white" />
+
+                          {/* Columna 2 (Centro - Protagonista / Vertical) */}
+                          <rect x="202" y="44" width="108" height="195" rx="36" ry="36" fill="white" />
+                          <rect x="202" y="249" width="108" height="98" rx="32" ry="32" fill="white" />
+                          <rect x="202" y="357" width="108" height="165" rx="36" ry="36" fill="white" />
+
+                          {/* Columna 3 (Derecha) */}
+                          <rect x="320" y="98" width="78" height="98" rx="28" ry="28" fill="white" />
+                          <rect x="319" y="206" width="118" height="122" rx="34" ry="34" fill="white" />
+                          <rect x="319" y="338" width="132" height="98" rx="34" ry="34" fill="white" />
+                          <rect x="319" y="446" width="56" height="48" rx="24" ry="24" fill="white" />
+                        </mask>
+                      </defs>
+
+                      <image
+                        href={bgImageUrl}
+                        x="0"
+                        y="0"
+                        width="500"
+                        height="580"
+                        preserveAspectRatio="xMidYMid slice"
+                        mask="url(#heroCapsuleMosaicMask)"
+                      />
+                    </svg>
+                  </div>
+                ) : !blobAnimateMorph && blobRadiusType === 'none' ? (
                   /* NATURAL DIRECT IMAGE: SIN BORDE, SIN SOMBRA, PURO / TRANSPARENTE */
                   <div
                     className="w-full h-full flex items-center justify-center transition-all duration-500"

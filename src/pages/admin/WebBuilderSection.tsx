@@ -946,7 +946,7 @@ export const WebBuilderSection: React.FC = () => {
       : -4
   );
   const [heroBlobRadiusType, setHeroBlobRadiusType] = useState<
-    'none' | 'blob-1' | 'blob-2' | 'circle' | 'egg' | 'arch' | 'squircle' | 'leaf'
+    'none' | 'mosaic' | 'blob-1' | 'blob-2' | 'circle' | 'egg' | 'arch' | 'squircle' | 'leaf'
   >((settings?.hero_blob_radius_type as any) || 'blob-1');
   const [heroBlobAnimateMorph, setHeroBlobAnimateMorph] = useState<boolean>(
     settings?.hero_blob_animate_morph === 'true'
@@ -6880,6 +6880,7 @@ export const WebBuilderSection: React.FC = () => {
                           <div className="grid grid-cols-2 gap-2">
                             {[
                               { id: 'none', label: '✨ Sin Forma (Directo / PNG)' },
+                              { id: 'mosaic', label: '🧩 Mosaico Cápsulas (Collage)' },
                               { id: 'blob-1', label: '🌿 Orgánica Suave' },
                               { id: 'blob-2', label: '💧 Gota Asimétrica' },
                               { id: 'arch', label: '🏛️ Arco Nórdico' },
