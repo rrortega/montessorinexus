@@ -395,9 +395,52 @@ export const CustomHoverPicker: React.FC<{
 
 export const SectionThemeContext = React.createContext<'light' | 'dark'>('light');
 
+export const FontSizeStepperMini: React.FC<{
+  value?: number | string;
+  onChange: (newSize: number) => void;
+  defaultSize?: number;
+  min?: number;
+  max?: number;
+  className?: string;
+}> = ({ value, onChange, defaultSize = 16, min = 10, max = 72, className = '' }) => {
+  const currentSize = Number(value) || defaultSize;
+  return (
+    <div className={`flex items-center gap-0.5 bg-slate-100/90 border border-slate-200 rounded-lg p-0.5 shadow-3xs ${className}`} title="Tamaño de fuente">
+      <button
+        type="button"
+        onClick={() => onChange(Math.max(min, currentSize - 1))}
+        className="p-0.5 px-1.5 rounded hover:bg-white text-slate-700 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-0.5"
+        title="Reducir tamaño (A pequeña)"
+      >
+        <span className="text-[10px] font-bold leading-none">A</span>
+        <span className="text-[9px] font-bold text-slate-400 leading-none">−</span>
+      </button>
+
+      <span className="text-[9px] font-mono font-bold text-slate-600 px-1 select-none min-w-[24px] text-center">
+        {currentSize}px
+      </span>
+
+      <button
+        type="button"
+        onClick={() => onChange(Math.min(max, currentSize + 1))}
+        className="p-0.5 px-1.5 rounded hover:bg-white text-slate-700 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-0.5"
+        title="Aumentar tamaño (A grande)"
+      >
+        <span className="text-xs font-bold leading-none">A</span>
+        <span className="text-[9px] font-bold text-slate-400 leading-none">+</span>
+      </button>
+    </div>
+  );
+};
+
 interface FieldTypographyAndColorBarProps {
   fontValue?: string;
   onChangeFont: (fontId: string) => void;
+  sizeValue?: number | string;
+  onChangeSize?: (newSize: number) => void;
+  defaultSize?: number;
+  minSize?: number;
+  maxSize?: number;
   colorLight?: string;
   onChangeColorLight: (hex: string) => void;
   colorDark?: string;
@@ -410,6 +453,11 @@ interface FieldTypographyAndColorBarProps {
 const FieldTypographyAndColorBar: React.FC<FieldTypographyAndColorBarProps> = ({
   fontValue = 'inherit',
   onChangeFont,
+  sizeValue,
+  onChangeSize,
+  defaultSize = 16,
+  minSize = 10,
+  maxSize = 72,
   colorLight,
   onChangeColorLight,
   colorDark,
@@ -431,7 +479,7 @@ const FieldTypographyAndColorBar: React.FC<FieldTypographyAndColorBarProps> = ({
     <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/90 shadow-3xs space-y-2">
       <div className="flex items-center justify-between gap-2 flex-wrap text-[11px]">
         {/* Custom Font Family Picker with Live Preview */}
-        <div className="flex items-center gap-1.5 min-w-[220px] flex-1">
+        <div className="flex items-center gap-1.5 min-w-[200px] flex-1">
           <Type className="w-3.5 h-3.5 text-forest shrink-0" />
           <span className="text-[10px] font-bold text-slate-600 shrink-0">Fuente:</span>
           <CustomFontPicker
@@ -440,6 +488,17 @@ const FieldTypographyAndColorBar: React.FC<FieldTypographyAndColorBarProps> = ({
             className="flex-1"
           />
         </div>
+
+        {/* Font Size Stepper Buttons (A chica y A grande) */}
+        {onChangeSize && (
+          <FontSizeStepperMini
+            value={sizeValue}
+            onChange={onChangeSize}
+            defaultSize={defaultSize}
+            min={minSize}
+            max={maxSize}
+          />
+        )}
 
         {/* Dynamic Single Color Control for Active Theme Mode */}
         <div className="flex items-center shrink-0">
@@ -1066,6 +1125,11 @@ const fullKey = editorLang === 'es' ? key : `${key}_${editorLang}`;
             <FieldTypographyAndColorBar
               fontValue={section.config?.badge_font}
               onChangeFont={(val) => handleConfigChange('badge_font', val)}
+              sizeValue={section.config?.badge_size}
+              onChangeSize={(val) => handleConfigChange('badge_size', val)}
+              defaultSize={12}
+              minSize={9}
+              maxSize={22}
               colorLight={section.config?.badge_color}
               onChangeColorLight={(val) => handleConfigChange('badge_color', val)}
               colorDark={section.config?.badge_color_dark}
@@ -1078,9 +1142,18 @@ const fullKey = editorLang === 'es' ? key : `${key}_${editorLang}`;
           {/* 1.3 Título Principal */}
           <div className="space-y-2 pt-2 border-t border-slate-100">
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-700">
-                Título Principal de la Sección ({currentLangObj.code.toUpperCase()}):
-              </label>
+              <div className="flex items-center justify-between gap-2">
+                <label className="text-[10px] font-bold text-slate-700">
+                  Título Principal de la Sección ({currentLangObj.code.toUpperCase()}):
+                </label>
+                <FontSizeStepperMini
+                  value={section.config?.title_size}
+                  onChange={(val) => handleConfigChange('title_size', val)}
+                  defaultSize={36}
+                  min={18}
+                  max={64}
+                />
+              </div>
               <input
                 type="text"
                 value={getLangValue('title')}
@@ -1092,6 +1165,11 @@ const fullKey = editorLang === 'es' ? key : `${key}_${editorLang}`;
             <FieldTypographyAndColorBar
               fontValue={section.config?.title_font}
               onChangeFont={(val) => handleConfigChange('title_font', val)}
+              sizeValue={section.config?.title_size}
+              onChangeSize={(val) => handleConfigChange('title_size', val)}
+              defaultSize={36}
+              minSize={18}
+              maxSize={64}
               colorLight={section.config?.title_color}
               onChangeColorLight={(val) => handleConfigChange('title_color', val)}
               colorDark={section.config?.title_color_dark}
@@ -1104,9 +1182,18 @@ const fullKey = editorLang === 'es' ? key : `${key}_${editorLang}`;
           {/* 1.4 Subtítulo / Bajada Descriptiva */}
           <div className="space-y-2 pt-2 border-t border-slate-100">
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-700">
-                Subtítulo / Bajada Descriptiva ({currentLangObj.code.toUpperCase()}):
-              </label>
+              <div className="flex items-center justify-between gap-2">
+                <label className="text-[10px] font-bold text-slate-700">
+                  Subtítulo / Bajada Descriptiva ({currentLangObj.code.toUpperCase()}):
+                </label>
+                <FontSizeStepperMini
+                  value={section.config?.subtitle_size}
+                  onChange={(val) => handleConfigChange('subtitle_size', val)}
+                  defaultSize={16}
+                  min={12}
+                  max={32}
+                />
+              </div>
               <textarea
                 value={getLangValue('subtitle')}
                 onChange={(e) => setLangValue('subtitle', e.target.value)}
@@ -1118,6 +1205,11 @@ const fullKey = editorLang === 'es' ? key : `${key}_${editorLang}`;
             <FieldTypographyAndColorBar
               fontValue={section.config?.subtitle_font}
               onChangeFont={(val) => handleConfigChange('subtitle_font', val)}
+              sizeValue={section.config?.subtitle_size}
+              onChangeSize={(val) => handleConfigChange('subtitle_size', val)}
+              defaultSize={16}
+              minSize={12}
+              maxSize={32}
               colorLight={section.config?.subtitle_color}
               onChangeColorLight={(val) => handleConfigChange('subtitle_color', val)}
               colorDark={section.config?.subtitle_color_dark}
@@ -1573,9 +1665,18 @@ const fullKey = editorLang === 'es' ? key : `${key}_${editorLang}`;
 
                             {/* 2. Título de la tarjeta */}
                             <div className="space-y-1.5 pt-2 border-t border-slate-100">
-                              <label className="text-[10px] font-bold text-slate-700">
-                                Título de la Tarjeta ({currentLangObj.name}):
-                              </label>
+                              <div className="flex items-center justify-between gap-2">
+                                <label className="text-[10px] font-bold text-slate-700">
+                                  Título de la Tarjeta ({currentLangObj.name}):
+                                </label>
+                                <FontSizeStepperMini
+                                  value={card.titleSize}
+                                  onChange={(val) => handleUpdateSingleCard(card.id, { titleSize: val })}
+                                  defaultSize={20}
+                                  min={12}
+                                  max={40}
+                                />
+                              </div>
                               <input
                                 type="text"
                                 value={cardTitle}
@@ -1593,6 +1694,11 @@ const fullKey = editorLang === 'es' ? key : `${key}_${editorLang}`;
                               <FieldTypographyAndColorBar
                                 fontValue={card.titleFont || 'inherit'}
                                 onChangeFont={(fId) => handleUpdateSingleCard(card.id, { titleFont: fId })}
+                                sizeValue={card.titleSize}
+                                onChangeSize={(val) => handleUpdateSingleCard(card.id, { titleSize: val })}
+                                defaultSize={20}
+                                minSize={12}
+                                maxSize={40}
                                 colorLight={card.titleColor}
                                 onChangeColorLight={(hex) => handleUpdateSingleCard(card.id, { titleColor: hex })}
                                 colorDark={card.titleColorDark}
@@ -1604,9 +1710,18 @@ const fullKey = editorLang === 'es' ? key : `${key}_${editorLang}`;
 
                             {/* 3. Subtítulo / Descripción */}
                             <div className="space-y-1.5 pt-2 border-t border-slate-100">
-                              <label className="text-[10px] font-bold text-slate-700">
-                                Descripción / Detalle de la Tarjeta ({currentLangObj.name}):
-                              </label>
+                              <div className="flex items-center justify-between gap-2">
+                                <label className="text-[10px] font-bold text-slate-700">
+                                  Descripción / Detalle de la Tarjeta ({currentLangObj.name}):
+                                </label>
+                                <FontSizeStepperMini
+                                  value={card.subtitleSize}
+                                  onChange={(val) => handleUpdateSingleCard(card.id, { subtitleSize: val })}
+                                  defaultSize={14}
+                                  min={10}
+                                  max={28}
+                                />
+                              </div>
                               <textarea
                                 value={cardSubtitle}
                                 onChange={(e) => {
@@ -1624,6 +1739,11 @@ const fullKey = editorLang === 'es' ? key : `${key}_${editorLang}`;
                               <FieldTypographyAndColorBar
                                 fontValue={card.subtitleFont || 'inherit'}
                                 onChangeFont={(fId) => handleUpdateSingleCard(card.id, { subtitleFont: fId })}
+                                sizeValue={card.subtitleSize}
+                                onChangeSize={(val) => handleUpdateSingleCard(card.id, { subtitleSize: val })}
+                                defaultSize={14}
+                                minSize={10}
+                                maxSize={28}
                                 colorLight={card.subtitleColor || card.textColor}
                                 onChangeColorLight={(hex) => handleUpdateSingleCard(card.id, { subtitleColor: hex, textColor: hex })}
                                 colorDark={card.subtitleColorDark || card.textColorDark}
@@ -2006,6 +2126,11 @@ const fullKey = editorLang === 'es' ? key : `${key}_${editorLang}`;
               <FieldTypographyAndColorBar
                 fontValue={section.config?.cta_font}
                 onChangeFont={(val) => handleConfigChange('cta_font', val)}
+                sizeValue={section.config?.cta_size}
+                onChangeSize={(val) => handleConfigChange('cta_size', val)}
+                defaultSize={14}
+                minSize={11}
+                maxSize={24}
                 colorLight={section.config?.cta_color}
                 onChangeColorLight={(val) => handleConfigChange('cta_color', val)}
                 colorDark={section.config?.cta_color_dark}

@@ -125,6 +125,8 @@ export interface PillarCardItem {
   titleColorDark?: string;
   subtitleColor?: string;
   subtitleColorDark?: string;
+  titleSize?: number | string;
+  subtitleSize?: number | string;
   shape?: 'rounded' | 'blob' | 'arch' | 'squircle' | 'minimal' | 'leaf' | 'pill';
   hoverEffect?: 'lift' | 'scale' | 'glow' | 'tilt' | 'border' | 'none';
   rotateZ?: number | string;
@@ -639,7 +641,7 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
               className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-forest/10 border border-forest/20 text-xs font-bold uppercase tracking-wider text-forest`}
             >
               <Sparkles className="w-3.5 h-3.5 text-forest" />
-              <span style={{ fontFamily: badgeFontFamily, color: badgeColor }}>
+              <span style={{ fontFamily: badgeFontFamily, color: badgeColor, fontSize: config.badge_size ? `${config.badge_size}px` : undefined }}>
                 {badgeText}
               </span>
             </div>
@@ -647,7 +649,7 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
 
           {titleText && (
             <h2
-              style={{ fontFamily: titleFontFamily, color: titleColor }}
+              style={{ fontFamily: titleFontFamily, color: titleColor, fontSize: config.title_size ? `${config.title_size}px` : undefined }}
               className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-foreground leading-[1.15] whitespace-pre-line"
             >
               {titleText}
@@ -656,7 +658,7 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
 
           {subtitleText && (
             <p
-              style={{ fontFamily: subtitleFontFamily, color: subtitleColor }}
+              style={{ fontFamily: subtitleFontFamily, color: subtitleColor, fontSize: config.subtitle_size ? `${config.subtitle_size}px` : undefined }}
               className="text-base sm:text-lg text-muted-foreground leading-relaxed whitespace-pre-line"
             >
               {subtitleText}
@@ -795,7 +797,8 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
                       <h3
                         style={{
                           fontFamily: cardTitleFont,
-                          color: titleColorLight || undefined
+                          color: titleColorLight || undefined,
+                          fontSize: card.titleSize ? `${card.titleSize}px` : (config.card_title_size ? `${config.card_title_size}px` : undefined)
                         }}
                         className={`font-display text-lg sm:text-xl font-bold text-foreground leading-snug whitespace-pre-line ${
                           titleColorLight ? 'text-[var(--card-title-color-light)]' : ''
@@ -809,7 +812,8 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
                         <p
                           style={{
                             fontFamily: cardSubtitleFont,
-                            color: subtitleColorLight || undefined
+                            color: subtitleColorLight || undefined,
+                            fontSize: card.subtitleSize ? `${card.subtitleSize}px` : (config.card_subtitle_size ? `${config.card_subtitle_size}px` : undefined)
                           }}
                           className={`text-xs sm:text-sm text-muted-foreground leading-relaxed whitespace-pre-line ${
                             subtitleColorLight ? 'text-[var(--card-subtitle-color-light)]' : ''
@@ -855,7 +859,8 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
                 onClick={handleCtaClick}
                 style={{
                   fontFamily: ctaFontFamily,
-                  color: ctaColor
+                  color: ctaColor,
+                  fontSize: config.cta_size ? `${config.cta_size}px` : undefined
                 }}
                 className="rounded-full px-9 py-6 text-sm sm:text-base font-bold bg-forest text-white hover:bg-forest/90 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-0.5"
               >
