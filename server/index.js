@@ -7017,23 +7017,26 @@ app.post('/api/settings', async (req, res) => {
   try {
     const entries = Object.entries(req.body);
     if (entries.length > 0) {
-      const upsertOperations = entries.map(([key, value]) =>
-        prisma.siteSetting.upsert({
-          where: {
-            schoolId_key: {
+      const BATCH_SIZE = 25;
+      for (let i = 0; i < entries.length; i += BATCH_SIZE) {
+        const chunk = entries.slice(i, i + BATCH_SIZE);
+        await Promise.all(chunk.map(([key, value]) =>
+          prisma.siteSetting.upsert({
+            where: {
+              schoolId_key: {
+                schoolId: req.school.id,
+                key
+              }
+            },
+            update: { value: String(value) },
+            create: {
               schoolId: req.school.id,
-              key
+              key,
+              value: String(value)
             }
-          },
-          update: { value: String(value) },
-          create: {
-            schoolId: req.school.id,
-            key,
-            value: String(value)
-          }
-        })
-      );
-      await prisma.$transaction(upsertOperations);
+          })
+        ));
+      }
     }
 
     // Sync to school model if school regional fields are updated
