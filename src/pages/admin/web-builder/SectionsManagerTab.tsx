@@ -445,7 +445,6 @@ export const SectionsManagerTab: React.FC<SectionsManagerTabProps> = ({
     if (sections.length <= 1) return;
     const newSections = sections.filter(s => s.id !== id);
     onChangeSections(newSections);
-    if (editingSectionId === id) setEditingSectionId(null);
   };
 
   const handleAddTemplate = (template: SectionTemplate) => {
@@ -569,7 +568,6 @@ export const SectionsManagerTab: React.FC<SectionsManagerTabProps> = ({
           {sections.map((section, index) => {
             const template = SECTION_TEMPLATES.find(t => t.type === section.type);
             const IconComp = template?.icon || Layers;
-            const isEditing = editingSectionId === section.id;
 
             const isBeingDragged = draggedIndex === index;
             const isDragOver = dragOverIndex === index;
