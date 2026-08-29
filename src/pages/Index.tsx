@@ -21,7 +21,7 @@ import mariaCharcoal from '@/assets/maria-charcoal.png';
 
 import { useSiteSettings } from '@/context/SettingsContext';
 import { WebSectionItem, DEFAULT_PAGE_SECTIONS } from '@/pages/admin/web-builder/SectionsManagerTab';
-import { PreviewSectionWrapper } from '@/components/PreviewSectionWrapper';
+import { PreviewSectionWrapper, PreviewHoverProvider } from '@/components/PreviewSectionWrapper';
 
 const Index = () => {
   const { settings } = useSiteSettings();
@@ -100,47 +100,49 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen overflow-x-clip selection:bg-primary/30">
-      <SEO />
-      {/* Global Mouse Follower (Subtle) */}
-      <motion.div
-        style={{
-          x: springX,
-          y: springY,
-          translateX: '-50%',
-          translateY: '-50%',
-        }}
-        className="fixed top-0 left-0 w-8 h-8 rounded-full border border-primary/20 pointer-events-none z-[9999] hidden lg:block"
-      />
+    <PreviewHoverProvider>
+      <div className="min-h-screen overflow-x-clip selection:bg-primary/30">
+        <SEO />
+        {/* Global Mouse Follower (Subtle) */}
+        <motion.div
+          style={{
+            x: springX,
+            y: springY,
+            translateX: '-50%',
+            translateY: '-50%',
+          }}
+          className="fixed top-0 left-0 w-8 h-8 rounded-full border border-primary/20 pointer-events-none z-[9999] hidden lg:block"
+        />
 
-      <PreviewSectionWrapper id="header" name="Header & Barra Superior" targetTab="header">
-        <Header />
-      </PreviewSectionWrapper>
-
-      <main>
-        <PreviewSectionWrapper id="hero" name="Hero Banner" targetTab="hero">
-          <HeroSection />
+        <PreviewSectionWrapper id="header" name="Header & Barra Superior" targetTab="header">
+          <Header />
         </PreviewSectionWrapper>
-        
-        {/* DYNAMIC SECTIONS RENDERED IN CONFIGURED ORDER */}
-        {sections
-          .filter(sec => sec.isEnabled !== false)
-          .map((section) => (
-            <PreviewSectionWrapper
-              key={section.id}
-              id={section.id}
-              name={section.name}
-              targetTab={`section:${section.id}`}
-            >
-              {renderSectionByType(section)}
-            </PreviewSectionWrapper>
-          ))}
-      </main>
 
-      <PreviewSectionWrapper id="footer" name="Pie de Página (Footer)" targetTab="cta">
-        <Footer />
-      </PreviewSectionWrapper>
-    </div>
+        <main>
+          <PreviewSectionWrapper id="hero" name="Hero Banner" targetTab="hero">
+            <HeroSection />
+          </PreviewSectionWrapper>
+          
+          {/* DYNAMIC SECTIONS RENDERED IN CONFIGURED ORDER */}
+          {sections
+            .filter(sec => sec.isEnabled !== false)
+            .map((section) => (
+              <PreviewSectionWrapper
+                key={section.id}
+                id={section.id}
+                name={section.name}
+                targetTab={`section:${section.id}`}
+              >
+                {renderSectionByType(section)}
+              </PreviewSectionWrapper>
+            ))}
+        </main>
+
+        <PreviewSectionWrapper id="footer" name="Pie de Página (Footer)" targetTab="cta">
+          <Footer />
+        </PreviewSectionWrapper>
+      </div>
+    </PreviewHoverProvider>
   );
 };
 
