@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   WebSectionItem,
   SECTION_TEMPLATES,
@@ -27,7 +27,9 @@ import {
   MapPin,
   MessageCircle,
   Award,
-  BookOpen
+  BookOpen,
+  Globe,
+  Languages
 } from 'lucide-react';
 import { ImageUploadDropzone } from '@/components/ui/ImageUploadDropzone';
 
@@ -44,6 +46,7 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
   onDuplicateSection,
   onDeleteSection
 }) => {
+  const [editorLang, setEditorLang] = useState<'es' | 'en'>('es');
   const template = SECTION_TEMPLATES.find(t => t.type === section.type);
   const IconComp = template?.icon || Layers;
 
@@ -69,7 +72,9 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-bold text-sm text-slate-900 truncate">{section.name}</h3>
+              <h3 className="font-bold text-sm text-slate-900 truncate">
+                {editorLang === 'en' && section.name_en ? section.name_en : section.name}
+              </h3>
               {template?.tag && (
                 <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-forest/10 text-forest border border-forest/20">
                   {template.tag}
@@ -98,53 +103,125 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
         </div>
       </div>
 
+      {/* LANGUAGE SELECTOR SWITCH (ESPAÑOL / ENGLISH) */}
+      <div className="flex items-center justify-between p-3 rounded-2xl bg-gradient-to-r from-forest/5 via-forest/10 to-amber-500/5 border border-forest/20 shadow-3xs">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-forest text-white flex items-center justify-center shadow-3xs">
+            <Globe className="w-4 h-4" />
+          </div>
+          <div>
+            <span className="text-xs font-extrabold text-slate-900 block">Idioma de Edición</span>
+            <span className="text-[10px] text-muted-foreground">Configurá textos para cada idioma</span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200 shadow-3xs">
+          <button
+            type="button"
+            onClick={() => setEditorLang('es')}
+            className={`px-3 py-1.5 text-xs font-extrabold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+              editorLang === 'es'
+                ? 'bg-forest text-white shadow-3xs scale-100'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            <span>🇪🇸</span>
+            <span>Español (ES)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setEditorLang('en')}
+            className={`px-3 py-1.5 text-xs font-extrabold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+              editorLang === 'en'
+                ? 'bg-forest text-white shadow-3xs scale-100'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            <span>🇺🇸</span>
+            <span>English (EN)</span>
+          </button>
+        </div>
+      </div>
+
       {/* 2. GENERAL HEADINGS & TEXTS */}
       <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-4">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-forest/10 text-forest flex items-center justify-center font-bold">1</div>
-          <h4 className="font-bold text-forest text-xs sm:text-sm">Titulares & Textos Principales</h4>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-forest/10 text-forest flex items-center justify-center font-bold">1</div>
+            <h4 className="font-bold text-forest text-xs sm:text-sm">
+              Titulares & Textos ({editorLang === 'es' ? 'Español' : 'English'})
+            </h4>
+          </div>
+          <span className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold ${
+            editorLang === 'es' ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-blue-100 text-blue-800 border border-blue-200'
+          }`}>
+            {editorLang === 'es' ? '🇪🇸 Idioma Español' : '🇺🇸 Idioma Inglés'}
+          </span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="space-y-1">
-            <label className="text-[10px] font-bold text-slate-700">Nombre de la Sección (Interno):</label>
+            <label className="text-[10px] font-bold text-slate-700">
+              Nombre de la Sección ({editorLang.toUpperCase()}):
+            </label>
             <input
               type="text"
-              value={section.name}
-              onChange={(e) => onUpdateSection({ name: e.target.value })}
+              value={editorLang === 'es' ? section.name : (section.name_en || '')}
+              onChange={(e) => {
+                if (editorLang === 'es') onUpdateSection({ name: e.target.value });
+                else onUpdateSection({ name_en: e.target.value });
+              }}
+              placeholder={editorLang === 'es' ? 'Nombre identificador' : 'Section Name in English'}
               className="w-full px-2.5 py-1.5 text-xs font-semibold text-slate-900 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-forest/20 focus:border-forest"
             />
           </div>
 
           <div className="space-y-1">
-            <label className="text-[10px] font-bold text-slate-700">Etiqueta Superior (Badge / Eyebrow):</label>
+            <label className="text-[10px] font-bold text-slate-700">
+              Etiqueta Superior (Badge / Eyebrow {editorLang.toUpperCase()}):
+            </label>
             <input
               type="text"
-              value={section.badge || ''}
-              onChange={(e) => onUpdateSection({ badge: e.target.value })}
-              placeholder="Ej: Nuestra Filosofía"
+              value={editorLang === 'es' ? (section.badge || '') : (section.badge_en || '')}
+              onChange={(e) => {
+                if (editorLang === 'es') onUpdateSection({ badge: e.target.value });
+                else onUpdateSection({ badge_en: e.target.value });
+              }}
+              placeholder={editorLang === 'es' ? 'Ej: Nuestra Filosofía' : 'Ex: Our Philosophy'}
               className="w-full px-2.5 py-1.5 text-xs font-semibold text-slate-900 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-forest/20 focus:border-forest"
             />
           </div>
         </div>
 
         <div className="space-y-1">
-          <label className="text-[10px] font-bold text-slate-700">Título Principal de la Sección:</label>
+          <label className="text-[10px] font-bold text-slate-700">
+            Título Principal de la Sección ({editorLang.toUpperCase()}):
+          </label>
           <input
             type="text"
-            value={section.title}
-            onChange={(e) => onUpdateSection({ title: e.target.value })}
+            value={editorLang === 'es' ? section.title : (section.title_en || '')}
+            onChange={(e) => {
+              if (editorLang === 'es') onUpdateSection({ title: e.target.value });
+              else onUpdateSection({ title_en: e.target.value });
+            }}
+            placeholder={editorLang === 'es' ? 'Título principal en español' : 'Main section title in English'}
             className="w-full px-3 py-2 text-xs font-bold text-slate-900 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-forest/20 focus:border-forest"
           />
         </div>
 
         <div className="space-y-1">
-          <label className="text-[10px] font-bold text-slate-700">Subtítulo / Bajada Descriptiva:</label>
+          <label className="text-[10px] font-bold text-slate-700">
+            Subtítulo / Bajada Descriptiva ({editorLang.toUpperCase()}):
+          </label>
           <textarea
-            value={section.subtitle || ''}
-            onChange={(e) => onUpdateSection({ subtitle: e.target.value })}
+            value={editorLang === 'es' ? (section.subtitle || '') : (section.subtitle_en || '')}
+            onChange={(e) => {
+              if (editorLang === 'es') onUpdateSection({ subtitle: e.target.value });
+              else onUpdateSection({ subtitle_en: e.target.value });
+            }}
             rows={2}
-            placeholder="Descripción introductoria o propósito de la sección..."
+            placeholder={editorLang === 'es' ? 'Descripción introductoria o propósito...' : 'Introductory description or purpose in English...'}
             className="w-full px-3 py-2 text-xs text-slate-800 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-forest/20 focus:border-forest"
           />
         </div>
@@ -184,17 +261,24 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
       <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-4">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg bg-forest/10 text-forest flex items-center justify-center font-bold">2</div>
-          <h4 className="font-bold text-forest text-xs sm:text-sm">Botón de Acción (CTA)</h4>
+          <h4 className="font-bold text-forest text-xs sm:text-sm">
+            Botón de Acción CTA ({editorLang === 'es' ? 'Español' : 'English'})
+          </h4>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="space-y-1">
-            <label className="text-[10px] font-bold text-slate-700">Texto del Botón:</label>
+            <label className="text-[10px] font-bold text-slate-700">
+              Texto del Botón ({editorLang.toUpperCase()}):
+            </label>
             <input
               type="text"
-              value={section.ctaText || ''}
-              onChange={(e) => onUpdateSection({ ctaText: e.target.value })}
-              placeholder="Ej: Quiero una cita o Más Información"
+              value={editorLang === 'es' ? (section.ctaText || '') : (section.ctaText_en || '')}
+              onChange={(e) => {
+                if (editorLang === 'es') onUpdateSection({ ctaText: e.target.value });
+                else onUpdateSection({ ctaText_en: e.target.value });
+              }}
+              placeholder={editorLang === 'es' ? 'Ej: Quiero una cita o Más Información' : 'Ex: Book a Tour / Learn More'}
               className="w-full px-2.5 py-1.5 text-xs font-semibold text-slate-900 bg-white border border-slate-200 rounded-lg"
             />
           </div>
@@ -234,19 +318,35 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
           </div>
 
           <div className="space-y-2 pt-2 border-t border-slate-100">
-            <label className="text-[11px] font-bold text-slate-700 block">Puntos de Beneficio (Checklist):</label>
+            <label className="text-[11px] font-bold text-slate-700 block">
+              Puntos de Beneficio ({editorLang === 'es' ? 'Español' : 'English'}):
+            </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {[
-                { key: 'item1', def: 'Bilingüe (Inglés vivido naturalmente)' },
-                { key: 'item2', def: 'Áreas verdes y contacto con la naturaleza' },
-                { key: 'item3', def: 'Actividades de vida práctica y sensorial' },
-                { key: 'item4', def: 'Desarrollo socioemocional y autonomía' }
+                {
+                  key: editorLang === 'es' ? 'item1' : 'item1_en',
+                  def: editorLang === 'es' ? 'Bilingüe (Inglés vivido naturalmente)' : 'Bilingual (Naturally lived English)'
+                },
+                {
+                  key: editorLang === 'es' ? 'item2' : 'item2_en',
+                  def: editorLang === 'es' ? 'Áreas verdes y contacto con la naturaleza' : 'Green areas and connection with nature'
+                },
+                {
+                  key: editorLang === 'es' ? 'item3' : 'item3_en',
+                  def: editorLang === 'es' ? 'Actividades de vida práctica y sensorial' : 'Practical life and sensorial activities'
+                },
+                {
+                  key: editorLang === 'es' ? 'item4' : 'item4_en',
+                  def: editorLang === 'es' ? 'Desarrollo socioemocional y autonomía' : 'Socio-emotional development & autonomy'
+                }
               ].map((item, idx) => (
                 <div key={item.key} className="space-y-0.5">
-                  <span className="text-[9px] font-bold text-slate-500">Beneficio {idx + 1}:</span>
+                  <span className="text-[9px] font-bold text-slate-500">
+                    Beneficio {idx + 1} ({editorLang.toUpperCase()}):
+                  </span>
                   <input
                     type="text"
-                    value={section.config?.[item.key] || item.def}
+                    value={section.config?.[item.key] ?? item.def}
                     onChange={(e) => handleConfigChange(item.key, e.target.value)}
                     className="w-full px-2 py-1 text-xs text-slate-900 bg-slate-50 border border-slate-200 rounded-lg"
                   />
@@ -265,11 +365,20 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
           </div>
 
           <div className="space-y-2">
-            <label className="text-[11px] font-bold text-slate-700 block">Texto Destacado de Misión / Propósito:</label>
+            <label className="text-[11px] font-bold text-slate-700 block">
+              Texto Destacado de Misión ({editorLang.toUpperCase()}):
+            </label>
             <textarea
-              value={section.config?.missionText || 'En nuestra escuela nos comprometemos a entender la infancia para ayudar a los niños a desarrollar la grandeza de sus potencialidades.'}
-              onChange={(e) => handleConfigChange('missionText', e.target.value)}
+              value={editorLang === 'es'
+                ? (section.config?.missionText ?? 'En nuestra escuela nos comprometemos a entender la infancia para ayudar a los niños a desarrollar la grandeza de sus potencialidades.')
+                : (section.config?.missionText_en ?? 'At our school, we are committed to understanding childhood to help children develop their full human potential.')
+              }
+              onChange={(e) => {
+                if (editorLang === 'es') handleConfigChange('missionText', e.target.value);
+                else handleConfigChange('missionText_en', e.target.value);
+              }}
               rows={3}
+              placeholder={editorLang === 'es' ? 'Texto de misión en español...' : 'Mission statement in English...'}
               className="w-full px-3 py-2 text-xs text-slate-800 bg-slate-50 border border-slate-200 rounded-xl"
             />
           </div>
@@ -284,11 +393,19 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
           </div>
 
           <div className="space-y-1">
-            <label className="text-[10px] font-bold text-slate-700">Dirección Física Completa:</label>
+            <label className="text-[10px] font-bold text-slate-700">
+              Dirección Física Completa ({editorLang.toUpperCase()}):
+            </label>
             <input
               type="text"
-              value={section.config?.address || 'Av. Principal 123, Zona Escolar, Benito Juárez, Quintana Roo'}
-              onChange={(e) => handleConfigChange('address', e.target.value)}
+              value={editorLang === 'es'
+                ? (section.config?.address || 'Av. Principal 123, Zona Escolar, Benito Juárez, Quintana Roo')
+                : (section.config?.address_en || '123 Main Ave, School District, Benito Juarez, Quintana Roo')
+              }
+              onChange={(e) => {
+                if (editorLang === 'es') handleConfigChange('address', e.target.value);
+                else handleConfigChange('address_en', e.target.value);
+              }}
               className="w-full px-2.5 py-1.5 text-xs text-slate-900 bg-white border border-slate-200 rounded-lg"
             />
           </div>

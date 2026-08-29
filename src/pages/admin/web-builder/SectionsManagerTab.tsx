@@ -38,11 +38,16 @@ export interface WebSectionItem {
   id: string;
   type: string;
   name: string;
+  name_en?: string;
   badge?: string;
+  badge_en?: string;
   title: string;
+  title_en?: string;
   subtitle?: string;
+  subtitle_en?: string;
   isEnabled: boolean;
   ctaText?: string;
+  ctaText_en?: string;
   ctaUrl?: string;
   layoutVariant?: string;
   config?: Record<string, any>;

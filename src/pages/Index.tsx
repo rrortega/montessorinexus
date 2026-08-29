@@ -20,11 +20,13 @@ import tallerImg from '@/assets/taller-old.jpg';
 import mariaCharcoal from '@/assets/maria-charcoal.png';
 
 import { useSiteSettings } from '@/context/SettingsContext';
+import { useI18n } from '@/context/I18nContext';
 import { WebSectionItem, DEFAULT_PAGE_SECTIONS } from '@/pages/admin/web-builder/SectionsManagerTab';
 import { PreviewSectionWrapper, PreviewHoverProvider } from '@/components/PreviewSectionWrapper';
 
 const Index = () => {
   const { settings } = useSiteSettings();
+  const { locale } = useI18n();
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
   const springX = useSpring(mouseX, { damping: 50, stiffness: 300 });
@@ -59,23 +61,27 @@ const Index = () => {
       case 'feature_list_media':
       case 'feature_cards_row':
         return <WhyChooseUs key={section.id} />;
-      case 'quote_banner_artistic':
+      case 'quote_banner_artistic': {
+        const qTitle = locale === 'en' && section.title_en ? section.title_en : section.title;
+        const qAuthor = locale === 'en' && section.subtitle_en ? section.subtitle_en : section.subtitle;
+        const qCta = locale === 'en' && section.ctaText_en ? section.ctaText_en : section.ctaText;
         return (
           <FeaturedQuote
             key={section.id}
             quoteKeys={[
-              section.title || "Sigue al niño.",
-              "Libera el potencial del niño y lo transformarás en el mundo.",
-              "Ayúdame a hacerlo por mí mismo.",
-              "El niño es la esperanza y la promesa para la humanidad."
+              qTitle || (locale === 'en' ? "Follow the child." : "Sigue al niño."),
+              locale === 'en' ? "Free the child's potential, and you will transform him into the world." : "Libera el potencial del niño y lo transformarás en el mundo.",
+              locale === 'en' ? "Help me do it myself." : "Ayúdame a hacerlo por mí mismo.",
+              locale === 'en' ? "The child is both a hope and a promise for mankind." : "El niño es la esperanza y la promesa para la humanidad."
             ]}
-            authorKey={section.subtitle || "Maria Montessori"}
+            authorKey={qAuthor || "Maria Montessori"}
             image={mariaCharcoal}
-            ctaText={section.ctaText || "Conoce Nuestro Método"}
+            ctaText={qCta || (locale === 'en' ? "Discover Our Method" : "Conoce Nuestro Método")}
             variant="artistic"
             borderPosition="both"
           />
         );
+      }
       case 'story_split_slider':
         return <HistorySection key={section.id} />;
       case 'metrics_stats_banner':
