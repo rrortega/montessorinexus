@@ -728,6 +728,21 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
             const cardTitleFont = getSectionFontFamily(card.titleFont || config.card_title_font);
             const cardSubtitleFont = getSectionFontFamily(card.subtitleFont || config.card_subtitle_font);
 
+            const titleColorLight = card.titleColor;
+            const titleColorDark = card.titleColorDark;
+            const subtitleColorLight = card.subtitleColor || card.textColor;
+            const subtitleColorDark = card.subtitleColorDark || card.textColorDark;
+            const cardBgLight = card.bgColor;
+            const cardBgDark = card.bgColorDark;
+
+            const cardCustomStyle: Record<string, string> = {};
+            if (cardBgLight) cardCustomStyle['--card-bg-light'] = cardBgLight;
+            if (cardBgDark) cardCustomStyle['--card-bg-dark'] = cardBgDark;
+            if (titleColorLight) cardCustomStyle['--card-title-color-light'] = titleColorLight;
+            if (titleColorDark) cardCustomStyle['--card-title-color-dark'] = titleColorDark;
+            if (subtitleColorLight) cardCustomStyle['--card-subtitle-color-light'] = subtitleColorLight;
+            if (subtitleColorDark) cardCustomStyle['--card-subtitle-color-dark'] = subtitleColorDark;
+
             return (
               <FadeInScroll
                 key={card.id || index}
@@ -738,10 +753,10 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
                   animate={{ rotate: cardRotation }}
                   whileHover={hoverAnim}
                   style={{
-                    backgroundColor: card.bgColor || undefined,
-                    color: card.textColor || undefined
+                    backgroundColor: cardBgLight || undefined,
+                    ...cardCustomStyle
                   }}
-                  className={`group p-7 sm:p-8 h-full flex flex-col justify-between shadow-card border border-black/5 relative overflow-hidden cursor-default bg-white dark:bg-slate-900 ${shapeClass}`}
+                  className={`group p-7 sm:p-8 h-full flex flex-col justify-between shadow-card border border-black/5 relative overflow-hidden cursor-default bg-white dark:bg-slate-900 ${cardBgLight ? 'bg-[var(--card-bg-light)]' : ''} ${cardBgDark ? 'dark:bg-[var(--card-bg-dark)]' : ''} ${shapeClass}`}
                 >
                   <div className="space-y-4">
                     {/* Card Icon or Custom Image */}
@@ -755,7 +770,17 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
                           />
                         </div>
                       ) : (
-                        <div className="w-14 h-14 rounded-2xl bg-forest/10 text-forest flex items-center justify-center shadow-xs shrink-0 group-hover:scale-110 group-hover:bg-forest group-hover:text-white transition-all duration-500">
+                        <div
+                          style={{
+                            color: titleColorLight || undefined,
+                            backgroundColor: titleColorLight ? `${titleColorLight}18` : undefined
+                          }}
+                          className={`w-14 h-14 rounded-2xl bg-forest/10 text-forest flex items-center justify-center shadow-xs shrink-0 group-hover:scale-110 transition-all duration-500 ${
+                            titleColorLight ? 'text-[var(--card-title-color-light)] bg-[var(--card-title-color-light)]/10' : ''
+                          } ${
+                            titleColorDark ? 'dark:text-[var(--card-title-color-dark)] dark:bg-[var(--card-title-color-dark)]/15' : ''
+                          }`}
+                        >
                           <IconComponent className="w-7 h-7 transition-colors" />
                         </div>
                       )}
@@ -770,9 +795,13 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
                       <h3
                         style={{
                           fontFamily: cardTitleFont,
-                          color: card.titleColor || undefined
+                          color: titleColorLight || undefined
                         }}
-                        className="font-display text-lg sm:text-xl font-bold text-foreground leading-snug whitespace-pre-line"
+                        className={`font-display text-lg sm:text-xl font-bold text-foreground leading-snug whitespace-pre-line ${
+                          titleColorLight ? 'text-[var(--card-title-color-light)]' : ''
+                        } ${
+                          titleColorDark ? 'dark:text-[var(--card-title-color-dark)]' : ''
+                        }`}
                       >
                         {cardTitle}
                       </h3>
@@ -780,9 +809,13 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
                         <p
                           style={{
                             fontFamily: cardSubtitleFont,
-                            color: card.subtitleColor || card.textColor || undefined
+                            color: subtitleColorLight || undefined
                           }}
-                          className="text-xs sm:text-sm text-muted-foreground leading-relaxed whitespace-pre-line"
+                          className={`text-xs sm:text-sm text-muted-foreground leading-relaxed whitespace-pre-line ${
+                            subtitleColorLight ? 'text-[var(--card-subtitle-color-light)]' : ''
+                          } ${
+                            subtitleColorDark ? 'dark:text-[var(--card-subtitle-color-dark)]' : ''
+                          }`}
                         >
                           {cardSubtitle}
                         </p>
@@ -791,11 +824,20 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
                   </div>
 
                   {/* Decorative Subtle Indicator */}
-                  <div className="pt-4 mt-4 border-t border-black/5 flex items-center justify-between text-[11px] font-bold text-forest/70 group-hover:text-forest transition-colors">
+                  <div
+                    style={{
+                      color: titleColorLight ? `${titleColorLight}b3` : undefined
+                    }}
+                    className={`pt-4 mt-4 border-t border-black/5 flex items-center justify-between text-[11px] font-bold text-forest/70 group-hover:text-forest transition-colors ${
+                      titleColorLight ? 'text-[var(--card-title-color-light)]' : ''
+                    } ${
+                      titleColorDark ? 'dark:text-[var(--card-title-color-dark)]' : ''
+                    }`}
+                  >
                     <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
                       {card.badge || ''}
                     </span>
-                    <Check className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-forest" />
+                    <Check className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 </motion.div>
               </FadeInScroll>

@@ -1433,8 +1433,11 @@ const fullKey = editorLang === 'es' ? key : `${key}_${editorLang}`;
                               </div>
                             ) : (
                               <div
-                                className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border border-slate-200 text-forest"
-                                style={{ backgroundColor: card.bgColor || '#f4f8f5' }}
+                                className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border border-slate-200"
+                                style={{
+                                  backgroundColor: (themeMode === 'dark' ? card.bgColorDark : card.bgColor) || (themeMode === 'dark' ? '#14251c' : '#f4f8f5'),
+                                  color: (themeMode === 'dark' ? card.titleColorDark : card.titleColor) || (themeMode === 'dark' ? '#ffffff' : '#1b3b2b')
+                                }}
                               >
                                 <IconComp className="w-4 h-4" />
                               </div>
