@@ -81,15 +81,19 @@ export const getSectionFontFamily = (fontId?: string): string | undefined => {
 
 export const CARD_ICON_CATEGORIES = [
   { id: 'all', label: 'Todos' },
-  { id: 'edu', label: '🎓 Idiomas/ABC' },
-  { id: 'nature', label: '🌿 Naturaleza' },
-  { id: 'values', label: '✨ Valores' }
+  { id: 'edu', label: '🎓 Libros & Idiomas' },
+  { id: 'people', label: '👨‍👩‍👧 Niños & Ejecutivos' },
+  { id: 'nature_city', label: '🌿 Parque & Ciudad' },
+  { id: 'travel', label: '✈️ Viajes & Vuelos' },
+  { id: 'values', label: '✨ Arte & Valores' }
 ] as const;
 
 export const CARD_ICONS_BY_CAT: Record<string, string[]> = {
-  edu: ['GraduationCap', 'Languages', 'Type', 'SpellCheck', 'BookOpen', 'Library', 'School', 'Pencil', 'PenTool', 'Atom', 'Microscope', 'Calculator', 'Binary'],
-  nature: ['Sprout', 'Leaf', 'Trees', 'TreePine', 'Flower2', 'Sun', 'Sunrise', 'CloudSun', 'Wind', 'Mountain', 'Globe', 'Compass', 'Rainbow', 'Footprints'],
-  values: ['Heart', 'HandHeart', 'Baby', 'Users', 'Smile', 'Sparkles', 'Star', 'Award', 'Trophy', 'Shield', 'Lightbulb', 'Palette', 'Music', 'Puzzle', 'Shapes', 'Clock', 'Anchor', 'Feather', 'Eye', 'Layers']
+  edu: ['GraduationCap', 'Languages', 'Type', 'SpellCheck', 'Book', 'BookOpen', 'BookMarked', 'Bookmark', 'Library', 'Notebook', 'FileText', 'School', 'Pencil', 'PenTool', 'Atom', 'Microscope', 'Calculator', 'Binary'],
+  people: ['Baby', 'Users', 'Users2', 'UserCheck', 'UserPlus', 'UserRound', 'PersonStanding', 'HeartHandshake', 'Briefcase', 'BadgeCheck', 'TrendingUp', 'Target', 'ShieldCheck', 'Heart', 'HandHeart'],
+  nature_city: ['TreeDeciduous', 'Trees', 'TreePine', 'Palmtree', 'Tent', 'Sprout', 'Leaf', 'Flower2', 'Sun', 'SunMedium', 'Sunrise', 'CloudSun', 'Wind', 'Mountain', 'Building', 'Building2', 'Landmark', 'Castle'],
+  travel: ['Plane', 'PlaneTakeoff', 'PlaneLanding', 'Rocket', 'Luggage', 'Globe', 'Compass', 'Map', 'MapPin', 'Navigation', 'Ship', 'Car', 'Bus', 'Rainbow', 'Footprints'],
+  values: ['Sparkles', 'Star', 'Award', 'Trophy', 'Shield', 'Lightbulb', 'Palette', 'Music', 'Smile', 'Puzzle', 'Shapes', 'Clock', 'Anchor', 'Feather', 'Eye', 'Layers']
 };
 
 export const CustomFontPicker: React.FC<{
@@ -325,7 +329,7 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
   const setEditorLang = onSelectEditorLang || setInternalEditorLang;
   const currentLangObj = getLanguageByCode(editorLang);
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
-  const [cardIconCategory, setCardIconCategory] = useState<'all' | 'edu' | 'nature' | 'values'>('all');
+  const [cardIconCategory, setCardIconCategory] = useState<string>('all');
 
   const template = SECTION_TEMPLATES.find(t => t.type === section.type);
   const IconComp = template?.icon || Layers;
