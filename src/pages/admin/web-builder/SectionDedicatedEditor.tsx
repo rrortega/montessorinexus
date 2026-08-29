@@ -930,6 +930,8 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
   const setEditorLang = onSelectEditorLang || setInternalEditorLang;
   const currentLangObj = getLanguageByCode(editorLang);
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
+  const [cardPendingDeleteId, setCardPendingDeleteId] = useState<string | null>(null);
+  const [sectionPendingDelete, setSectionPendingDelete] = useState<boolean>(false);
   const [cardIconCategory, setCardIconCategory] = useState<string>('all');
 
   const template = SECTION_TEMPLATES.find(t => t.type === section.type);
@@ -1448,15 +1450,39 @@ const fullKey = editorLang === 'es' ? key : `${key}_${editorLang}`;
                           </div>
 
                           <div className="flex items-center gap-1.5 shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteCard(card.id)}
-                              disabled={currentCards.length <= 1}
-                              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 disabled:opacity-30 transition-colors cursor-pointer"
-                              title="Eliminar tarjeta"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            {cardPendingDeleteId === card.id ? (
+                              <div className="flex items-center gap-1.5 bg-rose-50 border border-rose-200 px-2 py-1 rounded-xl animate-in fade-in zoom-in-95 duration-150">
+                                <span className="text-[10px] font-bold text-rose-700">¿Eliminar?</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    handleDeleteCard(card.id);
+                                    setCardPendingDeleteId(null);
+                                  }}
+                                  className="px-2 py-0.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-[10px] shadow-3xs cursor-pointer active:scale-95 transition-all"
+                                >
+                                  Sí, borrar
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setCardPendingDeleteId(null)}
+                                  className="px-1.5 py-0.5 rounded-lg hover:bg-rose-100 text-slate-600 font-semibold text-[10px] cursor-pointer"
+                                >
+                                  Cancelar
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => setCardPendingDeleteId(card.id)}
+                                disabled={currentCards.length <= 1}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 disabled:opacity-30 transition-colors cursor-pointer"
+                                title="Eliminar tarjeta"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+
                             <button
                               type="button"
                               onClick={() => setExpandedCardId(isExpanded ? null : card.id)}
@@ -1989,7 +2015,7 @@ const fullKey = editorLang === 'es' ? key : `${key}_${editorLang}`;
         </SectionAccordionItem>
 
         {/* 6. DANGER ZONE / ACTIONS */}
-        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
+        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3 flex-wrap">
           {onDuplicateSection && (
             <button
               type="button"
@@ -2001,13 +2027,36 @@ const fullKey = editorLang === 'es' ? key : `${key}_${editorLang}`;
           )}
 
           {onDeleteSection && (
-            <button
-              type="button"
-              onClick={onDeleteSection}
-              className="px-3 py-1.5 text-xs font-bold bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 rounded-xl transition-all cursor-pointer"
-            >
-              Eliminar Sección
-            </button>
+            sectionPendingDelete ? (
+              <div className="flex items-center gap-2 bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-xl animate-in fade-in zoom-in-95 duration-150">
+                <span className="text-xs font-bold text-rose-700">¿Eliminar toda la sección?</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onDeleteSection();
+                    setSectionPendingDelete(false);
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-3xs cursor-pointer active:scale-95 transition-all"
+                >
+                  Sí, eliminar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSectionPendingDelete(false)}
+                  className="px-2 py-1 rounded-lg hover:bg-rose-100 text-slate-600 font-semibold text-xs cursor-pointer"
+                >
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setSectionPendingDelete(true)}
+                className="px-3 py-1.5 text-xs font-bold bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 rounded-xl transition-all cursor-pointer"
+              >
+                Eliminar Sección
+              </button>
+            )
           )}
         </div>
 
