@@ -8,8 +8,6 @@ import {
   Copy,
   Eye,
   EyeOff,
-  ArrowUp,
-  ArrowDown,
   Sparkles,
   Search,
   Grid,
@@ -419,23 +417,6 @@ export const SectionsManagerTab: React.FC<SectionsManagerTabProps> = ({
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
-  // Reorder functions
-  const handleMoveUp = (index: number) => {
-    if (index <= 0) return;
-    const newSections = [...sections];
-    const item = newSections.splice(index, 1)[0];
-    newSections.splice(index - 1, 0, item);
-    onChangeSections(newSections);
-  };
-
-  const handleMoveDown = (index: number) => {
-    if (index >= sections.length - 1) return;
-    const newSections = [...sections];
-    const item = newSections.splice(index, 1)[0];
-    newSections.splice(index + 1, 0, item);
-    onChangeSections(newSections);
-  };
-
   const handleToggleEnable = (id: string) => {
     const newSections = sections.map(sec =>
       sec.id === id ? { ...sec, isEnabled: !sec.isEnabled } : sec
@@ -687,30 +668,8 @@ export const SectionsManagerTab: React.FC<SectionsManagerTabProps> = ({
                     </div>
                   </div>
 
-                  {/* Right Actions: Reorder, Visibility, Edit, Duplicate, Delete */}
+                  {/* Right Actions: Visibility, Edit, Duplicate, Delete */}
                   <div className="flex items-center gap-1 shrink-0">
-                    
-                    {/* Move Up */}
-                    <button
-                      type="button"
-                      onClick={() => handleMoveUp(index)}
-                      disabled={index === 0}
-                      className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
-                      title="Mover arriba"
-                    >
-                      <ArrowUp className="w-3.5 h-3.5" />
-                    </button>
-
-                    {/* Move Down */}
-                    <button
-                      type="button"
-                      onClick={() => handleMoveDown(index)}
-                      disabled={index === sections.length - 1}
-                      className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
-                      title="Mover abajo"
-                    >
-                      <ArrowDown className="w-3.5 h-3.5" />
-                    </button>
 
                     {/* Visibility Toggle */}
                     <button
