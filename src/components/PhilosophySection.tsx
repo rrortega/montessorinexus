@@ -375,33 +375,71 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
     : DEFAULT_PILLAR_CARDS;
 
   const columns = config.columns || '3'; // '2' | '3' | '4' | 'bento'
-  const sectionBg = config.sectionBg || 'secondary'; // 'secondary' | 'white' | 'cream' | 'forest-subtle' | 'dark' | 'gradient' | 'custom'
+  const sectionBg = config.sectionBg || 'secondary'; // 'secondary' | 'white' | 'cream' | 'forest-subtle' | 'gradient' | 'custom'
   const sectionBgCustom = config.sectionBgCustom;
+  const sectionBgDark = config.sectionBgDark || 'dark'; // 'dark' | 'forest-dark' | 'slate-dark' | 'zinc-dark' | 'gradient-dark' | 'custom'
+  const sectionBgCustomDark = config.sectionBgCustomDark;
 
   // Background Class or Style
-  const getSectionBgStyle = () => {
+  const getSectionBgStyle = (): React.CSSProperties | undefined => {
+    const style: Record<string, string> = {};
     if (sectionBg === 'custom' && sectionBgCustom) {
-      return { backgroundColor: sectionBgCustom };
+      style['--sec-bg-light'] = sectionBgCustom;
     }
-    return undefined;
+    if (sectionBgDark === 'custom' && sectionBgCustomDark) {
+      style['--sec-bg-dark'] = sectionBgCustomDark;
+    }
+    return Object.keys(style).length > 0 ? (style as React.CSSProperties) : undefined;
   };
 
   const getSectionBgClass = () => {
+    let lightClass = 'bg-secondary';
     switch (sectionBg) {
       case 'white':
-        return 'bg-white';
+        lightClass = 'bg-white';
+        break;
       case 'cream':
-        return 'bg-[#faf8f5]';
+        lightClass = 'bg-[#faf8f5]';
+        break;
       case 'forest-subtle':
-        return 'bg-[#f2f7f4]';
-      case 'dark':
-        return 'bg-slate-950 text-white';
+        lightClass = 'bg-[#f2f7f4]';
+        break;
       case 'gradient':
-        return 'bg-gradient-to-b from-[#faf8f5] via-[#f2f7f4] to-[#f4f8f5]';
+        lightClass = 'bg-gradient-to-b from-[#faf8f5] via-[#f2f7f4] to-[#f4f8f5]';
+        break;
+      case 'custom':
+        lightClass = sectionBgCustom ? 'bg-[var(--sec-bg-light)]' : 'bg-secondary';
+        break;
       case 'secondary':
       default:
-        return 'bg-secondary';
+        lightClass = 'bg-secondary';
+        break;
     }
+
+    let darkClass = 'dark:bg-slate-950 dark:text-white';
+    switch (sectionBgDark) {
+      case 'forest-dark':
+        darkClass = 'dark:bg-[#0c1811] dark:text-white';
+        break;
+      case 'slate-dark':
+        darkClass = 'dark:bg-slate-900 dark:text-white';
+        break;
+      case 'zinc-dark':
+        darkClass = 'dark:bg-zinc-950 dark:text-white';
+        break;
+      case 'gradient-dark':
+        darkClass = 'dark:bg-gradient-to-b dark:from-slate-950 dark:via-[#0c1811] dark:to-slate-950 dark:text-white';
+        break;
+      case 'custom':
+        darkClass = sectionBgCustomDark ? 'dark:bg-[var(--sec-bg-dark)] dark:text-white' : 'dark:bg-slate-950 dark:text-white';
+        break;
+      case 'dark':
+      default:
+        darkClass = 'dark:bg-slate-950 dark:text-white';
+        break;
+    }
+
+    return `${lightClass} ${darkClass}`;
   };
 
   // Shape class resolver

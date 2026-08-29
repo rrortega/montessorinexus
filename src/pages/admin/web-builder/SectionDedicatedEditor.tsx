@@ -1250,28 +1250,55 @@ const fullKey = editorLang === 'es' ? key : `${key}_${editorLang}`;
 
               {/* Fondo de Toda la Sección */}
               <div className="space-y-2 pt-2 border-t border-slate-100">
-                <label className="text-[11px] font-bold text-slate-700 block">
-                  Fondo de Toda la Sección:
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {[
-                    { id: 'secondary', label: 'Sand Suave', bg: 'bg-secondary' },
-                    { id: 'white', label: 'Blanco Puro', bg: 'bg-white' },
-                    { id: 'cream', label: 'Crema Cálido', bg: 'bg-[#faf8f5]' },
-                    { id: 'forest-subtle', label: 'Menta Bosque', bg: 'bg-[#f2f7f4]' },
-                    { id: 'dark', label: 'Oscuro Elegante', bg: 'bg-slate-950 text-white' },
-                    { id: 'gradient', label: 'Degradado Orgánico', bg: 'bg-gradient-to-b from-[#faf8f5] to-[#f4f8f5]' },
-                    { id: 'custom', label: 'Personalizado', bg: 'bg-slate-100' }
-                  ].map(bgOpt => {
-                    const isSelected = (section.config?.sectionBg || 'secondary') === bgOpt.id;
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-bold text-slate-700 block">
+                    Fondo de Toda la Sección ({themeMode === 'dark' ? 'Modo Oscuro' : 'Modo Claro'}):
+                  </label>
+                  <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1 ${
+                    themeMode === 'dark' ? 'bg-slate-900 text-sky-400 border border-slate-800' : 'bg-amber-50 text-amber-800 border border-amber-200'
+                  }`}>
+                    {themeMode === 'dark' ? <Moon className="w-2.5 h-2.5" /> : <Sun className="w-2.5 h-2.5" />}
+                    <span>{themeMode === 'dark' ? 'Oscuro' : 'Claro'}</span>
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {(themeMode === 'dark'
+                    ? [
+                        { id: 'dark', label: 'Oscuro Elegante', bg: 'bg-slate-950 text-white' },
+                        { id: 'forest-dark', label: 'Bosque Nocturno', bg: 'bg-[#0c1811] text-emerald-400' },
+                        { id: 'slate-dark', label: 'Slate Profundo', bg: 'bg-slate-900 text-slate-200' },
+                        { id: 'zinc-dark', label: 'Zinc Nocturno', bg: 'bg-zinc-950 text-zinc-300' },
+                        { id: 'gradient-dark', label: 'Degradado Oscuro', bg: 'bg-gradient-to-b from-slate-950 via-[#0c1811] to-slate-950' },
+                        { id: 'custom', label: 'Personalizado', bg: 'bg-slate-800' }
+                      ]
+                    : [
+                        { id: 'secondary', label: 'Sand Suave', bg: 'bg-secondary' },
+                        { id: 'white', label: 'Blanco Puro', bg: 'bg-white' },
+                        { id: 'cream', label: 'Crema Cálido', bg: 'bg-[#faf8f5]' },
+                        { id: 'forest-subtle', label: 'Menta Bosque', bg: 'bg-[#f2f7f4]' },
+                        { id: 'gradient', label: 'Degradado Orgánico', bg: 'bg-gradient-to-b from-[#faf8f5] to-[#f4f8f5]' },
+                        { id: 'custom', label: 'Personalizado', bg: 'bg-slate-100' }
+                      ]
+                  ).map(bgOpt => {
+                    const currentBgId = themeMode === 'dark'
+                      ? (section.config?.sectionBgDark || 'dark')
+                      : (section.config?.sectionBg || 'secondary');
+                    const isSelected = currentBgId === bgOpt.id;
                     return (
                       <button
                         key={bgOpt.id}
                         type="button"
-                        onClick={() => handleConfigChange('sectionBg', bgOpt.id)}
+                        onClick={() => {
+                          if (themeMode === 'dark') {
+                            handleConfigChange('sectionBgDark', bgOpt.id);
+                          } else {
+                            handleConfigChange('sectionBg', bgOpt.id);
+                          }
+                        }}
                         className={`p-2 rounded-xl border text-left flex items-center gap-2 transition-all cursor-pointer ${
                           isSelected
-                            ? 'border-forest bg-forest/5 text-forest ring-2 ring-forest/20 shadow-3xs'
+                            ? 'border-forest bg-forest/5 text-forest ring-2 ring-forest/20 shadow-3xs font-bold'
                             : 'border-slate-200 hover:border-slate-300 bg-white text-slate-700'
                         }`}
                       >
@@ -1281,6 +1308,52 @@ const fullKey = editorLang === 'es' ? key : `${key}_${editorLang}`;
                     );
                   })}
                 </div>
+
+                {/* Custom Color Input */}
+                {((themeMode === 'dark' ? (section.config?.sectionBgDark === 'custom') : (section.config?.sectionBg === 'custom'))) && (
+                  <div className="flex items-center gap-2 pt-2 animate-in fade-in duration-150">
+                    <span className="text-[11px] font-bold text-slate-600">
+                      Color Hex ({themeMode === 'dark' ? 'Oscuro' : 'Claro'}):
+                    </span>
+                    <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border shadow-3xs ${
+                      themeMode === 'dark' ? 'bg-slate-900 text-white border-slate-800' : 'bg-white text-slate-800 border-slate-200'
+                    }`}>
+                      <input
+                        type="color"
+                        value={
+                          themeMode === 'dark'
+                            ? (section.config?.sectionBgCustomDark?.startsWith('#') && section.config.sectionBgCustomDark.length === 7 ? section.config.sectionBgCustomDark : '#0c1811')
+                            : (section.config?.sectionBgCustom?.startsWith('#') && section.config.sectionBgCustom.length === 7 ? section.config.sectionBgCustom : '#faf8f5')
+                        }
+                        onChange={(e) => {
+                          if (themeMode === 'dark') {
+                            handleConfigChange('sectionBgCustomDark', e.target.value);
+                          } else {
+                            handleConfigChange('sectionBgCustom', e.target.value);
+                          }
+                        }}
+                        className={`w-5 h-5 rounded border cursor-pointer p-0 appearance-none bg-transparent ${
+                          themeMode === 'dark' ? 'border-slate-600' : 'border-slate-300'
+                        }`}
+                      />
+                      <input
+                        type="text"
+                        value={themeMode === 'dark' ? (section.config?.sectionBgCustomDark || '') : (section.config?.sectionBgCustom || '')}
+                        onChange={(e) => {
+                          if (themeMode === 'dark') {
+                            handleConfigChange('sectionBgCustomDark', e.target.value);
+                          } else {
+                            handleConfigChange('sectionBgCustom', e.target.value);
+                          }
+                        }}
+                        placeholder={themeMode === 'dark' ? '#0c1811' : '#faf8f5'}
+                        className={`w-20 text-[10px] font-mono uppercase bg-transparent border-0 focus:outline-none ${
+                          themeMode === 'dark' ? 'text-slate-200' : 'text-slate-700'
+                        }`}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* GESTOR DE TARJETAS DE CONTENIDO */}
