@@ -4205,6 +4205,11 @@ export const WebBuilderSection: React.FC = () => {
     </HeroAccordionItem>
   );
 
+  const activeSectionId = activeTab.startsWith('section:') ? activeTab.replace('section:', '') : null;
+  const activeSection = activeSectionId ? pageSections.find(s => s.id === activeSectionId) : null;
+  const activeSectionTemplate = activeSection ? SECTION_TEMPLATES.find(t => t.type === activeSection.type) : null;
+  const ActiveSectionIcon = activeSectionTemplate?.icon || Layers;
+
   return (
     <div className="h-full w-full flex flex-col bg-slate-950 text-white overflow-hidden relative select-none">
       
@@ -4497,15 +4502,8 @@ export const WebBuilderSection: React.FC = () => {
       </div>
 
       {/* 3. RIGHT CONFIGURATION DRAWER (SLIDEOVER) */}
-      {(() => {
-        const activeSectionId = activeTab.startsWith('section:') ? activeTab.replace('section:', '') : null;
-        const activeSection = activeSectionId ? pageSections.find(s => s.id === activeSectionId) : null;
-        const activeSectionTemplate = activeSection ? SECTION_TEMPLATES.find(t => t.type === activeSection.type) : null;
-        const ActiveSectionIcon = activeSectionTemplate?.icon || Layers;
-
-        return (
-          <SlideOverDrawer
-            isOpen={drawerOpen}
+      <SlideOverDrawer
+        isOpen={drawerOpen}
             onClose={handleCloseDrawerWithoutSaving}
             maxWidthClass="max-w-md lg:max-w-xl"
             hideBackdrop
