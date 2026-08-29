@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   WebSectionItem,
   SECTION_TEMPLATES,
@@ -55,18 +55,21 @@ export const SECTION_FONTS = [
   { id: 'inherit', name: 'Predeterminada del Tema', category: 'Sistema', family: 'inherit' },
   { id: 'playfair', name: 'Playfair Display', category: 'Serif / Editorial', family: "'Playfair Display', serif" },
   { id: 'cormorant', name: 'Cormorant Garamond', category: 'Serif / Clásica', family: "'Cormorant Garamond', serif" },
-  { id: 'cinzel', name: 'Cinzel', category: 'Serif / Clásica', family: "'Cinzel', serif" },
+  { id: 'cinzel', name: 'Cinzel', category: 'Serif / Monumental', family: "'Cinzel', serif" },
   { id: 'merriweather', name: 'Merriweather', category: 'Serif / Literaria', family: "'Merriweather', serif" },
+  { id: 'fraunces', name: 'Fraunces', category: 'Serif / Vintage Moderno', family: "'Fraunces', serif" },
   { id: 'outfit', name: 'Outfit', category: 'Moderna / Geométrica', family: "'Outfit', sans-serif" },
   { id: 'jakarta', name: 'Plus Jakarta Sans', category: 'Vanguardista / Tech', family: "'Plus Jakarta Sans', sans-serif" },
   { id: 'lexend', name: 'Lexend', category: 'Educativa / Legible', family: "'Lexend', sans-serif" },
   { id: 'poppins', name: 'Poppins', category: 'Publicitaria / Geométrica', family: "'Poppins', sans-serif" },
-  { id: 'montserrat', name: 'Montserrat', category: 'Corporativa', family: "'Montserrat', sans-serif" },
+  { id: 'montserrat', name: 'Montserrat', category: 'Corporativa / Elegante', family: "'Montserrat', sans-serif" },
   { id: 'inter', name: 'Inter', category: 'Neutra / UI Moderna', family: "'Inter', sans-serif" },
+  { id: 'raleway', name: 'Raleway', category: 'Estilizada / Delgada', family: "'Raleway', sans-serif" },
+  { id: 'nunito', name: 'Nunito', category: 'Cálida / Humanista', family: "'Nunito', sans-serif" },
   { id: 'quicksand', name: 'Quicksand', category: 'Amigable / Redonda', family: "'Quicksand', sans-serif" },
   { id: 'comfortaa', name: 'Comfortaa', category: 'Suave / Redonda', family: "'Comfortaa', cursive" },
   { id: 'fredoka', name: 'Fredoka', category: 'Lúdica / Infantil', family: "'Fredoka', cursive" },
-  { id: 'caveat', name: 'Caveat', category: 'Manuscrita / Cálida', family: "'Caveat', cursive" },
+  { id: 'caveat', name: 'Caveat', category: 'Manuscrita / Espontánea', family: "'Caveat', cursive" },
   { id: 'dancing', name: 'Dancing Script', category: 'Caligráfica / Elegante', family: "'Dancing Script', cursive" }
 ];
 
@@ -74,6 +77,123 @@ export const getSectionFontFamily = (fontId?: string): string | undefined => {
   if (!fontId || fontId === 'inherit') return undefined;
   const found = SECTION_FONTS.find(f => f.id === fontId);
   return found ? found.family : undefined;
+};
+
+export const CustomFontPicker: React.FC<{
+  value?: string;
+  onChange: (fontId: string) => void;
+  className?: string;
+}> = ({ value = 'inherit', onChange, className = '' }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const selectedFont = SECTION_FONTS.find(f => f.id === value) || SECTION_FONTS[0];
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  return (
+    <div className={`relative ${className}`} ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs transition-all shadow-3xs cursor-pointer focus:ring-2 focus:ring-forest/20 focus:border-forest"
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <div
+            style={{ fontFamily: selectedFont.family }}
+            className="w-6 h-6 rounded-md bg-forest/10 text-forest flex items-center justify-center font-bold text-xs shrink-0"
+          >
+            Aa
+          </div>
+          <div className="flex flex-col text-left min-w-0">
+            <span
+              style={{ fontFamily: selectedFont.family }}
+              className="font-bold text-slate-900 text-xs truncate"
+            >
+              {selectedFont.name}
+            </span>
+            <span className="text-[9px] text-muted-foreground truncate">
+              {selectedFont.category}
+            </span>
+          </div>
+        </div>
+
+        <ChevronDown className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform ${isOpen ? 'rotate-180 text-forest' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-full left-0 right-0 mt-1.5 z-50 p-2 rounded-2xl bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-2xl max-h-72 overflow-y-auto space-y-1 animate-in fade-in zoom-in-95 duration-150">
+          <div className="px-2 py-1 text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+            Tipografías & Estilos en Vivo
+          </div>
+          {SECTION_FONTS.map(f => {
+            const isSelected = (value || 'inherit') === f.id;
+            return (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => {
+                  onChange(f.id);
+                  setIsOpen(false);
+                }}
+                className={`w-full p-2.5 rounded-xl flex items-center justify-between gap-2 text-left transition-all cursor-pointer ${
+                  isSelected
+                    ? 'bg-forest/10 text-forest font-bold ring-1 ring-forest/25 shadow-3xs'
+                    : 'hover:bg-slate-100/90 text-slate-700'
+                }`}
+              >
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  <div
+                    style={{ fontFamily: f.family }}
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm shrink-0 border ${
+                      isSelected
+                        ? 'bg-forest text-white border-forest shadow-3xs'
+                        : 'bg-slate-50 text-slate-800 border-slate-200'
+                    }`}
+                  >
+                    Ag
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        style={{ fontFamily: f.family }}
+                        className="text-xs font-bold text-slate-900 truncate"
+                      >
+                        {f.name}
+                      </span>
+                    </div>
+                    <div
+                      style={{ fontFamily: f.family }}
+                      className="text-[11px] text-slate-600 truncate mt-0.5"
+                    >
+                      Aa Bb Gg 123 • Tipografía en vivo
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 font-mono">
+                    {f.category.split('/')[0].trim()}
+                  </span>
+                  {isSelected && <Check className="w-4 h-4 text-forest shrink-0" />}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 };
 
 interface FieldTypographyAndColorBarProps {
@@ -103,21 +223,15 @@ const FieldTypographyAndColorBar: React.FC<FieldTypographyAndColorBarProps> = ({
   return (
     <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/90 shadow-3xs space-y-2">
       <div className="flex items-center justify-between gap-2 flex-wrap text-[11px]">
-        {/* Font Family Choice */}
-        <div className="flex items-center gap-1.5 min-w-[200px] flex-1">
+        {/* Custom Font Family Picker with Live Preview */}
+        <div className="flex items-center gap-1.5 min-w-[220px] flex-1">
           <Type className="w-3.5 h-3.5 text-forest shrink-0" />
           <span className="text-[10px] font-bold text-slate-600 shrink-0">Fuente:</span>
-          <select
-            value={fontValue || 'inherit'}
-            onChange={(e) => onChangeFont(e.target.value)}
-            className="w-full text-xs font-semibold text-slate-800 bg-white border border-slate-200 rounded-lg px-2 py-1 focus:ring-2 focus:ring-forest/20 focus:border-forest"
-          >
-            {SECTION_FONTS.map(f => (
-              <option key={f.id} value={f.id} style={{ fontFamily: f.family }}>
-                {f.name} ({f.category})
-              </option>
-            ))}
-          </select>
+          <CustomFontPicker
+            value={fontValue}
+            onChange={onChangeFont}
+            className="flex-1"
+          />
         </div>
 
         {/* Color Light & Dark Controls */}
