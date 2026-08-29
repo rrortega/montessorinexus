@@ -2108,9 +2108,13 @@ export const MontessoriNexusLanding: React.FC = () => {
       <header className={`w-full py-4 sm:py-5 border-b transition-colors ${isDark ? 'bg-[#0e1710]/90 border-slate-800' : 'bg-[#FEFAE0] border-stone-200/60'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
           {/* Brand Logo */}
-          <a href="/" className="flex items-center gap-3 shrink-0">
-            <div className="w-10 h-10 rounded-xl bg-[#162218] text-white flex items-center justify-center shadow-xs border border-white/10">
-              <Compass className="w-5 h-5 text-[#C4661F]" />
+          <a href="/" className="flex items-center gap-3 shrink-0 group">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#C4661F] flex items-center justify-center shadow-md shadow-[#C4661F]/25 border border-white/20 p-2 shrink-0 group-hover:scale-105 transition-transform">
+              <img
+                src="/images/montessori-nexus-monogram.png"
+                alt="Montessori Nexus Logo"
+                className="w-full h-full object-contain filter brightness-0 invert drop-shadow-xs"
+              />
             </div>
             <div className="flex flex-col">
               <span className={`text-xl font-serif font-black tracking-tight flex items-center gap-1 leading-none ${isDark ? 'text-white' : 'text-[#162218]'}`}>
@@ -2243,10 +2247,14 @@ export const MontessoriNexusLanding: React.FC = () => {
               {/* Only Icon Logo */}
               <a
                 href="/"
-                className="w-9 h-9 rounded-full bg-[#C4661F] text-white flex items-center justify-center shadow-sm hover:scale-105 transition-transform shrink-0"
+                className="w-9 h-9 rounded-full bg-[#C4661F] text-white flex items-center justify-center shadow-md shadow-[#C4661F]/30 hover:scale-105 transition-transform shrink-0 p-1.5 border border-white/20"
                 title="MontessoriNexus"
               >
-                <Compass className="w-5 h-5" />
+                <img
+                  src="/images/montessori-nexus-monogram.png"
+                  alt="Montessori Nexus Logo"
+                  className="w-full h-full object-contain filter brightness-0 invert drop-shadow-xs"
+                />
               </a>
 
               {/* Compact Menu */}
@@ -4577,8 +4585,14 @@ export const MontessoriNexusLanding: React.FC = () => {
       }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8 mb-10 text-left">
           <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Compass className="w-5 h-5 text-[#C4661F]" />
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-full bg-[#C4661F] flex items-center justify-center p-1 border border-white/20 shadow-xs">
+                <img
+                  src="/images/montessori-nexus-monogram.png"
+                  alt="Montessori Nexus Logo"
+                  className="w-full h-full object-contain filter brightness-0 invert"
+                />
+              </div>
               <span className="text-base font-serif font-bold text-white">MontessoriNexus</span>
             </div>
             <p className="text-stone-400 leading-relaxed text-[11px]">
