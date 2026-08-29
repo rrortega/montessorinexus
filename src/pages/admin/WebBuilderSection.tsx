@@ -4406,7 +4406,7 @@ export const WebBuilderSection: React.FC = () => {
               : 'w-full h-full'
           }`}
           style={{
-            transform: is3DMode
+            transform: drawerOpen
               ? (viewport === 'mobile'
                   ? 'rotateY(10deg) scale(0.84) translateX(0px) translateZ(-30px)'
                   : viewport === 'tablet'
