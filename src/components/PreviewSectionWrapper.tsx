@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Pencil } from 'lucide-react';
+import { SectionFloatingStickers } from './SectionFloatingStickers';
 
 interface PreviewHoverContextType {
   hoveredId: string | null;
@@ -44,6 +45,7 @@ interface PreviewSectionWrapperProps {
   id: string;
   name: string;
   targetTab: string;
+  config?: Record<string, any>;
   children: React.ReactNode;
 }
 
@@ -51,6 +53,7 @@ export const PreviewSectionWrapper: React.FC<PreviewSectionWrapperProps> = ({
   id,
   name,
   targetTab,
+  config,
   children
 }) => {
   const isBuilderPreview = typeof window !== 'undefined' && (
@@ -107,7 +110,12 @@ export const PreviewSectionWrapper: React.FC<PreviewSectionWrapperProps> = ({
   };
 
   if (!isBuilderPreview) {
-    return <div id={id} className="scroll-mt-24">{children}</div>;
+    return (
+      <div id={id} className="relative scroll-mt-24">
+        {config && <SectionFloatingStickers config={config} />}
+        {children}
+      </div>
+    );
   }
 
   const isHeader = id === 'header';
@@ -163,6 +171,7 @@ export const PreviewSectionWrapper: React.FC<PreviewSectionWrapperProps> = ({
         </div>
       )}
 
+      {config && <SectionFloatingStickers config={config} />}
       {children}
     </div>
   );

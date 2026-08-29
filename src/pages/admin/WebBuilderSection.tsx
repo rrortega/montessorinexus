@@ -4758,26 +4758,91 @@ export const WebBuilderSection: React.FC = () => {
               'Configurá el modo de atención por WhatsApp o formulario.'
             }
             headerActions={
-              (activeTab.startsWith('section:') || activeTab === 'hero' || activeTab === 'cta') && activeDrawerLangsList.length > 1 ? (
-                <div className="relative flex items-center shrink-0">
-                  <div className="flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200/90 rounded-xl pl-2.5 pr-2 py-1.5 shadow-3xs transition-all focus-within:ring-2 focus-within:ring-forest/20 focus-within:border-forest">
-                    <Globe className="w-3.5 h-3.5 text-forest shrink-0" />
-                    <select
-                      value={builderEditorLang}
-                      onChange={(e) => setBuilderEditorLang(e.target.value)}
-                      className="text-xs font-bold text-slate-800 bg-transparent border-0 focus:outline-none cursor-pointer pr-4 appearance-none font-sans"
-                      title="Seleccionar idioma de edición"
-                    >
-                      {activeDrawerLangsList.map(lang => (
-                        <option key={lang.code} value={lang.code} className="text-slate-900 font-semibold py-1">
-                          {lang.flag} {lang.name} ({lang.code.toUpperCase()})
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="w-3 h-3 text-slate-400 pointer-events-none absolute right-2.5 shrink-0" />
-                  </div>
+              <div className="flex items-center gap-2">
+                {/* 1. Device Viewport Mode: Desktop, Tablet, Mobile */}
+                <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200/80 shadow-3xs">
+                  <button
+                    type="button"
+                    onClick={() => setViewport('desktop')}
+                    className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                      viewport === 'desktop'
+                        ? 'bg-white text-forest shadow-xs font-bold'
+                        : 'text-slate-500 hover:text-slate-900'
+                    }`}
+                    title="Vista de Escritorio (Desktop)"
+                  >
+                    <Laptop className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewport('tablet')}
+                    className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                      viewport === 'tablet'
+                        ? 'bg-white text-forest shadow-xs font-bold'
+                        : 'text-slate-500 hover:text-slate-900'
+                    }`}
+                    title="Vista de Tableta (Tablet)"
+                  >
+                    <Tablet className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewport('mobile')}
+                    className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                      viewport === 'mobile'
+                        ? 'bg-white text-forest shadow-xs font-bold'
+                        : 'text-slate-500 hover:text-slate-900'
+                    }`}
+                    title="Vista Móvil (Mobile)"
+                  >
+                    <Smartphone className="w-3.5 h-3.5" />
+                  </button>
                 </div>
-              ) : undefined
+
+                {/* 2. Light / Dark Theme Mode Toggle */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextMode = themeMode === 'light' ? 'dark' : 'light';
+                    setThemeMode(nextMode);
+                    setTimeout(() => emitLivePreviewUpdate(), 0);
+                  }}
+                  className={`flex items-center justify-center p-1.5 rounded-xl border transition-all shadow-3xs cursor-pointer ${
+                    themeMode === 'dark'
+                      ? 'bg-slate-900 border-slate-800 text-sky-400 hover:bg-slate-800'
+                      : 'bg-white border-slate-200 text-amber-500 hover:bg-slate-50'
+                  }`}
+                  title={themeMode === 'dark' ? 'Modo Oscuro Activo (Click para Modo Claro)' : 'Modo Claro Activo (Click para Modo Oscuro)'}
+                >
+                  {themeMode === 'dark' ? (
+                    <Moon className="w-3.5 h-3.5" />
+                  ) : (
+                    <Sun className="w-3.5 h-3.5" />
+                  )}
+                </button>
+
+                {/* 3. Language Selector */}
+                {activeDrawerLangsList.length > 1 && (
+                  <div className="relative flex items-center shrink-0">
+                    <div className="flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200/90 rounded-xl pl-2 pr-1.5 py-1 shadow-3xs transition-all focus-within:ring-2 focus-within:ring-forest/20 focus-within:border-forest">
+                      <Globe className="w-3.5 h-3.5 text-forest shrink-0" />
+                      <select
+                        value={builderEditorLang}
+                        onChange={(e) => setBuilderEditorLang(e.target.value)}
+                        className="text-xs font-bold text-slate-800 bg-transparent border-0 focus:outline-none cursor-pointer pr-3.5 appearance-none font-sans"
+                        title="Seleccionar idioma de edición"
+                      >
+                        {activeDrawerLangsList.map(lang => (
+                          <option key={lang.code} value={lang.code} className="text-slate-900 font-semibold py-1">
+                            {lang.flag} {lang.name} ({lang.code.toUpperCase()})
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="w-3 h-3 text-slate-400 pointer-events-none absolute right-2 shrink-0" />
+                    </div>
+                  </div>
+                )}
+              </div>
             }
         footer={
           <div className="flex items-center justify-between w-full gap-3">

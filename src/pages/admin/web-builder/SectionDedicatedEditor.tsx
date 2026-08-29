@@ -41,7 +41,18 @@ import {
   Box,
   Check,
   MousePointerClick,
-  RotateCw
+  RotateCw,
+  Laptop,
+  Tablet,
+  Smartphone,
+  Heart,
+  Star,
+  Smile,
+  Flower2,
+  Sprout,
+  GraduationCap,
+  Baby,
+  Cloud
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { ImageUploadDropzone } from '@/components/ui/ImageUploadDropzone';
@@ -468,6 +479,425 @@ const FieldTypographyAndColorBar: React.FC<FieldTypographyAndColorBarProps> = ({
   );
 };
 
+export const SectionAccordionContext = React.createContext<{
+  activeId: string | null;
+  toggle: (id: string) => void;
+}>({ activeId: 'headings', toggle: () => {} });
+
+export const SectionAccordionItem: React.FC<{
+  id: string;
+  title: string;
+  subtitle?: string;
+  icon: any;
+  badge?: string;
+  children: React.ReactNode;
+}> = ({ id, title, subtitle, icon: Icon, badge, children }) => {
+  const { activeId, toggle } = React.useContext(SectionAccordionContext);
+  const isOpen = activeId === id;
+  return (
+    <div className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
+      isOpen
+        ? 'bg-white border-forest/30 shadow-xs ring-1 ring-forest/15'
+        : 'bg-white border-slate-200 hover:border-slate-300 shadow-2xs'
+    }`}>
+      <button
+        type="button"
+        onClick={() => toggle(id)}
+        className={`w-full p-4 flex items-center justify-between gap-3 text-left transition-colors cursor-pointer ${
+          isOpen ? 'bg-slate-50/70 border-b border-slate-100' : 'hover:bg-slate-50/50'
+        }`}
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+            isOpen ? 'bg-forest text-white shadow-2xs' : 'bg-slate-100 text-slate-600'
+          }`}>
+            <Icon className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className={`font-bold text-xs truncate ${isOpen ? 'text-forest' : 'text-slate-800'}`}>
+                {title}
+              </span>
+              {badge && (
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-forest/10 text-forest">
+                  {badge}
+                </span>
+              )}
+            </div>
+            {subtitle && (
+              <p className="text-[11px] text-muted-foreground truncate">{subtitle}</p>
+            )}
+          </div>
+        </div>
+        <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180 text-forest' : ''}`} />
+      </button>
+      {isOpen && (
+        <div className="p-4 sm:p-5 space-y-4 animate-in fade-in-50 duration-150">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const STICKER_PRESET_ICONS = [
+  { id: 'Sparkles', label: 'Destellos', icon: Sparkles },
+  { id: 'Heart', label: 'Corazón', icon: Heart },
+  { id: 'Star', label: 'Estrella', icon: Star },
+  { id: 'Compass', label: 'Brújula', icon: Compass },
+  { id: 'Sun', label: 'Sol', icon: Sun },
+  { id: 'Moon', label: 'Luna', icon: Moon },
+  { id: 'Cloud', label: 'Nube', icon: Cloud },
+  { id: 'Flower2', label: 'Flor', icon: Flower2 },
+  { id: 'Sprout', label: 'Brote', icon: Sprout },
+  { id: 'BookOpen', label: 'Libro', icon: BookOpen },
+  { id: 'GraduationCap', label: 'Graduación', icon: GraduationCap },
+  { id: 'Baby', label: 'Niño / Bebé', icon: Baby },
+  { id: 'Smile', label: 'Sonrisa', icon: Smile }
+];
+
+const STICKER_ANIMATION_EFFECTS = [
+  { id: 'float', name: 'Flotación Suave', icon: '🍃' },
+  { id: 'pulse', name: 'Pulso', icon: '💓' },
+  { id: 'spin', name: 'Giro 360° Continuo', icon: '🔄' },
+  { id: 'tilt', name: 'Balanceo Lúdico', icon: '🎯' },
+  { id: 'glow', name: 'Resplandor Luminoso', icon: '✨' }
+];
+
+export const SectionFloatingStickersEditor: React.FC<{
+  config?: Record<string, any>;
+  onChangeConfig: (key: string, value: any) => void;
+}> = ({ config = {}, onChangeConfig }) => {
+  const [selectedSticker, setSelectedSticker] = useState<number>(1);
+  const [deviceTab, setDeviceTab] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
+
+  const num = selectedSticker;
+  const isShow = config[`sticker_${num}_show`] === 'true' || config[`sticker_${num}_show`] === true;
+  const currentImageUrl = config[`sticker_${num}_image_url`] || '';
+  const currentIcon = config[`sticker_${num}_icon`] || (currentImageUrl ? '' : (num === 1 ? 'Sparkles' : num === 2 ? 'Star' : 'Heart'));
+
+  // parse effects
+  let effects: string[] = ['float'];
+  const rawEffects = config[`sticker_${num}_effects`];
+  if (typeof rawEffects === 'string') {
+    try {
+      effects = JSON.parse(rawEffects);
+    } catch {
+      effects = rawEffects.split(',').map((s: string) => s.trim()).filter(Boolean);
+    }
+  } else if (Array.isArray(rawEffects)) {
+    effects = rawEffects;
+  }
+
+  const toggleEffect = (effId: string) => {
+    const next = effects.includes(effId)
+      ? effects.filter(e => e !== effId)
+      : [...effects, effId];
+    onChangeConfig(`sticker_${num}_effects`, next);
+  };
+
+  // Device values
+  const deviceShowKey = `sticker_${num}_${deviceTab}_show`;
+  const deviceShow = config[deviceShowKey] !== 'false';
+
+  const defaultX = num === 1 ? 8 : num === 2 ? 92 : 88;
+  const defaultY = num === 1 ? 15 : num === 2 ? 20 : 80;
+  const defaultSize = deviceTab === 'desktop' ? 72 : deviceTab === 'tablet' ? 60 : 48;
+  const defaultRotate = num === 1 ? -8 : num === 2 ? 10 : -4;
+
+  const currentX = config[`sticker_${num}_${deviceTab}_x`] !== undefined && !isNaN(Number(config[`sticker_${num}_${deviceTab}_x`]))
+    ? Number(config[`sticker_${num}_${deviceTab}_x`])
+    : (deviceTab === 'desktop' ? defaultX : (Number(config[`sticker_${num}_desktop_x`]) || defaultX));
+
+  const currentY = config[`sticker_${num}_${deviceTab}_y`] !== undefined && !isNaN(Number(config[`sticker_${num}_${deviceTab}_y`]))
+    ? Number(config[`sticker_${num}_${deviceTab}_y`])
+    : (deviceTab === 'desktop' ? defaultY : (Number(config[`sticker_${num}_desktop_y`]) || defaultY));
+
+  const currentSize = config[`sticker_${num}_${deviceTab}_size`] !== undefined && !isNaN(Number(config[`sticker_${num}_${deviceTab}_size`]))
+    ? Number(config[`sticker_${num}_${deviceTab}_size`])
+    : defaultSize;
+
+  const currentRotate = config[`sticker_${num}_${deviceTab}_rotate`] !== undefined && !isNaN(Number(config[`sticker_${num}_${deviceTab}_rotate`]))
+    ? Number(config[`sticker_${num}_${deviceTab}_rotate`])
+    : (deviceTab === 'desktop' ? defaultRotate : (Number(config[`sticker_${num}_desktop_rotate`]) || defaultRotate));
+
+  return (
+    <div className="space-y-4">
+      {/* Sticker Selector Tabs */}
+      <div className="flex items-center justify-between gap-2 p-1 bg-slate-100 rounded-xl border border-slate-200">
+        {[1, 2, 3].map((sNum) => {
+          const isStickerActive = config[`sticker_${sNum}_show`] === 'true' || config[`sticker_${sNum}_show`] === true;
+          return (
+            <button
+              key={sNum}
+              type="button"
+              onClick={() => setSelectedSticker(sNum)}
+              className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                selectedSticker === sNum
+                  ? 'bg-white text-forest shadow-xs font-bold'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Adorno {sNum}</span>
+              {isStickerActive && (
+                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Enable Switch */}
+      <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
+        <div>
+          <span className="text-xs font-bold text-slate-800 block">Habilitar Adorno {num}</span>
+          <span className="text-[10px] text-muted-foreground">Muestra este sticker o ilustración flotante en la sección</span>
+        </div>
+        <Switch
+          checked={isShow}
+          onCheckedChange={(val) => onChangeConfig(`sticker_${num}_show`, val)}
+        />
+      </div>
+
+      {isShow && (
+        <div className="space-y-4 animate-in fade-in duration-150">
+          {/* Icon or Image Picker */}
+          <div className="space-y-2 p-3.5 bg-white rounded-xl border border-slate-200 shadow-3xs">
+            <label className="text-[10px] font-bold text-slate-700 block">
+              Icono o Ilustración del Adorno:
+            </label>
+
+            {/* Presets */}
+            <div className="grid grid-cols-7 gap-1.5 pt-1">
+              {STICKER_PRESET_ICONS.map((p) => {
+                const Icon = p.icon;
+                const isSelected = !currentImageUrl && currentIcon === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => {
+                      onChangeConfig(`sticker_${num}_icon`, p.id);
+                      onChangeConfig(`sticker_${num}_image_url`, '');
+                    }}
+                    className={`p-2 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-forest/10 border-forest text-forest shadow-3xs scale-105'
+                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                    }`}
+                    title={p.label}
+                  >
+                    <Icon className="w-4 h-4" />
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Upload Custom Image */}
+            <div className="pt-2 border-t border-slate-100">
+              <span className="text-[10px] text-muted-foreground block mb-1">O Subir Ilustración PNG / SVG Personalizada:</span>
+              <ImageUploadDropzone
+                currentImageUrl={currentImageUrl}
+                onImageUploaded={(url) => {
+                  onChangeConfig(`sticker_${num}_image_url`, url);
+                  onChangeConfig(`sticker_${num}_icon`, '');
+                }}
+                onRemove={() => onChangeConfig(`sticker_${num}_image_url`, '')}
+                label="Subir sticker transparente"
+                helperText="PNG con fondo transparente recomendado"
+                folder="stickers"
+                maxSizeMB={3}
+              />
+            </div>
+          </div>
+
+          {/* Animation Effects */}
+          <div className="space-y-2 p-3.5 bg-white rounded-xl border border-slate-200 shadow-3xs">
+            <label className="text-[10px] font-bold text-slate-700 block">
+              Efectos de Animación Flotante:
+            </label>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {STICKER_ANIMATION_EFFECTS.map((eff) => {
+                const active = effects.includes(eff.id);
+                return (
+                  <button
+                    key={eff.id}
+                    type="button"
+                    onClick={() => toggleEffect(eff.id)}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                      active
+                        ? 'bg-forest text-white shadow-3xs'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    <span>{eff.icon}</span>
+                    <span>{eff.name}</span>
+                    {active && <Check className="w-3 h-3 ml-0.5" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Responsive Position & Size Controls */}
+          <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-3xs space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-[10px] font-bold text-slate-700">
+                Posición & Escala por Dispositivo:
+              </label>
+
+              {/* Device Tabs */}
+              <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setDeviceTab('desktop')}
+                  className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                    deviceTab === 'desktop' ? 'bg-white text-forest shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <Laptop className="w-3 h-3" />
+                  <span>Desktop</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeviceTab('tablet')}
+                  className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                    deviceTab === 'tablet' ? 'bg-white text-forest shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <Tablet className="w-3 h-3" />
+                  <span>Tablet</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeviceTab('mobile')}
+                  className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                    deviceTab === 'mobile' ? 'bg-white text-forest shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <Smartphone className="w-3 h-3" />
+                  <span>Mobile</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Visibility toggle for current device */}
+            <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-[11px]">
+              <span className="font-semibold text-slate-700">Mostrar en {deviceTab.toUpperCase()}:</span>
+              <Switch
+                checked={deviceShow}
+                onCheckedChange={(val) => onChangeConfig(deviceShowKey, val ? 'true' : 'false')}
+              />
+            </div>
+
+            {deviceShow && (
+              <div className="space-y-3 pt-2">
+                {/* Horizontal Position X */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="font-bold text-slate-700">Posición Horizontal (X):</span>
+                    <span className="font-mono font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
+                      {currentX}%
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={currentX}
+                    onChange={(e) => onChangeConfig(`sticker_${num}_${deviceTab}_x`, parseFloat(e.target.value))}
+                    className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-forest focus:outline-none"
+                  />
+                  <div className="flex justify-between text-[9px] text-slate-400 font-mono">
+                    <span>0% (Izq)</span>
+                    <span>50% (Centro)</span>
+                    <span>100% (Der)</span>
+                  </div>
+                </div>
+
+                {/* Vertical Position Y */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="font-bold text-slate-700">Posición Vertical (Y):</span>
+                    <span className="font-mono font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
+                      {currentY}%
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={currentY}
+                    onChange={(e) => onChangeConfig(`sticker_${num}_${deviceTab}_y`, parseFloat(e.target.value))}
+                    className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-forest focus:outline-none"
+                  />
+                  <div className="flex justify-between text-[9px] text-slate-400 font-mono">
+                    <span>0% (Arriba)</span>
+                    <span>50% (Medio)</span>
+                    <span>100% (Abajo)</span>
+                  </div>
+                </div>
+
+                {/* Size Slider */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="font-bold text-slate-700">Tamaño del Adorno:</span>
+                    <span className="font-mono font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
+                      {currentSize}px
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="24"
+                    max="220"
+                    step="2"
+                    value={currentSize}
+                    onChange={(e) => onChangeConfig(`sticker_${num}_${deviceTab}_size`, parseFloat(e.target.value))}
+                    className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-forest focus:outline-none"
+                  />
+                </div>
+
+                {/* Rotation Slider */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="font-bold text-slate-700">Rotación del Adorno (°):</span>
+                    <div className="flex items-center gap-1">
+                      <span className="font-mono font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
+                        {currentRotate > 0 ? `+${currentRotate}°` : `${currentRotate}°`}
+                      </span>
+                      {currentRotate !== 0 && (
+                        <button
+                          type="button"
+                          onClick={() => onChangeConfig(`sticker_${num}_${deviceTab}_rotate`, 0)}
+                          className="text-[9px] text-slate-400 hover:text-rose-500 font-bold px-1 rounded cursor-pointer"
+                        >
+                          Reset
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <input
+                    type="range"
+                    min="-180"
+                    max="180"
+                    step="1"
+                    value={currentRotate}
+                    onChange={(e) => onChangeConfig(`sticker_${num}_${deviceTab}_rotate`, parseFloat(e.target.value))}
+                    className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-forest focus:outline-none"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 interface SectionDedicatedEditorProps {
   section: WebSectionItem;
   enabledLangsStr?: string;
@@ -573,7 +1003,7 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
   };
 
   const getConfigLangValue = (key: string, defVal: string = ''): string => {
-    const fullKey = editorLang === 'es' ? key : `${key}_${editorLang}`;
+const fullKey = editorLang === 'es' ? key : `${key}_${editorLang}`;
     return section.config?.[fullKey] ?? defVal;
   };
 
@@ -582,1119 +1012,892 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
     handleConfigChange(fullKey, val);
   };
 
+  const [activeAccordionId, setActiveAccordionId] = useState<string | null>('headings');
+  const toggleAccordion = (id: string) => {
+    setActiveAccordionId(prev => prev === id ? null : id);
+  };
+
   return (
-    <div className="space-y-6 text-xs text-slate-800 animate-in fade-in duration-200">
-      {/* 1. GENERAL HEADINGS & TEXTS */}
-      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-forest/10 text-forest flex items-center justify-center font-bold">1</div>
-            <h4 className="font-bold text-forest text-xs sm:text-sm">
-              Titulares & Textos ({currentLangObj.name})
-            </h4>
-          </div>
-          <span className="px-2.5 py-0.5 rounded-md text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-200">
-            {currentLangObj.flag} {currentLangObj.name}
-          </span>
-        </div>
-
-        {/* 1.1 Nombre de la Sección */}
-        <div className="space-y-1">
-          <label className="text-[10px] font-bold text-slate-700">
-            Nombre Identificador de la Sección ({currentLangObj.code.toUpperCase()}):
-          </label>
-          <input
-            type="text"
-            value={getLangValue('name')}
-            onChange={(e) => setLangValue('name', e.target.value)}
-            placeholder={`Nombre en ${currentLangObj.name}`}
-            className="w-full px-3 py-2 text-xs font-semibold text-slate-900 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-forest/20 focus:border-forest"
-          />
-        </div>
-
-        {/* 1.2 Etiqueta Superior (Badge / Eyebrow) */}
-        <div className="space-y-2 pt-2 border-t border-slate-100">
+    <SectionAccordionContext.Provider value={{ activeId: activeAccordionId, toggle: toggleAccordion }}>
+      <div className="space-y-3.5 text-xs text-slate-800 animate-in fade-in duration-200">
+        
+        {/* 1. GENERAL HEADINGS & TEXTS */}
+        <SectionAccordionItem
+          id="headings"
+          title={`Titulares & Textos (${currentLangObj.name})`}
+          subtitle="Identificador, badge, título, subtítulo, tipografías y alineación"
+          icon={Type}
+          badge={`${currentLangObj.flag} ${currentLangObj.code.toUpperCase()}`}
+        >
+          {/* 1.1 Nombre de la Sección */}
           <div className="space-y-1">
             <label className="text-[10px] font-bold text-slate-700">
-              Etiqueta Superior (Badge / Eyebrow {currentLangObj.code.toUpperCase()}):
+              Nombre Identificador de la Sección ({currentLangObj.code.toUpperCase()}):
             </label>
             <input
               type="text"
-              value={getLangValue('badge')}
-              onChange={(e) => setLangValue('badge', e.target.value)}
-              placeholder={`Ej: Eyebrow en ${currentLangObj.name}`}
+              value={getLangValue('name')}
+              onChange={(e) => setLangValue('name', e.target.value)}
+              placeholder={`Nombre en ${currentLangObj.name}`}
               className="w-full px-3 py-2 text-xs font-semibold text-slate-900 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-forest/20 focus:border-forest"
             />
           </div>
-          <FieldTypographyAndColorBar
-            fontValue={section.config?.badge_font}
-            onChangeFont={(val) => handleConfigChange('badge_font', val)}
-            colorLight={section.config?.badge_color}
-            onChangeColorLight={(val) => handleConfigChange('badge_color', val)}
-            colorDark={section.config?.badge_color_dark}
-            onChangeColorDark={(val) => handleConfigChange('badge_color_dark', val)}
-            defaultColorLight="#1b3b2b"
-            defaultColorDark="#a7f3d0"
-          />
-        </div>
 
-        {/* 1.3 Título Principal */}
-        <div className="space-y-2 pt-2 border-t border-slate-100">
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold text-slate-700">
-              Título Principal de la Sección ({currentLangObj.code.toUpperCase()}):
-            </label>
-            <input
-              type="text"
-              value={getLangValue('title')}
-              onChange={(e) => setLangValue('title', e.target.value)}
-              placeholder={`Título principal en ${currentLangObj.name}`}
-              className="w-full px-3 py-2 text-xs font-bold text-slate-900 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-forest/20 focus:border-forest"
-            />
-          </div>
-          <FieldTypographyAndColorBar
-            fontValue={section.config?.title_font}
-            onChangeFont={(val) => handleConfigChange('title_font', val)}
-            colorLight={section.config?.title_color}
-            onChangeColorLight={(val) => handleConfigChange('title_color', val)}
-            colorDark={section.config?.title_color_dark}
-            onChangeColorDark={(val) => handleConfigChange('title_color_dark', val)}
-            defaultColorLight="#1b3b2b"
-            defaultColorDark="#ffffff"
-          />
-        </div>
-
-        {/* 1.4 Subtítulo / Bajada Descriptiva */}
-        <div className="space-y-2 pt-2 border-t border-slate-100">
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold text-slate-700">
-              Subtítulo / Bajada Descriptiva ({currentLangObj.code.toUpperCase()}):
-            </label>
-            <textarea
-              value={getLangValue('subtitle')}
-              onChange={(e) => setLangValue('subtitle', e.target.value)}
-              rows={2}
-              placeholder={`Descripción introductoria o propósito en ${currentLangObj.name}...`}
-              className="w-full px-3 py-2 text-xs text-slate-800 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-forest/20 focus:border-forest"
-            />
-          </div>
-          <FieldTypographyAndColorBar
-            fontValue={section.config?.subtitle_font}
-            onChangeFont={(val) => handleConfigChange('subtitle_font', val)}
-            colorLight={section.config?.subtitle_color}
-            onChangeColorLight={(val) => handleConfigChange('subtitle_color', val)}
-            colorDark={section.config?.subtitle_color_dark}
-            onChangeColorDark={(val) => handleConfigChange('subtitle_color_dark', val)}
-            defaultColorLight="#475569"
-            defaultColorDark="#cbd5e1"
-          />
-        </div>
-
-        {/* Alignment */}
-        <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
-          <label className="text-[11px] font-bold text-slate-700">Alineación del Encabezado:</label>
-          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
-            {[
-              { val: 'left', icon: AlignLeft, label: 'Izquierda' },
-              { val: 'center', icon: AlignCenter, label: 'Centrado' },
-              { val: 'right', icon: AlignRight, label: 'Derecha' }
-            ].map(al => {
-              const AlIcon = al.icon;
-              const isSelected = (section.layoutVariant || 'left') === al.val;
-              return (
-                <button
-                  key={al.val}
-                  type="button"
-                  onClick={() => onUpdateSection({ layoutVariant: al.val })}
-                  className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                    isSelected
-                      ? 'bg-white text-forest shadow-3xs font-bold'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                  title={al.label}
-                >
-                  <AlIcon className="w-3.5 h-3.5" />
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* 2. ENLACE EN EL MENÚ DE NAVEGACIÓN (HEADER) */}
-      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-4">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-forest/10 text-forest flex items-center justify-center font-bold">
-              <PanelTop className="w-4 h-4" />
-            </div>
-            <div>
-              <h4 className="font-bold text-forest text-xs sm:text-sm">
-                Enlace en el Menú de Navegación (Header)
-              </h4>
-              <p className="text-[11px] text-muted-foreground">
-                Crea un ítem en la barra superior para saltar a esta sección
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-600">
-              {section.showInMenu !== false ? 'Activado' : 'Desactivado'}
-            </span>
-            <Switch
-              checked={section.showInMenu !== false}
-              onCheckedChange={(checked) => onUpdateSection({ showInMenu: checked })}
-            />
-          </div>
-        </div>
-
-        {section.showInMenu !== false && (
-          <div className="space-y-3 pt-3 border-t border-slate-100 animate-in fade-in duration-150">
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <label className="text-[10px] font-bold text-slate-700">
-                  Texto del Ítem en el Menú ({currentLangObj.name}):
-                </label>
-                <span className="text-[10px] font-mono text-slate-400">
-                  {currentLangObj.flag} {currentLangObj.code.toUpperCase()}
-                </span>
-              </div>
-              <input
-                type="text"
-                value={getLangValue('menuLabel') || (editorLang === 'es' ? section.name : '')}
-                onChange={(e) => setLangValue('menuLabel', e.target.value)}
-                placeholder={`Ej: ${section.name}`}
-                className="w-full px-3 py-2 text-xs font-bold text-slate-900 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-forest/20 focus:border-forest shadow-3xs"
-              />
-            </div>
-
-            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-[11px]">
-              <span className="text-slate-500">Destino de Navegación:</span>
-              <span className="font-mono font-bold text-forest bg-white px-2 py-0.5 rounded-md border border-slate-200">
-                /#{section.anchor || section.id}
-              </span>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* 3. BOTÓN CTA / LLAMADO A LA ACCIÓN */}
-      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-4">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-forest/10 text-forest flex items-center justify-center font-bold">
-              <MousePointerClick className="w-4 h-4" />
-            </div>
-            <div>
-              <h4 className="font-bold text-forest text-xs sm:text-sm">
-                Botón de Acción CTA
-              </h4>
-              <p className="text-[11px] text-muted-foreground">
-                Habilita un botón principal para guiar a los visitantes
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-600">
-              {section.showCta !== false && (section.config?.showCta === true || (section.config?.showCta !== false && Boolean(getLangValue('ctaText') || section.ctaText))) ? 'Activado' : 'Desactivado'}
-            </span>
-            <Switch
-              checked={section.showCta !== false && (section.config?.showCta === true || (section.config?.showCta !== false && Boolean(getLangValue('ctaText') || section.ctaText)))}
-              onCheckedChange={(checked) => {
-                onUpdateSection({ showCta: checked });
-                handleConfigChange('showCta', checked);
-                if (checked && !getLangValue('ctaText') && !section.ctaText) {
-                  setLangValue('ctaText', 'Conoce Más');
-                }
-              }}
-            />
-          </div>
-        </div>
-
-        {section.showCta !== false && (section.config?.showCta === true || (section.config?.showCta !== false && Boolean(getLangValue('ctaText') || section.ctaText))) && (
-          <div className="space-y-3 pt-3 border-t border-slate-100 animate-in fade-in duration-150">
+          {/* 1.2 Etiqueta Superior (Badge / Eyebrow) */}
+          <div className="space-y-2 pt-2 border-t border-slate-100">
             <div className="space-y-1">
               <label className="text-[10px] font-bold text-slate-700">
-                Texto del Botón ({currentLangObj.name}):
+                Etiqueta Superior (Badge / Eyebrow {currentLangObj.code.toUpperCase()}):
               </label>
               <input
                 type="text"
-                value={getLangValue('ctaText')}
-                onChange={(e) => setLangValue('ctaText', e.target.value)}
-                placeholder={`Texto del botón en ${currentLangObj.name}...`}
+                value={getLangValue('badge')}
+                onChange={(e) => setLangValue('badge', e.target.value)}
+                placeholder={`Ej: Eyebrow en ${currentLangObj.name}`}
                 className="w-full px-3 py-2 text-xs font-semibold text-slate-900 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-forest/20 focus:border-forest"
               />
             </div>
+            <FieldTypographyAndColorBar
+              fontValue={section.config?.badge_font}
+              onChangeFont={(val) => handleConfigChange('badge_font', val)}
+              colorLight={section.config?.badge_color}
+              onChangeColorLight={(val) => handleConfigChange('badge_color', val)}
+              colorDark={section.config?.badge_color_dark}
+              onChangeColorDark={(val) => handleConfigChange('badge_color_dark', val)}
+              defaultColorLight="#1b3b2b"
+              defaultColorDark="#a7f3d0"
+            />
+          </div>
 
+          {/* 1.3 Título Principal */}
+          <div className="space-y-2 pt-2 border-t border-slate-100">
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-700">Enlace / Destino de Acción:</label>
+              <label className="text-[10px] font-bold text-slate-700">
+                Título Principal de la Sección ({currentLangObj.code.toUpperCase()}):
+              </label>
               <input
                 type="text"
-                value={section.ctaUrl || ''}
-                onChange={(e) => onUpdateSection({ ctaUrl: e.target.value })}
-                placeholder="Ej: /#admisiones o https://wa.me/..."
-                className="w-full px-3 py-2 text-xs text-slate-900 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-forest/20 focus:border-forest"
+                value={getLangValue('title')}
+                onChange={(e) => setLangValue('title', e.target.value)}
+                placeholder={`Título principal en ${currentLangObj.name}`}
+                className="w-full px-3 py-2 text-xs font-bold text-slate-900 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-forest/20 focus:border-forest"
               />
             </div>
-
             <FieldTypographyAndColorBar
-              fontValue={section.config?.cta_font}
-              onChangeFont={(val) => handleConfigChange('cta_font', val)}
-              colorLight={section.config?.cta_color}
-              onChangeColorLight={(val) => handleConfigChange('cta_color', val)}
-              colorDark={section.config?.cta_color_dark}
-              onChangeColorDark={(val) => handleConfigChange('cta_color_dark', val)}
+              fontValue={section.config?.title_font}
+              onChangeFont={(val) => handleConfigChange('title_font', val)}
+              colorLight={section.config?.title_color}
+              onChangeColorLight={(val) => handleConfigChange('title_color', val)}
+              colorDark={section.config?.title_color_dark}
+              onChangeColorDark={(val) => handleConfigChange('title_color_dark', val)}
               defaultColorLight="#1b3b2b"
               defaultColorDark="#ffffff"
             />
           </div>
-        )}
-      </div>
 
-      {/* 4. TEMPLATE SPECIFIC CUSTOM CONTROLS */}
-      {section.type === 'split_media_benefits' && (
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-4">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-forest/10 text-forest flex items-center justify-center font-bold">3</div>
-            <h4 className="font-bold text-forest text-xs sm:text-sm">Configuración de Media & Beneficios</h4>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-bold text-slate-700 block">Fotografía Principal de la Sección:</label>
-            <ImageUploadDropzone
-              currentImageUrl={section.config?.imageUrl || ''}
-              onImageUploaded={(url) => handleConfigChange('imageUrl', url)}
-              onRemove={() => handleConfigChange('imageUrl', '')}
-              label="Foto con marco orgánico"
-              helperText="Formato recomendado 4:3 o 1:1"
-              folder="sections"
-              maxSizeMB={10}
+          {/* 1.4 Subtítulo / Bajada Descriptiva */}
+          <div className="space-y-2 pt-2 border-t border-slate-100">
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-700">
+                Subtítulo / Bajada Descriptiva ({currentLangObj.code.toUpperCase()}):
+              </label>
+              <textarea
+                value={getLangValue('subtitle')}
+                onChange={(e) => setLangValue('subtitle', e.target.value)}
+                rows={2}
+                placeholder={`Descripción introductoria o propósito en ${currentLangObj.name}...`}
+                className="w-full px-3 py-2 text-xs text-slate-800 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-forest/20 focus:border-forest"
+              />
+            </div>
+            <FieldTypographyAndColorBar
+              fontValue={section.config?.subtitle_font}
+              onChangeFont={(val) => handleConfigChange('subtitle_font', val)}
+              colorLight={section.config?.subtitle_color}
+              onChangeColorLight={(val) => handleConfigChange('subtitle_color', val)}
+              colorDark={section.config?.subtitle_color_dark}
+              onChangeColorDark={(val) => handleConfigChange('subtitle_color_dark', val)}
+              defaultColorLight="#475569"
+              defaultColorDark="#cbd5e1"
             />
           </div>
 
-          <div className="space-y-2 pt-2 border-t border-slate-100">
-            <label className="text-[11px] font-bold text-slate-700 block">
-              Puntos de Beneficio ({currentLangObj.name}):
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {/* Alignment */}
+          <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+            <label className="text-[11px] font-bold text-slate-700">Alineación del Encabezado:</label>
+            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
               {[
-                { key: 'item1', def: 'Bilingüe (Inglés vivido naturalmente)' },
-                { key: 'item2', def: 'Áreas verdes y contacto con la naturaleza' },
-                { key: 'item3', def: 'Actividades de vida práctica y sensorial' },
-                { key: 'item4', def: 'Desarrollo socioemocional y autonomía' }
-              ].map((item, idx) => (
-                <div key={item.key} className="space-y-0.5">
-                  <span className="text-[9px] font-bold text-slate-500">
-                    Beneficio {idx + 1} ({currentLangObj.code.toUpperCase()}):
-                  </span>
-                  <input
-                    type="text"
-                    value={getConfigLangValue(item.key, item.def)}
-                    onChange={(e) => setConfigLangValue(item.key, e.target.value)}
-                    className="w-full px-2 py-1 text-xs text-slate-900 bg-slate-50 border border-slate-200 rounded-lg"
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {section.type === 'pillars_mosaic' && (
-        <div className="space-y-6">
-          {/* 4.1 FONDO Y DISPOSICIÓN DE COLUMNAS */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-4">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-forest/10 text-forest flex items-center justify-center font-bold">
-                <Layout className="w-4 h-4" />
-              </div>
-              <div>
-                <h4 className="font-bold text-forest text-xs sm:text-sm">
-                  Fondo & Disposición de la Sección
-                </h4>
-                <p className="text-[11px] text-muted-foreground">
-                  Personalizá la cuadrícula de columnas y el fondo general del mosaico
-                </p>
-              </div>
-            </div>
-
-            {/* Disposición de Columnas */}
-            <div className="space-y-2 pt-2 border-t border-slate-100">
-              <label className="text-[11px] font-bold text-slate-700 block">
-                Disposición de Columnas en Pantallas Grandes:
-              </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {[
-                  { id: '2', label: '2 Columnas', desc: 'Tarjetas amplias' },
-                  { id: '3', label: '3 Columnas', desc: 'Cuadrícula clásica (3x2)' },
-                  { id: '4', label: '4 Columnas', desc: 'Cuadrícula compacta' },
-                  { id: 'bento', label: 'Bento Mosaico', desc: 'Asimétrico moderno' }
-                ].map(col => {
-                  const isSelected = (section.config?.columns || '3') === col.id;
-                  return (
-                    <button
-                      key={col.id}
-                      type="button"
-                      onClick={() => handleConfigChange('columns', col.id)}
-                      className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                        isSelected
-                          ? 'border-forest bg-forest/5 text-forest ring-2 ring-forest/20 shadow-3xs'
-                          : 'border-slate-200 hover:border-slate-300 bg-white text-slate-700'
-                      }`}
-                    >
-                      <span className="font-bold text-xs block">{col.label}</span>
-                      <span className="text-[10px] text-muted-foreground block">{col.desc}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Fondo de Toda la Sección */}
-            <div className="space-y-2 pt-2 border-t border-slate-100">
-              <label className="text-[11px] font-bold text-slate-700 block">
-                Fondo de Toda la Sección:
-              </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {[
-                  { id: 'secondary', label: 'Sand Suave', bg: 'bg-secondary' },
-                  { id: 'white', label: 'Blanco Puro', bg: 'bg-white' },
-                  { id: 'cream', label: 'Crema Cálido', bg: 'bg-[#faf8f5]' },
-                  { id: 'forest-subtle', label: 'Menta Bosque', bg: 'bg-[#f2f7f4]' },
-                  { id: 'dark', label: 'Oscuro Elegante', bg: 'bg-slate-950 text-white' },
-                  { id: 'gradient', label: 'Degradado Orgánico', bg: 'bg-gradient-to-b from-[#faf8f5] to-[#f4f8f5]' },
-                  { id: 'custom', label: 'Personalizado', bg: 'bg-slate-100' }
-                ].map(bgOpt => {
-                  const isSelected = (section.config?.sectionBg || 'secondary') === bgOpt.id;
-                  return (
-                    <button
-                      key={bgOpt.id}
-                      type="button"
-                      onClick={() => handleConfigChange('sectionBg', bgOpt.id)}
-                      className={`p-2 rounded-xl border flex items-center gap-2 transition-all cursor-pointer ${
-                        isSelected
-                          ? 'border-forest ring-2 ring-forest/20 shadow-3xs font-bold'
-                          : 'border-slate-200 hover:border-slate-300'
-                      }`}
-                    >
-                      <div className={`w-4 h-4 rounded-full border border-slate-300 ${bgOpt.bg} shrink-0`} />
-                      <span className="text-xs truncate">{bgOpt.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {section.config?.sectionBg === 'custom' && (
-                <div className="flex items-center gap-2 pt-2 animate-in fade-in duration-150">
-                  <span className="text-[11px] font-bold text-slate-600">Color Hex:</span>
-                  <input
-                    type="color"
-                    value={section.config?.sectionBgCustom || '#faf8f5'}
-                    onChange={(e) => handleConfigChange('sectionBgCustom', e.target.value)}
-                    className="w-7 h-7 rounded-lg border border-slate-300 cursor-pointer"
-                  />
-                  <input
-                    type="text"
-                    value={section.config?.sectionBgCustom || '#faf8f5'}
-                    onChange={(e) => handleConfigChange('sectionBgCustom', e.target.value)}
-                    placeholder="#faf8f5"
-                    className="px-2.5 py-1 text-xs font-mono uppercase bg-slate-50 border border-slate-200 rounded-lg w-28"
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Bloque Destacado / Banner Informativo */}
-            <div className="space-y-4 pt-3 border-t border-slate-100">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <h5 className="font-bold text-xs text-slate-800">
-                    Tarjeta Destacada / Banner Informativo
-                  </h5>
-                  <p className="text-[10px] text-muted-foreground">
-                    Banner panorámico para resaltar un mensaje clave, propósito o llamado principal
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-slate-600">
-                    {section.config?.showMission !== false ? 'Activado' : 'Desactivado'}
-                  </span>
-                  <Switch
-                    checked={section.config?.showMission !== false}
-                    onCheckedChange={(checked) => handleConfigChange('showMission', checked)}
-                  />
-                </div>
-              </div>
-
-              {section.config?.showMission !== false && (
-                <div className="space-y-4 p-4 rounded-xl bg-slate-50/80 border border-slate-200 animate-in fade-in duration-150">
-                  {/* Etiqueta superior opcional */}
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-700 block">
-                      Etiqueta Superior del Banner (Opcional - {currentLangObj.name}):
-                    </label>
-                    <input
-                      type="text"
-                      value={getConfigLangValue('missionBadgeText', '')}
-                      onChange={(e) => setConfigLangValue('missionBadgeText', e.target.value)}
-                      placeholder={`Ej: Nuestra Misión, Compromiso, Aviso Especial...`}
-                      className="w-full px-3 py-1.5 text-xs text-slate-800 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-forest/20 focus:border-forest"
-                    />
-                  </div>
-
-                  {/* Texto principal del banner */}
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-700 block">
-                      Texto Principal del Mensaje ({currentLangObj.name}):
-                    </label>
-                    <textarea
-                      value={getConfigLangValue('missionText', 'Comprometidos con el desarrollo integral, la excelencia formativa y el máximo potencial de cada estudiante.')}
-                      onChange={(e) => setConfigLangValue('missionText', e.target.value)}
-                      rows={2}
-                      placeholder={`Mensaje o cita destacada en ${currentLangObj.name}...`}
-                      className="w-full px-3 py-2 text-xs text-slate-800 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-forest/20 focus:border-forest"
-                    />
-                  </div>
-
-                  {/* Tipografía y Color del Texto */}
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-700 block">
-                      Tipografía & Color del Texto:
-                    </label>
-                    <FieldTypographyAndColorBar
-                      fontValue={section.config?.mission_font}
-                      onChangeFont={(val) => handleConfigChange('mission_font', val)}
-                      colorLight={section.config?.mission_color}
-                      onChangeColorLight={(val) => handleConfigChange('mission_color', val)}
-                      colorDark={section.config?.mission_color_dark}
-                      onChangeColorDark={(val) => handleConfigChange('mission_color_dark', val)}
-                      defaultColorLight="#ffffff"
-                      defaultColorDark="#ffffff"
-                    />
-                  </div>
-
-                  {/* Alineación y Redondeo */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200/70">
-                    {/* Alineación del Texto */}
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-700 block">
-                        Alineación del Texto:
-                      </label>
-                      <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200">
-                        {[
-                          { val: 'left', icon: AlignLeft, label: 'Izquierda' },
-                          { val: 'center', icon: AlignCenter, label: 'Centrado' },
-                          { val: 'right', icon: AlignRight, label: 'Derecha' }
-                        ].map(al => {
-                          const AlIcon = al.icon;
-                          const isSelected = (section.config?.mission_align || 'left') === al.val;
-                          return (
-                            <button
-                              key={al.val}
-                              type="button"
-                              onClick={() => handleConfigChange('mission_align', al.val)}
-                              className={`flex-1 p-1.5 rounded-lg transition-all flex items-center justify-center cursor-pointer ${
-                                isSelected
-                                  ? 'bg-forest text-white shadow-3xs font-bold'
-                                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                              }`}
-                              title={al.label}
-                            >
-                              <AlIcon className="w-3.5 h-3.5" />
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Redondeo de Esquinas */}
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-700 block">
-                        Redondeo de Esquinas:
-                      </label>
-                      <select
-                        value={section.config?.mission_radius || '3xl'}
-                        onChange={(e) => handleConfigChange('mission_radius', e.target.value)}
-                        className="w-full text-xs font-semibold text-slate-800 bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 focus:ring-2 focus:ring-forest/20 focus:border-forest"
-                      >
-                        <option value="none">Recto (0px)</option>
-                        <option value="md">Medio (12px)</option>
-                        <option value="lg">Grande (16px)</option>
-                        <option value="xl">Extra (24px)</option>
-                        <option value="2xl">2XL (32px)</option>
-                        <option value="3xl">3XL (40px - Clásico)</option>
-                        <option value="full">Píldora (Cápsula)</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Color de Fondo de la Tarjeta Destacada */}
-                  <div className="space-y-2 pt-2 border-t border-slate-200/70">
-                    <label className="text-[10px] font-bold text-slate-700 block">
-                      Color de Fondo del Banner:
-                    </label>
-
-                    {/* Presets */}
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      {[
-                        { hex: 'gradient', label: 'Degradado Bosque', bg: 'bg-gradient-to-r from-forest to-forest-light' },
-                        { hex: '#1b3b2b', label: 'Bosque Clásico', bg: 'bg-[#1b3b2b]' },
-                        { hex: '#fbf6ee', label: 'Crema Cálido', bg: 'bg-[#fbf6ee]' },
-                        { hex: '#064e3b', label: 'Esmeralda', bg: 'bg-[#064e3b]' },
-                        { hex: '#0f172a', label: 'Azul Noche', bg: 'bg-[#0f172a]' },
-                        { hex: '#7c2d12', label: 'Terracota', bg: 'bg-[#7c2d12]' },
-                        { hex: '#3b0764', label: 'Púrpura', bg: 'bg-[#3b0764]' },
-                        { hex: '#ffffff', label: 'Blanco', bg: 'bg-white' }
-                      ].map(p => {
-                        const isSelected = (section.config?.mission_bg_color || 'gradient') === p.hex;
-                        return (
-                          <button
-                            key={p.hex}
-                            type="button"
-                            onClick={() => handleConfigChange('mission_bg_color', p.hex)}
-                            className={`w-6 h-6 rounded-lg border transition-all cursor-pointer ${p.bg} ${
-                              isSelected
-                                ? 'border-forest ring-2 ring-forest/30 scale-110 shadow-3xs'
-                                : 'border-slate-300 hover:scale-105'
-                            }`}
-                            title={p.label}
-                          />
-                        );
-                      })}
-                    </div>
-
-                    {/* Pickers Claro y Oscuro */}
-                    <div className="flex items-center gap-3 pt-1">
-                      <div className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-lg border border-slate-200 shadow-3xs">
-                        <Sun className="w-3.5 h-3.5 text-amber-500 shrink-0" title="Modo Claro" />
-                        <input
-                          type="color"
-                          value={section.config?.mission_bg_color?.startsWith('#') ? section.config?.mission_bg_color : '#1b3b2b'}
-                          onChange={(e) => handleConfigChange('mission_bg_color', e.target.value)}
-                          className="w-5 h-5 rounded border border-slate-300 cursor-pointer p-0 appearance-none bg-transparent"
-                        />
-                        <input
-                          type="text"
-                          value={section.config?.mission_bg_color || ''}
-                          onChange={(e) => handleConfigChange('mission_bg_color', e.target.value)}
-                          placeholder="#1b3b2b"
-                          className="w-16 text-[10px] font-mono uppercase bg-transparent border-0 focus:outline-none"
-                        />
-                      </div>
-
-                      <div className="flex items-center gap-1.5 bg-slate-900 text-white px-2 py-1 rounded-lg border border-slate-800 shadow-3xs">
-                        <Moon className="w-3.5 h-3.5 text-sky-400 shrink-0" title="Modo Oscuro" />
-                        <input
-                          type="color"
-                          value={section.config?.mission_bg_color_dark?.startsWith('#') ? section.config?.mission_bg_color_dark : '#0f1f17'}
-                          onChange={(e) => handleConfigChange('mission_bg_color_dark', e.target.value)}
-                          className="w-5 h-5 rounded border border-slate-600 cursor-pointer p-0 appearance-none bg-transparent"
-                        />
-                        <input
-                          type="text"
-                          value={section.config?.mission_bg_color_dark || ''}
-                          onChange={(e) => handleConfigChange('mission_bg_color_dark', e.target.value)}
-                          placeholder="#0f1f17"
-                          className="w-16 text-[10px] font-mono uppercase text-slate-200 bg-transparent border-0 focus:outline-none"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* 4.2 GESTOR DE TARJETAS DE CONTENIDO */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-forest/10 text-forest flex items-center justify-center font-bold">
-                  <Grid className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-forest text-xs sm:text-sm">
-                    Tarjetas de Contenido ({currentCards.length})
-                  </h4>
-                  <p className="text-[11px] text-muted-foreground">
-                    Añadí, reordená y personalizá el contenido, iconos o imágenes, formas y colores de cada tarjeta
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleAddCard}
-                className="px-3 py-1.5 rounded-xl bg-forest text-white hover:bg-forest/90 font-bold text-xs flex items-center gap-1.5 shadow-3xs cursor-pointer active:scale-95 transition-all"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Agregar Tarjeta</span>
-              </button>
-            </div>
-
-            {/* Lista de Tarjetas */}
-            <div className="space-y-3 pt-2 border-t border-slate-100">
-              {currentCards.map((card, index) => {
-                const isExpanded = expandedCardId === card.id;
-                const IconComp = card.icon && PILLAR_ICONS_MAP[card.icon] ? PILLAR_ICONS_MAP[card.icon] : Compass;
-                const cardTitle = editorLang !== 'es'
-                  ? ((card as any)[`title_${editorLang}`] || card.title)
-                  : card.title;
-                const cardSubtitle = editorLang !== 'es'
-                  ? ((card as any)[`subtitle_${editorLang}`] || card.subtitle)
-                  : card.subtitle;
-
+                { val: 'left', icon: AlignLeft, label: 'Izquierda' },
+                { val: 'center', icon: AlignCenter, label: 'Centrado' },
+                { val: 'right', icon: AlignRight, label: 'Derecha' }
+              ].map(al => {
+                const AlIcon = al.icon;
+                const isSelected = (section.layoutVariant || 'left') === al.val;
                 return (
-                  <div
-                    key={card.id}
-                    className={`rounded-2xl border transition-all ${
-                      isExpanded
-                        ? 'border-forest ring-2 ring-forest/10 bg-slate-50/50 shadow-sm'
-                        : 'border-slate-200 bg-white hover:border-slate-300'
+                  <button
+                    key={al.val}
+                    type="button"
+                    onClick={() => onUpdateSection({ layoutVariant: al.val })}
+                    className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-white text-forest shadow-3xs font-bold'
+                        : 'text-slate-600 hover:text-slate-900'
                     }`}
+                    title={al.label}
                   >
-                    {/* Header de la tarjeta */}
-                    <div className="p-3.5 flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                        {/* Controles de Reordenamiento */}
-                        <div className="flex flex-col gap-0.5 shrink-0">
-                          <button
-                            type="button"
-                            disabled={index === 0}
-                            onClick={() => handleMoveCard(index, 'up')}
-                            className="p-0.5 hover:bg-slate-200 rounded text-slate-400 hover:text-slate-700 disabled:opacity-30 cursor-pointer"
-                            title="Mover arriba"
-                          >
-                            <ChevronUp className="w-3 h-3" />
-                          </button>
-                          <button
-                            type="button"
-                            disabled={index === currentCards.length - 1}
-                            onClick={() => handleMoveCard(index, 'down')}
-                            className="p-0.5 hover:bg-slate-200 rounded text-slate-400 hover:text-slate-700 disabled:opacity-30 cursor-pointer"
-                            title="Mover abajo"
-                          >
-                            <ChevronDown className="w-3 h-3" />
-                          </button>
-                        </div>
-
-                        {/* Thumbnail / Icono */}
-                        <div
-                          style={{ backgroundColor: card.bgColor || '#f4f8f5' }}
-                          className="w-9 h-9 rounded-xl flex items-center justify-center text-forest shadow-3xs shrink-0 border border-slate-200 overflow-hidden"
-                        >
-                          {card.imageUrl ? (
-                            <img src={card.imageUrl} alt="" className="w-full h-full object-cover" />
-                          ) : (
-                            <IconComp className="w-4 h-4" />
-                          )}
-                        </div>
-
-                        {/* Info Principal */}
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-mono font-bold text-slate-400">
-                              #{index + 1}
-                            </span>
-                            <h5 className="font-bold text-xs text-slate-900 truncate">
-                              {cardTitle || 'Sin título'}
-                            </h5>
-                          </div>
-                          <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
-                            <span className="capitalize">{card.shape || 'rounded'}</span>
-                            <span>•</span>
-                            <span className="capitalize">Hover: {card.hoverEffect || 'lift'}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Botones de acción */}
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteCard(card.id)}
-                          disabled={currentCards.length <= 1}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all disabled:opacity-30 cursor-pointer"
-                          title="Eliminar tarjeta"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setExpandedCardId(isExpanded ? null : card.id)}
-                          className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 flex items-center gap-1 cursor-pointer transition-all"
-                        >
-                          <span>{isExpanded ? 'Cerrar' : 'Editar'}</span>
-                          <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Panel de Edición Detallada */}
-                    {isExpanded && (
-                      <div className="p-4 pt-0 space-y-4 border-t border-slate-200/80 mt-2 animate-in fade-in duration-150">
-                        {/* Título de la tarjeta */}
-                        <div className="space-y-1.5 pt-2">
-                          <label className="text-[10px] font-bold text-slate-700">
-                            Título de la Tarjeta ({currentLangObj.name}):
-                          </label>
-                          <input
-                            type="text"
-                            value={cardTitle}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              if (editorLang === 'es') {
-                                handleUpdateSingleCard(card.id, { title: val });
-                              } else {
-                                handleUpdateSingleCard(card.id, { [`title_${editorLang}`]: val } as any);
-                              }
-                            }}
-                            placeholder={`Título en ${currentLangObj.name}`}
-                            className="w-full px-3 py-2 text-xs font-bold text-slate-900 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-forest/20 focus:border-forest"
-                          />
-                          <FieldTypographyAndColorBar
-                            fontValue={card.titleFont || 'inherit'}
-                            onChangeFont={(fId) => handleUpdateSingleCard(card.id, { titleFont: fId })}
-                            colorLight={card.titleColor}
-                            onChangeColorLight={(hex) => handleUpdateSingleCard(card.id, { titleColor: hex })}
-                            colorDark={card.titleColorDark}
-                            onChangeColorDark={(hex) => handleUpdateSingleCard(card.id, { titleColorDark: hex })}
-                            defaultColorLight="#0f172a"
-                            defaultColorDark="#ffffff"
-                          />
-                        </div>
-
-                        {/* Subtítulo / Descripción */}
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-slate-700">
-                            Descripción / Detalle de la Tarjeta ({currentLangObj.name}):
-                          </label>
-                          <textarea
-                            value={cardSubtitle}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              if (editorLang === 'es') {
-                                handleUpdateSingleCard(card.id, { subtitle: val });
-                              } else {
-                                handleUpdateSingleCard(card.id, { [`subtitle_${editorLang}`]: val } as any);
-                              }
-                            }}
-                            rows={2}
-                            placeholder={`Detalle informativo en ${currentLangObj.name}...`}
-                            className="w-full px-3 py-2 text-xs text-slate-800 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-forest/20 focus:border-forest"
-                          />
-                          <FieldTypographyAndColorBar
-                            fontValue={card.subtitleFont || 'inherit'}
-                            onChangeFont={(fId) => handleUpdateSingleCard(card.id, { subtitleFont: fId })}
-                            colorLight={card.subtitleColor || card.textColor}
-                            onChangeColorLight={(hex) => handleUpdateSingleCard(card.id, { subtitleColor: hex, textColor: hex })}
-                            colorDark={card.subtitleColorDark || card.textColorDark}
-                            onChangeColorDark={(hex) => handleUpdateSingleCard(card.id, { subtitleColorDark: hex, textColorDark: hex })}
-                            defaultColorLight="#64748b"
-                            defaultColorDark="#cbd5e1"
-                          />
-                        </div>
-
-                        {/* Icono o Imagen */}
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-bold text-slate-700 block">
-                            Icono o Fotografía de la Tarjeta:
-                          </label>
-                          <div className="space-y-2">
-                            {/* Icon Picker Grid */}
-                            <div className="space-y-1.5">
-                              <div className="flex items-center justify-between gap-1 flex-wrap">
-                                <span className="text-[10px] text-muted-foreground font-semibold">Seleccionar Icono:</span>
-                                <div className="flex items-center gap-1">
-                                  {CARD_ICON_CATEGORIES.map(cat => (
-                                    <button
-                                      key={cat.id}
-                                      type="button"
-                                      onClick={() => setCardIconCategory(cat.id)}
-                                      className={`px-2 py-0.5 rounded-md text-[9px] font-bold transition-all cursor-pointer ${
-                                        cardIconCategory === cat.id
-                                          ? 'bg-forest text-white shadow-3xs'
-                                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                                      }`}
-                                    >
-                                      {cat.label}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-
-                              <div className="grid grid-cols-6 sm:grid-cols-11 gap-1 bg-white p-2 rounded-xl border border-slate-200 max-h-36 overflow-y-auto">
-                                {Object.entries(PILLAR_ICONS_MAP)
-                                  .filter(([iconName]) => {
-                                    if (cardIconCategory === 'all') return true;
-                                    return CARD_ICONS_BY_CAT[cardIconCategory]?.includes(iconName);
-                                  })
-                                  .map(([iconName, Icon]) => {
-                                    const isSelected = !card.imageUrl && (card.icon || 'Compass') === iconName;
-                                    return (
-                                      <button
-                                        key={iconName}
-                                        type="button"
-                                        onClick={() => handleUpdateSingleCard(card.id, { icon: iconName, imageUrl: '' })}
-                                        className={`p-2 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
-                                          isSelected
-                                            ? 'bg-forest text-white shadow-3xs scale-105'
-                                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                                        }`}
-                                        title={iconName}
-                                      >
-                                        <Icon className="w-4 h-4" />
-                                      </button>
-                                    );
-                                  })}
-                              </div>
-                            </div>
-
-                            {/* O Subir Foto Custom */}
-                            <div className="space-y-1 pt-1 border-t border-slate-100">
-                              <span className="text-[10px] text-muted-foreground block">O Subir Imagen Personalizada:</span>
-                              <ImageUploadDropzone
-                                currentImageUrl={card.imageUrl || ''}
-                                onImageUploaded={(url) => handleUpdateSingleCard(card.id, { imageUrl: url })}
-                                onRemove={() => handleUpdateSingleCard(card.id, { imageUrl: '' })}
-                                label="Foto miniatura de la tarjeta"
-                                helperText="Recomendado cuadrado 1:1"
-                                folder="pillars"
-                                maxSizeMB={5}
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Forma de la Tarjeta & Efecto Hover */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-100">
-                          {/* Forma */}
-                          <div className="space-y-1">
-                            <label className="text-[10px] font-bold text-slate-700 block">
-                              Forma Geométrica de la Tarjeta:
-                            </label>
-                            <CustomShapePicker
-                              value={card.shape || 'rounded'}
-                              onChange={(shape) => handleUpdateSingleCard(card.id, { shape: shape as any })}
-                            />
-                          </div>
-
-                          {/* Efecto Hover */}
-                          <div className="space-y-1">
-                            <label className="text-[10px] font-bold text-slate-700 block">
-                              Efecto al Pasar el Mouse (Hover):
-                            </label>
-                            <CustomHoverPicker
-                              value={card.hoverEffect || 'lift'}
-                              onChange={(hoverEffect) => handleUpdateSingleCard(card.id, { hoverEffect: hoverEffect as any })}
-                            />
-                          </div>
-                        </div>
-
-                        {/* Rotación Inclinada de la Tarjeta */}
-                        <div className="space-y-2 pt-2 border-t border-slate-100">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1.5">
-                              <RotateCw className="w-3.5 h-3.5 text-forest" />
-                              <label className="text-[10px] font-bold text-slate-700">
-                                Rotación Inclinada de la Tarjeta (°):
-                              </label>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md ${
-                                Number(card.rotateZ ?? card.rotation ?? 0) !== 0
-                                  ? 'bg-forest text-white shadow-3xs'
-                                  : 'bg-slate-100 text-slate-600'
-                              }`}>
-                                {Number(card.rotateZ ?? card.rotation ?? 0) > 0 ? `+${card.rotateZ ?? card.rotation ?? 0}°` : `${card.rotateZ ?? card.rotation ?? 0}°`}
-                              </span>
-                              {Number(card.rotateZ ?? card.rotation ?? 0) !== 0 && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleUpdateSingleCard(card.id, { rotateZ: 0, rotation: 0 })}
-                                  className="text-[9px] text-slate-400 hover:text-rose-500 font-bold px-1.5 py-0.5 rounded hover:bg-rose-50 transition-colors cursor-pointer"
-                                  title="Restablecer rotación a 0°"
-                                >
-                                  Reset
-                                </button>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-3">
-                            <span className="text-[9px] font-mono text-slate-400 font-bold">-15°</span>
-                            <input
-                              type="range"
-                              min="-15"
-                              max="15"
-                              step="0.5"
-                              value={Number(card.rotateZ ?? card.rotation ?? 0)}
-                              onChange={(e) => {
-                                const val = parseFloat(e.target.value);
-                                handleUpdateSingleCard(card.id, { rotateZ: val, rotation: val });
-                              }}
-                              className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-forest focus:outline-none"
-                            />
-                            <span className="text-[9px] font-mono text-slate-400 font-bold">+15°</span>
-                          </div>
-
-                          {/* Presets de Rotación Rápida */}
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="text-[9px] text-muted-foreground font-semibold">Presets:</span>
-                            {[-6, -3, -1.5, 0, 1.5, 3, 6].map((deg) => (
-                              <button
-                                key={deg}
-                                type="button"
-                                onClick={() => handleUpdateSingleCard(card.id, { rotateZ: deg, rotation: deg })}
-                                className={`px-2 py-0.5 rounded-md text-[9px] font-mono font-bold transition-all cursor-pointer ${
-                                  Number(card.rotateZ ?? card.rotation ?? 0) === deg
-                                    ? 'bg-forest text-white shadow-3xs'
-                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                                }`}
-                              >
-                                {deg > 0 ? `+${deg}°` : `${deg}°`}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Color de Fondo de la Tarjeta */}
-                        <div className="space-y-2 pt-2 border-t border-slate-100">
-                          <label className="text-[10px] font-bold text-slate-700 block">
-                            Color de Fondo de la Tarjeta:
-                          </label>
-
-                          {/* Presets */}
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            {[
-                              { hex: '#f4f8f5', label: 'Sage' },
-                              { hex: '#fbf6ee', label: 'Crema' },
-                              { hex: '#f1f5f9', label: 'Sky' },
-                              { hex: '#fef3f2', label: 'Rose' },
-                              { hex: '#ecfdf5', label: 'Mint' },
-                              { hex: '#faf5ff', label: 'Lavender' },
-                              { hex: '#ffffff', label: 'Blanco' },
-                              { hex: '#1e293b', label: 'Slate' }
-                            ].map(p => (
-                              <button
-                                key={p.hex}
-                                type="button"
-                                onClick={() => handleUpdateSingleCard(card.id, { bgColor: p.hex })}
-                                style={{ backgroundColor: p.hex }}
-                                className={`w-6 h-6 rounded-lg border transition-all cursor-pointer ${
-                                  card.bgColor === p.hex
-                                    ? 'border-forest ring-2 ring-forest/30 scale-110 shadow-3xs'
-                                    : 'border-slate-300 hover:scale-105'
-                                }`}
-                                title={p.label}
-                              />
-                            ))}
-                          </div>
-
-                          {/* Pickers Claro & Oscuro */}
-                          <div className="flex items-center gap-3 pt-1">
-                            <div className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-lg border border-slate-200 shadow-3xs">
-                              <Sun className="w-3.5 h-3.5 text-amber-500 shrink-0" title="Modo Claro" />
-                              <input
-                                type="color"
-                                value={card.bgColor?.startsWith('#') && card.bgColor.length === 7 ? card.bgColor : '#f4f8f5'}
-                                onChange={(e) => handleUpdateSingleCard(card.id, { bgColor: e.target.value })}
-                                className="w-5 h-5 rounded border border-slate-300 cursor-pointer p-0 appearance-none bg-transparent"
-                              />
-                              <input
-                                type="text"
-                                value={card.bgColor || ''}
-                                onChange={(e) => handleUpdateSingleCard(card.id, { bgColor: e.target.value })}
-                                placeholder="#f4f8f5"
-                                className="w-16 text-[10px] font-mono uppercase bg-transparent border-0 focus:outline-none"
-                              />
-                            </div>
-
-                            <div className="flex items-center gap-1.5 bg-slate-900 text-white px-2 py-1 rounded-lg border border-slate-800 shadow-3xs">
-                              <Moon className="w-3.5 h-3.5 text-sky-400 shrink-0" title="Modo Oscuro" />
-                              <input
-                                type="color"
-                                value={card.bgColorDark?.startsWith('#') && card.bgColorDark.length === 7 ? card.bgColorDark : '#14251c'}
-                                onChange={(e) => handleUpdateSingleCard(card.id, { bgColorDark: e.target.value })}
-                                className="w-5 h-5 rounded border border-slate-600 cursor-pointer p-0 appearance-none bg-transparent"
-                              />
-                              <input
-                                type="text"
-                                value={card.bgColorDark || ''}
-                                onChange={(e) => handleUpdateSingleCard(card.id, { bgColorDark: e.target.value })}
-                                placeholder="#14251c"
-                                className="w-16 text-[10px] font-mono uppercase text-slate-200 bg-transparent border-0 focus:outline-none"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                    <AlIcon className="w-3.5 h-3.5" />
+                  </button>
                 );
               })}
             </div>
           </div>
+        </SectionAccordionItem>
+
+        {/* 2. TEMPLATE SPECIFIC CONTENT & CARDS */}
+        <SectionAccordionItem
+          id="content"
+          title="Contenido & Disposición de Elementos"
+          subtitle={
+            section.type === 'pillars_mosaic'
+              ? `Mosaico de ${currentCards.length} tarjetas, formas, fotos e iconos`
+              : section.type === 'split_media_benefits'
+              ? 'Fotografía principal y lista de beneficios'
+              : section.type === 'location_map_cta'
+              ? 'Dirección física y mapa interactivo'
+              : 'Configuración y elementos de la sección'
+          }
+          icon={Grid}
+        >
+          {section.type === 'split_media_benefits' && (
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-700 block">Fotografía Principal de la Sección:</label>
+                <ImageUploadDropzone
+                  currentImageUrl={section.config?.imageUrl || ''}
+                  onImageUploaded={(url) => handleConfigChange('imageUrl', url)}
+                  onRemove={() => handleConfigChange('imageUrl', '')}
+                  label="Foto con marco orgánico"
+                  helperText="Formato recomendado 4:3 o 1:1"
+                  folder="sections"
+                  maxSizeMB={10}
+                />
+              </div>
+
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                <label className="text-[11px] font-bold text-slate-700 block">
+                  Puntos de Beneficio ({currentLangObj.name}):
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {[
+                    { key: 'item1', def: 'Bilingüe (Inglés vivido naturalmente)' },
+                    { key: 'item2', def: 'Áreas verdes y contacto con la naturaleza' },
+                    { key: 'item3', def: 'Actividades de vida práctica y sensorial' },
+                    { key: 'item4', def: 'Desarrollo socioemocional y autonomía' }
+                  ].map((item, idx) => (
+                    <div key={item.key} className="space-y-0.5">
+                      <span className="text-[9px] font-bold text-slate-500">
+                        Beneficio {idx + 1} ({currentLangObj.code.toUpperCase()}):
+                      </span>
+                      <input
+                        type="text"
+                        value={getConfigLangValue(item.key, item.def)}
+                        onChange={(e) => setConfigLangValue(item.key, e.target.value)}
+                        className="w-full px-2 py-1 text-xs text-slate-900 bg-slate-50 border border-slate-200 rounded-lg"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {section.type === 'pillars_mosaic' && (
+            <div className="space-y-4">
+              {/* Disposición de Columnas */}
+              <div className="space-y-2">
+                <label className="text-[11px] font-bold text-slate-700 block">
+                  Disposición de Columnas en Pantallas Grandes:
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { id: '2', label: '2 Columnas', desc: 'Tarjetas amplias' },
+                    { id: '3', label: '3 Columnas', desc: 'Cuadrícula clásica (3x2)' },
+                    { id: '4', label: '4 Columnas', desc: 'Cuadrícula compacta' },
+                    { id: 'bento', label: 'Bento Mosaico', desc: 'Asimétrico moderno' }
+                  ].map(col => {
+                    const isSelected = (section.config?.columns || '3') === col.id;
+                    return (
+                      <button
+                        key={col.id}
+                        type="button"
+                        onClick={() => handleConfigChange('columns', col.id)}
+                        className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                          isSelected
+                            ? 'border-forest bg-forest/5 text-forest ring-2 ring-forest/20 shadow-3xs'
+                            : 'border-slate-200 hover:border-slate-300 bg-white text-slate-700'
+                        }`}
+                      >
+                        <span className="font-bold text-xs block">{col.label}</span>
+                        <span className="text-[10px] text-muted-foreground block">{col.desc}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Fondo de Toda la Sección */}
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                <label className="text-[11px] font-bold text-slate-700 block">
+                  Fondo de Toda la Sección:
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { id: 'secondary', label: 'Sand Suave', bg: 'bg-secondary' },
+                    { id: 'white', label: 'Blanco Puro', bg: 'bg-white' },
+                    { id: 'cream', label: 'Crema Cálido', bg: 'bg-[#faf8f5]' },
+                    { id: 'forest-subtle', label: 'Menta Bosque', bg: 'bg-[#f2f7f4]' },
+                    { id: 'dark', label: 'Oscuro Elegante', bg: 'bg-slate-950 text-white' },
+                    { id: 'gradient', label: 'Degradado Orgánico', bg: 'bg-gradient-to-b from-[#faf8f5] to-[#f4f8f5]' },
+                    { id: 'custom', label: 'Personalizado', bg: 'bg-slate-100' }
+                  ].map(bgOpt => {
+                    const isSelected = (section.config?.sectionBg || 'secondary') === bgOpt.id;
+                    return (
+                      <button
+                        key={bgOpt.id}
+                        type="button"
+                        onClick={() => handleConfigChange('sectionBg', bgOpt.id)}
+                        className={`p-2 rounded-xl border text-left flex items-center gap-2 transition-all cursor-pointer ${
+                          isSelected
+                            ? 'border-forest bg-forest/5 text-forest ring-2 ring-forest/20 shadow-3xs'
+                            : 'border-slate-200 hover:border-slate-300 bg-white text-slate-700'
+                        }`}
+                      >
+                        <div className={`w-4 h-4 rounded-full border border-slate-300 shrink-0 ${bgOpt.bg}`} />
+                        <span className="font-bold text-[11px] truncate">{bgOpt.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* GESTOR DE TARJETAS DE CONTENIDO */}
+              <div className="space-y-3 pt-3 border-t border-slate-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h5 className="font-bold text-slate-900 text-xs">
+                      Tarjetas de Contenido ({currentCards.length})
+                    </h5>
+                    <p className="text-[10px] text-muted-foreground">
+                      Añadí, reordená y personalizá formas, iconos, rotación y colores
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleAddCard}
+                    className="px-3 py-1.5 rounded-xl bg-forest text-white hover:bg-forest/90 font-bold text-xs flex items-center gap-1.5 shadow-3xs cursor-pointer active:scale-95 transition-all"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Agregar Tarjeta</span>
+                  </button>
+                </div>
+
+                {/* Lista de Tarjetas */}
+                <div className="space-y-3">
+                  {currentCards.map((card, index) => {
+                    const isExpanded = expandedCardId === card.id;
+                    const IconComp = card.icon && PILLAR_ICONS_MAP[card.icon] ? PILLAR_ICONS_MAP[card.icon] : Compass;
+                    const cardTitle = editorLang !== 'es'
+                      ? ((card as any)[`title_${editorLang}`] || card.title)
+                      : card.title;
+                    const cardSubtitle = editorLang !== 'es'
+                      ? ((card as any)[`subtitle_${editorLang}`] || card.subtitle)
+                      : card.subtitle;
+
+                    return (
+                      <div
+                        key={card.id}
+                        className={`rounded-2xl border transition-all ${
+                          isExpanded
+                            ? 'border-forest ring-2 ring-forest/10 bg-slate-50/50 shadow-sm'
+                            : 'border-slate-200 bg-white hover:border-slate-300'
+                        }`}
+                      >
+                        {/* Header de la tarjeta */}
+                        <div className="p-3.5 flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                            {/* Controles de Reordenamiento */}
+                            <div className="flex flex-col gap-0.5 shrink-0">
+                              <button
+                                type="button"
+                                disabled={index === 0}
+                                onClick={() => handleMoveCard(index, 'up')}
+                                className="p-0.5 hover:bg-slate-200 rounded text-slate-400 hover:text-slate-700 disabled:opacity-30 cursor-pointer"
+                                title="Mover arriba"
+                              >
+                                <ChevronUp className="w-3 h-3" />
+                              </button>
+                              <button
+                                type="button"
+                                disabled={index === currentCards.length - 1}
+                                onClick={() => handleMoveCard(index, 'down')}
+                                className="p-0.5 hover:bg-slate-200 rounded text-slate-400 hover:text-slate-700 disabled:opacity-30 cursor-pointer"
+                                title="Mover abajo"
+                              >
+                                <ChevronDown className="w-3 h-3" />
+                              </button>
+                            </div>
+
+                            {/* Miniatura Foto o Icono */}
+                            {card.imageUrl ? (
+                              <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 border border-slate-200 bg-slate-100">
+                                <img src={card.imageUrl} alt="" className="w-full h-full object-cover" />
+                              </div>
+                            ) : (
+                              <div
+                                className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border border-slate-200 text-forest"
+                                style={{ backgroundColor: card.bgColor || '#f4f8f5' }}
+                              >
+                                <IconComp className="w-4 h-4" />
+                              </div>
+                            )}
+
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-xs text-slate-900 truncate">{cardTitle || `Tarjeta ${index + 1}`}</span>
+                                <span className="text-[9px] font-mono text-slate-400">#{index + 1}</span>
+                              </div>
+                              <p className="text-[10px] text-muted-foreground truncate">{cardSubtitle || 'Sin descripción'}</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteCard(card.id)}
+                              disabled={currentCards.length <= 1}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 disabled:opacity-30 transition-colors cursor-pointer"
+                              title="Eliminar tarjeta"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setExpandedCardId(isExpanded ? null : card.id)}
+                              className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 flex items-center gap-1 cursor-pointer transition-all"
+                            >
+                              <span>{isExpanded ? 'Cerrar' : 'Editar'}</span>
+                              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Panel de Edición Detallada */}
+                        {isExpanded && (
+                          <div className="p-4 pt-0 space-y-4 border-t border-slate-200/80 mt-2 animate-in fade-in duration-150">
+                            {/* Título de la tarjeta */}
+                            <div className="space-y-1.5 pt-2">
+                              <label className="text-[10px] font-bold text-slate-700">
+                                Título de la Tarjeta ({currentLangObj.name}):
+                              </label>
+                              <input
+                                type="text"
+                                value={cardTitle}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (editorLang === 'es') {
+                                    handleUpdateSingleCard(card.id, { title: val });
+                                  } else {
+                                    handleUpdateSingleCard(card.id, { [`title_${editorLang}`]: val } as any);
+                                  }
+                                }}
+                                placeholder={`Título en ${currentLangObj.name}`}
+                                className="w-full px-3 py-2 text-xs font-bold text-slate-900 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-forest/20 focus:border-forest"
+                              />
+                              <FieldTypographyAndColorBar
+                                fontValue={card.titleFont || 'inherit'}
+                                onChangeFont={(fId) => handleUpdateSingleCard(card.id, { titleFont: fId })}
+                                colorLight={card.titleColor}
+                                onChangeColorLight={(hex) => handleUpdateSingleCard(card.id, { titleColor: hex })}
+                                colorDark={card.titleColorDark}
+                                onChangeColorDark={(hex) => handleUpdateSingleCard(card.id, { titleColorDark: hex })}
+                                defaultColorLight="#0f172a"
+                                defaultColorDark="#ffffff"
+                              />
+                            </div>
+
+                            {/* Subtítulo / Descripción */}
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-slate-700">
+                                Descripción / Detalle de la Tarjeta ({currentLangObj.name}):
+                              </label>
+                              <textarea
+                                value={cardSubtitle}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (editorLang === 'es') {
+                                    handleUpdateSingleCard(card.id, { subtitle: val });
+                                  } else {
+                                    handleUpdateSingleCard(card.id, { [`subtitle_${editorLang}`]: val } as any);
+                                  }
+                                }}
+                                rows={2}
+                                placeholder={`Detalle informativo en ${currentLangObj.name}...`}
+                                className="w-full px-3 py-2 text-xs text-slate-800 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-forest/20 focus:border-forest"
+                              />
+                              <FieldTypographyAndColorBar
+                                fontValue={card.subtitleFont || 'inherit'}
+                                onChangeFont={(fId) => handleUpdateSingleCard(card.id, { subtitleFont: fId })}
+                                colorLight={card.subtitleColor || card.textColor}
+                                onChangeColorLight={(hex) => handleUpdateSingleCard(card.id, { subtitleColor: hex, textColor: hex })}
+                                colorDark={card.subtitleColorDark || card.textColorDark}
+                                onChangeColorDark={(hex) => handleUpdateSingleCard(card.id, { subtitleColorDark: hex, textColorDark: hex })}
+                                defaultColorLight="#64748b"
+                                defaultColorDark="#cbd5e1"
+                              />
+                            </div>
+
+                            {/* Icono o Imagen */}
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-bold text-slate-700 block">
+                                Icono o Fotografía de la Tarjeta:
+                              </label>
+                              <div className="space-y-2">
+                                {/* Icon Picker Grid */}
+                                <div className="space-y-1.5">
+                                  <div className="flex items-center justify-between gap-1 flex-wrap">
+                                    <span className="text-[10px] text-muted-foreground font-semibold">Seleccionar Icono:</span>
+                                    <div className="flex items-center gap-1">
+                                      {CARD_ICON_CATEGORIES.map(cat => (
+                                        <button
+                                          key={cat.id}
+                                          type="button"
+                                          onClick={() => setCardIconCategory(cat.id)}
+                                          className={`px-2 py-0.5 rounded-md text-[9px] font-bold transition-all cursor-pointer ${
+                                            cardIconCategory === cat.id
+                                              ? 'bg-forest text-white shadow-3xs'
+                                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                          }`}
+                                        >
+                                          {cat.label}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  <div className="grid grid-cols-6 sm:grid-cols-11 gap-1 bg-white p-2 rounded-xl border border-slate-200 max-h-36 overflow-y-auto">
+                                    {Object.entries(PILLAR_ICONS_MAP)
+                                      .filter(([iconName]) => {
+                                        if (cardIconCategory === 'all') return true;
+                                        return CARD_ICONS_BY_CAT[cardIconCategory]?.includes(iconName);
+                                      })
+                                      .map(([iconName, Icon]) => {
+                                        const isSelected = !card.imageUrl && (card.icon || 'Compass') === iconName;
+                                        return (
+                                          <button
+                                            key={iconName}
+                                            type="button"
+                                            onClick={() => handleUpdateSingleCard(card.id, { icon: iconName, imageUrl: '' })}
+                                            className={`p-2 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
+                                              isSelected
+                                                ? 'bg-forest text-white shadow-3xs scale-105'
+                                                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                                            }`}
+                                            title={iconName}
+                                          >
+                                            <Icon className="w-4 h-4" />
+                                          </button>
+                                        );
+                                      })}
+                                  </div>
+                                </div>
+
+                                {/* O Subir Foto Custom */}
+                                <div className="space-y-1 pt-1 border-t border-slate-100">
+                                  <span className="text-[10px] text-muted-foreground block">O Subir Imagen Personalizada:</span>
+                                  <ImageUploadDropzone
+                                    currentImageUrl={card.imageUrl || ''}
+                                    onImageUploaded={(url) => handleUpdateSingleCard(card.id, { imageUrl: url })}
+                                    onRemove={() => handleUpdateSingleCard(card.id, { imageUrl: '' })}
+                                    label="Foto miniatura de la tarjeta"
+                                    helperText="Recomendado cuadrado 1:1"
+                                    folder="pillars"
+                                    maxSizeMB={5}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Forma de la Tarjeta & Efecto Hover */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-100">
+                              {/* Forma */}
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-700 block">
+                                  Forma Geométrica de la Tarjeta:
+                                </label>
+                                <CustomShapePicker
+                                  value={card.shape || 'rounded'}
+                                  onChange={(shape) => handleUpdateSingleCard(card.id, { shape: shape as any })}
+                                />
+                              </div>
+
+                              {/* Efecto Hover */}
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-700 block">
+                                  Efecto al Pasar el Mouse (Hover):
+                                </label>
+                                <CustomHoverPicker
+                                  value={card.hoverEffect || 'lift'}
+                                  onChange={(hoverEffect) => handleUpdateSingleCard(card.id, { hoverEffect: hoverEffect as any })}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Rotación Inclinada de la Tarjeta */}
+                            <div className="space-y-2 pt-2 border-t border-slate-100">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-1.5">
+                                  <RotateCw className="w-3.5 h-3.5 text-forest" />
+                                  <label className="text-[10px] font-bold text-slate-700">
+                                    Rotación Inclinada de la Tarjeta (°):
+                                  </label>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md ${
+                                    Number(card.rotateZ ?? card.rotation ?? 0) !== 0
+                                      ? 'bg-forest text-white shadow-3xs'
+                                      : 'bg-slate-100 text-slate-600'
+                                  }`}>
+                                    {Number(card.rotateZ ?? card.rotation ?? 0) > 0 ? `+${card.rotateZ ?? card.rotation ?? 0}°` : `${card.rotateZ ?? card.rotation ?? 0}°`}
+                                  </span>
+                                  {Number(card.rotateZ ?? card.rotation ?? 0) !== 0 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleUpdateSingleCard(card.id, { rotateZ: 0, rotation: 0 })}
+                                      className="text-[9px] text-slate-400 hover:text-rose-500 font-bold px-1.5 py-0.5 rounded hover:bg-rose-50 transition-colors cursor-pointer"
+                                      title="Restablecer rotación a 0°"
+                                    >
+                                      Reset
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-3">
+                                <span className="text-[9px] font-mono text-slate-400 font-bold">-15°</span>
+                                <input
+                                  type="range"
+                                  min="-15"
+                                  max="15"
+                                  step="0.5"
+                                  value={Number(card.rotateZ ?? card.rotation ?? 0)}
+                                  onChange={(e) => {
+                                    const val = parseFloat(e.target.value);
+                                    handleUpdateSingleCard(card.id, { rotateZ: val, rotation: val });
+                                  }}
+                                  className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-forest focus:outline-none"
+                                />
+                                <span className="text-[9px] font-mono text-slate-400 font-bold">+15°</span>
+                              </div>
+
+                              {/* Presets de Rotación Rápida */}
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-[9px] text-muted-foreground font-semibold">Presets:</span>
+                                {[-6, -3, -1.5, 0, 1.5, 3, 6].map((deg) => (
+                                  <button
+                                    key={deg}
+                                    type="button"
+                                    onClick={() => handleUpdateSingleCard(card.id, { rotateZ: deg, rotation: deg })}
+                                    className={`px-2 py-0.5 rounded-md text-[9px] font-mono font-bold transition-all cursor-pointer ${
+                                      Number(card.rotateZ ?? card.rotation ?? 0) === deg
+                                        ? 'bg-forest text-white shadow-3xs'
+                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                    }`}
+                                  >
+                                    {deg > 0 ? `+${deg}°` : `${deg}°`}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Color de Fondo de la Tarjeta */}
+                            <div className="space-y-2 pt-2 border-t border-slate-100">
+                              <label className="text-[10px] font-bold text-slate-700 block">
+                                Color de Fondo de la Tarjeta:
+                              </label>
+
+                              {/* Presets */}
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                {[
+                                  { hex: '#f4f8f5', label: 'Sage' },
+                                  { hex: '#fbf6ee', label: 'Crema' },
+                                  { hex: '#f1f5f9', label: 'Sky' },
+                                  { hex: '#fef3f2', label: 'Rose' },
+                                  { hex: '#ecfdf5', label: 'Mint' },
+                                  { hex: '#faf5ff', label: 'Lavender' },
+                                  { hex: '#ffffff', label: 'Blanco' },
+                                  { hex: '#1e293b', label: 'Slate' }
+                                ].map(p => (
+                                  <button
+                                    key={p.hex}
+                                    type="button"
+                                    onClick={() => handleUpdateSingleCard(card.id, { bgColor: p.hex })}
+                                    style={{ backgroundColor: p.hex }}
+                                    className={`w-6 h-6 rounded-lg border transition-all cursor-pointer ${
+                                      card.bgColor === p.hex
+                                        ? 'border-forest ring-2 ring-forest/30 scale-110 shadow-3xs'
+                                        : 'border-slate-300 hover:scale-105'
+                                    }`}
+                                    title={p.label}
+                                  />
+                                ))}
+                              </div>
+
+                              {/* Pickers Claro & Oscuro */}
+                              <div className="flex items-center gap-3 pt-1">
+                                <div className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-lg border border-slate-200 shadow-3xs">
+                                  <Sun className="w-3.5 h-3.5 text-amber-500 shrink-0" title="Modo Claro" />
+                                  <input
+                                    type="color"
+                                    value={card.bgColor?.startsWith('#') && card.bgColor.length === 7 ? card.bgColor : '#f4f8f5'}
+                                    onChange={(e) => handleUpdateSingleCard(card.id, { bgColor: e.target.value })}
+                                    className="w-5 h-5 rounded border border-slate-300 cursor-pointer p-0 appearance-none bg-transparent"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={card.bgColor || ''}
+                                    onChange={(e) => handleUpdateSingleCard(card.id, { bgColor: e.target.value })}
+                                    placeholder="#f4f8f5"
+                                    className="w-16 text-[10px] font-mono uppercase bg-transparent border-0 focus:outline-none"
+                                  />
+                                </div>
+
+                                <div className="flex items-center gap-1.5 bg-slate-900 text-white px-2 py-1 rounded-lg border border-slate-800 shadow-3xs">
+                                  <Moon className="w-3.5 h-3.5 text-sky-400 shrink-0" title="Modo Oscuro" />
+                                  <input
+                                    type="color"
+                                    value={card.bgColorDark?.startsWith('#') && card.bgColorDark.length === 7 ? card.bgColorDark : '#14251c'}
+                                    onChange={(e) => handleUpdateSingleCard(card.id, { bgColorDark: e.target.value })}
+                                    className="w-5 h-5 rounded border border-slate-600 cursor-pointer p-0 appearance-none bg-transparent"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={card.bgColorDark || ''}
+                                    onChange={(e) => handleUpdateSingleCard(card.id, { bgColorDark: e.target.value })}
+                                    placeholder="#14251c"
+                                    className="w-16 text-[10px] font-mono uppercase text-slate-200 bg-transparent border-0 focus:outline-none"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {section.type === 'location_map_cta' && (
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-700">
+                  Dirección Física Completa ({currentLangObj.name}):
+                </label>
+                <input
+                  type="text"
+                  value={getConfigLangValue('address', 'Av. Principal 123, Zona Escolar, Benito Juárez, Quintana Roo')}
+                  onChange={(e) => setConfigLangValue('address', e.target.value)}
+                  className="w-full px-2.5 py-1.5 text-xs text-slate-900 bg-white border border-slate-200 rounded-lg"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-700">URL del Mapa Embebido (Google Maps iframe src):</label>
+                <input
+                  type="text"
+                  value={section.config?.mapUrl || ''}
+                  onChange={(e) => handleConfigChange('mapUrl', e.target.value)}
+                  placeholder="https://maps.google.com/maps?q=..."
+                  className="w-full px-2.5 py-1.5 text-xs text-slate-900 bg-white border border-slate-200 rounded-lg"
+                />
+              </div>
+            </div>
+          )}
+        </SectionAccordionItem>
+
+        {/* 3. STICKERS & ADORNOS FLOTANTES */}
+        <SectionAccordionItem
+          id="stickers"
+          title="✨ Stickers & Adornos Flotantes"
+          subtitle="Adornos decorativos animados con coordenadas responsive"
+          icon={Sparkles}
+          badge="Desktop / Tablet / Mobile"
+        >
+          <SectionFloatingStickersEditor
+            config={section.config}
+            onChangeConfig={handleConfigChange}
+          />
+        </SectionAccordionItem>
+
+        {/* 4. ENLACE EN EL MENÚ DE NAVEGACIÓN (HEADER) */}
+        <SectionAccordionItem
+          id="navigation"
+          title="Menú & Navegación (Header)"
+          subtitle="Enlace directo en la barra superior pública"
+          icon={PanelTop}
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h5 className="font-bold text-slate-900 text-xs">
+                Enlace en la Barra Superior
+              </h5>
+              <p className="text-[11px] text-muted-foreground">
+                Crea un ítem en el menú para saltar directamente a esta sección
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-slate-600">
+                {section.showInMenu !== false ? 'Activado' : 'Desactivado'}
+              </span>
+              <Switch
+                checked={section.showInMenu !== false}
+                onCheckedChange={(checked) => onUpdateSection({ showInMenu: checked })}
+              />
+            </div>
+          </div>
+
+          {section.showInMenu !== false && (
+            <div className="space-y-3 pt-3 border-t border-slate-100 animate-in fade-in duration-150">
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-bold text-slate-700">
+                    Texto del Ítem en el Menú ({currentLangObj.name}):
+                  </label>
+                  <span className="text-[10px] font-mono text-slate-400">
+                    {currentLangObj.flag} {currentLangObj.code.toUpperCase()}
+                  </span>
+                </div>
+                <input
+                  type="text"
+                  value={getLangValue('menuLabel') || (editorLang === 'es' ? section.name : '')}
+                  onChange={(e) => setLangValue('menuLabel', e.target.value)}
+                  placeholder={`Ej: ${section.name}`}
+                  className="w-full px-3 py-2 text-xs font-bold text-slate-900 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-forest/20 focus:border-forest shadow-3xs"
+                />
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-[11px]">
+                <span className="text-slate-500">Destino de Navegación:</span>
+                <span className="font-mono font-bold text-forest bg-white px-2 py-0.5 rounded-md border border-slate-200">
+                  /#{section.anchor || section.id}
+                </span>
+              </div>
+            </div>
+          )}
+        </SectionAccordionItem>
+
+        {/* 5. BOTÓN CTA / LLAMADO A LA ACCIÓN */}
+        <SectionAccordionItem
+          id="cta"
+          title="Botón de Acción (CTA)"
+          subtitle="Llamada a la acción, enlace, estilos y colores"
+          icon={MousePointerClick}
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h5 className="font-bold text-slate-900 text-xs">
+                Botón de Acción Principal
+              </h5>
+              <p className="text-[11px] text-muted-foreground">
+                Habilita un botón para guiar a los visitantes a una página o WhatsApp
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-slate-600">
+                {section.showCta !== false && (section.config?.showCta === true || (section.config?.showCta !== false && Boolean(getLangValue('ctaText') || section.ctaText))) ? 'Activado' : 'Desactivado'}
+              </span>
+              <Switch
+                checked={section.showCta !== false && (section.config?.showCta === true || (section.config?.showCta !== false && Boolean(getLangValue('ctaText') || section.ctaText)))}
+                onCheckedChange={(checked) => {
+                  onUpdateSection({ showCta: checked });
+                  handleConfigChange('showCta', checked);
+                  if (checked && !getLangValue('ctaText') && !section.ctaText) {
+                    setLangValue('ctaText', 'Conoce Más');
+                  }
+                }}
+              />
+            </div>
+          </div>
+
+          {section.showCta !== false && (section.config?.showCta === true || (section.config?.showCta !== false && Boolean(getLangValue('ctaText') || section.ctaText))) && (
+            <div className="space-y-3 pt-3 border-t border-slate-100 animate-in fade-in duration-150">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-700">
+                  Texto del Botón ({currentLangObj.name}):
+                </label>
+                <input
+                  type="text"
+                  value={getLangValue('ctaText')}
+                  onChange={(e) => setLangValue('ctaText', e.target.value)}
+                  placeholder={`Texto del botón en ${currentLangObj.name}...`}
+                  className="w-full px-3 py-2 text-xs font-semibold text-slate-900 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-forest/20 focus:border-forest"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-700">Enlace / Destino de Acción:</label>
+                <input
+                  type="text"
+                  value={section.ctaUrl || ''}
+                  onChange={(e) => onUpdateSection({ ctaUrl: e.target.value })}
+                  placeholder="Ej: /#admisiones o https://wa.me/..."
+                  className="w-full px-3 py-2 text-xs text-slate-900 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-forest/20 focus:border-forest"
+                />
+              </div>
+
+              <FieldTypographyAndColorBar
+                fontValue={section.config?.cta_font}
+                onChangeFont={(val) => handleConfigChange('cta_font', val)}
+                colorLight={section.config?.cta_color}
+                onChangeColorLight={(val) => handleConfigChange('cta_color', val)}
+                colorDark={section.config?.cta_color_dark}
+                onChangeColorDark={(val) => handleConfigChange('cta_color_dark', val)}
+                defaultColorLight="#1b3b2b"
+                defaultColorDark="#ffffff"
+              />
+            </div>
+          )}
+        </SectionAccordionItem>
+
+        {/* 6. DANGER ZONE / ACTIONS */}
+        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
+          {onDuplicateSection && (
+            <button
+              type="button"
+              onClick={onDuplicateSection}
+              className="px-3 py-1.5 text-xs font-bold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
+            >
+              Duplicar Sección
+            </button>
+          )}
+
+          {onDeleteSection && (
+            <button
+              type="button"
+              onClick={onDeleteSection}
+              className="px-3 py-1.5 text-xs font-bold bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 rounded-xl transition-all cursor-pointer"
+            >
+              Eliminar Sección
+            </button>
+          )}
         </div>
-      )}
 
-      {section.type === 'location_map_cta' && (
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-4">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-forest/10 text-forest flex items-center justify-center font-bold">3</div>
-            <h4 className="font-bold text-forest text-xs sm:text-sm">Datos de Ubicación & Mapa</h4>
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold text-slate-700">
-              Dirección Física Completa ({currentLangObj.name}):
-            </label>
-            <input
-              type="text"
-              value={getConfigLangValue('address', 'Av. Principal 123, Zona Escolar, Benito Juárez, Quintana Roo')}
-              onChange={(e) => setConfigLangValue('address', e.target.value)}
-              className="w-full px-2.5 py-1.5 text-xs text-slate-900 bg-white border border-slate-200 rounded-lg"
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold text-slate-700">URL del Mapa Embebido (Google Maps iframe src):</label>
-            <input
-              type="text"
-              value={section.config?.mapUrl || ''}
-              onChange={(e) => handleConfigChange('mapUrl', e.target.value)}
-              placeholder="https://maps.google.com/maps?q=..."
-              className="w-full px-2.5 py-1.5 text-xs text-slate-900 bg-white border border-slate-200 rounded-lg"
-            />
-          </div>
-        </div>
-      )}
-
-      {/* 5. DANGER ZONE / ACTIONS */}
-      <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
-        {onDuplicateSection && (
-          <button
-            type="button"
-            onClick={onDuplicateSection}
-            className="px-3 py-1.5 text-xs font-bold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
-          >
-            Duplicar Sección
-          </button>
-        )}
-
-        {onDeleteSection && (
-          <button
-            type="button"
-            onClick={onDeleteSection}
-            className="px-3 py-1.5 text-xs font-bold bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 rounded-xl transition-all cursor-pointer"
-          >
-            Eliminar Sección
-          </button>
-        )}
       </div>
-
-    </div>
+    </SectionAccordionContext.Provider>
   );
 };
+

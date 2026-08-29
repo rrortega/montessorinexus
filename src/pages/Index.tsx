@@ -146,6 +146,7 @@ const Index = () => {
                 id={section.id}
                 name={section.name}
                 targetTab={`section:${section.id}`}
+                config={section.config}
               >
                 {renderSectionByType(section)}
               </PreviewSectionWrapper>
