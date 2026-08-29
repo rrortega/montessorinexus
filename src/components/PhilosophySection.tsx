@@ -399,14 +399,18 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
   // Shape class resolver
   const getShapeClass = (shape?: string) => {
     switch (shape) {
-      case 'blob':
-        return 'rounded-[2.5rem_1rem_2.5rem_1rem]';
       case 'arch':
-        return 'rounded-t-[3.5rem] rounded-b-2xl';
+        return 'rounded-t-[4rem] rounded-b-2xl';
+      case 'leaf':
+        return 'rounded-tl-[4rem] rounded-br-[4rem] rounded-tr-xl rounded-bl-xl';
+      case 'blob':
+        return 'rounded-[3.5rem_1.25rem_3.5rem_1.25rem]';
       case 'squircle':
-        return 'rounded-[2rem]';
+        return 'rounded-[2.8rem]';
+      case 'pill':
+        return 'rounded-[4rem]';
       case 'minimal':
-        return 'rounded-2xl border border-slate-200/80 shadow-xs';
+        return 'rounded-none border-2 border-slate-300 shadow-none';
       case 'rounded':
       default:
         return 'rounded-3xl';
@@ -417,16 +421,18 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
   const getHoverAnimation = (hoverEffect?: string) => {
     switch (hoverEffect) {
       case 'scale':
-        return { scale: 1.04, transition: { duration: 0.25, ease: 'easeOut' } };
+        return { scale: 1.05, boxShadow: '0 20px 30px -10px rgba(0, 0, 0, 0.15)', transition: { duration: 0.22, ease: 'easeOut' } };
       case 'glow':
-        return { y: -6, boxShadow: '0 16px 36px -8px rgba(27, 59, 43, 0.22)', transition: { duration: 0.25 } };
+        return { y: -6, boxShadow: '0 0 35px 3px rgba(27, 59, 43, 0.35)', transition: { duration: 0.22, ease: 'easeOut' } };
       case 'tilt':
-        return { rotate: 1.5, scale: 1.03, transition: { duration: 0.25 } };
+        return { rotate: 2.5, scale: 1.04, y: -4, boxShadow: '0 20px 30px -10px rgba(0, 0, 0, 0.15)', transition: { duration: 0.22, ease: 'easeOut' } };
       case 'border':
-        return { scale: 1.02, borderColor: '#1b3b2b', transition: { duration: 0.25 } };
+        return { scale: 1.02, y: -4, boxShadow: '0 0 0 3px #1b3b2b, 0 20px 30px -10px rgba(0,0,0,0.15)', transition: { duration: 0.22, ease: 'easeOut' } };
+      case 'none':
+        return {};
       case 'lift':
       default:
-        return { y: -8, boxShadow: '0 20px 30px -10px rgba(0, 0, 0, 0.1)', transition: { duration: 0.25 } };
+        return { y: -10, boxShadow: '0 25px 35px -10px rgba(0, 0, 0, 0.18), 0 10px 15px -5px rgba(0, 0, 0, 0.05)', transition: { duration: 0.22, ease: 'easeOut' } };
     }
   };
 
@@ -684,7 +690,7 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
                     backgroundColor: card.bgColor || '#ffffff',
                     color: card.textColor || undefined
                   }}
-                  className={`group p-7 sm:p-8 h-full flex flex-col justify-between shadow-card hover:shadow-card-hover transition-all duration-300 border border-black/5 relative overflow-hidden cursor-default ${shapeClass}`}
+                  className={`group p-7 sm:p-8 h-full flex flex-col justify-between shadow-card border border-black/5 relative overflow-hidden cursor-default ${shapeClass}`}
                 >
                   <div className="space-y-4">
                     {/* Card Icon or Custom Image */}

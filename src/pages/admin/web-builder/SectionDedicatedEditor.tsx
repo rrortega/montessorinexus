@@ -213,6 +213,173 @@ export const CustomFontPicker: React.FC<{
   );
 };
 
+export const CARD_SHAPES = [
+  { id: 'rounded', name: 'Redondeado Moderno (3XL)', desc: 'Esquinas suaves de 24px', previewClass: 'rounded-md' },
+  { id: 'arch', name: 'Arco Nórdico', desc: 'Cúpula superior curva y base recta', previewClass: 'rounded-t-lg rounded-b-2xs' },
+  { id: 'leaf', name: 'Hoja Botánica', desc: 'Esquinas orgánicas alternadas', previewClass: 'rounded-tl-lg rounded-br-lg rounded-tr-2xs rounded-bl-2xs' },
+  { id: 'blob', name: 'Orgánico / Asimétrico', desc: 'Curvaturas asimétricas fluidas', previewClass: 'rounded-[10px_3px_10px_3px]' },
+  { id: 'squircle', name: 'Squircle Profundo', desc: 'Curvatura continua de 36px', previewClass: 'rounded-lg' },
+  { id: 'pill', name: 'Píldora / Cápsula', desc: 'Curvatura envolvente continua', previewClass: 'rounded-xl' },
+  { id: 'minimal', name: 'Minimalista Recto', desc: 'Bordes limpios sin redondeo', previewClass: 'rounded-none border' }
+];
+
+export const CARD_HOVER_EFFECTS = [
+  { id: 'lift', name: 'Elevación 3D (Lift)', desc: 'Flota hacia arriba con sombra suave', icon: '🚀' },
+  { id: 'scale', name: 'Zoom Expansivo (105%)', desc: 'Aumenta suavemente de escala', icon: '🔍' },
+  { id: 'tilt', name: 'Inclinación Lúdica (Tilt)', desc: 'Giro dinámico 2.5° con elevación', icon: '🎯' },
+  { id: 'glow', name: 'Resplandor Luminoso (Glow)', desc: 'Aura perimetral en color del tema', icon: '✨' },
+  { id: 'border', name: 'Marco Dinámico', desc: 'Borde de realce perimetral activo', icon: '🖼️' },
+  { id: 'none', name: 'Estático (Sin Efecto)', desc: 'Sin transformaciones interactivas', icon: '⏸️' }
+];
+
+export const CustomShapePicker: React.FC<{
+  value?: string;
+  onChange: (shape: string) => void;
+  className?: string;
+}> = ({ value = 'rounded', onChange, className = '' }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const selected = CARD_SHAPES.find(s => s.id === value) || CARD_SHAPES[0];
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  return (
+    <div className={`relative ${className}`} ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs transition-all shadow-3xs cursor-pointer focus:ring-2 focus:ring-forest/20 focus:border-forest"
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <div className={`w-5 h-5 bg-forest/20 border border-forest/40 ${selected.previewClass} shrink-0`} />
+          <div className="flex flex-col text-left min-w-0">
+            <span className="font-bold text-slate-900 text-xs truncate">{selected.name}</span>
+            <span className="text-[9px] text-muted-foreground truncate">{selected.desc}</span>
+          </div>
+        </div>
+        <ChevronDown className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform ${isOpen ? 'rotate-180 text-forest' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-full left-0 right-0 mt-1.5 z-50 p-2 rounded-2xl bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-2xl max-h-60 overflow-y-auto space-y-1 animate-in fade-in zoom-in-95 duration-150">
+          <div className="px-2 py-1 text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+            Forma Geométrica de la Tarjeta
+          </div>
+          {CARD_SHAPES.map((shape) => {
+            const isSelected = shape.id === selected.id;
+            return (
+              <button
+                key={shape.id}
+                type="button"
+                onClick={() => {
+                  onChange(shape.id);
+                  setIsOpen(false);
+                }}
+                className={`w-full flex items-center justify-between gap-2 p-2 rounded-xl text-left transition-all cursor-pointer ${
+                  isSelected ? 'bg-forest/10 border border-forest/30' : 'hover:bg-slate-100 border border-transparent'
+                }`}
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className={`w-6 h-6 bg-forest/20 border-2 border-forest/40 ${shape.previewClass} shrink-0`} />
+                  <div className="flex flex-col min-w-0">
+                    <span className={`text-xs font-bold ${isSelected ? 'text-forest' : 'text-slate-800'}`}>
+                      {shape.name}
+                    </span>
+                    <span className="text-[9px] text-muted-foreground truncate">{shape.desc}</span>
+                  </div>
+                </div>
+                {isSelected && <Check className="w-3.5 h-3.5 text-forest shrink-0" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export const CustomHoverPicker: React.FC<{
+  value?: string;
+  onChange: (hoverEffect: string) => void;
+  className?: string;
+}> = ({ value = 'lift', onChange, className = '' }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const selected = CARD_HOVER_EFFECTS.find(h => h.id === value) || CARD_HOVER_EFFECTS[0];
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  return (
+    <div className={`relative ${className}`} ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs transition-all shadow-3xs cursor-pointer focus:ring-2 focus:ring-forest/20 focus:border-forest"
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-base shrink-0">{selected.icon}</span>
+          <div className="flex flex-col text-left min-w-0">
+            <span className="font-bold text-slate-900 text-xs truncate">{selected.name}</span>
+            <span className="text-[9px] text-muted-foreground truncate">{selected.desc}</span>
+          </div>
+        </div>
+        <ChevronDown className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform ${isOpen ? 'rotate-180 text-forest' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-full left-0 right-0 mt-1.5 z-50 p-2 rounded-2xl bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-2xl max-h-60 overflow-y-auto space-y-1 animate-in fade-in zoom-in-95 duration-150">
+          <div className="px-2 py-1 text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+            Efecto al Pasar el Mouse (Hover)
+          </div>
+          {CARD_HOVER_EFFECTS.map((effect) => {
+            const isSelected = effect.id === selected.id;
+            return (
+              <button
+                key={effect.id}
+                type="button"
+                onClick={() => {
+                  onChange(effect.id);
+                  setIsOpen(false);
+                }}
+                className={`w-full flex items-center justify-between gap-2 p-2 rounded-xl text-left transition-all cursor-pointer ${
+                  isSelected ? 'bg-forest/10 border border-forest/30' : 'hover:bg-slate-100 border border-transparent'
+                }`}
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="text-lg shrink-0">{effect.icon}</span>
+                  <div className="flex flex-col min-w-0">
+                    <span className={`text-xs font-bold ${isSelected ? 'text-forest' : 'text-slate-800'}`}>
+                      {effect.name}
+                    </span>
+                    <span className="text-[9px] text-muted-foreground truncate">{effect.desc}</span>
+                  </div>
+                </div>
+                {isSelected && <Check className="w-3.5 h-3.5 text-forest shrink-0" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 interface FieldTypographyAndColorBarProps {
   fontValue?: string;
   onChangeFont: (fontId: string) => void;
@@ -1287,17 +1454,10 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
                             <label className="text-[10px] font-bold text-slate-700 block">
                               Forma Geométrica de la Tarjeta:
                             </label>
-                            <select
+                            <CustomShapePicker
                               value={card.shape || 'rounded'}
-                              onChange={(e) => handleUpdateSingleCard(card.id, { shape: e.target.value as any })}
-                              className="w-full text-xs font-semibold text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:ring-2 focus:ring-forest/20 focus:border-forest"
-                            >
-                              <option value="rounded">Redondeado Clásico (3XL)</option>
-                              <option value="blob">Orgánico / Blob Shape</option>
-                              <option value="arch">Arco Superior Nórdico</option>
-                              <option value="squircle">Squircle Suave</option>
-                              <option value="minimal">Minimalista Recto</option>
-                            </select>
+                              onChange={(shape) => handleUpdateSingleCard(card.id, { shape: shape as any })}
+                            />
                           </div>
 
                           {/* Efecto Hover */}
@@ -1305,17 +1465,10 @@ export const SectionDedicatedEditor: React.FC<SectionDedicatedEditorProps> = ({
                             <label className="text-[10px] font-bold text-slate-700 block">
                               Efecto al Pasar el Mouse (Hover):
                             </label>
-                            <select
+                            <CustomHoverPicker
                               value={card.hoverEffect || 'lift'}
-                              onChange={(e) => handleUpdateSingleCard(card.id, { hoverEffect: e.target.value as any })}
-                              className="w-full text-xs font-semibold text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:ring-2 focus:ring-forest/20 focus:border-forest"
-                            >
-                              <option value="lift">Elevación 3D (Lift)</option>
-                              <option value="scale">Zoom Suave (105%)</option>
-                              <option value="glow">Resplandor Brillante (Glow)</option>
-                              <option value="tilt">Inclinación Lúdica (Tilt)</option>
-                              <option value="border">Borde Acento Dinámico</option>
-                            </select>
+                              onChange={(hoverEffect) => handleUpdateSingleCard(card.id, { hoverEffect: hoverEffect as any })}
+                            />
                           </div>
                         </div>
 
