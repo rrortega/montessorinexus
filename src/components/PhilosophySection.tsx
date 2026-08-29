@@ -774,8 +774,8 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
                   className={`group p-7 sm:p-8 h-full flex flex-col justify-between shadow-card border border-black/5 relative overflow-hidden cursor-default bg-white dark:bg-slate-900 ${cardBgLight ? 'bg-[var(--card-bg-light)]' : ''} ${cardBgDark ? 'dark:bg-[var(--card-bg-dark)]' : ''} ${shapeClass}`}
                 >
                   <div className="space-y-4">
-                    {/* Card Icon or Custom Image */}
-                    <div className={`flex items-center ${cardAlign === 'center' ? 'justify-center' : cardAlign === 'right' ? 'justify-end' : 'justify-between'}`}>
+                    {/* Card Icon or Custom Image (Aligned identically to title) */}
+                    <div className={`flex items-center ${cardTitleAlign === 'center' ? 'justify-center' : cardTitleAlign === 'right' ? 'justify-end' : 'justify-between'}`}>
                       {card.imageUrl ? (
                         <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-xs shrink-0 border border-white/40">
                           <img
@@ -800,7 +800,7 @@ export function PhilosophySection({ section }: PhilosophySectionProps) {
                         </div>
                       )}
 
-                      {cardAlign !== 'center' && cardAlign !== 'right' && (
+                      {cardTitleAlign !== 'center' && cardTitleAlign !== 'right' && (
                         <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-black/5 text-slate-500">
                           {String(index + 1).padStart(2, '0')}
                         </span>
