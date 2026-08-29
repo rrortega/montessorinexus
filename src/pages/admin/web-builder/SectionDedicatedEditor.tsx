@@ -29,7 +29,8 @@ import {
   Award,
   BookOpen,
   Globe,
-  Languages
+  Languages,
+  PanelTop
 } from 'lucide-react';
 import { ImageUploadDropzone } from '@/components/ui/ImageUploadDropzone';
 import { ALL_SUPPORTED_LANGUAGES, getLanguageByCode } from './languages';
