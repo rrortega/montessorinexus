@@ -405,11 +405,14 @@ export function HeroSection() {
     return raw.split(',').map((s) => s.trim()).filter(Boolean);
   };
 
-  // Sticker 1 (Configurable Position X, Y, Size, Custom Image, Effects & Responsive Mobile)
+  // Sticker 1 (Desktop, Tablet & Mobile Responsive Positions and Visibility)
   const sticker1Show = settings?.hero_sticker_1_show !== 'false';
-  const sticker1ShowMobile = settings?.hero_sticker_1_show_mobile !== 'false';
-  const sticker1MobileCustom = settings?.hero_sticker_1_mobile_custom === 'true';
+  const sticker1ShowDesktop = settings?.hero_sticker_1_show_desktop !== 'false' && sticker1Show;
+  const sticker1ShowTablet = settings?.hero_sticker_1_show_tablet !== 'false' && sticker1Show;
+  const sticker1ShowMobile = settings?.hero_sticker_1_show_mobile !== 'false' && sticker1Show;
   const sticker1ImageUrl = settings?.hero_sticker_1_image_url || '';
+  
+  // Desktop
   const sticker1X = settings?.hero_sticker_1_x !== undefined && !isNaN(Number(settings?.hero_sticker_1_x))
     ? Number(settings.hero_sticker_1_x)
     : 18;
@@ -419,22 +422,38 @@ export function HeroSection() {
   const sticker1Size = settings?.hero_sticker_1_size !== undefined && !isNaN(Number(settings?.hero_sticker_1_size))
     ? Number(settings.hero_sticker_1_size)
     : 110;
-  const sticker1MobileX = sticker1MobileCustom && settings?.hero_sticker_1_mobile_x !== undefined && !isNaN(Number(settings?.hero_sticker_1_mobile_x))
+
+  // Tablet
+  const sticker1TabletX = settings?.hero_sticker_1_tablet_x !== undefined && !isNaN(Number(settings?.hero_sticker_1_tablet_x))
+    ? Number(settings.hero_sticker_1_tablet_x)
+    : sticker1X;
+  const sticker1TabletY = settings?.hero_sticker_1_tablet_y !== undefined && !isNaN(Number(settings?.hero_sticker_1_tablet_y))
+    ? Number(settings.hero_sticker_1_tablet_y)
+    : sticker1Y;
+  const sticker1TabletSize = settings?.hero_sticker_1_tablet_size !== undefined && !isNaN(Number(settings?.hero_sticker_1_tablet_size))
+    ? Number(settings.hero_sticker_1_tablet_size)
+    : Math.round(sticker1Size * 0.85);
+
+  // Mobile
+  const sticker1MobileX = settings?.hero_sticker_1_mobile_x !== undefined && !isNaN(Number(settings?.hero_sticker_1_mobile_x))
     ? Number(settings.hero_sticker_1_mobile_x)
     : sticker1X;
-  const sticker1MobileY = sticker1MobileCustom && settings?.hero_sticker_1_mobile_y !== undefined && !isNaN(Number(settings?.hero_sticker_1_mobile_y))
+  const sticker1MobileY = settings?.hero_sticker_1_mobile_y !== undefined && !isNaN(Number(settings?.hero_sticker_1_mobile_y))
     ? Number(settings.hero_sticker_1_mobile_y)
     : sticker1Y;
-  const sticker1MobileSize = sticker1MobileCustom && settings?.hero_sticker_1_mobile_size !== undefined && !isNaN(Number(settings?.hero_sticker_1_mobile_size))
+  const sticker1MobileSize = settings?.hero_sticker_1_mobile_size !== undefined && !isNaN(Number(settings?.hero_sticker_1_mobile_size))
     ? Number(settings.hero_sticker_1_mobile_size)
-    : Math.round(sticker1Size * 0.75);
+    : Math.round(sticker1Size * 0.72);
   const sticker1Effects = parseEffects(settings?.hero_sticker_1_effects, ['float']);
 
-  // Sticker 2 (Configurable Position X, Y, Size, Custom Image, Effects & Responsive Mobile)
+  // Sticker 2 (Desktop, Tablet & Mobile Responsive Positions and Visibility)
   const sticker2Show = settings?.hero_sticker_2_show !== 'false';
-  const sticker2ShowMobile = settings?.hero_sticker_2_show_mobile !== 'false';
-  const sticker2MobileCustom = settings?.hero_sticker_2_mobile_custom === 'true';
+  const sticker2ShowDesktop = settings?.hero_sticker_2_show_desktop !== 'false' && sticker2Show;
+  const sticker2ShowTablet = settings?.hero_sticker_2_show_tablet !== 'false' && sticker2Show;
+  const sticker2ShowMobile = settings?.hero_sticker_2_show_mobile !== 'false' && sticker2Show;
   const sticker2ImageUrl = settings?.hero_sticker_2_image_url || '';
+  
+  // Desktop
   const sticker2X = settings?.hero_sticker_2_x !== undefined && !isNaN(Number(settings?.hero_sticker_2_x))
     ? Number(settings.hero_sticker_2_x)
     : 82;
@@ -444,22 +463,38 @@ export function HeroSection() {
   const sticker2Size = settings?.hero_sticker_2_size !== undefined && !isNaN(Number(settings?.hero_sticker_2_size))
     ? Number(settings.hero_sticker_2_size)
     : 120;
-  const sticker2MobileX = sticker2MobileCustom && settings?.hero_sticker_2_mobile_x !== undefined && !isNaN(Number(settings?.hero_sticker_2_mobile_x))
+
+  // Tablet
+  const sticker2TabletX = settings?.hero_sticker_2_tablet_x !== undefined && !isNaN(Number(settings?.hero_sticker_2_tablet_x))
+    ? Number(settings.hero_sticker_2_tablet_x)
+    : sticker2X;
+  const sticker2TabletY = settings?.hero_sticker_2_tablet_y !== undefined && !isNaN(Number(settings?.hero_sticker_2_tablet_y))
+    ? Number(settings.hero_sticker_2_tablet_y)
+    : sticker2Y;
+  const sticker2TabletSize = settings?.hero_sticker_2_tablet_size !== undefined && !isNaN(Number(settings?.hero_sticker_2_tablet_size))
+    ? Number(settings.hero_sticker_2_tablet_size)
+    : Math.round(sticker2Size * 0.85);
+
+  // Mobile
+  const sticker2MobileX = settings?.hero_sticker_2_mobile_x !== undefined && !isNaN(Number(settings?.hero_sticker_2_mobile_x))
     ? Number(settings.hero_sticker_2_mobile_x)
     : sticker2X;
-  const sticker2MobileY = sticker2MobileCustom && settings?.hero_sticker_2_mobile_y !== undefined && !isNaN(Number(settings?.hero_sticker_2_mobile_y))
+  const sticker2MobileY = settings?.hero_sticker_2_mobile_y !== undefined && !isNaN(Number(settings?.hero_sticker_2_mobile_y))
     ? Number(settings.hero_sticker_2_mobile_y)
     : sticker2Y;
-  const sticker2MobileSize = sticker2MobileCustom && settings?.hero_sticker_2_mobile_size !== undefined && !isNaN(Number(settings?.hero_sticker_2_mobile_size))
+  const sticker2MobileSize = settings?.hero_sticker_2_mobile_size !== undefined && !isNaN(Number(settings?.hero_sticker_2_mobile_size))
     ? Number(settings.hero_sticker_2_mobile_size)
-    : Math.round(sticker2Size * 0.75);
+    : Math.round(sticker2Size * 0.72);
   const sticker2Effects = parseEffects(settings?.hero_sticker_2_effects, ['float']);
 
-  // Sticker 3 (Configurable Position X, Y, Size, Custom Image, Effects & Responsive Mobile)
+  // Sticker 3 (Desktop, Tablet & Mobile Responsive Positions and Visibility)
   const sticker3Show = settings?.hero_sticker_3_show !== 'false';
-  const sticker3ShowMobile = settings?.hero_sticker_3_show_mobile !== 'false';
-  const sticker3MobileCustom = settings?.hero_sticker_3_mobile_custom === 'true';
+  const sticker3ShowDesktop = settings?.hero_sticker_3_show_desktop !== 'false' && sticker3Show;
+  const sticker3ShowTablet = settings?.hero_sticker_3_show_tablet !== 'false' && sticker3Show;
+  const sticker3ShowMobile = settings?.hero_sticker_3_show_mobile !== 'false' && sticker3Show;
   const sticker3ImageUrl = settings?.hero_sticker_3_image_url || '';
+  
+  // Desktop
   const sticker3X = settings?.hero_sticker_3_x !== undefined && !isNaN(Number(settings?.hero_sticker_3_x))
     ? Number(settings.hero_sticker_3_x)
     : 10;
@@ -469,15 +504,28 @@ export function HeroSection() {
   const sticker3Size = settings?.hero_sticker_3_size !== undefined && !isNaN(Number(settings?.hero_sticker_3_size))
     ? Number(settings.hero_sticker_3_size)
     : 48;
-  const sticker3MobileX = sticker3MobileCustom && settings?.hero_sticker_3_mobile_x !== undefined && !isNaN(Number(settings?.hero_sticker_3_mobile_x))
+
+  // Tablet
+  const sticker3TabletX = settings?.hero_sticker_3_tablet_x !== undefined && !isNaN(Number(settings?.hero_sticker_3_tablet_x))
+    ? Number(settings.hero_sticker_3_tablet_x)
+    : sticker3X;
+  const sticker3TabletY = settings?.hero_sticker_3_tablet_y !== undefined && !isNaN(Number(settings?.hero_sticker_3_tablet_y))
+    ? Number(settings.hero_sticker_3_tablet_y)
+    : sticker3Y;
+  const sticker3TabletSize = settings?.hero_sticker_3_tablet_size !== undefined && !isNaN(Number(settings?.hero_sticker_3_tablet_size))
+    ? Number(settings.hero_sticker_3_tablet_size)
+    : Math.round(sticker3Size * 0.85);
+
+  // Mobile
+  const sticker3MobileX = settings?.hero_sticker_3_mobile_x !== undefined && !isNaN(Number(settings?.hero_sticker_3_mobile_x))
     ? Number(settings.hero_sticker_3_mobile_x)
     : sticker3X;
-  const sticker3MobileY = sticker3MobileCustom && settings?.hero_sticker_3_mobile_y !== undefined && !isNaN(Number(settings?.hero_sticker_3_mobile_y))
+  const sticker3MobileY = settings?.hero_sticker_3_mobile_y !== undefined && !isNaN(Number(settings?.hero_sticker_3_mobile_y))
     ? Number(settings.hero_sticker_3_mobile_y)
     : sticker3Y;
-  const sticker3MobileSize = sticker3MobileCustom && settings?.hero_sticker_3_mobile_size !== undefined && !isNaN(Number(settings?.hero_sticker_3_mobile_size))
+  const sticker3MobileSize = settings?.hero_sticker_3_mobile_size !== undefined && !isNaN(Number(settings?.hero_sticker_3_mobile_size))
     ? Number(settings.hero_sticker_3_mobile_size)
-    : Math.round(sticker3Size * 0.75);
+    : Math.round(sticker3Size * 0.72);
   const sticker3Effects = parseEffects(settings?.hero_sticker_3_effects, ['pulse', 'rotate-slow']);
 
   // Parameters for Geometric Rhombus & Promo Badge Template (Diagonales & Promoción)
@@ -596,7 +644,7 @@ export function HeroSection() {
     return () => window.removeEventListener('mousemove', handleMove);
   }, [spotX, spotY]);
 
-  // Universal Floating Elements / Stickers Renderer
+  // Universal Floating Elements / Stickers Renderer (Desktop, Tablet & Mobile Responsive)
   const renderFloatingElements = () => {
     return (
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-30">
@@ -636,36 +684,71 @@ export function HeroSection() {
               </div>
             )}
 
-            {/* Desktop / Tablet View (>= 640px) */}
-            <div
-              className="hidden sm:block absolute pointer-events-none transition-all duration-200"
-              style={{
-                left: `${sticker1X}%`,
-                top: `${sticker1Y}%`,
-                transform: 'translate(-50%, -50%)',
-                width: `${sticker1Size}px`
-              }}
-            >
-              <AnimatedSticker effects={sticker1Effects}>
-                {sticker1ImageUrl ? (
-                  <img
-                    src={sticker1ImageUrl}
-                    alt="Elemento Flotante 1"
-                    className="w-full h-auto object-contain drop-shadow-md"
-                  />
-                ) : (
-                  <div className="flex items-center gap-2 drop-shadow-md w-full justify-center">
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-8 h-10 bg-rose-200/90 rounded-t-full rounded-b-lg -rotate-12 border-2 border-white/60" />
-                      <div className="w-6 h-6 bg-emerald-500 rounded-sm rotate-45 border-2 border-white/80 shadow-xs" />
-                      <div className="w-6 h-6 bg-amber-400 rounded-full border-2 border-white/80 shadow-xs" />
-                      <div className="w-6 h-7 bg-teal-500 rounded-md rotate-12 border-2 border-white/80 shadow-xs" />
-                      <div className="w-8 h-10 bg-rose-200/90 rounded-t-full rounded-b-lg rotate-12 border-2 border-white/60" />
+            {/* Tablet View (640px to 1023px) */}
+            {sticker1ShowTablet && (
+              <div
+                className="hidden sm:block lg:hidden absolute pointer-events-none transition-all duration-200"
+                style={{
+                  left: `${sticker1TabletX}%`,
+                  top: `${sticker1TabletY}%`,
+                  transform: 'translate(-50%, -50%)',
+                  width: `${sticker1TabletSize}px`
+                }}
+              >
+                <AnimatedSticker effects={sticker1Effects}>
+                  {sticker1ImageUrl ? (
+                    <img
+                      src={sticker1ImageUrl}
+                      alt="Elemento Flotante 1"
+                      className="w-full h-auto object-contain drop-shadow-md"
+                    />
+                  ) : (
+                    <div className="flex items-center gap-2 drop-shadow-md w-full justify-center">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-8 h-10 bg-rose-200/90 rounded-t-full rounded-b-lg -rotate-12 border-2 border-white/60" />
+                        <div className="w-6 h-6 bg-emerald-500 rounded-sm rotate-45 border-2 border-white/80 shadow-xs" />
+                        <div className="w-6 h-6 bg-amber-400 rounded-full border-2 border-white/80 shadow-xs" />
+                        <div className="w-6 h-7 bg-teal-500 rounded-md rotate-12 border-2 border-white/80 shadow-xs" />
+                        <div className="w-8 h-10 bg-rose-200/90 rounded-t-full rounded-b-lg rotate-12 border-2 border-white/60" />
+                      </div>
                     </div>
-                  </div>
-                )}
-              </AnimatedSticker>
-            </div>
+                  )}
+                </AnimatedSticker>
+              </div>
+            )}
+
+            {/* Desktop View (>= 1024px) */}
+            {sticker1ShowDesktop && (
+              <div
+                className="hidden lg:block absolute pointer-events-none transition-all duration-200"
+                style={{
+                  left: `${sticker1X}%`,
+                  top: `${sticker1Y}%`,
+                  transform: 'translate(-50%, -50%)',
+                  width: `${sticker1Size}px`
+                }}
+              >
+                <AnimatedSticker effects={sticker1Effects}>
+                  {sticker1ImageUrl ? (
+                    <img
+                      src={sticker1ImageUrl}
+                      alt="Elemento Flotante 1"
+                      className="w-full h-auto object-contain drop-shadow-md"
+                    />
+                  ) : (
+                    <div className="flex items-center gap-2 drop-shadow-md w-full justify-center">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-8 h-10 bg-rose-200/90 rounded-t-full rounded-b-lg -rotate-12 border-2 border-white/60" />
+                        <div className="w-6 h-6 bg-emerald-500 rounded-sm rotate-45 border-2 border-white/80 shadow-xs" />
+                        <div className="w-6 h-6 bg-amber-400 rounded-full border-2 border-white/80 shadow-xs" />
+                        <div className="w-6 h-7 bg-teal-500 rounded-md rotate-12 border-2 border-white/80 shadow-xs" />
+                        <div className="w-8 h-10 bg-rose-200/90 rounded-t-full rounded-b-lg rotate-12 border-2 border-white/60" />
+                      </div>
+                    </div>
+                  )}
+                </AnimatedSticker>
+              </div>
+            )}
           </>
         )}
 
@@ -707,38 +790,75 @@ export function HeroSection() {
               </div>
             )}
 
-            {/* Desktop / Tablet View (>= 640px) */}
-            <div
-              className="hidden sm:block absolute pointer-events-none transition-all duration-200"
-              style={{
-                left: `${sticker2X}%`,
-                top: `${sticker2Y}%`,
-                transform: 'translate(-50%, -50%)',
-                width: `${sticker2Size}px`
-              }}
-            >
-              <AnimatedSticker effects={sticker2Effects}>
-                {sticker2ImageUrl ? (
-                  <img
-                    src={sticker2ImageUrl}
-                    alt="Elemento Flotante 2"
-                    className="w-full h-auto object-contain drop-shadow-md"
-                  />
-                ) : (
-                  <div className="flex items-end gap-1.5 w-full justify-center">
-                    <div className="w-10 h-10 rounded-xl bg-cyan-400 text-white font-serif font-black flex items-center justify-center text-lg shadow-lg rotate-[-12deg] border-2 border-white">
-                      a
+            {/* Tablet View (640px to 1023px) */}
+            {sticker2ShowTablet && (
+              <div
+                className="hidden sm:block lg:hidden absolute pointer-events-none transition-all duration-200"
+                style={{
+                  left: `${sticker2TabletX}%`,
+                  top: `${sticker2TabletY}%`,
+                  transform: 'translate(-50%, -50%)',
+                  width: `${sticker2TabletSize}px`
+                }}
+              >
+                <AnimatedSticker effects={sticker2Effects}>
+                  {sticker2ImageUrl ? (
+                    <img
+                      src={sticker2ImageUrl}
+                      alt="Elemento Flotante 2"
+                      className="w-full h-auto object-contain drop-shadow-md"
+                    />
+                  ) : (
+                    <div className="flex items-end gap-1.5 w-full justify-center">
+                      <div className="w-10 h-10 rounded-xl bg-cyan-400 text-white font-serif font-black flex items-center justify-center text-lg shadow-lg rotate-[-12deg] border-2 border-white">
+                        a
+                      </div>
+                      <div className="w-10 h-10 rounded-xl bg-rose-400 text-white font-serif font-black flex items-center justify-center text-lg shadow-lg rotate-[4deg] border-2 border-white -translate-y-2">
+                        b
+                      </div>
+                      <div className="w-10 h-10 rounded-xl bg-amber-400 text-white font-serif font-black flex items-center justify-center text-lg shadow-lg rotate-[16deg] border-2 border-white">
+                        c
+                      </div>
                     </div>
-                    <div className="w-10 h-10 rounded-xl bg-rose-400 text-white font-serif font-black flex items-center justify-center text-lg shadow-lg rotate-[4deg] border-2 border-white -translate-y-2">
-                      b
+                  )}
+                </AnimatedSticker>
+              </div>
+            )}
+
+            {/* Desktop View (>= 1024px) */}
+            {sticker2ShowDesktop && (
+              <div
+                className="hidden lg:block absolute pointer-events-none transition-all duration-200"
+                style={{
+                  left: `${sticker2X}%`,
+                  top: `${sticker2Y}%`,
+                  transform: 'translate(-50%, -50%)',
+                  width: `${sticker2Size}px`
+                }}
+              >
+                <AnimatedSticker effects={sticker2Effects}>
+                  {sticker2ImageUrl ? (
+                    <img
+                      src={sticker2ImageUrl}
+                      alt="Elemento Flotante 2"
+                      className="w-full h-auto object-contain drop-shadow-md"
+                    />
+                  ) : (
+                    <div className="flex items-end gap-1.5 w-full justify-center">
+                      <div className="w-10 h-10 rounded-xl bg-cyan-400 text-white font-serif font-black flex items-center justify-center text-lg shadow-lg rotate-[-12deg] border-2 border-white">
+                        a
+                      </div>
+                      <div className="w-10 h-10 rounded-xl bg-rose-400 text-white font-serif font-black flex items-center justify-center text-lg shadow-lg rotate-[4deg] border-2 border-white -translate-y-2">
+                        b
+                      </div>
+                      <div className="w-10 h-10 rounded-xl bg-amber-400 text-white font-serif font-black flex items-center justify-center text-lg shadow-lg rotate-[16deg] border-2 border-white">
+                        c
+                      </div>
                     </div>
-                    <div className="w-10 h-10 rounded-xl bg-amber-400 text-white font-serif font-black flex items-center justify-center text-lg shadow-lg rotate-[16deg] border-2 border-white">
-                      c
-                    </div>
-                  </div>
-                )}
-              </AnimatedSticker>
-            </div>
+                  )}
+                </AnimatedSticker>
+              </div>
+            )}
           </>
         )}
 
@@ -772,30 +892,59 @@ export function HeroSection() {
               </div>
             )}
 
-            {/* Desktop / Tablet View (>= 640px) */}
-            <div
-              className="hidden sm:block absolute pointer-events-none transition-all duration-200"
-              style={{
-                left: `${sticker3X}%`,
-                top: `${sticker3Y}%`,
-                transform: 'translate(-50%, -50%)',
-                width: `${sticker3Size}px`
-              }}
-            >
-              <AnimatedSticker effects={sticker3Effects}>
-                {sticker3ImageUrl ? (
-                  <img
-                    src={sticker3ImageUrl}
-                    alt="Elemento Flotante 3"
-                    className="w-full h-auto object-contain drop-shadow-md"
-                  />
-                ) : (
-                  <div className="flex items-center justify-center w-full">
-                    <Sparkles className="w-full h-auto text-amber-400 fill-amber-400/30 drop-shadow-xs" />
-                  </div>
-                )}
-              </AnimatedSticker>
-            </div>
+            {/* Tablet View (640px to 1023px) */}
+            {sticker3ShowTablet && (
+              <div
+                className="hidden sm:block lg:hidden absolute pointer-events-none transition-all duration-200"
+                style={{
+                  left: `${sticker3TabletX}%`,
+                  top: `${sticker3TabletY}%`,
+                  transform: 'translate(-50%, -50%)',
+                  width: `${sticker3TabletSize}px`
+                }}
+              >
+                <AnimatedSticker effects={sticker3Effects}>
+                  {sticker3ImageUrl ? (
+                    <img
+                      src={sticker3ImageUrl}
+                      alt="Elemento Flotante 3"
+                      className="w-full h-auto object-contain drop-shadow-md"
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center w-full">
+                      <Sparkles className="w-full h-auto text-amber-400 fill-amber-400/30 drop-shadow-xs" />
+                    </div>
+                  )}
+                </AnimatedSticker>
+              </div>
+            )}
+
+            {/* Desktop View (>= 1024px) */}
+            {sticker3ShowDesktop && (
+              <div
+                className="hidden lg:block absolute pointer-events-none transition-all duration-200"
+                style={{
+                  left: `${sticker3X}%`,
+                  top: `${sticker3Y}%`,
+                  transform: 'translate(-50%, -50%)',
+                  width: `${sticker3Size}px`
+                }}
+              >
+                <AnimatedSticker effects={sticker3Effects}>
+                  {sticker3ImageUrl ? (
+                    <img
+                      src={sticker3ImageUrl}
+                      alt="Elemento Flotante 3"
+                      className="w-full h-auto object-contain drop-shadow-md"
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center w-full">
+                      <Sparkles className="w-full h-auto text-amber-400 fill-amber-400/30 drop-shadow-xs" />
+                    </div>
+                  )}
+                </AnimatedSticker>
+              </div>
+            )}
           </>
         )}
       </div>

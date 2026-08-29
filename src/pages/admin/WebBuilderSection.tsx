@@ -1099,11 +1099,14 @@ export const WebBuilderSection: React.FC = () => {
     return raw.split(',').map((s) => s.trim()).filter(Boolean);
   };
 
-  // Sticker 1 (Desktop & Mobile Responsive)
+  // Sticker 1 (Desktop, Tablet & Mobile Responsive)
   const [heroSticker1Show, setHeroSticker1Show] = useState<boolean>(settings?.hero_sticker_1_show !== 'false');
+  const [heroSticker1ShowDesktop, setHeroSticker1ShowDesktop] = useState<boolean>(settings?.hero_sticker_1_show_desktop !== 'false');
+  const [heroSticker1ShowTablet, setHeroSticker1ShowTablet] = useState<boolean>(settings?.hero_sticker_1_show_tablet !== 'false');
   const [heroSticker1ShowMobile, setHeroSticker1ShowMobile] = useState<boolean>(settings?.hero_sticker_1_show_mobile !== 'false');
-  const [heroSticker1MobileCustom, setHeroSticker1MobileCustom] = useState<boolean>(settings?.hero_sticker_1_mobile_custom === 'true');
   const [heroSticker1ImageUrl, setHeroSticker1ImageUrl] = useState<string>(settings?.hero_sticker_1_image_url || '');
+  
+  // Sticker 1 - Desktop
   const [heroSticker1X, setHeroSticker1X] = useState<number>(
     settings?.hero_sticker_1_x !== undefined && !isNaN(Number(settings?.hero_sticker_1_x))
       ? Number(settings.hero_sticker_1_x)
@@ -1119,15 +1122,34 @@ export const WebBuilderSection: React.FC = () => {
       ? Number(settings.hero_sticker_1_size)
       : 110
   );
+
+  // Sticker 1 - Tablet
+  const [heroSticker1TabletX, setHeroSticker1TabletX] = useState<number>(
+    settings?.hero_sticker_1_tablet_x !== undefined && !isNaN(Number(settings?.hero_sticker_1_tablet_x))
+      ? Number(settings.hero_sticker_1_tablet_x)
+      : (settings?.hero_sticker_1_x !== undefined && !isNaN(Number(settings?.hero_sticker_1_x)) ? Number(settings.hero_sticker_1_x) : 18)
+  );
+  const [heroSticker1TabletY, setHeroSticker1TabletY] = useState<number>(
+    settings?.hero_sticker_1_tablet_y !== undefined && !isNaN(Number(settings?.hero_sticker_1_tablet_y))
+      ? Number(settings.hero_sticker_1_tablet_y)
+      : (settings?.hero_sticker_1_y !== undefined && !isNaN(Number(settings?.hero_sticker_1_y)) ? Number(settings.hero_sticker_1_y) : 18)
+  );
+  const [heroSticker1TabletSize, setHeroSticker1TabletSize] = useState<number>(
+    settings?.hero_sticker_1_tablet_size !== undefined && !isNaN(Number(settings?.hero_sticker_1_tablet_size))
+      ? Number(settings.hero_sticker_1_tablet_size)
+      : 95
+  );
+
+  // Sticker 1 - Mobile
   const [heroSticker1MobileX, setHeroSticker1MobileX] = useState<number>(
     settings?.hero_sticker_1_mobile_x !== undefined && !isNaN(Number(settings?.hero_sticker_1_mobile_x))
       ? Number(settings.hero_sticker_1_mobile_x)
-      : 18
+      : (settings?.hero_sticker_1_x !== undefined && !isNaN(Number(settings?.hero_sticker_1_x)) ? Number(settings.hero_sticker_1_x) : 18)
   );
   const [heroSticker1MobileY, setHeroSticker1MobileY] = useState<number>(
     settings?.hero_sticker_1_mobile_y !== undefined && !isNaN(Number(settings?.hero_sticker_1_mobile_y))
       ? Number(settings.hero_sticker_1_mobile_y)
-      : 18
+      : (settings?.hero_sticker_1_y !== undefined && !isNaN(Number(settings?.hero_sticker_1_y)) ? Number(settings.hero_sticker_1_y) : 18)
   );
   const [heroSticker1MobileSize, setHeroSticker1MobileSize] = useState<number>(
     settings?.hero_sticker_1_mobile_size !== undefined && !isNaN(Number(settings?.hero_sticker_1_mobile_size))
@@ -1138,11 +1160,14 @@ export const WebBuilderSection: React.FC = () => {
     parseEffectsArray(settings?.hero_sticker_1_effects, ['float'])
   );
 
-  // Sticker 2 (Desktop & Mobile Responsive)
+  // Sticker 2 (Desktop, Tablet & Mobile Responsive)
   const [heroSticker2Show, setHeroSticker2Show] = useState<boolean>(settings?.hero_sticker_2_show !== 'false');
+  const [heroSticker2ShowDesktop, setHeroSticker2ShowDesktop] = useState<boolean>(settings?.hero_sticker_2_show_desktop !== 'false');
+  const [heroSticker2ShowTablet, setHeroSticker2ShowTablet] = useState<boolean>(settings?.hero_sticker_2_show_tablet !== 'false');
   const [heroSticker2ShowMobile, setHeroSticker2ShowMobile] = useState<boolean>(settings?.hero_sticker_2_show_mobile !== 'false');
-  const [heroSticker2MobileCustom, setHeroSticker2MobileCustom] = useState<boolean>(settings?.hero_sticker_2_mobile_custom === 'true');
   const [heroSticker2ImageUrl, setHeroSticker2ImageUrl] = useState<string>(settings?.hero_sticker_2_image_url || '');
+  
+  // Sticker 2 - Desktop
   const [heroSticker2X, setHeroSticker2X] = useState<number>(
     settings?.hero_sticker_2_x !== undefined && !isNaN(Number(settings?.hero_sticker_2_x))
       ? Number(settings.hero_sticker_2_x)
@@ -1158,15 +1183,34 @@ export const WebBuilderSection: React.FC = () => {
       ? Number(settings.hero_sticker_2_size)
       : 120
   );
+
+  // Sticker 2 - Tablet
+  const [heroSticker2TabletX, setHeroSticker2TabletX] = useState<number>(
+    settings?.hero_sticker_2_tablet_x !== undefined && !isNaN(Number(settings?.hero_sticker_2_tablet_x))
+      ? Number(settings.hero_sticker_2_tablet_x)
+      : (settings?.hero_sticker_2_x !== undefined && !isNaN(Number(settings?.hero_sticker_2_x)) ? Number(settings.hero_sticker_2_x) : 82)
+  );
+  const [heroSticker2TabletY, setHeroSticker2TabletY] = useState<number>(
+    settings?.hero_sticker_2_tablet_y !== undefined && !isNaN(Number(settings?.hero_sticker_2_tablet_y))
+      ? Number(settings.hero_sticker_2_tablet_y)
+      : (settings?.hero_sticker_2_y !== undefined && !isNaN(Number(settings?.hero_sticker_2_y)) ? Number(settings.hero_sticker_2_y) : 78)
+  );
+  const [heroSticker2TabletSize, setHeroSticker2TabletSize] = useState<number>(
+    settings?.hero_sticker_2_tablet_size !== undefined && !isNaN(Number(settings?.hero_sticker_2_tablet_size))
+      ? Number(settings.hero_sticker_2_tablet_size)
+      : 105
+  );
+
+  // Sticker 2 - Mobile
   const [heroSticker2MobileX, setHeroSticker2MobileX] = useState<number>(
     settings?.hero_sticker_2_mobile_x !== undefined && !isNaN(Number(settings?.hero_sticker_2_mobile_x))
       ? Number(settings.hero_sticker_2_mobile_x)
-      : 82
+      : (settings?.hero_sticker_2_x !== undefined && !isNaN(Number(settings?.hero_sticker_2_x)) ? Number(settings.hero_sticker_2_x) : 82)
   );
   const [heroSticker2MobileY, setHeroSticker2MobileY] = useState<number>(
     settings?.hero_sticker_2_mobile_y !== undefined && !isNaN(Number(settings?.hero_sticker_2_mobile_y))
       ? Number(settings.hero_sticker_2_mobile_y)
-      : 78
+      : (settings?.hero_sticker_2_y !== undefined && !isNaN(Number(settings?.hero_sticker_2_y)) ? Number(settings.hero_sticker_2_y) : 78)
   );
   const [heroSticker2MobileSize, setHeroSticker2MobileSize] = useState<number>(
     settings?.hero_sticker_2_mobile_size !== undefined && !isNaN(Number(settings?.hero_sticker_2_mobile_size))
@@ -1177,11 +1221,14 @@ export const WebBuilderSection: React.FC = () => {
     parseEffectsArray(settings?.hero_sticker_2_effects, ['float'])
   );
 
-  // Sticker 3 (Desktop & Mobile Responsive)
+  // Sticker 3 (Desktop, Tablet & Mobile Responsive)
   const [heroSticker3Show, setHeroSticker3Show] = useState<boolean>(settings?.hero_sticker_3_show !== 'false');
+  const [heroSticker3ShowDesktop, setHeroSticker3ShowDesktop] = useState<boolean>(settings?.hero_sticker_3_show_desktop !== 'false');
+  const [heroSticker3ShowTablet, setHeroSticker3ShowTablet] = useState<boolean>(settings?.hero_sticker_3_show_tablet !== 'false');
   const [heroSticker3ShowMobile, setHeroSticker3ShowMobile] = useState<boolean>(settings?.hero_sticker_3_show_mobile !== 'false');
-  const [heroSticker3MobileCustom, setHeroSticker3MobileCustom] = useState<boolean>(settings?.hero_sticker_3_mobile_custom === 'true');
   const [heroSticker3ImageUrl, setHeroSticker3ImageUrl] = useState<string>(settings?.hero_sticker_3_image_url || '');
+  
+  // Sticker 3 - Desktop
   const [heroSticker3X, setHeroSticker3X] = useState<number>(
     settings?.hero_sticker_3_x !== undefined && !isNaN(Number(settings?.hero_sticker_3_x))
       ? Number(settings.hero_sticker_3_x)
@@ -1197,15 +1244,34 @@ export const WebBuilderSection: React.FC = () => {
       ? Number(settings.hero_sticker_3_size)
       : 48
   );
+
+  // Sticker 3 - Tablet
+  const [heroSticker3TabletX, setHeroSticker3TabletX] = useState<number>(
+    settings?.hero_sticker_3_tablet_x !== undefined && !isNaN(Number(settings?.hero_sticker_3_tablet_x))
+      ? Number(settings.hero_sticker_3_tablet_x)
+      : (settings?.hero_sticker_3_x !== undefined && !isNaN(Number(settings?.hero_sticker_3_x)) ? Number(settings.hero_sticker_3_x) : 10)
+  );
+  const [heroSticker3TabletY, setHeroSticker3TabletY] = useState<number>(
+    settings?.hero_sticker_3_tablet_y !== undefined && !isNaN(Number(settings?.hero_sticker_3_tablet_y))
+      ? Number(settings.hero_sticker_3_tablet_y)
+      : (settings?.hero_sticker_3_y !== undefined && !isNaN(Number(settings?.hero_sticker_3_y)) ? Number(settings.hero_sticker_3_y) : 36)
+  );
+  const [heroSticker3TabletSize, setHeroSticker3TabletSize] = useState<number>(
+    settings?.hero_sticker_3_tablet_size !== undefined && !isNaN(Number(settings?.hero_sticker_3_tablet_size))
+      ? Number(settings.hero_sticker_3_tablet_size)
+      : 42
+  );
+
+  // Sticker 3 - Mobile
   const [heroSticker3MobileX, setHeroSticker3MobileX] = useState<number>(
     settings?.hero_sticker_3_mobile_x !== undefined && !isNaN(Number(settings?.hero_sticker_3_mobile_x))
       ? Number(settings.hero_sticker_3_mobile_x)
-      : 10
+      : (settings?.hero_sticker_3_x !== undefined && !isNaN(Number(settings?.hero_sticker_3_x)) ? Number(settings.hero_sticker_3_x) : 10)
   );
   const [heroSticker3MobileY, setHeroSticker3MobileY] = useState<number>(
     settings?.hero_sticker_3_mobile_y !== undefined && !isNaN(Number(settings?.hero_sticker_3_mobile_y))
       ? Number(settings.hero_sticker_3_mobile_y)
-      : 36
+      : (settings?.hero_sticker_3_y !== undefined && !isNaN(Number(settings?.hero_sticker_3_y)) ? Number(settings.hero_sticker_3_y) : 36)
   );
   const [heroSticker3MobileSize, setHeroSticker3MobileSize] = useState<number>(
     settings?.hero_sticker_3_mobile_size !== undefined && !isNaN(Number(settings?.hero_sticker_3_mobile_size))
@@ -1216,7 +1282,7 @@ export const WebBuilderSection: React.FC = () => {
     parseEffectsArray(settings?.hero_sticker_3_effects, ['pulse', 'rotate-slow'])
   );
 
-  const [heroStickersDeviceTab, setHeroStickersDeviceTab] = useState<'desktop' | 'mobile'>('desktop');
+  const [heroStickersDeviceTab, setHeroStickersDeviceTab] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
 
   // Specific fine tuning parameters for split-2-col template
   const [heroSplitShowBadge, setHeroSplitShowBadge] = useState<boolean>(settings?.hero_split_show_badge !== 'false');
@@ -1719,34 +1785,46 @@ export const WebBuilderSection: React.FC = () => {
       hero_show_whatsapp_pulse: heroShowWhatsappPulse ? 'true' : 'false',
       hero_button_radius: heroButtonRadius,
       hero_sticker_1_show: heroSticker1Show ? 'true' : 'false',
+      hero_sticker_1_show_desktop: heroSticker1ShowDesktop ? 'true' : 'false',
+      hero_sticker_1_show_tablet: heroSticker1ShowTablet ? 'true' : 'false',
       hero_sticker_1_show_mobile: heroSticker1ShowMobile ? 'true' : 'false',
-      hero_sticker_1_mobile_custom: heroSticker1MobileCustom ? 'true' : 'false',
       hero_sticker_1_image_url: heroSticker1ImageUrl.trim(),
       hero_sticker_1_x: String(heroSticker1X),
       hero_sticker_1_y: String(heroSticker1Y),
       hero_sticker_1_size: String(heroSticker1Size),
+      hero_sticker_1_tablet_x: String(heroSticker1TabletX),
+      hero_sticker_1_tablet_y: String(heroSticker1TabletY),
+      hero_sticker_1_tablet_size: String(heroSticker1TabletSize),
       hero_sticker_1_mobile_x: String(heroSticker1MobileX),
       hero_sticker_1_mobile_y: String(heroSticker1MobileY),
       hero_sticker_1_mobile_size: String(heroSticker1MobileSize),
       hero_sticker_1_effects: heroSticker1Effects.join(','),
       hero_sticker_2_show: heroSticker2Show ? 'true' : 'false',
+      hero_sticker_2_show_desktop: heroSticker2ShowDesktop ? 'true' : 'false',
+      hero_sticker_2_show_tablet: heroSticker2ShowTablet ? 'true' : 'false',
       hero_sticker_2_show_mobile: heroSticker2ShowMobile ? 'true' : 'false',
-      hero_sticker_2_mobile_custom: heroSticker2MobileCustom ? 'true' : 'false',
       hero_sticker_2_image_url: heroSticker2ImageUrl.trim(),
       hero_sticker_2_x: String(heroSticker2X),
       hero_sticker_2_y: String(heroSticker2Y),
       hero_sticker_2_size: String(heroSticker2Size),
+      hero_sticker_2_tablet_x: String(heroSticker2TabletX),
+      hero_sticker_2_tablet_y: String(heroSticker2TabletY),
+      hero_sticker_2_tablet_size: String(heroSticker2TabletSize),
       hero_sticker_2_mobile_x: String(heroSticker2MobileX),
       hero_sticker_2_mobile_y: String(heroSticker2MobileY),
       hero_sticker_2_mobile_size: String(heroSticker2MobileSize),
       hero_sticker_2_effects: heroSticker2Effects.join(','),
       hero_sticker_3_show: heroSticker3Show ? 'true' : 'false',
+      hero_sticker_3_show_desktop: heroSticker3ShowDesktop ? 'true' : 'false',
+      hero_sticker_3_show_tablet: heroSticker3ShowTablet ? 'true' : 'false',
       hero_sticker_3_show_mobile: heroSticker3ShowMobile ? 'true' : 'false',
-      hero_sticker_3_mobile_custom: heroSticker3MobileCustom ? 'true' : 'false',
       hero_sticker_3_image_url: heroSticker3ImageUrl.trim(),
       hero_sticker_3_x: String(heroSticker3X),
       hero_sticker_3_y: String(heroSticker3Y),
       hero_sticker_3_size: String(heroSticker3Size),
+      hero_sticker_3_tablet_x: String(heroSticker3TabletX),
+      hero_sticker_3_tablet_y: String(heroSticker3TabletY),
+      hero_sticker_3_tablet_size: String(heroSticker3TabletSize),
       hero_sticker_3_mobile_x: String(heroSticker3MobileX),
       hero_sticker_3_mobile_y: String(heroSticker3MobileY),
       hero_sticker_3_mobile_size: String(heroSticker3MobileSize),
@@ -1981,8 +2059,9 @@ export const WebBuilderSection: React.FC = () => {
 
     // Sticker 1 Reset
     setHeroSticker1Show(settings?.hero_sticker_1_show !== 'false');
+    setHeroSticker1ShowDesktop(settings?.hero_sticker_1_show_desktop !== 'false');
+    setHeroSticker1ShowTablet(settings?.hero_sticker_1_show_tablet !== 'false');
     setHeroSticker1ShowMobile(settings?.hero_sticker_1_show_mobile !== 'false');
-    setHeroSticker1MobileCustom(settings?.hero_sticker_1_mobile_custom === 'true');
     setHeroSticker1ImageUrl(settings?.hero_sticker_1_image_url || '');
     setHeroSticker1X(
       settings?.hero_sticker_1_x !== undefined && !isNaN(Number(settings?.hero_sticker_1_x))
@@ -1998,6 +2077,21 @@ export const WebBuilderSection: React.FC = () => {
       settings?.hero_sticker_1_size !== undefined && !isNaN(Number(settings?.hero_sticker_1_size))
         ? Number(settings.hero_sticker_1_size)
         : 110
+    );
+    setHeroSticker1TabletX(
+      settings?.hero_sticker_1_tablet_x !== undefined && !isNaN(Number(settings?.hero_sticker_1_tablet_x))
+        ? Number(settings.hero_sticker_1_tablet_x)
+        : (settings?.hero_sticker_1_x !== undefined && !isNaN(Number(settings?.hero_sticker_1_x)) ? Number(settings.hero_sticker_1_x) : 18)
+    );
+    setHeroSticker1TabletY(
+      settings?.hero_sticker_1_tablet_y !== undefined && !isNaN(Number(settings?.hero_sticker_1_tablet_y))
+        ? Number(settings.hero_sticker_1_tablet_y)
+        : (settings?.hero_sticker_1_y !== undefined && !isNaN(Number(settings?.hero_sticker_1_y)) ? Number(settings.hero_sticker_1_y) : 18)
+    );
+    setHeroSticker1TabletSize(
+      settings?.hero_sticker_1_tablet_size !== undefined && !isNaN(Number(settings?.hero_sticker_1_tablet_size))
+        ? Number(settings.hero_sticker_1_tablet_size)
+        : 95
     );
     setHeroSticker1MobileX(
       settings?.hero_sticker_1_mobile_x !== undefined && !isNaN(Number(settings?.hero_sticker_1_mobile_x))
@@ -2018,8 +2112,9 @@ export const WebBuilderSection: React.FC = () => {
 
     // Sticker 2 Reset
     setHeroSticker2Show(settings?.hero_sticker_2_show !== 'false');
+    setHeroSticker2ShowDesktop(settings?.hero_sticker_2_show_desktop !== 'false');
+    setHeroSticker2ShowTablet(settings?.hero_sticker_2_show_tablet !== 'false');
     setHeroSticker2ShowMobile(settings?.hero_sticker_2_show_mobile !== 'false');
-    setHeroSticker2MobileCustom(settings?.hero_sticker_2_mobile_custom === 'true');
     setHeroSticker2ImageUrl(settings?.hero_sticker_2_image_url || '');
     setHeroSticker2X(
       settings?.hero_sticker_2_x !== undefined && !isNaN(Number(settings?.hero_sticker_2_x))
@@ -2035,6 +2130,21 @@ export const WebBuilderSection: React.FC = () => {
       settings?.hero_sticker_2_size !== undefined && !isNaN(Number(settings?.hero_sticker_2_size))
         ? Number(settings.hero_sticker_2_size)
         : 120
+    );
+    setHeroSticker2TabletX(
+      settings?.hero_sticker_2_tablet_x !== undefined && !isNaN(Number(settings?.hero_sticker_2_tablet_x))
+        ? Number(settings.hero_sticker_2_tablet_x)
+        : (settings?.hero_sticker_2_x !== undefined && !isNaN(Number(settings?.hero_sticker_2_x)) ? Number(settings.hero_sticker_2_x) : 82)
+    );
+    setHeroSticker2TabletY(
+      settings?.hero_sticker_2_tablet_y !== undefined && !isNaN(Number(settings?.hero_sticker_2_tablet_y))
+        ? Number(settings.hero_sticker_2_tablet_y)
+        : (settings?.hero_sticker_2_y !== undefined && !isNaN(Number(settings?.hero_sticker_2_y)) ? Number(settings.hero_sticker_2_y) : 78)
+    );
+    setHeroSticker2TabletSize(
+      settings?.hero_sticker_2_tablet_size !== undefined && !isNaN(Number(settings?.hero_sticker_2_tablet_size))
+        ? Number(settings.hero_sticker_2_tablet_size)
+        : 105
     );
     setHeroSticker2MobileX(
       settings?.hero_sticker_2_mobile_x !== undefined && !isNaN(Number(settings?.hero_sticker_2_mobile_x))
@@ -2055,8 +2165,9 @@ export const WebBuilderSection: React.FC = () => {
 
     // Sticker 3 Reset
     setHeroSticker3Show(settings?.hero_sticker_3_show !== 'false');
+    setHeroSticker3ShowDesktop(settings?.hero_sticker_3_show_desktop !== 'false');
+    setHeroSticker3ShowTablet(settings?.hero_sticker_3_show_tablet !== 'false');
     setHeroSticker3ShowMobile(settings?.hero_sticker_3_show_mobile !== 'false');
-    setHeroSticker3MobileCustom(settings?.hero_sticker_3_mobile_custom === 'true');
     setHeroSticker3ImageUrl(settings?.hero_sticker_3_image_url || '');
     setHeroSticker3X(
       settings?.hero_sticker_3_x !== undefined && !isNaN(Number(settings?.hero_sticker_3_x))
@@ -2072,6 +2183,21 @@ export const WebBuilderSection: React.FC = () => {
       settings?.hero_sticker_3_size !== undefined && !isNaN(Number(settings?.hero_sticker_3_size))
         ? Number(settings.hero_sticker_3_size)
         : 48
+    );
+    setHeroSticker3TabletX(
+      settings?.hero_sticker_3_tablet_x !== undefined && !isNaN(Number(settings?.hero_sticker_3_tablet_x))
+        ? Number(settings.hero_sticker_3_tablet_x)
+        : (settings?.hero_sticker_3_x !== undefined && !isNaN(Number(settings?.hero_sticker_3_x)) ? Number(settings.hero_sticker_3_x) : 10)
+    );
+    setHeroSticker3TabletY(
+      settings?.hero_sticker_3_tablet_y !== undefined && !isNaN(Number(settings?.hero_sticker_3_tablet_y))
+        ? Number(settings.hero_sticker_3_tablet_y)
+        : (settings?.hero_sticker_3_y !== undefined && !isNaN(Number(settings?.hero_sticker_3_y)) ? Number(settings.hero_sticker_3_y) : 36)
+    );
+    setHeroSticker3TabletSize(
+      settings?.hero_sticker_3_tablet_size !== undefined && !isNaN(Number(settings?.hero_sticker_3_tablet_size))
+        ? Number(settings.hero_sticker_3_tablet_size)
+        : 42
     );
     setHeroSticker3MobileX(
       settings?.hero_sticker_3_mobile_x !== undefined && !isNaN(Number(settings?.hero_sticker_3_mobile_x))
@@ -2737,34 +2863,46 @@ export const WebBuilderSection: React.FC = () => {
           hero_show_whatsapp_pulse: heroShowWhatsappPulse ? 'true' : 'false',
           hero_button_radius: heroButtonRadius,
           hero_sticker_1_show: heroSticker1Show ? 'true' : 'false',
+          hero_sticker_1_show_desktop: heroSticker1ShowDesktop ? 'true' : 'false',
+          hero_sticker_1_show_tablet: heroSticker1ShowTablet ? 'true' : 'false',
           hero_sticker_1_show_mobile: heroSticker1ShowMobile ? 'true' : 'false',
-          hero_sticker_1_mobile_custom: heroSticker1MobileCustom ? 'true' : 'false',
           hero_sticker_1_image_url: heroSticker1ImageUrl.trim(),
           hero_sticker_1_x: String(heroSticker1X),
           hero_sticker_1_y: String(heroSticker1Y),
           hero_sticker_1_size: String(heroSticker1Size),
+          hero_sticker_1_tablet_x: String(heroSticker1TabletX),
+          hero_sticker_1_tablet_y: String(heroSticker1TabletY),
+          hero_sticker_1_tablet_size: String(heroSticker1TabletSize),
           hero_sticker_1_mobile_x: String(heroSticker1MobileX),
           hero_sticker_1_mobile_y: String(heroSticker1MobileY),
           hero_sticker_1_mobile_size: String(heroSticker1MobileSize),
           hero_sticker_1_effects: heroSticker1Effects.join(','),
           hero_sticker_2_show: heroSticker2Show ? 'true' : 'false',
+          hero_sticker_2_show_desktop: heroSticker2ShowDesktop ? 'true' : 'false',
+          hero_sticker_2_show_tablet: heroSticker2ShowTablet ? 'true' : 'false',
           hero_sticker_2_show_mobile: heroSticker2ShowMobile ? 'true' : 'false',
-          hero_sticker_2_mobile_custom: heroSticker2MobileCustom ? 'true' : 'false',
           hero_sticker_2_image_url: heroSticker2ImageUrl.trim(),
           hero_sticker_2_x: String(heroSticker2X),
           hero_sticker_2_y: String(heroSticker2Y),
           hero_sticker_2_size: String(heroSticker2Size),
+          hero_sticker_2_tablet_x: String(heroSticker2TabletX),
+          hero_sticker_2_tablet_y: String(heroSticker2TabletY),
+          hero_sticker_2_tablet_size: String(heroSticker2TabletSize),
           hero_sticker_2_mobile_x: String(heroSticker2MobileX),
           hero_sticker_2_mobile_y: String(heroSticker2MobileY),
           hero_sticker_2_mobile_size: String(heroSticker2MobileSize),
           hero_sticker_2_effects: heroSticker2Effects.join(','),
           hero_sticker_3_show: heroSticker3Show ? 'true' : 'false',
+          hero_sticker_3_show_desktop: heroSticker3ShowDesktop ? 'true' : 'false',
+          hero_sticker_3_show_tablet: heroSticker3ShowTablet ? 'true' : 'false',
           hero_sticker_3_show_mobile: heroSticker3ShowMobile ? 'true' : 'false',
-          hero_sticker_3_mobile_custom: heroSticker3MobileCustom ? 'true' : 'false',
           hero_sticker_3_image_url: heroSticker3ImageUrl.trim(),
           hero_sticker_3_x: String(heroSticker3X),
           hero_sticker_3_y: String(heroSticker3Y),
           hero_sticker_3_size: String(heroSticker3Size),
+          hero_sticker_3_tablet_x: String(heroSticker3TabletX),
+          hero_sticker_3_tablet_y: String(heroSticker3TabletY),
+          hero_sticker_3_tablet_size: String(heroSticker3TabletSize),
           hero_sticker_3_mobile_x: String(heroSticker3MobileX),
           hero_sticker_3_mobile_y: String(heroSticker3MobileY),
           hero_sticker_3_mobile_size: String(heroSticker3MobileSize),
@@ -2999,34 +3137,46 @@ export const WebBuilderSection: React.FC = () => {
           hero_show_whatsapp_pulse: heroShowWhatsappPulse ? 'true' : 'false',
           hero_button_radius: heroButtonRadius,
           hero_sticker_1_show: heroSticker1Show ? 'true' : 'false',
+          hero_sticker_1_show_desktop: heroSticker1ShowDesktop ? 'true' : 'false',
+          hero_sticker_1_show_tablet: heroSticker1ShowTablet ? 'true' : 'false',
           hero_sticker_1_show_mobile: heroSticker1ShowMobile ? 'true' : 'false',
-          hero_sticker_1_mobile_custom: heroSticker1MobileCustom ? 'true' : 'false',
           hero_sticker_1_image_url: heroSticker1ImageUrl.trim(),
           hero_sticker_1_x: String(heroSticker1X),
           hero_sticker_1_y: String(heroSticker1Y),
           hero_sticker_1_size: String(heroSticker1Size),
+          hero_sticker_1_tablet_x: String(heroSticker1TabletX),
+          hero_sticker_1_tablet_y: String(heroSticker1TabletY),
+          hero_sticker_1_tablet_size: String(heroSticker1TabletSize),
           hero_sticker_1_mobile_x: String(heroSticker1MobileX),
           hero_sticker_1_mobile_y: String(heroSticker1MobileY),
           hero_sticker_1_mobile_size: String(heroSticker1MobileSize),
           hero_sticker_1_effects: heroSticker1Effects.join(','),
           hero_sticker_2_show: heroSticker2Show ? 'true' : 'false',
+          hero_sticker_2_show_desktop: heroSticker2ShowDesktop ? 'true' : 'false',
+          hero_sticker_2_show_tablet: heroSticker2ShowTablet ? 'true' : 'false',
           hero_sticker_2_show_mobile: heroSticker2ShowMobile ? 'true' : 'false',
-          hero_sticker_2_mobile_custom: heroSticker2MobileCustom ? 'true' : 'false',
           hero_sticker_2_image_url: heroSticker2ImageUrl.trim(),
           hero_sticker_2_x: String(heroSticker2X),
           hero_sticker_2_y: String(heroSticker2Y),
           hero_sticker_2_size: String(heroSticker2Size),
+          hero_sticker_2_tablet_x: String(heroSticker2TabletX),
+          hero_sticker_2_tablet_y: String(heroSticker2TabletY),
+          hero_sticker_2_tablet_size: String(heroSticker2TabletSize),
           hero_sticker_2_mobile_x: String(heroSticker2MobileX),
           hero_sticker_2_mobile_y: String(heroSticker2MobileY),
           hero_sticker_2_mobile_size: String(heroSticker2MobileSize),
           hero_sticker_2_effects: heroSticker2Effects.join(','),
           hero_sticker_3_show: heroSticker3Show ? 'true' : 'false',
+          hero_sticker_3_show_desktop: heroSticker3ShowDesktop ? 'true' : 'false',
+          hero_sticker_3_show_tablet: heroSticker3ShowTablet ? 'true' : 'false',
           hero_sticker_3_show_mobile: heroSticker3ShowMobile ? 'true' : 'false',
-          hero_sticker_3_mobile_custom: heroSticker3MobileCustom ? 'true' : 'false',
           hero_sticker_3_image_url: heroSticker3ImageUrl.trim(),
           hero_sticker_3_x: String(heroSticker3X),
           hero_sticker_3_y: String(heroSticker3Y),
           hero_sticker_3_size: String(heroSticker3Size),
+          hero_sticker_3_tablet_x: String(heroSticker3TabletX),
+          hero_sticker_3_tablet_y: String(heroSticker3TabletY),
+          hero_sticker_3_tablet_size: String(heroSticker3TabletSize),
           hero_sticker_3_mobile_x: String(heroSticker3MobileX),
           hero_sticker_3_mobile_y: String(heroSticker3MobileY),
           hero_sticker_3_mobile_size: String(heroSticker3MobileSize),
@@ -4067,37 +4217,51 @@ export const WebBuilderSection: React.FC = () => {
     <HeroAccordionItem
       id="stickers"
       title="Elementos Flotantes & Stickers"
-      subtitle="Subí imágenes transparentes, posiciónalas con sliders y activá efectos"
+      subtitle="Subí imágenes transparentes, posiciónalas por dispositivo (Escritorio, Tablet, Móvil) y activá efectos"
       icon={Shapes}
       badge="Universal"
     >
       <div className="space-y-4">
-        {/* Device Switcher Tabs */}
+        {/* Device Switcher Tabs: Desktop, Tablet, Mobile */}
         <div className="flex p-1 bg-slate-100/90 rounded-xl border border-slate-200/80 gap-1">
           <button
             type="button"
             onClick={() => setHeroStickersDeviceTab('desktop')}
-            className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+            className={`flex-1 py-2 px-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
               heroStickersDeviceTab === 'desktop'
                 ? 'bg-white text-forest shadow-xs'
                 : 'text-slate-500 hover:text-slate-800'
             }`}
           >
-            <Laptop className="w-4 h-4" />
-            <span>Vista Escritorio</span>
+            <Laptop className="w-3.5 h-3.5" />
+            <span>Escritorio</span>
+            <span className="text-[9px] px-1 py-0.2 bg-slate-200 text-slate-700 rounded-md font-mono font-bold">&ge;1024px</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setHeroStickersDeviceTab('tablet')}
+            className={`flex-1 py-2 px-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              heroStickersDeviceTab === 'tablet'
+                ? 'bg-white text-forest shadow-xs'
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Tablet className="w-3.5 h-3.5" />
+            <span>Tablet</span>
+            <span className="text-[9px] px-1 py-0.2 bg-indigo-100 text-indigo-700 rounded-md font-mono font-bold">640-1023px</span>
           </button>
           <button
             type="button"
             onClick={() => setHeroStickersDeviceTab('mobile')}
-            className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+            className={`flex-1 py-2 px-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
               heroStickersDeviceTab === 'mobile'
                 ? 'bg-white text-forest shadow-xs'
                 : 'text-slate-500 hover:text-slate-800'
             }`}
           >
-            <Smartphone className="w-4 h-4" />
-            <span>Vista Móvil</span>
-            <span className="text-[9px] px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded-md font-extrabold">Responsive</span>
+            <Smartphone className="w-3.5 h-3.5" />
+            <span>Móvil</span>
+            <span className="text-[9px] px-1 py-0.2 bg-emerald-100 text-emerald-700 rounded-md font-mono font-bold">&lt;640px</span>
           </button>
         </div>
 
@@ -4123,61 +4287,152 @@ export const WebBuilderSection: React.FC = () => {
                 maxSizeMB={8}
               />
 
-              {heroStickersDeviceTab === 'desktop' ? (
-                /* Desktop Sliders */
+              {/* 1. Desktop Controls */}
+              {heroStickersDeviceTab === 'desktop' && (
                 <div className="space-y-3 p-3 bg-white rounded-xl border border-slate-200/70">
-                  <div className="flex items-center gap-1.5 pb-1 border-b border-slate-100">
-                    <Laptop className="w-3.5 h-3.5 text-forest" />
-                    <span className="text-[11px] font-bold text-slate-700">Ajustes para Escritorio / Pantallas Grandes</span>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[10px] font-bold text-slate-600">Posición Horizontal (Eje X):</label>
-                      <span className="text-[10px] font-mono text-forest font-bold">{heroSticker1X}%</span>
+                  <div className="flex items-center justify-between pb-1 border-b border-slate-100">
+                    <div className="flex items-center gap-1.5">
+                      <Laptop className="w-3.5 h-3.5 text-forest" />
+                      <span className="text-[11px] font-bold text-slate-800">Mostrar en Pantallas de Escritorio</span>
                     </div>
                     <input
-                      type="range"
-                      min={0}
-                      max={100}
-                      step={1}
-                      value={heroSticker1X}
-                      onChange={(e) => setHeroSticker1X(Number(e.target.value))}
-                      className="w-full accent-forest cursor-pointer"
+                      type="checkbox"
+                      checked={heroSticker1ShowDesktop}
+                      onChange={(e) => setHeroSticker1ShowDesktop(e.target.checked)}
+                      className="w-4 h-4 accent-forest cursor-pointer"
                     />
                   </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[10px] font-bold text-slate-600">Posición Vertical (Eje Y):</label>
-                      <span className="text-[10px] font-mono text-forest font-bold">{heroSticker1Y}%</span>
+
+                  {heroSticker1ShowDesktop ? (
+                    <div className="space-y-2.5 pt-1">
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-600">Posición Horizontal (Eje X):</label>
+                          <span className="text-[10px] font-mono text-forest font-bold">{heroSticker1X}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          step={1}
+                          value={heroSticker1X}
+                          onChange={(e) => setHeroSticker1X(Number(e.target.value))}
+                          className="w-full accent-forest cursor-pointer"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-600">Posición Vertical (Eje Y):</label>
+                          <span className="text-[10px] font-mono text-forest font-bold">{heroSticker1Y}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          step={1}
+                          value={heroSticker1Y}
+                          onChange={(e) => setHeroSticker1Y(Number(e.target.value))}
+                          className="w-full accent-forest cursor-pointer"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-600">Tamaño / Ancho:</label>
+                          <span className="text-[10px] font-mono text-forest font-bold">{heroSticker1Size}px</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={20}
+                          max={300}
+                          step={5}
+                          value={heroSticker1Size}
+                          onChange={(e) => setHeroSticker1Size(Number(e.target.value))}
+                          className="w-full accent-forest cursor-pointer"
+                        />
+                      </div>
                     </div>
-                    <input
-                      type="range"
-                      min={0}
-                      max={100}
-                      step={1}
-                      value={heroSticker1Y}
-                      onChange={(e) => setHeroSticker1Y(Number(e.target.value))}
-                      className="w-full accent-forest cursor-pointer"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[10px] font-bold text-slate-600">Tamaño / Ancho:</label>
-                      <span className="text-[10px] font-mono text-forest font-bold">{heroSticker1Size}px</span>
-                    </div>
-                    <input
-                      type="range"
-                      min={30}
-                      max={300}
-                      step={5}
-                      value={heroSticker1Size}
-                      onChange={(e) => setHeroSticker1Size(Number(e.target.value))}
-                      className="w-full accent-forest cursor-pointer"
-                    />
-                  </div>
+                  ) : (
+                    <p className="text-[10px] text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200/80 font-medium">
+                      🚫 Este elemento estará oculto en pantallas de escritorio (&ge; 1024px).
+                    </p>
+                  )}
                 </div>
-              ) : (
-                /* Mobile Controls */
+              )}
+
+              {/* 2. Tablet Controls */}
+              {heroStickersDeviceTab === 'tablet' && (
+                <div className="space-y-3 p-3 bg-white rounded-xl border border-indigo-200/80 shadow-2xs">
+                  <div className="flex items-center justify-between pb-1 border-b border-slate-100">
+                    <div className="flex items-center gap-1.5">
+                      <Tablet className="w-3.5 h-3.5 text-indigo-600" />
+                      <span className="text-[11px] font-bold text-slate-800">Mostrar en Tablets (640px - 1023px)</span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={heroSticker1ShowTablet}
+                      onChange={(e) => setHeroSticker1ShowTablet(e.target.checked)}
+                      className="w-4 h-4 accent-forest cursor-pointer"
+                    />
+                  </div>
+
+                  {heroSticker1ShowTablet ? (
+                    <div className="space-y-2.5 pt-1">
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-600">Posición Horizontal Tablet (Eje X):</label>
+                          <span className="text-[10px] font-mono text-indigo-600 font-bold">{heroSticker1TabletX}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          step={1}
+                          value={heroSticker1TabletX}
+                          onChange={(e) => setHeroSticker1TabletX(Number(e.target.value))}
+                          className="w-full accent-indigo-600 cursor-pointer"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-600">Posición Vertical Tablet (Eje Y):</label>
+                          <span className="text-[10px] font-mono text-indigo-600 font-bold">{heroSticker1TabletY}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          step={1}
+                          value={heroSticker1TabletY}
+                          onChange={(e) => setHeroSticker1TabletY(Number(e.target.value))}
+                          className="w-full accent-indigo-600 cursor-pointer"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-600">Tamaño Tablet (Ancho):</label>
+                          <span className="text-[10px] font-mono text-indigo-600 font-bold">{heroSticker1TabletSize}px</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={20}
+                          max={300}
+                          step={5}
+                          value={heroSticker1TabletSize}
+                          onChange={(e) => setHeroSticker1TabletSize(Number(e.target.value))}
+                          className="w-full accent-indigo-600 cursor-pointer"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200/80 font-medium">
+                      🚫 Este elemento estará oculto en tablets (640px a 1023px).
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* 3. Mobile Controls */}
+              {heroStickersDeviceTab === 'mobile' && (
                 <div className="space-y-3 p-3 bg-white rounded-xl border border-emerald-200/80 shadow-2xs">
                   <div className="flex items-center justify-between pb-1 border-b border-slate-100">
                     <div className="flex items-center gap-1.5">
@@ -4193,70 +4448,52 @@ export const WebBuilderSection: React.FC = () => {
                   </div>
 
                   {heroSticker1ShowMobile ? (
-                    <div className="space-y-3">
-                      <label className="flex items-center gap-2 text-[11px] font-semibold text-slate-700 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={heroSticker1MobileCustom}
-                          onChange={(e) => setHeroSticker1MobileCustom(e.target.checked)}
-                          className="w-3.5 h-3.5 accent-forest cursor-pointer rounded"
-                        />
-                        <span>Personalizar posición y tamaño exclusivo para móvil</span>
-                      </label>
-
-                      {heroSticker1MobileCustom ? (
-                        <div className="space-y-2.5 pt-1">
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between">
-                              <label className="text-[10px] font-bold text-slate-600">Posición Horizontal Móvil (Eje X):</label>
-                              <span className="text-[10px] font-mono text-forest font-bold">{heroSticker1MobileX}%</span>
-                            </div>
-                            <input
-                              type="range"
-                              min={0}
-                              max={100}
-                              step={1}
-                              value={heroSticker1MobileX}
-                              onChange={(e) => setHeroSticker1MobileX(Number(e.target.value))}
-                              className="w-full accent-forest cursor-pointer"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between">
-                              <label className="text-[10px] font-bold text-slate-600">Posición Vertical Móvil (Eje Y):</label>
-                              <span className="text-[10px] font-mono text-forest font-bold">{heroSticker1MobileY}%</span>
-                            </div>
-                            <input
-                              type="range"
-                              min={0}
-                              max={100}
-                              step={1}
-                              value={heroSticker1MobileY}
-                              onChange={(e) => setHeroSticker1MobileY(Number(e.target.value))}
-                              className="w-full accent-forest cursor-pointer"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between">
-                              <label className="text-[10px] font-bold text-slate-600">Tamaño Móvil (Ancho):</label>
-                              <span className="text-[10px] font-mono text-forest font-bold">{heroSticker1MobileSize}px</span>
-                            </div>
-                            <input
-                              type="range"
-                              min={20}
-                              max={200}
-                              step={5}
-                              value={heroSticker1MobileSize}
-                              onChange={(e) => setHeroSticker1MobileSize(Number(e.target.value))}
-                              className="w-full accent-forest cursor-pointer"
-                            />
-                          </div>
+                    <div className="space-y-2.5 pt-1">
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-600">Posición Horizontal Móvil (Eje X):</label>
+                          <span className="text-[10px] font-mono text-forest font-bold">{heroSticker1MobileX}%</span>
                         </div>
-                      ) : (
-                        <p className="text-[10px] text-muted-foreground bg-slate-50 p-2 rounded-lg border border-slate-200/60">
-                          💡 Usando posición de escritorio ({heroSticker1X}%, {heroSticker1Y}%) con escala automática para móvil.
-                        </p>
-                      )}
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          step={1}
+                          value={heroSticker1MobileX}
+                          onChange={(e) => setHeroSticker1MobileX(Number(e.target.value))}
+                          className="w-full accent-forest cursor-pointer"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-600">Posición Vertical Móvil (Eje Y):</label>
+                          <span className="text-[10px] font-mono text-forest font-bold">{heroSticker1MobileY}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          step={1}
+                          value={heroSticker1MobileY}
+                          onChange={(e) => setHeroSticker1MobileY(Number(e.target.value))}
+                          className="w-full accent-forest cursor-pointer"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-600">Tamaño Móvil (Ancho):</label>
+                          <span className="text-[10px] font-mono text-forest font-bold">{heroSticker1MobileSize}px</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={20}
+                          max={250}
+                          step={5}
+                          value={heroSticker1MobileSize}
+                          onChange={(e) => setHeroSticker1MobileSize(Number(e.target.value))}
+                          className="w-full accent-forest cursor-pointer"
+                        />
+                      </div>
                     </div>
                   ) : (
                     <p className="text-[10px] text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200/80 font-medium">
@@ -4267,7 +4504,7 @@ export const WebBuilderSection: React.FC = () => {
               )}
 
               <div className="space-y-1.5 pt-1">
-                <label className="text-[10px] font-bold text-slate-600 block">Efectos Activos (Tocá para sumar o quitar):</label>
+                <label className="text-[10px] font-bold text-slate-600 block">Efectos Activos (Universal):</label>
                 <div className="grid grid-cols-2 gap-1.5">
                   {[
                     { id: 'float', label: '🌊 Flotación' },
@@ -4326,61 +4563,152 @@ export const WebBuilderSection: React.FC = () => {
                 maxSizeMB={8}
               />
 
-              {heroStickersDeviceTab === 'desktop' ? (
-                /* Desktop Sliders */
+              {/* 1. Desktop Controls */}
+              {heroStickersDeviceTab === 'desktop' && (
                 <div className="space-y-3 p-3 bg-white rounded-xl border border-slate-200/70">
-                  <div className="flex items-center gap-1.5 pb-1 border-b border-slate-100">
-                    <Laptop className="w-3.5 h-3.5 text-forest" />
-                    <span className="text-[11px] font-bold text-slate-700">Ajustes para Escritorio / Pantallas Grandes</span>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[10px] font-bold text-slate-600">Posición Horizontal (Eje X):</label>
-                      <span className="text-[10px] font-mono text-forest font-bold">{heroSticker2X}%</span>
+                  <div className="flex items-center justify-between pb-1 border-b border-slate-100">
+                    <div className="flex items-center gap-1.5">
+                      <Laptop className="w-3.5 h-3.5 text-forest" />
+                      <span className="text-[11px] font-bold text-slate-800">Mostrar en Pantallas de Escritorio</span>
                     </div>
                     <input
-                      type="range"
-                      min={0}
-                      max={100}
-                      step={1}
-                      value={heroSticker2X}
-                      onChange={(e) => setHeroSticker2X(Number(e.target.value))}
-                      className="w-full accent-forest cursor-pointer"
+                      type="checkbox"
+                      checked={heroSticker2ShowDesktop}
+                      onChange={(e) => setHeroSticker2ShowDesktop(e.target.checked)}
+                      className="w-4 h-4 accent-forest cursor-pointer"
                     />
                   </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[10px] font-bold text-slate-600">Posición Vertical (Eje Y):</label>
-                      <span className="text-[10px] font-mono text-forest font-bold">{heroSticker2Y}%</span>
+
+                  {heroSticker2ShowDesktop ? (
+                    <div className="space-y-2.5 pt-1">
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-600">Posición Horizontal (Eje X):</label>
+                          <span className="text-[10px] font-mono text-forest font-bold">{heroSticker2X}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          step={1}
+                          value={heroSticker2X}
+                          onChange={(e) => setHeroSticker2X(Number(e.target.value))}
+                          className="w-full accent-forest cursor-pointer"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-600">Posición Vertical (Eje Y):</label>
+                          <span className="text-[10px] font-mono text-forest font-bold">{heroSticker2Y}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          step={1}
+                          value={heroSticker2Y}
+                          onChange={(e) => setHeroSticker2Y(Number(e.target.value))}
+                          className="w-full accent-forest cursor-pointer"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-600">Tamaño / Ancho:</label>
+                          <span className="text-[10px] font-mono text-forest font-bold">{heroSticker2Size}px</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={20}
+                          max={300}
+                          step={5}
+                          value={heroSticker2Size}
+                          onChange={(e) => setHeroSticker2Size(Number(e.target.value))}
+                          className="w-full accent-forest cursor-pointer"
+                        />
+                      </div>
                     </div>
-                    <input
-                      type="range"
-                      min={0}
-                      max={100}
-                      step={1}
-                      value={heroSticker2Y}
-                      onChange={(e) => setHeroSticker2Y(Number(e.target.value))}
-                      className="w-full accent-forest cursor-pointer"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[10px] font-bold text-slate-600">Tamaño / Ancho:</label>
-                      <span className="text-[10px] font-mono text-forest font-bold">{heroSticker2Size}px</span>
-                    </div>
-                    <input
-                      type="range"
-                      min={30}
-                      max={300}
-                      step={5}
-                      value={heroSticker2Size}
-                      onChange={(e) => setHeroSticker2Size(Number(e.target.value))}
-                      className="w-full accent-forest cursor-pointer"
-                    />
-                  </div>
+                  ) : (
+                    <p className="text-[10px] text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200/80 font-medium">
+                      🚫 Este elemento estará oculto en pantallas de escritorio (&ge; 1024px).
+                    </p>
+                  )}
                 </div>
-              ) : (
-                /* Mobile Controls */
+              )}
+
+              {/* 2. Tablet Controls */}
+              {heroStickersDeviceTab === 'tablet' && (
+                <div className="space-y-3 p-3 bg-white rounded-xl border border-indigo-200/80 shadow-2xs">
+                  <div className="flex items-center justify-between pb-1 border-b border-slate-100">
+                    <div className="flex items-center gap-1.5">
+                      <Tablet className="w-3.5 h-3.5 text-indigo-600" />
+                      <span className="text-[11px] font-bold text-slate-800">Mostrar en Tablets (640px - 1023px)</span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={heroSticker2ShowTablet}
+                      onChange={(e) => setHeroSticker2ShowTablet(e.target.checked)}
+                      className="w-4 h-4 accent-forest cursor-pointer"
+                    />
+                  </div>
+
+                  {heroSticker2ShowTablet ? (
+                    <div className="space-y-2.5 pt-1">
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-600">Posición Horizontal Tablet (Eje X):</label>
+                          <span className="text-[10px] font-mono text-indigo-600 font-bold">{heroSticker2TabletX}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          step={1}
+                          value={heroSticker2TabletX}
+                          onChange={(e) => setHeroSticker2TabletX(Number(e.target.value))}
+                          className="w-full accent-indigo-600 cursor-pointer"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-600">Posición Vertical Tablet (Eje Y):</label>
+                          <span className="text-[10px] font-mono text-indigo-600 font-bold">{heroSticker2TabletY}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          step={1}
+                          value={heroSticker2TabletY}
+                          onChange={(e) => setHeroSticker2TabletY(Number(e.target.value))}
+                          className="w-full accent-indigo-600 cursor-pointer"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-600">Tamaño Tablet (Ancho):</label>
+                          <span className="text-[10px] font-mono text-indigo-600 font-bold">{heroSticker2TabletSize}px</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={20}
+                          max={300}
+                          step={5}
+                          value={heroSticker2TabletSize}
+                          onChange={(e) => setHeroSticker2TabletSize(Number(e.target.value))}
+                          className="w-full accent-indigo-600 cursor-pointer"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200/80 font-medium">
+                      🚫 Este elemento estará oculto en tablets (640px a 1023px).
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* 3. Mobile Controls */}
+              {heroStickersDeviceTab === 'mobile' && (
                 <div className="space-y-3 p-3 bg-white rounded-xl border border-emerald-200/80 shadow-2xs">
                   <div className="flex items-center justify-between pb-1 border-b border-slate-100">
                     <div className="flex items-center gap-1.5">
@@ -4396,70 +4724,52 @@ export const WebBuilderSection: React.FC = () => {
                   </div>
 
                   {heroSticker2ShowMobile ? (
-                    <div className="space-y-3">
-                      <label className="flex items-center gap-2 text-[11px] font-semibold text-slate-700 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={heroSticker2MobileCustom}
-                          onChange={(e) => setHeroSticker2MobileCustom(e.target.checked)}
-                          className="w-3.5 h-3.5 accent-forest cursor-pointer rounded"
-                        />
-                        <span>Personalizar posición y tamaño exclusivo para móvil</span>
-                      </label>
-
-                      {heroSticker2MobileCustom ? (
-                        <div className="space-y-2.5 pt-1">
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between">
-                              <label className="text-[10px] font-bold text-slate-600">Posición Horizontal Móvil (Eje X):</label>
-                              <span className="text-[10px] font-mono text-forest font-bold">{heroSticker2MobileX}%</span>
-                            </div>
-                            <input
-                              type="range"
-                              min={0}
-                              max={100}
-                              step={1}
-                              value={heroSticker2MobileX}
-                              onChange={(e) => setHeroSticker2MobileX(Number(e.target.value))}
-                              className="w-full accent-forest cursor-pointer"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between">
-                              <label className="text-[10px] font-bold text-slate-600">Posición Vertical Móvil (Eje Y):</label>
-                              <span className="text-[10px] font-mono text-forest font-bold">{heroSticker2MobileY}%</span>
-                            </div>
-                            <input
-                              type="range"
-                              min={0}
-                              max={100}
-                              step={1}
-                              value={heroSticker2MobileY}
-                              onChange={(e) => setHeroSticker2MobileY(Number(e.target.value))}
-                              className="w-full accent-forest cursor-pointer"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between">
-                              <label className="text-[10px] font-bold text-slate-600">Tamaño Móvil (Ancho):</label>
-                              <span className="text-[10px] font-mono text-forest font-bold">{heroSticker2MobileSize}px</span>
-                            </div>
-                            <input
-                              type="range"
-                              min={20}
-                              max={200}
-                              step={5}
-                              value={heroSticker2MobileSize}
-                              onChange={(e) => setHeroSticker2MobileSize(Number(e.target.value))}
-                              className="w-full accent-forest cursor-pointer"
-                            />
-                          </div>
+                    <div className="space-y-2.5 pt-1">
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-600">Posición Horizontal Móvil (Eje X):</label>
+                          <span className="text-[10px] font-mono text-forest font-bold">{heroSticker2MobileX}%</span>
                         </div>
-                      ) : (
-                        <p className="text-[10px] text-muted-foreground bg-slate-50 p-2 rounded-lg border border-slate-200/60">
-                          💡 Usando posición de escritorio ({heroSticker2X}%, {heroSticker2Y}%) con escala automática para móvil.
-                        </p>
-                      )}
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          step={1}
+                          value={heroSticker2MobileX}
+                          onChange={(e) => setHeroSticker2MobileX(Number(e.target.value))}
+                          className="w-full accent-forest cursor-pointer"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-600">Posición Vertical Móvil (Eje Y):</label>
+                          <span className="text-[10px] font-mono text-forest font-bold">{heroSticker2MobileY}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          step={1}
+                          value={heroSticker2MobileY}
+                          onChange={(e) => setHeroSticker2MobileY(Number(e.target.value))}
+                          className="w-full accent-forest cursor-pointer"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-600">Tamaño Móvil (Ancho):</label>
+                          <span className="text-[10px] font-mono text-forest font-bold">{heroSticker2MobileSize}px</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={20}
+                          max={250}
+                          step={5}
+                          value={heroSticker2MobileSize}
+                          onChange={(e) => setHeroSticker2MobileSize(Number(e.target.value))}
+                          className="w-full accent-forest cursor-pointer"
+                        />
+                      </div>
                     </div>
                   ) : (
                     <p className="text-[10px] text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200/80 font-medium">
@@ -4470,7 +4780,7 @@ export const WebBuilderSection: React.FC = () => {
               )}
 
               <div className="space-y-1.5 pt-1">
-                <label className="text-[10px] font-bold text-slate-600 block">Efectos Activos (Tocá para sumar o quitar):</label>
+                <label className="text-[10px] font-bold text-slate-600 block">Efectos Activos (Universal):</label>
                 <div className="grid grid-cols-2 gap-1.5">
                   {[
                     { id: 'float', label: '🌊 Flotación' },
@@ -4529,61 +4839,152 @@ export const WebBuilderSection: React.FC = () => {
                 maxSizeMB={8}
               />
 
-              {heroStickersDeviceTab === 'desktop' ? (
-                /* Desktop Sliders */
+              {/* 1. Desktop Controls */}
+              {heroStickersDeviceTab === 'desktop' && (
                 <div className="space-y-3 p-3 bg-white rounded-xl border border-slate-200/70">
-                  <div className="flex items-center gap-1.5 pb-1 border-b border-slate-100">
-                    <Laptop className="w-3.5 h-3.5 text-forest" />
-                    <span className="text-[11px] font-bold text-slate-700">Ajustes para Escritorio / Pantallas Grandes</span>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[10px] font-bold text-slate-600">Posición Horizontal (Eje X):</label>
-                      <span className="text-[10px] font-mono text-forest font-bold">{heroSticker3X}%</span>
+                  <div className="flex items-center justify-between pb-1 border-b border-slate-100">
+                    <div className="flex items-center gap-1.5">
+                      <Laptop className="w-3.5 h-3.5 text-forest" />
+                      <span className="text-[11px] font-bold text-slate-800">Mostrar en Pantallas de Escritorio</span>
                     </div>
                     <input
-                      type="range"
-                      min={0}
-                      max={100}
-                      step={1}
-                      value={heroSticker3X}
-                      onChange={(e) => setHeroSticker3X(Number(e.target.value))}
-                      className="w-full accent-forest cursor-pointer"
+                      type="checkbox"
+                      checked={heroSticker3ShowDesktop}
+                      onChange={(e) => setHeroSticker3ShowDesktop(e.target.checked)}
+                      className="w-4 h-4 accent-forest cursor-pointer"
                     />
                   </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[10px] font-bold text-slate-600">Posición Vertical (Eje Y):</label>
-                      <span className="text-[10px] font-mono text-forest font-bold">{heroSticker3Y}%</span>
+
+                  {heroSticker3ShowDesktop ? (
+                    <div className="space-y-2.5 pt-1">
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-600">Posición Horizontal (Eje X):</label>
+                          <span className="text-[10px] font-mono text-forest font-bold">{heroSticker3X}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          step={1}
+                          value={heroSticker3X}
+                          onChange={(e) => setHeroSticker3X(Number(e.target.value))}
+                          className="w-full accent-forest cursor-pointer"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-600">Posición Vertical (Eje Y):</label>
+                          <span className="text-[10px] font-mono text-forest font-bold">{heroSticker3Y}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          step={1}
+                          value={heroSticker3Y}
+                          onChange={(e) => setHeroSticker3Y(Number(e.target.value))}
+                          className="w-full accent-forest cursor-pointer"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-600">Tamaño / Ancho:</label>
+                          <span className="text-[10px] font-mono text-forest font-bold">{heroSticker3Size}px</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={20}
+                          max={300}
+                          step={5}
+                          value={heroSticker3Size}
+                          onChange={(e) => setHeroSticker3Size(Number(e.target.value))}
+                          className="w-full accent-forest cursor-pointer"
+                        />
+                      </div>
                     </div>
-                    <input
-                      type="range"
-                      min={0}
-                      max={100}
-                      step={1}
-                      value={heroSticker3Y}
-                      onChange={(e) => setHeroSticker3Y(Number(e.target.value))}
-                      className="w-full accent-forest cursor-pointer"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[10px] font-bold text-slate-600">Tamaño / Ancho:</label>
-                      <span className="text-[10px] font-mono text-forest font-bold">{heroSticker3Size}px</span>
-                    </div>
-                    <input
-                      type="range"
-                      min={20}
-                      max={200}
-                      step={5}
-                      value={heroSticker3Size}
-                      onChange={(e) => setHeroSticker3Size(Number(e.target.value))}
-                      className="w-full accent-forest cursor-pointer"
-                    />
-                  </div>
+                  ) : (
+                    <p className="text-[10px] text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200/80 font-medium">
+                      🚫 Este elemento estará oculto en pantallas de escritorio (&ge; 1024px).
+                    </p>
+                  )}
                 </div>
-              ) : (
-                /* Mobile Controls */
+              )}
+
+              {/* 2. Tablet Controls */}
+              {heroStickersDeviceTab === 'tablet' && (
+                <div className="space-y-3 p-3 bg-white rounded-xl border border-indigo-200/80 shadow-2xs">
+                  <div className="flex items-center justify-between pb-1 border-b border-slate-100">
+                    <div className="flex items-center gap-1.5">
+                      <Tablet className="w-3.5 h-3.5 text-indigo-600" />
+                      <span className="text-[11px] font-bold text-slate-800">Mostrar en Tablets (640px - 1023px)</span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={heroSticker3ShowTablet}
+                      onChange={(e) => setHeroSticker3ShowTablet(e.target.checked)}
+                      className="w-4 h-4 accent-forest cursor-pointer"
+                    />
+                  </div>
+
+                  {heroSticker3ShowTablet ? (
+                    <div className="space-y-2.5 pt-1">
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-600">Posición Horizontal Tablet (Eje X):</label>
+                          <span className="text-[10px] font-mono text-indigo-600 font-bold">{heroSticker3TabletX}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          step={1}
+                          value={heroSticker3TabletX}
+                          onChange={(e) => setHeroSticker3TabletX(Number(e.target.value))}
+                          className="w-full accent-indigo-600 cursor-pointer"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-600">Posición Vertical Tablet (Eje Y):</label>
+                          <span className="text-[10px] font-mono text-indigo-600 font-bold">{heroSticker3TabletY}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          step={1}
+                          value={heroSticker3TabletY}
+                          onChange={(e) => setHeroSticker3TabletY(Number(e.target.value))}
+                          className="w-full accent-indigo-600 cursor-pointer"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-600">Tamaño Tablet (Ancho):</label>
+                          <span className="text-[10px] font-mono text-indigo-600 font-bold">{heroSticker3TabletSize}px</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={20}
+                          max={300}
+                          step={5}
+                          value={heroSticker3TabletSize}
+                          onChange={(e) => setHeroSticker3TabletSize(Number(e.target.value))}
+                          className="w-full accent-indigo-600 cursor-pointer"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200/80 font-medium">
+                      🚫 Este elemento estará oculto en tablets (640px a 1023px).
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* 3. Mobile Controls */}
+              {heroStickersDeviceTab === 'mobile' && (
                 <div className="space-y-3 p-3 bg-white rounded-xl border border-emerald-200/80 shadow-2xs">
                   <div className="flex items-center justify-between pb-1 border-b border-slate-100">
                     <div className="flex items-center gap-1.5">
@@ -4599,70 +5000,52 @@ export const WebBuilderSection: React.FC = () => {
                   </div>
 
                   {heroSticker3ShowMobile ? (
-                    <div className="space-y-3">
-                      <label className="flex items-center gap-2 text-[11px] font-semibold text-slate-700 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={heroSticker3MobileCustom}
-                          onChange={(e) => setHeroSticker3MobileCustom(e.target.checked)}
-                          className="w-3.5 h-3.5 accent-forest cursor-pointer rounded"
-                        />
-                        <span>Personalizar posición y tamaño exclusivo para móvil</span>
-                      </label>
-
-                      {heroSticker3MobileCustom ? (
-                        <div className="space-y-2.5 pt-1">
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between">
-                              <label className="text-[10px] font-bold text-slate-600">Posición Horizontal Móvil (Eje X):</label>
-                              <span className="text-[10px] font-mono text-forest font-bold">{heroSticker3MobileX}%</span>
-                            </div>
-                            <input
-                              type="range"
-                              min={0}
-                              max={100}
-                              step={1}
-                              value={heroSticker3MobileX}
-                              onChange={(e) => setHeroSticker3MobileX(Number(e.target.value))}
-                              className="w-full accent-forest cursor-pointer"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between">
-                              <label className="text-[10px] font-bold text-slate-600">Posición Vertical Móvil (Eje Y):</label>
-                              <span className="text-[10px] font-mono text-forest font-bold">{heroSticker3MobileY}%</span>
-                            </div>
-                            <input
-                              type="range"
-                              min={0}
-                              max={100}
-                              step={1}
-                              value={heroSticker3MobileY}
-                              onChange={(e) => setHeroSticker3MobileY(Number(e.target.value))}
-                              className="w-full accent-forest cursor-pointer"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between">
-                              <label className="text-[10px] font-bold text-slate-600">Tamaño Móvil (Ancho):</label>
-                              <span className="text-[10px] font-mono text-forest font-bold">{heroSticker3MobileSize}px</span>
-                            </div>
-                            <input
-                              type="range"
-                              min={20}
-                              max={200}
-                              step={5}
-                              value={heroSticker3MobileSize}
-                              onChange={(e) => setHeroSticker3MobileSize(Number(e.target.value))}
-                              className="w-full accent-forest cursor-pointer"
-                            />
-                          </div>
+                    <div className="space-y-2.5 pt-1">
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-600">Posición Horizontal Móvil (Eje X):</label>
+                          <span className="text-[10px] font-mono text-forest font-bold">{heroSticker3MobileX}%</span>
                         </div>
-                      ) : (
-                        <p className="text-[10px] text-muted-foreground bg-slate-50 p-2 rounded-lg border border-slate-200/60">
-                          💡 Usando posición de escritorio ({heroSticker3X}%, {heroSticker3Y}%) con escala automática para móvil.
-                        </p>
-                      )}
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          step={1}
+                          value={heroSticker3MobileX}
+                          onChange={(e) => setHeroSticker3MobileX(Number(e.target.value))}
+                          className="w-full accent-forest cursor-pointer"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-600">Posición Vertical Móvil (Eje Y):</label>
+                          <span className="text-[10px] font-mono text-forest font-bold">{heroSticker3MobileY}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={0}
+                          max={100}
+                          step={1}
+                          value={heroSticker3MobileY}
+                          onChange={(e) => setHeroSticker3MobileY(Number(e.target.value))}
+                          className="w-full accent-forest cursor-pointer"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-600">Tamaño Móvil (Ancho):</label>
+                          <span className="text-[10px] font-mono text-forest font-bold">{heroSticker3MobileSize}px</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={20}
+                          max={250}
+                          step={5}
+                          value={heroSticker3MobileSize}
+                          onChange={(e) => setHeroSticker3MobileSize(Number(e.target.value))}
+                          className="w-full accent-forest cursor-pointer"
+                        />
+                      </div>
                     </div>
                   ) : (
                     <p className="text-[10px] text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200/80 font-medium">
@@ -4673,7 +5056,7 @@ export const WebBuilderSection: React.FC = () => {
               )}
 
               <div className="space-y-1.5 pt-1">
-                <label className="text-[10px] font-bold text-slate-600 block">Efectos Activos (Tocá para sumar o quitar):</label>
+                <label className="text-[10px] font-bold text-slate-600 block">Efectos Activos (Universal):</label>
                 <div className="grid grid-cols-2 gap-1.5">
                   {[
                     { id: 'float', label: '🌊 Flotación' },
