@@ -61,9 +61,11 @@ export const PreviewSectionWrapper: React.FC<PreviewSectionWrapperProps> = ({
   const { hoveredId, setHoveredId, currentlyEditingId } = useContext(PreviewHoverContext);
 
   const isCurrentlyEditing = currentlyEditingId === id;
-  const isThisHovered = hoveredId === id && !isCurrentlyEditing;
-  const isAnyHovered = hoveredId !== null && hoveredId !== currentlyEditingId;
-  const isOtherHovered = isAnyHovered && !isThisHovered && !isCurrentlyEditing;
+  const isDrawerOpenMode = Boolean(currentlyEditingId);
+
+  // Hover is completely disabled when any drawer is currently open
+  const isThisHovered = !isDrawerOpenMode && hoveredId === id;
+  const isOtherHovered = !isDrawerOpenMode && hoveredId !== null && hoveredId !== id;
 
   // Listen to drawer open events from the parent builder window and scroll into view smoothly
   useEffect(() => {
@@ -80,11 +82,6 @@ export const PreviewSectionWrapper: React.FC<PreviewSectionWrapperProps> = ({
             } else {
               el.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
-            setHoveredId(id);
-            // Keep the section highlighted for 3 seconds
-            setTimeout(() => {
-              setHoveredId((current) => current === id ? null : current);
-            }, 3000);
           }
         }
       }
@@ -92,9 +89,10 @@ export const PreviewSectionWrapper: React.FC<PreviewSectionWrapperProps> = ({
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [id, isBuilderPreview, setHoveredId]);
+  }, [id, isBuilderPreview]);
 
   const handleEditClick = (e: React.MouseEvent) => {
+    if (isDrawerOpenMode) return;
     e.stopPropagation();
     e.preventDefault();
     if (typeof window !== 'undefined' && window.parent) {
@@ -117,8 +115,12 @@ export const PreviewSectionWrapper: React.FC<PreviewSectionWrapperProps> = ({
   return (
     <div
       id={id}
-      onMouseEnter={() => setHoveredId(id)}
-      onMouseLeave={() => setHoveredId(null)}
+      onMouseEnter={() => {
+        if (!isDrawerOpenMode) setHoveredId(id);
+      }}
+      onMouseLeave={() => {
+        if (!isDrawerOpenMode) setHoveredId(null);
+      }}
       className={`relative transition-all duration-300 ${
         isHeader
           ? isThisHovered
@@ -130,15 +132,22 @@ export const PreviewSectionWrapper: React.FC<PreviewSectionWrapperProps> = ({
           ? 'z-40'
           : isOtherHovered
           ? 'z-10 filter blur-[4px] opacity-40 grayscale-[20%] transition-all duration-300'
+          : isCurrentlyEditing
+          ? 'z-30'
           : 'z-20 transition-all duration-300'
       }`}
     >
-      {/* Red Dashed Border Overlay when Hovered */}
+      {/* Gray Dashed Border on the section currently being edited in Drawer (No blur on others) */}
+      {isCurrentlyEditing && (
+        <div className="absolute inset-0 z-30 pointer-events-none border-2 border-dashed border-slate-400/80 bg-slate-400/5 transition-all animate-in fade-in duration-150 rounded-xl" />
+      )}
+
+      {/* Red Dashed Border Overlay when Hovered in Normal Mode */}
       {isThisHovered && (
         <div className="absolute inset-0 z-40 pointer-events-none border-2 border-dashed border-rose-500 bg-rose-500/5 transition-all animate-in fade-in duration-150 rounded-xl shadow-xs" />
       )}
 
-      {/* Bottom-Left Label Badge & Edit Button */}
+      {/* Bottom-Left Label Badge & Edit Button (Only in Normal Hover Mode) */}
       {isThisHovered && (
         <div className="absolute bottom-4 left-4 z-[99999] flex items-center gap-2 bg-rose-600/95 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-2xl border border-rose-400/60 backdrop-blur-md animate-in fade-in zoom-in-95 duration-150 select-none">
           <span className="tracking-tight text-white">{name}</span>
