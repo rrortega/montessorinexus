@@ -31,9 +31,7 @@ import {
   Calendar,
   Phone,
   Mail,
-  ChevronDown,
-  GripVertical,
-  Pencil
+  GripVertical
 } from 'lucide-react';
 
 export interface WebSectionItem {
@@ -414,7 +412,6 @@ export const SectionsManagerTab: React.FC<SectionsManagerTabProps> = ({
   const [isCatalogOpen, setIsCatalogOpen] = useState(false);
   const [searchFilter, setSearchFilter] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
@@ -459,14 +456,9 @@ export const SectionsManagerTab: React.FC<SectionsManagerTabProps> = ({
     };
     onChangeSections([...sections, newSection]);
     setIsCatalogOpen(false);
-    setEditingSectionId(newSection.id);
-  };
-
-  const handleUpdateSection = (id: string, updates: Partial<WebSectionItem>) => {
-    const newSections = sections.map(sec =>
-      sec.id === id ? { ...sec, ...updates } : sec
-    );
-    onChangeSections(newSections);
+    if (onSelectSectionForEdit) {
+      onSelectSectionForEdit(newSection.id);
+    }
   };
 
   const filteredTemplates = SECTION_TEMPLATES.filter(tmpl => {
@@ -623,8 +615,6 @@ export const SectionsManagerTab: React.FC<SectionsManagerTabProps> = ({
                     ? 'border-forest ring-2 ring-forest/30 bg-forest/5 shadow-md'
                     : !section.isEnabled
                     ? 'bg-slate-50/70 border-slate-200 opacity-60'
-                    : isEditing
-                    ? 'bg-forest/5 border-forest shadow-xs ring-2 ring-forest/20'
                     : 'bg-white border-slate-200/90 hover:border-slate-300 shadow-3xs'
                 }`}
               >
@@ -648,13 +638,9 @@ export const SectionsManagerTab: React.FC<SectionsManagerTabProps> = ({
                       <IconComp className="w-4 h-4" />
                     </div>
 
-                    <div
-                      onClick={() => onSelectSectionForEdit && onSelectSectionForEdit(section.id)}
-                      className="min-w-0 flex-1 cursor-pointer group"
-                      title="Click para abrir el editor dedicado de esta sección"
-                    >
+                    <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-bold text-xs text-slate-900 group-hover:text-forest transition-colors truncate">
+                        <span className="font-bold text-xs text-slate-900 truncate">
                           {section.name}
                         </span>
                         {template?.tag && (
@@ -669,7 +655,7 @@ export const SectionsManagerTab: React.FC<SectionsManagerTabProps> = ({
                     </div>
                   </div>
 
-                  {/* Right Actions: Visibility, Edit, Duplicate, Delete */}
+                  {/* Right Actions: Visibility, Duplicate, Delete */}
                   <div className="flex items-center gap-1 shrink-0">
 
                     {/* Visibility Toggle */}
@@ -684,22 +670,6 @@ export const SectionsManagerTab: React.FC<SectionsManagerTabProps> = ({
                       title={section.isEnabled ? 'Sección visible (click para ocultar)' : 'Sección oculta (click para activar)'}
                     >
                       {section.isEnabled ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                    </button>
-
-                    {/* Dedicated Section Editor Drawer Button */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (onSelectSectionForEdit) {
-                          onSelectSectionForEdit(section.id);
-                        } else {
-                          setEditingSectionId(isEditing ? null : section.id);
-                        }
-                      }}
-                      className="p-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-forest hover:text-white hover:border-forest text-slate-600 transition-all cursor-pointer shadow-3xs"
-                      title="Editar sección"
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
                     </button>
 
                     {/* Duplicate */}
@@ -723,79 +693,6 @@ export const SectionsManagerTab: React.FC<SectionsManagerTabProps> = ({
                     </button>
                   </div>
                 </div>
-
-                {/* Inline Edit Form when Expanded */}
-                {isEditing && (
-                  <div className="p-4 border-t border-forest/20 bg-white/90 rounded-b-2xl space-y-3 animate-in fade-in duration-200">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-slate-700">Nombre de Identificación:</label>
-                        <input
-                          type="text"
-                          value={section.name}
-                          onChange={(e) => handleUpdateSection(section.id, { name: e.target.value })}
-                          className="w-full px-2.5 py-1.5 text-xs font-semibold text-slate-900 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-forest/20 focus:border-forest"
-                        />
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-slate-700">Etiqueta Superior (Badge / Eyebrow):</label>
-                        <input
-                          type="text"
-                          value={section.badge || ''}
-                          onChange={(e) => handleUpdateSection(section.id, { badge: e.target.value })}
-                          placeholder="Ej: Nuestra Filosofía"
-                          className="w-full px-2.5 py-1.5 text-xs font-semibold text-slate-900 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-forest/20 focus:border-forest"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-700">Título Principal de la Sección:</label>
-                      <input
-                        type="text"
-                        value={section.title}
-                        onChange={(e) => handleUpdateSection(section.id, { title: e.target.value })}
-                        className="w-full px-2.5 py-1.5 text-xs font-bold text-slate-900 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-forest/20 focus:border-forest"
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-700">Subtítulo / Bajada Descriptiva:</label>
-                      <textarea
-                        value={section.subtitle || ''}
-                        onChange={(e) => handleUpdateSection(section.id, { subtitle: e.target.value })}
-                        rows={2}
-                        placeholder="Descripción o introducción explicativa..."
-                        className="w-full px-2.5 py-1.5 text-xs text-slate-800 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-forest/20 focus:border-forest"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-slate-700">Texto del Botón CTA (opcional):</label>
-                        <input
-                          type="text"
-                          value={section.ctaText || ''}
-                          onChange={(e) => handleUpdateSection(section.id, { ctaText: e.target.value })}
-                          placeholder="Ej: Quiero una cita o Más Información"
-                          className="w-full px-2.5 py-1.5 text-xs font-semibold text-slate-900 bg-white border border-slate-200 rounded-lg"
-                        />
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-slate-700">Enlace / Destino del Botón:</label>
-                        <input
-                          type="text"
-                          value={section.ctaUrl || ''}
-                          onChange={(e) => handleUpdateSection(section.id, { ctaUrl: e.target.value })}
-                          placeholder="Ej: /#contacto o https://wa.me/..."
-                          className="w-full px-2.5 py-1.5 text-xs text-slate-900 bg-white border border-slate-200 rounded-lg"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             );
           })}
