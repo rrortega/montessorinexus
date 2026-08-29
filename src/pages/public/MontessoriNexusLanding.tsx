@@ -2085,25 +2085,7 @@ export const MontessoriNexusLanding: React.FC = () => {
       }`}
     >
       {/* ========================================================================= */}
-      {/* 1. TOP ANNOUNCEMENT BAR */}
-      {/* ========================================================================= */}
-      <div className={`${isDark ? 'bg-[#101811] border-[#243226]' : 'bg-[#162218] border-[#243226]'} text-slate-200 text-xs py-2 px-4 text-center border-b`}>
-        <div className="max-w-7xl mx-auto flex items-center justify-center gap-2 flex-wrap font-medium">
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#C4661F] text-white text-[10px] font-bold uppercase tracking-wider">
-            {t.announcement.badge}
-          </span>
-          <span>{t.announcement.text}</span>
-          <a
-            href="/colegio/ceiba"
-            className="text-[#C4661F] font-bold hover:underline inline-flex items-center gap-0.5 ml-1"
-          >
-            {t.announcement.link}
-          </a>
-        </div>
-      </div>
-
-      {/* ========================================================================= */}
-      {/* 2. INITIAL TOP HEADER */}
+      {/* INITIAL TOP HEADER */}
       {/* ========================================================================= */}
       <header className={`w-full py-4 sm:py-5 border-b transition-colors ${isDark ? 'bg-[#0e1710]/90 border-slate-800' : 'bg-[#FEFAE0] border-stone-200/60'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
