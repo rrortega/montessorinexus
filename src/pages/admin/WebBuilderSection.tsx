@@ -4660,26 +4660,23 @@ export const WebBuilderSection: React.FC = () => {
             }
             headerActions={
               (activeTab.startsWith('section:') || activeTab === 'hero' || activeTab === 'cta') && activeDrawerLangsList.length > 1 ? (
-                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/80 shadow-3xs">
-                  {activeDrawerLangsList.map(lang => {
-                    const isSelected = builderEditorLang === lang.code;
-                    return (
-                      <button
-                        key={lang.code}
-                        type="button"
-                        onClick={() => setBuilderEditorLang(lang.code)}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                          isSelected
-                            ? 'bg-white text-forest shadow-3xs ring-1 ring-forest/20'
-                            : 'text-slate-500 hover:text-slate-900'
-                        }`}
-                        title={`Editar textos en ${lang.name}`}
-                      >
-                        <span className="text-xs leading-none">{lang.flag}</span>
-                        <span className="font-mono uppercase text-[10px]">{lang.code}</span>
-                      </button>
-                    );
-                  })}
+                <div className="relative flex items-center shrink-0">
+                  <div className="flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200/90 rounded-xl pl-2.5 pr-2 py-1.5 shadow-3xs transition-all focus-within:ring-2 focus-within:ring-forest/20 focus-within:border-forest">
+                    <Globe className="w-3.5 h-3.5 text-forest shrink-0" />
+                    <select
+                      value={builderEditorLang}
+                      onChange={(e) => setBuilderEditorLang(e.target.value)}
+                      className="text-xs font-bold text-slate-800 bg-transparent border-0 focus:outline-none cursor-pointer pr-4 appearance-none font-sans"
+                      title="Seleccionar idioma de edición"
+                    >
+                      {activeDrawerLangsList.map(lang => (
+                        <option key={lang.code} value={lang.code} className="text-slate-900 font-semibold py-1">
+                          {lang.flag} {lang.name} ({lang.code.toUpperCase()})
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-3 h-3 text-slate-400 pointer-events-none absolute right-2.5 shrink-0" />
+                  </div>
                 </div>
               ) : undefined
             }
