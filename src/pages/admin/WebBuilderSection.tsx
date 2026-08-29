@@ -582,6 +582,139 @@ const CustomFontPicker = ({
   );
 };
 
+const HERO_FRAME_SHAPES: Array<{
+  id: 'none' | 'mosaic' | 'blob-1' | 'blob-2' | 'arch' | 'squircle' | 'leaf' | 'egg' | 'circle';
+  name: string;
+  desc: string;
+  previewClass: string;
+}> = [
+  { id: 'none', name: 'Sin Forma', desc: 'Directo / PNG transparente sin marco', previewClass: 'rounded-none border-dashed' },
+  { id: 'mosaic', name: 'Mosaico Cápsulas', desc: 'Collage en cuadrícula de cápsulas verticales', previewClass: 'rounded-md bg-forest/30' },
+  { id: 'blob-1', name: 'Orgánica Suave', desc: 'Curvatura fluida asimétrica', previewClass: 'rounded-[52%_48%_68%_32%/42%_58%_42%_58%]' },
+  { id: 'blob-2', name: 'Gota Asimétrica', desc: 'Curva orgánica pronunciada', previewClass: 'rounded-[60%_40%_30%_70%/60%_30%_70%_40%]' },
+  { id: 'arch', name: 'Arco Nórdico', desc: 'Cúpula superior con base recta', previewClass: 'rounded-t-full rounded-b-none' },
+  { id: 'squircle', name: 'Superelipse', desc: 'Cuadrado suavizado armónico', previewClass: 'rounded-[28%]' },
+  { id: 'leaf', name: 'Hoja Botánica', desc: 'Esquinas alternadas agudas y suaves', previewClass: 'rounded-[80%_20%_80%_20%/20%_80%_20%_80%]' },
+  { id: 'egg', name: 'Cápsula Oval', desc: 'Forma ovalada continua', previewClass: 'rounded-[50%/60%_60%_40%_40%]' },
+  { id: 'circle', name: 'Circular', desc: 'Círculo geométrico simétrico', previewClass: 'rounded-full' },
+];
+
+const HeroFrameShapeCustomSelect = ({
+  value,
+  onChange,
+  isMorphMode = false,
+  morphShapes = [],
+  onToggleMorphShape,
+}: {
+  value: string;
+  onChange: (shapeId: string) => void;
+  isMorphMode?: boolean;
+  morphShapes?: string[];
+  onToggleMorphShape?: (shapeId: string) => void;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const selectedShape = HERO_FRAME_SHAPES.find((s) => s.id === value) || HERO_FRAME_SHAPES[0];
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  return (
+    <div className="relative w-full" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-3 py-2.5 text-xs bg-white border border-slate-200 hover:border-slate-300 rounded-xl text-slate-800 shadow-xs flex items-center justify-between gap-2 focus:ring-2 focus:ring-forest/20 focus:border-forest transition-all text-left cursor-pointer"
+      >
+        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+          <div className={`w-5 h-5 bg-forest/20 border-2 border-forest/50 ${selectedShape.previewClass} shrink-0`} />
+          <div className="flex flex-col min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-slate-900 text-xs truncate">
+                {isMorphMode ? `${morphShapes.length} Formas en Ciclo` : selectedShape.name}
+              </span>
+              {isMorphMode && (
+                <span className="text-[9px] font-bold text-forest bg-forest/10 px-1.5 py-0.5 rounded-full">
+                  Morphing
+                </span>
+              )}
+            </div>
+            <span className="text-[10px] text-muted-foreground truncate">
+              {isMorphMode
+                ? morphShapes.map((id) => HERO_FRAME_SHAPES.find((s) => s.id === id)?.name).filter(Boolean).join(', ')
+                : selectedShape.desc}
+            </span>
+          </div>
+        </div>
+        <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180 text-forest' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-full left-0 right-0 mt-1.5 z-[100] bg-white border border-slate-200 rounded-2xl shadow-xl p-2 space-y-1 max-h-72 overflow-y-auto animate-in fade-in zoom-in-95 duration-150 w-full ring-1 ring-slate-900/10">
+          <div className="px-2 py-1 flex items-center justify-between border-b border-slate-100 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+            <span>{isMorphMode ? 'Seleccionar Formas de Morphing' : 'Forma del Marco'}</span>
+            <span className="text-slate-400 font-normal lowercase">
+              {isMorphMode ? 'clic para activar/desactivar' : 'selección única'}
+            </span>
+          </div>
+
+          {HERO_FRAME_SHAPES.map((shape) => {
+            const isSelected = isMorphMode
+              ? morphShapes.includes(shape.id)
+              : shape.id === value;
+
+            return (
+              <button
+                key={shape.id}
+                type="button"
+                onClick={() => {
+                  if (isMorphMode && onToggleMorphShape) {
+                    onToggleMorphShape(shape.id);
+                  } else {
+                    onChange(shape.id);
+                    setIsOpen(false);
+                  }
+                }}
+                className={`w-full flex items-center justify-between gap-2.5 p-2 rounded-xl text-left transition-all cursor-pointer ${
+                  isSelected
+                    ? 'bg-forest/10 border border-forest/30 text-forest font-bold shadow-3xs'
+                    : 'hover:bg-slate-50 border border-transparent text-slate-700'
+                }`}
+              >
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  <div className={`w-5 h-5 bg-forest/20 border-2 border-forest/40 ${shape.previewClass} shrink-0`} />
+                  <div className="flex flex-col min-w-0">
+                    <span className={`text-xs ${isSelected ? 'font-bold text-forest' : 'font-semibold text-slate-800'}`}>
+                      {shape.name}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground truncate">
+                      {shape.desc}
+                    </span>
+                  </div>
+                </div>
+
+                {isSelected && (
+                  <Check className="w-4 h-4 text-forest shrink-0" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const MultilingualTextareaField = ({
   label,
   valueEs,
@@ -6862,70 +6995,30 @@ export const WebBuilderSection: React.FC = () => {
                           </div>
                         </div>
 
-                        {/* Selector de Forma Orgánica / Geométrica (Single vs Multi) */}
-                        <div className="space-y-2 pt-1">
-                          <div className="flex items-center justify-between">
-                            <label className="text-[11px] font-bold text-slate-700 block">
-                              {heroBlobAnimateMorph
-                                ? 'Formas en el Ciclo de Animación (Selección Múltiple):'
-                                : 'Forma Geométrica del Marco (Selección Única):'}
-                            </label>
-                            {heroBlobAnimateMorph && (
-                              <span className="text-[10px] font-bold text-forest bg-forest/10 px-2 py-0.5 rounded-full">
-                                {heroBlobMorphShapes.length} seleccionadas
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-2">
-                            {[
-                              { id: 'none', label: '✨ Sin Forma (Directo / PNG)' },
-                              { id: 'mosaic', label: '🧩 Mosaico Cápsulas (Collage)' },
-                              { id: 'blob-1', label: '🌿 Orgánica Suave' },
-                              { id: 'blob-2', label: '💧 Gota Asimétrica' },
-                              { id: 'arch', label: '🏛️ Arco Nórdico' },
-                              { id: 'squircle', label: '🔲 Superelipse' },
-                              { id: 'leaf', label: '🍃 Hoja Botánica' },
-                              { id: 'egg', label: '🥚 Cápsula Oval' },
-                              { id: 'circle', label: '⭕ Circular' },
-                            ].map((s) => {
-                              const isSelected = heroBlobAnimateMorph
-                                ? heroBlobMorphShapes.includes(s.id)
-                                : heroBlobRadiusType === s.id;
-
-                              return (
-                                <button
-                                  key={s.id}
-                                  type="button"
-                                  onClick={() => {
-                                    if (heroBlobAnimateMorph) {
-                                      if (heroBlobMorphShapes.includes(s.id)) {
-                                        if (heroBlobMorphShapes.length > 1) {
-                                          setHeroBlobMorphShapes(heroBlobMorphShapes.filter((x) => x !== s.id));
-                                        } else {
-                                          toast.error('Debes mantener al menos una forma seleccionada.');
-                                        }
-                                      } else {
-                                        setHeroBlobMorphShapes([...heroBlobMorphShapes, s.id]);
-                                      }
-                                    } else {
-                                      setHeroBlobRadiusType(s.id as any);
-                                    }
-                                  }}
-                                  className={`py-2 px-2 text-xs font-medium border rounded-xl transition-all cursor-pointer text-center flex items-center justify-between gap-1.5 ${
-                                    isSelected
-                                      ? 'border-forest bg-forest/10 text-forest font-bold shadow-xs ring-1 ring-forest/30'
-                                      : 'border-slate-200 text-slate-700 bg-slate-50 hover:bg-slate-100'
-                                  }`}
-                                >
-                                  <span className="truncate">{s.label}</span>
-                                  {isSelected && (
-                                    <span className="w-2 h-2 rounded-full bg-forest shrink-0" />
-                                  )}
-                                </button>
-                              );
-                            })}
-                          </div>
+                        {/* Selector de Forma Orgánica / Geométrica (Custom Select) */}
+                        <div className="space-y-1.5 pt-1">
+                          <label className="text-[11px] font-bold text-slate-700 block">
+                            {heroBlobAnimateMorph
+                              ? 'Formas en el Ciclo de Animación (Morphing):'
+                              : 'Forma Geométrica del Marco:'}
+                          </label>
+                          <HeroFrameShapeCustomSelect
+                            value={heroBlobRadiusType}
+                            onChange={(sId) => setHeroBlobRadiusType(sId as any)}
+                            isMorphMode={heroBlobAnimateMorph}
+                            morphShapes={heroBlobMorphShapes}
+                            onToggleMorphShape={(sId) => {
+                              if (heroBlobMorphShapes.includes(sId)) {
+                                if (heroBlobMorphShapes.length > 1) {
+                                  setHeroBlobMorphShapes(heroBlobMorphShapes.filter((x) => x !== sId));
+                                } else {
+                                  toast.error('Debes mantener al menos una forma seleccionada.');
+                                }
+                              } else {
+                                setHeroBlobMorphShapes([...heroBlobMorphShapes, sId]);
+                              }
+                            }}
+                          />
                         </div>
 
                         {/* Slider de Escala */}
