@@ -48,6 +48,7 @@ import {
   Activity
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { MontessoriNexusLogo } from '@/components/MontessoriNexusLogo';
 
 // =========================================================================
 // CONFIGURABLE PRICING CONSTANTS (Supports Environment Variables)
@@ -2270,13 +2271,7 @@ export const MontessoriNexusLanding: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
           {/* Brand Logo */}
           <a href="/" className="flex items-center gap-3 shrink-0 group">
-            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#C4661F] flex items-center justify-center shadow-md shadow-[#C4661F]/25 border border-white/20 p-2 shrink-0 group-hover:scale-105 transition-transform">
-              <img
-                src="/images/montessori-nexus-monogram.png"
-                alt="Montessori Nexus Logo"
-                className="w-full h-full object-contain filter brightness-0 invert drop-shadow-xs"
-              />
-            </div>
+            <MontessoriNexusLogo size={44} className="group-hover:scale-105 transition-transform duration-200" />
             <div className="flex flex-col">
               <span className={`text-xl font-serif font-black tracking-tight flex items-center gap-1 leading-none ${isDark ? 'text-white' : 'text-[#162218]'}`}>
                 Montessori<span className="text-[#C4661F] font-sans font-bold">Nexus</span>
@@ -2408,14 +2403,10 @@ export const MontessoriNexusLanding: React.FC = () => {
               {/* Only Icon Logo */}
               <a
                 href="/"
-                className="w-9 h-9 rounded-full bg-[#C4661F] text-white flex items-center justify-center shadow-md shadow-[#C4661F]/30 hover:scale-105 transition-transform shrink-0 p-1.5 border border-white/20"
+                className="w-9 h-9 flex items-center justify-center hover:scale-105 transition-transform shrink-0"
                 title="MontessoriNexus"
               >
-                <img
-                  src="/images/montessori-nexus-monogram.png"
-                  alt="Montessori Nexus Logo"
-                  className="w-full h-full object-contain filter brightness-0 invert drop-shadow-xs"
-                />
+                <MontessoriNexusLogo size={36} />
               </a>
 
               {/* Compact Menu */}
@@ -4746,14 +4737,8 @@ export const MontessoriNexusLanding: React.FC = () => {
       }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8 mb-10 text-left">
           <div className="space-y-3">
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-full bg-[#C4661F] flex items-center justify-center p-1 border border-white/20 shadow-xs">
-                <img
-                  src="/images/montessori-nexus-monogram.png"
-                  alt="Montessori Nexus Logo"
-                  className="w-full h-full object-contain filter brightness-0 invert"
-                />
-              </div>
+            <div className="flex items-center gap-3">
+              <MontessoriNexusLogo size={32} />
               <span className="text-base font-serif font-bold text-white">MontessoriNexus</span>
             </div>
             <p className="text-stone-400 leading-relaxed text-[11px]">
