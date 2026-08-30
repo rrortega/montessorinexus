@@ -17876,6 +17876,97 @@ app.use(async (req, res) => {
         }
       }
 
+      // Check if the route is a dynamic blog post route (/blog/:slug or /colegio/:schoolSlug/blog/:slug)
+      const blogPostMatch = req.path.match(/^\/(?:colegio\/([^\/]+)\/)?blog\/([^\/\?#]+)/i);
+      if (blogPostMatch && !req.path.startsWith('/api/') && !req.path.startsWith('/blog/categories') && !req.path.startsWith('/blog/tags')) {
+        const schoolSlug = blogPostMatch[1] || null;
+        const postSlug = blogPostMatch[2];
+
+        try {
+          // Find the blog post translation by slug
+          const translation = await prisma.blogPostTranslation.findFirst({
+            where: {
+              slug: postSlug,
+              post: {
+                status: 'PUBLISHED',
+                ...(schoolSlug ? { school: { slug: schoolSlug } } : { schoolId: null })
+              }
+            },
+            include: {
+              post: {
+                include: {
+                  school: true,
+                  author: {
+                    select: { fullName: true }
+                  }
+                }
+              }
+            }
+          });
+
+          if (translation && translation.post) {
+            const post = translation.post;
+            const school = post.school;
+            const schoolName = school?.name || 'MontessoriNexus';
+            const siteBrand = school ? `${schoolName} • Blog Montessori` : 'MontessoriNexus • Blog Pedagógico';
+            
+            const pageTitle = translation.metaTitle || translation.title || 'Artículo Montessori';
+            const rawDesc = translation.metaDescription || translation.excerpt || '';
+            const description = rawDesc 
+              ? (rawDesc.length > 220 ? rawDesc.slice(0, 217) + '...' : rawDesc)
+              : 'Descubre artículos y reflexiones sobre pedagogía Montessori, desarrollo infantil y ambientes preparados.';
+            
+            let ogImageUrl = post.coverImage || '';
+            if (ogImageUrl.startsWith('/')) {
+              ogImageUrl = `${protocol}://${host}${ogImageUrl}`;
+            } else if (ogImageUrl && !ogImageUrl.startsWith('http://') && !ogImageUrl.startsWith('https://')) {
+              ogImageUrl = `${protocol}://${host}/${ogImageUrl.replace(/^\/+/, '')}`;
+            }
+            if (!ogImageUrl) {
+              ogImageUrl = `${protocol}://${host}/images/og-montessorinexus-es.png`;
+            }
+
+            const authorName = post.customAuthorName || post.author?.fullName || 'Equipo Montessori';
+            const escapeHtmlAttr = (str) => String(str || '')
+              .replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;');
+
+            html = html.replace(/<title>[^<]*<\/title>/, `<title>${escapeHtmlAttr(pageTitle)} | ${escapeHtmlAttr(siteBrand)}</title>`);
+            html = html.replace(/<meta name="description" content="[^"]*"\s*\/?>/, `<meta name="description" content="${escapeHtmlAttr(description)}" />`);
+            html = html.replace(/<meta property="og:title" content="[^"]*"\s*\/?>/, `<meta property="og:title" content="${escapeHtmlAttr(pageTitle)}" />`);
+            html = html.replace(/<meta property="og:description" content="[^"]*"\s*\/?>/, `<meta property="og:description" content="${escapeHtmlAttr(description)}" />`);
+            html = html.replace(/<meta property="og:image" content="[^"]*"\s*\/?>/, `<meta property="og:image" content="${ogImageUrl}" />`);
+            html = html.replace(/<meta name="twitter:title" content="[^"]*"\s*\/?>/, `<meta name="twitter:title" content="${escapeHtmlAttr(pageTitle)}" />`);
+            html = html.replace(/<meta name="twitter:description" content="[^"]*"\s*\/?>/, `<meta name="twitter:description" content="${escapeHtmlAttr(description)}" />`);
+            html = html.replace(/<meta name="twitter:image" content="[^"]*"\s*\/?>/, `<meta name="twitter:image" content="${ogImageUrl}" />`);
+
+            const extraMetaTags = `
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="${canonicalUrl}" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:alt" content="${escapeHtmlAttr(post.coverImageAlt || pageTitle)}" />
+    <meta property="og:site_name" content="${escapeHtmlAttr(siteBrand)}" />
+    <meta property="article:published_time" content="${(post.publishedAt || post.createdAt).toISOString()}" />
+    <meta property="article:author" content="${escapeHtmlAttr(authorName)}" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="author" content="${escapeHtmlAttr(authorName)}" />`;
+
+            if (html.includes('</head>')) {
+              html = html.replace('</head>', `${extraMetaTags}\n  </head>`);
+            }
+
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            return res.send(html);
+          }
+        } catch (dbErr) {
+          console.warn('[SPA-BlogPost-OG] Could not load blog post for OpenGraph metadata:', dbErr.message);
+        }
+      }
+
       // Check if the route is a dynamic process or admission portal route (/admision/:token, /admissions/portal/:token, /proceso/:id, /process/:id)
       const processMatch = req.path.match(/^\/(?:admision|admissions(?:\/portal)?|proceso|process|procesos)(?:\/expediente)?\/([a-zA-Z0-9_-]+)/i);
       if (processMatch) {

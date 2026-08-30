@@ -75,7 +75,7 @@ export function createBlogRouter(prisma) {
       const search = req.query.search ? String(req.query.search).trim() : null;
       const featured = req.query.featured === 'true';
       const page = Math.max(1, parseInt(req.query.page || '1', 10));
-      const limit = Math.min(50, Math.max(1, parseInt(req.query.limit || '12', 10)));
+      const limit = Math.min(100, Math.max(1, parseInt(req.query.limit || '18', 10)));
       const skip = (page - 1) * limit;
 
       const whereClause = {

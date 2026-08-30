@@ -320,6 +320,10 @@ function slugifyHeading(text: string): string {
                       <img
                         src={post.author.avatarUrl}
                         alt={post.author.fullName}
+                        width={40}
+                        height={40}
+                        loading="eager"
+                        decoding="async"
                         className="w-10 h-10 rounded-full object-cover border border-border"
                       />
                     ) : (
@@ -351,13 +355,16 @@ function slugifyHeading(text: string): string {
                 </div>
               </div>
 
-              {/* Cover Image */}
+              {/* Cover Image (LCP element - eager with high priority & aspect-ratio container) */}
               {post.coverImage && (
-                <div className="rounded-3xl overflow-hidden border border-border shadow-xs bg-white dark:bg-card">
+                <div className="rounded-3xl overflow-hidden border border-border shadow-xs bg-muted/40 relative aspect-video sm:aspect-[21/9] max-h-[520px]">
                   <img
                     src={post.coverImage}
                     alt={post.coverImageAlt || post.title}
-                    className="w-full max-h-[500px] object-cover"
+                    loading="eager"
+                    decoding="async"
+                    fetchPriority="high"
+                    className="w-full h-full object-cover"
                   />
                   {post.coverImageAlt && (
                     <p className="text-[11px] text-muted-foreground text-center py-2 px-4 bg-muted/20 border-t border-border">
@@ -378,6 +385,21 @@ function slugifyHeading(text: string): string {
               <div className="prose prose-stone dark:prose-invert max-w-none text-foreground text-base sm:text-[17px] leading-relaxed space-y-5 pt-2">
                 <ReactMarkdown
                   components={{
+                    img: ({ node, src, alt, ...props }) => (
+                      <figure className="my-6 space-y-2">
+                        <div className="rounded-2xl overflow-hidden border border-border bg-muted/30 aspect-video flex items-center justify-center">
+                          <img
+                            src={src}
+                            alt={alt || ''}
+                            loading="lazy"
+                            decoding="async"
+                            className="w-full h-full object-cover"
+                            {...props}
+                          />
+                        </div>
+                        {alt && <figcaption className="text-center text-xs text-muted-foreground italic">{alt}</figcaption>}
+                      </figure>
+                    ),
                     h2: ({ node, children, ...props }) => {
                       const text = extractTextFromChildren(children);
                       const id = slugifyHeading(text);

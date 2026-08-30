@@ -52,16 +52,26 @@ export const BlogMetaSEO: React.FC<BlogMetaSEOProps> = ({
     }
     setMeta('name', 'robots', 'index, follow, max-image-preview:large');
 
-    // 3. OpenGraph / Facebook
+    // Normalize absolute image URL for crawlers and social platforms
+    const absoluteImageUrl = image
+      ? (image.startsWith('http://') || image.startsWith('https://')
+          ? image
+          : `${window.location.origin}${image.startsWith('/') ? '' : '/'}${image}`)
+      : `${window.location.origin}/images/og-montessorinexus-es.png`;
+
+    // 3. OpenGraph / Facebook / WhatsApp / LinkedIn
     setMeta('property', 'og:type', 'article');
     setMeta('property', 'og:title', title);
     setMeta('property', 'og:description', description);
     setMeta('property', 'og:url', url);
     setMeta('property', 'og:site_name', siteBrand);
-    if (image) {
-      setMeta('property', 'og:image', image);
-      setMeta('property', 'og:image:alt', title);
-    }
+    setMeta('property', 'og:image', absoluteImageUrl);
+    setMeta('property', 'og:image:secure_url', absoluteImageUrl);
+    setMeta('property', 'og:image:alt', title);
+    setMeta('property', 'og:image:width', '1200');
+    setMeta('property', 'og:image:height', '630');
+    setMeta('property', 'og:image:type', 'image/png');
+
     if (publishedTime) {
       setMeta('property', 'article:published_time', publishedTime);
     }
@@ -70,16 +80,15 @@ export const BlogMetaSEO: React.FC<BlogMetaSEOProps> = ({
     }
     if (authorName) {
       setMeta('property', 'article:author', authorName);
+      setMeta('name', 'author', authorName);
     }
 
     // 4. Twitter Cards
-    setMeta('name', 'twitter:card', image ? 'summary_large_image' : 'summary');
+    setMeta('name', 'twitter:card', 'summary_large_image');
     setMeta('name', 'twitter:title', title);
     setMeta('name', 'twitter:description', description);
-    if (image) {
-      setMeta('name', 'twitter:image', image);
-      setMeta('name', 'twitter:image:alt', title);
-    }
+    setMeta('name', 'twitter:image', absoluteImageUrl);
+    setMeta('name', 'twitter:image:alt', title);
 
     // 5. Canonical Link
     let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
@@ -97,7 +106,7 @@ export const BlogMetaSEO: React.FC<BlogMetaSEOProps> = ({
     '@type': 'BlogPosting',
     'headline': title,
     'description': description,
-    'image': image ? [image] : [],
+    'image': image ? [(image.startsWith('http') ? image : `${typeof window !== 'undefined' ? window.location.origin : ''}${image}`)] : [],
     'datePublished': publishedTime,
     'dateModified': modifiedTime || publishedTime,
     'author': [{

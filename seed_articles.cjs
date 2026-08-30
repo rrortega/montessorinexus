@@ -184,7 +184,7 @@ async function main() {
           coverImageAlt: esMeta.coverImageAlt || title,
           customAuthorName: assignedAuthor.name,
           customAuthorAvatar: assignedAuthor.avatar,
-          status: 'published',
+          status: 'PUBLISHED',
           isFeatured: false,
           readingTimeMinutes: readingTime,
           translations: {
@@ -203,7 +203,7 @@ async function main() {
           coverImageAlt: esMeta.coverImageAlt || title,
           customAuthorName: assignedAuthor.name,
           customAuthorAvatar: assignedAuthor.avatar,
-          status: 'published',
+          status: 'PUBLISHED',
           isFeatured: false,
           publishedAt: new Date(),
           readingTimeMinutes: readingTime,

@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useSiteSettings, getButtonRadiusClass } from '@/context/SettingsContext';
 import {
   BookOpen, Search, Clock, Calendar, Eye, ArrowRight, Sparkles, Tag,
-  Folder, ChevronRight, User as UserIcon, CheckCircle2
+  Folder, ChevronRight, ChevronLeft, User as UserIcon, CheckCircle2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BlogNavbar } from '@/components/blog/BlogNavbar';
@@ -45,6 +45,16 @@ export const BlogIndexPage: React.FC = () => {
   const [activeLocale, setActiveLocale] = useState<string>('es');
   const [loading, setLoading] = useState<boolean>(true);
 
+  // Pagination state (18 items per page)
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [totalPosts, setTotalPosts] = useState<number>(0);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategory, searchQuery, activeLocale]);
+
   useEffect(() => {
     const fetchBlogData = async () => {
       setLoading(true);
@@ -60,6 +70,9 @@ export const BlogIndexPage: React.FC = () => {
         }
 
         const params = new URLSearchParams();
+        params.append('page', String(currentPage));
+        params.append('limit', '18');
+
         if (selectedCategory !== 'ALL') {
           params.append('category', selectedCategory);
         }
@@ -77,6 +90,10 @@ export const BlogIndexPage: React.FC = () => {
         if (postsRes.ok) {
           const data = await postsRes.json();
           setPosts(data.data || []);
+          if (data.pagination) {
+            setTotalPages(data.pagination.totalPages || 1);
+            setTotalPosts(data.pagination.total || 0);
+          }
         }
 
         if (catRes.ok) {
@@ -91,7 +108,7 @@ export const BlogIndexPage: React.FC = () => {
     };
 
     fetchBlogData();
-  }, [isSaaSBlog, schoolSlugFromUrl, selectedCategory, searchQuery, activeLocale]);
+  }, [isSaaSBlog, schoolSlugFromUrl, selectedCategory, searchQuery, activeLocale, currentPage]);
 
   // Featured and regular posts
   const featuredPost = useMemo(() => {
@@ -227,7 +244,6 @@ export const BlogIndexPage: React.FC = () => {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.35 }}
             className="space-y-10"
           >
             {/* Featured Post Hero */}
@@ -235,10 +251,13 @@ export const BlogIndexPage: React.FC = () => {
               <div className="bg-white dark:bg-card rounded-3xl border border-border overflow-hidden shadow-xs hover:shadow-md transition-all group">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
                   {featuredPost.coverImage && (
-                    <div className="lg:col-span-7 h-64 lg:h-auto overflow-hidden relative">
+                    <div className="lg:col-span-7 h-64 sm:h-72 lg:h-auto min-h-[260px] overflow-hidden relative bg-muted/40">
                       <img
                         src={featuredPost.coverImage}
                         alt={featuredPost.coverImageAlt || featuredPost.title}
+                        loading="eager"
+                        decoding="async"
+                        fetchPriority="high"
                         className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
                       />
                       <div className={`absolute top-4 left-4 ${isSaaSBlog ? 'bg-[#C4661F]' : 'bg-forest'} text-white text-[10px] font-bold tracking-wider uppercase px-3 py-1 rounded-full shadow-md`}>
@@ -282,6 +301,10 @@ export const BlogIndexPage: React.FC = () => {
                           <img
                             src={featuredPost.author.avatarUrl}
                             alt={featuredPost.author.fullName}
+                            width={32}
+                            height={32}
+                            loading="lazy"
+                            decoding="async"
                             className="w-8 h-8 rounded-full object-cover border border-border"
                           />
                         ) : (
@@ -323,10 +346,13 @@ export const BlogIndexPage: React.FC = () => {
                     >
                       <div className="space-y-3">
                         {post.coverImage ? (
-                          <Link to={getPostDetailUrl(post.slug)} className="block aspect-video overflow-hidden">
+                          <Link to={getPostDetailUrl(post.slug)} className="block aspect-video overflow-hidden bg-muted/40 relative">
                             <img
                               src={post.coverImage}
                               alt={post.coverImageAlt || post.title}
+                              loading="lazy"
+                              decoding="async"
+                              fetchPriority="low"
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             />
                           </Link>
@@ -364,12 +390,72 @@ export const BlogIndexPage: React.FC = () => {
                           {post.author?.fullName || 'Equipo Montessori'}
                         </span>
                         <span className="flex items-center gap-1 font-mono">
-                          <Clock className="w-3 h-3" /> {post.readingTimeMinutes} min
+                          <Clock className="w-3.5 h-3.5" /> {post.readingTimeMinutes} min
                         </span>
                       </div>
                     </article>
                   ))}
                 </div>
+
+                {/* Pagination Controls (18 items per page) */}
+                {totalPages > 1 && (
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-border/60">
+                    <p className="text-xs text-muted-foreground font-medium">
+                      Mostrando página <span className="font-semibold text-foreground">{currentPage}</span> de <span className="font-semibold text-foreground">{totalPages}</span> ({totalPosts} artículos en total)
+                    </p>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCurrentPage(p => Math.max(1, p - 1));
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        disabled={currentPage === 1}
+                        className="px-3 py-2 rounded-xl border border-border bg-white dark:bg-card text-xs font-semibold text-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-1 cursor-pointer"
+                      >
+                        <ChevronLeft className="w-3.5 h-3.5" />
+                        <span>Anterior</span>
+                      </button>
+
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
+                          const isCurrent = page === currentPage;
+                          return (
+                            <button
+                              key={page}
+                              type="button"
+                              onClick={() => {
+                                setCurrentPage(page);
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                              }}
+                              className={`w-8 h-8 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                                isCurrent
+                                  ? (isSaaSBlog ? 'bg-[#C4661F] text-white shadow-xs' : 'bg-forest text-white shadow-xs')
+                                  : 'bg-white dark:bg-card border border-border text-muted-foreground hover:bg-muted hover:text-foreground'
+                              }`}
+                            >
+                              {page}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCurrentPage(p => Math.min(totalPages, p + 1));
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        disabled={currentPage === totalPages}
+                        className="px-3 py-2 rounded-xl border border-border bg-white dark:bg-card text-xs font-semibold text-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>Siguiente</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </motion.div>

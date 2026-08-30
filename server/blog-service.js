@@ -483,3 +483,119 @@ export async function cleanupBlogPostMedia(post, schoolId = null, prisma = null)
     }
   }
 }
+
+/**
+ * Evaluates article content against existing categories (or requested category)
+ * and resolves or creates the most appropriate pedagogical category.
+ */
+export async function resolveOrCreateCategoryForBlog({ title, content, requestedCategory, schoolId = null, prisma }) {
+  if (!prisma) return null;
+
+  // 1. Fetch all existing categories for this scope
+  const existingCategories = await prisma.blogCategory.findMany({
+    where: { schoolId: schoolId || null }
+  });
+
+  // 2. If explicit requestedCategory provided, search by slug or name
+  if (requestedCategory) {
+    const targetSlug = slugify(requestedCategory);
+    const found = existingCategories.find(c => c.slug === targetSlug || c.name.toLowerCase() === requestedCategory.toLowerCase());
+    if (found) return found;
+
+    return await prisma.blogCategory.create({
+      data: {
+        schoolId: schoolId || null,
+        name: requestedCategory.trim(),
+        slug: targetSlug || 'general',
+        description: `Artículos y recursos sobre ${requestedCategory.trim()}`
+      }
+    });
+  }
+
+  // 3. Ask AI to classify into existing categories or propose the ideal one
+  try {
+    const { apiKey, baseUrl, textModel } = await getBlogAiConfig(schoolId, prisma);
+    if (apiKey) {
+      const existingListStr = existingCategories.map(c => `- ID: "${c.id}", Nombre: "${c.name}", Slug: "${c.slug}", Desc: "${c.description || ''}"`).join('\n');
+      
+      const prompt = `Analiza el siguiente artículo educativo y determina cuál es la categoría pedagógica más precisa.
+Título: "${title}"
+Contenido (extracto):
+${(content || '').slice(0, 2000)}
+
+Categorías existentes en la base de datos:
+${existingListStr || '(Ninguna categoría previa)'}
+
+Instrucciones:
+1. Si el artículo encaja claramente en una de las categorías existentes, selecciona su "existingCategoryId".
+2. Si ninguna categoría existente describe adecuadamente la temática (por ejemplo: "Educación Emocional", "Neurociencia y Aprendizaje", "Tecnología y Familia", "Vida Práctica y Autonomía", "Crianza Consciente", "Ambiente Preparado", "Pedagogía Montessori"), propón una categoría nueva con "name", "slug" y "description".
+
+Responde ÚNICAMENTE en JSON con este formato exacto:
+{
+  "existingCategoryId": "id-de-la-categoria-o-null",
+  "categoryName": "Nombre de la categoría (ej: Neurociencia y Aprendizaje)",
+  "categorySlug": "slug-amigable (ej: neurociencia-y-aprendizaje)",
+  "categoryDescription": "Breve descripción pedagógica de la categoría (1 frase)"
+}`;
+
+      const response = await fetch(`${baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: textModel,
+          messages: [
+            { role: 'system', content: 'Eres un taxonomista editorial y pedagogo Montessori experto. Responde exclusivamente en JSON.' },
+            { role: 'user', content: prompt }
+          ],
+          temperature: 0.2,
+          response_format: { type: 'json_object' }
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const parsed = JSON.parse(data.choices?.[0]?.message?.content || '{}');
+
+        if (parsed.existingCategoryId && parsed.existingCategoryId !== 'null' && parsed.existingCategoryId !== 'id-de-la-categoria-o-null') {
+          const matched = existingCategories.find(c => c.id === parsed.existingCategoryId);
+          if (matched) return matched;
+        }
+
+        if (parsed.categoryName && parsed.categoryName !== 'null') {
+          const cleanSlug = slugify(parsed.categorySlug || parsed.categoryName);
+          const alreadyExists = existingCategories.find(c => c.slug === cleanSlug);
+          if (alreadyExists) return alreadyExists;
+
+          return await prisma.blogCategory.create({
+            data: {
+              schoolId: schoolId || null,
+              name: parsed.categoryName.trim(),
+              slug: cleanSlug,
+              description: parsed.categoryDescription || `Artículos sobre ${parsed.categoryName.trim()}`
+            }
+          });
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Category AI resolution warning:', err.message);
+  }
+
+  // Fallback to default
+  let fallback = existingCategories.find(c => c.slug === 'pedagogia-montessori') || existingCategories[0];
+  if (!fallback) {
+    fallback = await prisma.blogCategory.create({
+      data: {
+        schoolId: schoolId || null,
+        name: 'Pedagogía Montessori',
+        slug: 'pedagogia-montessori',
+        description: 'Fundamentos, ambiente preparado y rol del adulto.'
+      }
+    });
+  }
+  return fallback;
+}
+
