@@ -27,9 +27,9 @@ Una vez recibidas las respuestas:
    - **Titulo atractivo** en `# Titulo del Articulo`.
    - **Introduccion cautivadora** conectando neurociencia, desarrollo humano y vision Montessori.
    - **Secciones claras con `##` y `###`** con explicaciones profundas y ejemplos practicos.
-   - **Citas celebres** en blockquotes (`> `).
-   - **Listas practicas y accionables**.
-   - **Conclusion inspiradora**.
+   - **Citas célebres y frases de Maria Montessori**: Formato estricto de cita/quote de Markdown (`> `), con la cita entre comillas y atribución explícita (ej. `> "La primera tarea de la educación es agitar la vida..."` seguido de `> — *Dra. Maria Montessori, El Método de la Pedagogía Científica*`). Nunca incluir citas textuales como párrafos normales sin formatear en bloque `>`.
+   - **Listas prácticas y accionables**.
+   - **Conclusión inspiradora**.
 3. Guarda el borrador temporal en un archivo markdown (por ejemplo `scratch/draft-[slug].md`).
 
 ### Fase 3: Revision y Visto Bueno del Usuario

@@ -59,6 +59,16 @@ export const BlogMetaSEO: React.FC<BlogMetaSEOProps> = ({
           : `${window.location.origin}${image.startsWith('/') ? '' : '/'}${image}`)
       : `${window.location.origin}/images/og-montessorinexus-es.png`;
 
+    let imageType = 'image/png';
+    const lowerImage = absoluteImageUrl.toLowerCase();
+    if (lowerImage.includes('.jpg') || lowerImage.includes('.jpeg')) {
+      imageType = 'image/jpeg';
+    } else if (lowerImage.includes('.webp')) {
+      imageType = 'image/webp';
+    } else if (lowerImage.includes('.gif')) {
+      imageType = 'image/gif';
+    }
+
     // 3. OpenGraph / Facebook / WhatsApp / LinkedIn
     setMeta('property', 'og:type', 'article');
     setMeta('property', 'og:title', title);
@@ -70,7 +80,7 @@ export const BlogMetaSEO: React.FC<BlogMetaSEOProps> = ({
     setMeta('property', 'og:image:alt', title);
     setMeta('property', 'og:image:width', '1200');
     setMeta('property', 'og:image:height', '630');
-    setMeta('property', 'og:image:type', 'image/png');
+    setMeta('property', 'og:image:type', imageType);
 
     if (publishedTime) {
       setMeta('property', 'article:published_time', publishedTime);
@@ -106,7 +116,7 @@ export const BlogMetaSEO: React.FC<BlogMetaSEOProps> = ({
     '@type': 'BlogPosting',
     'headline': title,
     'description': description,
-    'image': image ? [(image.startsWith('http') ? image : `${typeof window !== 'undefined' ? window.location.origin : ''}${image}`)] : [],
+    'image': image ? [(image.startsWith('http') ? image : `${typeof window !== 'undefined' ? window.location.origin : ''}${image.startsWith('/') ? '' : '/'}${image}`)] : [],
     'datePublished': publishedTime,
     'dateModified': modifiedTime || publishedTime,
     'author': [{

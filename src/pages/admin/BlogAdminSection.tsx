@@ -5,7 +5,7 @@ import {
   BookOpen, Plus, Search, Filter, Sparkles, Globe, Eye, Trash2, Edit3,
   Calendar, Clock, CheckCircle2, AlertCircle, AlertTriangle, ArrowRight,
   Share2, Image as ImageIcon, Tag, Folder, Languages, Check, RefreshCw,
-  ChevronRight, ExternalLink, X, Wand2, Bot, Layers, ChevronDown,
+  ChevronLeft, ChevronRight, ExternalLink, X, Wand2, Bot, Layers, ChevronDown,
   MessageSquare, Send, Lightbulb, ArrowLeft, FileText, Sparkle, Paintbrush, Loader2
 } from 'lucide-react';
 import { MarkdownWysiwygEditor } from './MarkdownWysiwygEditor';
@@ -13,6 +13,13 @@ import { toast } from 'sonner';
 import { uploadPhysicalFile } from '@/lib/api';
 import { ALL_SUPPORTED_LANGUAGES, getLanguageByCode, SupportedLanguage } from '@/pages/admin/web-builder/languages';
 import { useConfirm } from '@/context/ConfirmDialogContext';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export interface BlogChatMessage {
   id: string;
@@ -70,6 +77,90 @@ interface BlogAdminSectionProps {
   isPlatformMode?: boolean;
 }
 
+interface PaginationControlProps {
+  currentPage: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (size: number) => void;
+  itemLabel: string;
+}
+
+const PaginationControl: React.FC<PaginationControlProps> = ({
+  currentPage,
+  pageSize,
+  totalItems,
+  totalPages,
+  onPageChange,
+  onPageSizeChange,
+  itemLabel
+}) => {
+  const start = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const end = Math.min(currentPage * pageSize, totalItems);
+
+  return (
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-forest">
+      {/* Items count */}
+      <div className="text-muted-foreground text-[11px] font-medium">
+        Mostrando <strong className="text-forest font-bold">{start}</strong> - <strong className="text-forest font-bold">{end}</strong> de <strong className="text-forest font-bold">{totalItems}</strong> {itemLabel}
+      </div>
+
+      {/* Controls: Page size selector + Page navigation */}
+      <div className="flex items-center gap-3 flex-wrap">
+        {/* Page Size Selector */}
+        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          <span>Por página:</span>
+          <Select
+            value={String(pageSize)}
+            onValueChange={(val) => {
+              onPageSizeChange(Number(val));
+              onPageChange(1);
+            }}
+          >
+            <SelectTrigger className="h-6 w-14 rounded-lg bg-forest/5 border border-forest/15 px-2 text-[11px] font-bold text-forest hover:bg-forest/10 focus:ring-0 focus:ring-offset-0 shadow-2xs gap-1">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="end" className="min-w-[4.5rem] rounded-xl border border-forest/15 bg-white shadow-lg p-1 text-xs z-50">
+              <SelectItem value="8" className="rounded-lg text-[11px] font-semibold text-forest focus:bg-forest/10 focus:text-forest cursor-pointer py-1">8</SelectItem>
+              <SelectItem value="15" className="rounded-lg text-[11px] font-semibold text-forest focus:bg-forest/10 focus:text-forest cursor-pointer py-1">15</SelectItem>
+              <SelectItem value="25" className="rounded-lg text-[11px] font-semibold text-forest focus:bg-forest/10 focus:text-forest cursor-pointer py-1">25</SelectItem>
+              <SelectItem value="50" className="rounded-lg text-[11px] font-semibold text-forest focus:bg-forest/10 focus:text-forest cursor-pointer py-1">50</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Page Nav Buttons */}
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            disabled={currentPage <= 1 || totalItems === 0}
+            onClick={() => onPageChange(currentPage - 1)}
+            className="p-1 rounded-lg border border-forest/15 bg-white text-forest hover:bg-forest/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed shadow-2xs cursor-pointer"
+            title="Página anterior"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />
+          </button>
+
+          <span className="px-2 py-0.5 text-[11px] font-bold bg-forest/5 rounded-lg border border-forest/10 text-forest">
+            {totalItems === 0 ? 1 : currentPage} / {totalPages}
+          </span>
+
+          <button
+            type="button"
+            disabled={currentPage >= totalPages || totalItems === 0}
+            onClick={() => onPageChange(currentPage + 1)}
+            className="p-1 rounded-lg border border-forest/15 bg-white text-forest hover:bg-forest/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed shadow-2xs cursor-pointer"
+            title="Página siguiente"
+          >
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const BlogAdminSection: React.FC<BlogAdminSectionProps> = ({ isPlatformMode }) => {
   const { user, activeMembership } = useAuth();
   const { settings, buttonRadius, schoolName } = useSiteSettings();
@@ -104,6 +195,15 @@ export const BlogAdminSection: React.FC<BlogAdminSectionProps> = ({ isPlatformMo
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
+
+  // Pagination State (Default 8)
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(8);
+
+  // Reset pagination on filter change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, categoryFilter]);
 
   // Entitlement info
   const [entitlement, setEntitlement] = useState<{
@@ -904,6 +1004,16 @@ export const BlogAdminSection: React.FC<BlogAdminSectionProps> = ({ isPlatformMo
     });
   }, [posts, statusFilter, categoryFilter, searchQuery]);
 
+  // Pagination Calculations
+  const totalItems = filteredPosts.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const validCurrentPage = Math.min(currentPage, totalPages);
+
+  const paginatedPosts = useMemo(() => {
+    const start = (validCurrentPage - 1) * pageSize;
+    return filteredPosts.slice(start, start + pageSize);
+  }, [filteredPosts, validCurrentPage, pageSize]);
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Header Banner */}
@@ -1051,97 +1161,112 @@ export const BlogAdminSection: React.FC<BlogAdminSectionProps> = ({ isPlatformMo
             </button>
           </div>
         ) : (
-          <div className="divide-y divide-border">
-            {filteredPosts.map(post => {
-              const primaryTrans = post.translations[0] || { title: 'Sin título', slug: '' };
-              return (
-                <div key={post.id} className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-muted/20 transition-all">
-                  <div className="flex items-start gap-4">
-                    {post.coverImage ? (
-                      <img
-                        src={post.coverImage}
-                        alt={post.coverImageAlt || primaryTrans.title}
-                        className="w-16 h-16 rounded-xl object-cover border border-border shrink-0"
-                      />
-                    ) : (
-                      <div className="w-16 h-16 rounded-xl bg-forest/5 text-forest/40 border border-border flex items-center justify-center shrink-0">
-                        <ImageIcon className="w-6 h-6" />
-                      </div>
-                    )}
+          <>
+            <div className="divide-y divide-border">
+              {paginatedPosts.map(post => {
+                const primaryTrans = post.translations[0] || { title: 'Sin título', slug: '' };
+                return (
+                  <div key={post.id} className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-muted/20 transition-all">
+                    <div className="flex items-start gap-4">
+                      {post.coverImage ? (
+                        <img
+                          src={post.coverImage}
+                          alt={post.coverImageAlt || primaryTrans.title}
+                          className="w-16 h-16 rounded-xl object-cover border border-border shrink-0"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 rounded-xl bg-forest/5 text-forest/40 border border-border flex items-center justify-center shrink-0">
+                          <ImageIcon className="w-6 h-6" />
+                        </div>
+                      )}
 
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${post.status === 'PUBLISHED'
-                          ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
-                          : post.status === 'DRAFT'
-                            ? 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300'
-                            : post.status === 'SCHEDULED'
-                              ? 'bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300'
-                              : 'bg-muted text-muted-foreground'
-                          }`}>
-                          {post.status === 'PUBLISHED' ? 'Publicado' : post.status === 'DRAFT' ? 'Borrador' : post.status === 'SCHEDULED' ? 'Programado' : 'Archivado'}
-                        </span>
-
-                        {post.isFeatured && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-terracotta/10 text-terracotta">
-                            ★ Destacado
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${post.status === 'PUBLISHED'
+                            ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
+                            : post.status === 'DRAFT'
+                              ? 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300'
+                              : post.status === 'SCHEDULED'
+                                ? 'bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300'
+                                : 'bg-muted text-muted-foreground'
+                            }`}>
+                            {post.status === 'PUBLISHED' ? 'Publicado' : post.status === 'DRAFT' ? 'Borrador' : post.status === 'SCHEDULED' ? 'Programado' : 'Archivado'}
                           </span>
-                        )}
 
-                        <div className="flex items-center gap-1">
-                          {(post.translations || []).map((t, idx) => {
-                            const loc = t?.locale || 'es';
-                            const lang = getLanguageByCode(loc);
-                            return (
-                              <span key={loc || idx} className="text-[9px] font-mono uppercase bg-muted text-muted-foreground px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                                <span>{lang.flag}</span>
-                                <span>{loc}</span>
-                              </span>
-                            );
-                          })}
+                          {post.isFeatured && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-terracotta/10 text-terracotta">
+                              ★ Destacado
+                            </span>
+                          )}
+
+                          <div className="flex items-center gap-1">
+                            {(post.translations || []).map((t, idx) => {
+                              const loc = t?.locale || 'es';
+                              const lang = getLanguageByCode(loc);
+                              return (
+                                <span key={loc || idx} className="text-[9px] font-mono uppercase bg-muted text-muted-foreground px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                                  <span>{lang.flag}</span>
+                                  <span>{loc}</span>
+                                </span>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <h4 className="text-sm font-bold text-foreground line-clamp-1">{primaryTrans.title}</h4>
+                        <p className="text-xs text-muted-foreground line-clamp-1 font-mono">/blog/{primaryTrans.slug}</p>
+
+                        <div className="flex items-center gap-3 text-[11px] text-muted-foreground pt-0.5">
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" /> {post.readingTimeMinutes} min lectura
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Eye className="w-3 h-3" /> {post.viewsCount} vistas
+                          </span>
+                          {post.author && (
+                            <span>Por {post.author.fullName}</span>
+                          )}
                         </div>
                       </div>
+                    </div>
 
-                      <h4 className="text-sm font-bold text-foreground line-clamp-1">{primaryTrans.title}</h4>
-                      <p className="text-xs text-muted-foreground line-clamp-1 font-mono">/blog/{primaryTrans.slug}</p>
-
-                      <div className="flex items-center gap-3 text-[11px] text-muted-foreground pt-0.5">
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" /> {post.readingTimeMinutes} min lectura
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Eye className="w-3 h-3" /> {post.viewsCount} vistas
-                        </span>
-                        {post.author && (
-                          <span>Por {post.author.fullName}</span>
-                        )}
-                      </div>
+                    <div className="flex items-center gap-2 self-end sm:self-center">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEdit(post)}
+                        className={`p-2 text-xs font-semibold border border-border hover:bg-muted text-foreground ${btnRadiusClass} flex items-center gap-1.5`}
+                        title="Editar"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span>Editar</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeletePost(post.id)}
+                        className={`p-2 text-xs font-semibold hover:bg-destructive/10 text-destructive ${btnRadiusClass} flex items-center justify-center`}
+                        title="Eliminar"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
+                );
+              })}
+            </div>
 
-                  <div className="flex items-center gap-2 self-end sm:self-center">
-                    <button
-                      type="button"
-                      onClick={() => handleOpenEdit(post)}
-                      className={`p-2 text-xs font-semibold border border-border hover:bg-muted text-foreground ${btnRadiusClass} flex items-center gap-1.5`}
-                      title="Editar"
-                    >
-                      <Edit3 className="w-3.5 h-3.5" />
-                      <span>Editar</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDeletePost(post.id)}
-                      className={`p-2 text-xs font-semibold hover:bg-destructive/10 text-destructive ${btnRadiusClass} flex items-center justify-center`}
-                      title="Eliminar"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+            {/* Fixed Footer with Pagination */}
+            <div className="shrink-0 px-5 py-3 bg-muted/10 border-t border-border">
+              <PaginationControl
+                currentPage={validCurrentPage}
+                pageSize={pageSize}
+                totalItems={totalItems}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setPageSize}
+                itemLabel="artículos"
+              />
+            </div>
+          </>
         )}
       </div>
 

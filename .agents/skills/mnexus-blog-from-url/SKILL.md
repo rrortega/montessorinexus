@@ -25,7 +25,7 @@ Cuando el usuario pase una URL o invoque `/mnexus-blog-from-url <URL>`:
 2. Incorpora los estandares de excelencia de MontessoriNexus:
    - **Titulo potente y cautivador** en `# Titulo del Articulo`.
    - **Conexion con la neurociencia** (neuroplasticidad, conexion mano-cerebro, periodos sensibles, atencion sostenida/Flow).
-   - **Fundamentacion en la obra de la Dra. Maria Montessori** con citas textuales relevantes (`> `).
+   - **Fundamentacion en la obra de la Dra. Maria Montessori**: Toda cita o frase debe usar estrictamente el formato de cita/quote de Markdown (`> `), con comillas y atribución explícita (ej. `> "Sembrad en los niños ideas buenas, aunque no las entiendan..."` y `> — *Dra. Maria Montessori, La Mente Absorbente*`). Nunca dejar citas como texto plano en párrafos ordinarios.
    - **Estructura clara y navegable**: `##` y `###` tematicos con listas accionables de aplicacion en el hogar o la escuela.
    - **Perspectiva transformadora**: el error como aprendizaje, autonomia y preparacion para la vida.
 3. Guarda el borrador en un archivo markdown temporal en `scratch/draft-[slug].md`.

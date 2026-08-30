@@ -17876,33 +17876,112 @@ app.use(async (req, res) => {
         }
       }
 
-      // Check if the route is a dynamic blog post route (/blog/:slug or /colegio/:schoolSlug/blog/:slug)
-      const blogPostMatch = req.path.match(/^\/(?:colegio\/([^\/]+)\/)?blog\/([^\/\?#]+)/i);
+      // Check if the route is a dynamic blog post route (/blog/:slug, /colegio/:schoolSlug/blog/:slug, /school/:schoolSlug/blog/:slug)
+      const blogPostMatch = req.path.match(/^\/(?:(?:colegio|school)\/([^\/]+)\/)?blog\/([^\/\?#]+)/i);
       if (blogPostMatch && !req.path.startsWith('/api/') && !req.path.startsWith('/blog/categories') && !req.path.startsWith('/blog/tags')) {
-        const schoolSlug = blogPostMatch[1] || null;
-        const postSlug = blogPostMatch[2];
+        const schoolSlug = blogPostMatch[1] ? decodeURIComponent(blogPostMatch[1]).trim() : null;
+        const postSlug = decodeURIComponent(blogPostMatch[2].replace(/\/+$/, '')).trim();
 
         try {
           // Find the blog post translation by slug
-          const translation = await prisma.blogPostTranslation.findFirst({
-            where: {
-              slug: postSlug,
-              post: {
-                status: 'PUBLISHED',
-                ...(schoolSlug ? { school: { slug: schoolSlug } } : { schoolId: null })
-              }
-            },
-            include: {
-              post: {
-                include: {
-                  school: true,
-                  author: {
-                    select: { fullName: true }
+          // Priority 1: Match by slug and school slug if present
+          // Priority 2: If no schoolSlug, match by slug with schoolId: null (SaaS platform post)
+          // Priority 3: Fallback to any published post with that slug regardless of school
+          // Priority 4: Fallback to any post with that slug (e.g. draft/preview)
+          let translation = null;
+
+          if (schoolSlug) {
+            translation = await prisma.blogPostTranslation.findFirst({
+              where: {
+                slug: postSlug,
+                post: {
+                  status: 'PUBLISHED',
+                  school: { slug: schoolSlug }
+                }
+              },
+              include: {
+                post: {
+                  include: {
+                    school: true,
+                    author: { select: { fullName: true } }
                   }
                 }
               }
+            });
+
+            if (!translation) {
+              translation = await prisma.blogPostTranslation.findFirst({
+                where: {
+                  slug: postSlug,
+                  post: { school: { slug: schoolSlug } }
+                },
+                include: {
+                  post: {
+                    include: {
+                      school: true,
+                      author: { select: { fullName: true } }
+                    }
+                  }
+                }
+              });
             }
-          });
+          } else {
+            // First try SaaS post (schoolId: null)
+            translation = await prisma.blogPostTranslation.findFirst({
+              where: {
+                slug: postSlug,
+                post: {
+                  status: 'PUBLISHED',
+                  schoolId: null
+                }
+              },
+              include: {
+                post: {
+                  include: {
+                    school: true,
+                    author: { select: { fullName: true } }
+                  }
+                }
+              }
+            });
+
+            // If not found with schoolId: null, search for ANY published post with that slug
+            if (!translation) {
+              translation = await prisma.blogPostTranslation.findFirst({
+                where: {
+                  slug: postSlug,
+                  post: {
+                    status: 'PUBLISHED'
+                  }
+                },
+                include: {
+                  post: {
+                    include: {
+                      school: true,
+                      author: { select: { fullName: true } }
+                    }
+                  }
+                }
+              });
+            }
+          }
+
+          // Ultimate fallback (e.g. if status is not PUBLISHED or edge case)
+          if (!translation) {
+            translation = await prisma.blogPostTranslation.findFirst({
+              where: {
+                slug: postSlug
+              },
+              include: {
+                post: {
+                  include: {
+                    school: true,
+                    author: { select: { fullName: true } }
+                  }
+                }
+              }
+            });
+          }
 
           if (translation && translation.post) {
             const post = translation.post;
@@ -17916,14 +17995,32 @@ app.use(async (req, res) => {
               ? (rawDesc.length > 220 ? rawDesc.slice(0, 217) + '...' : rawDesc)
               : 'Descubre artículos y reflexiones sobre pedagogía Montessori, desarrollo infantil y ambientes preparados.';
             
-            let ogImageUrl = post.coverImage || '';
-            if (ogImageUrl.startsWith('/')) {
-              ogImageUrl = `${protocol}://${host}${ogImageUrl}`;
-            } else if (ogImageUrl && !ogImageUrl.startsWith('http://') && !ogImageUrl.startsWith('https://')) {
-              ogImageUrl = `${protocol}://${host}/${ogImageUrl.replace(/^\/+/, '')}`;
+            let ogImageUrl = post.coverImage ? String(post.coverImage).trim() : '';
+            if (ogImageUrl) {
+              if (ogImageUrl.startsWith('http://localhost') || ogImageUrl.startsWith('http://127.0.0.1')) {
+                try {
+                  const parsed = new URL(ogImageUrl);
+                  ogImageUrl = `${protocol}://${host}${parsed.pathname}${parsed.search}`;
+                } catch (e) {}
+              } else if (ogImageUrl.startsWith('/')) {
+                ogImageUrl = `${protocol}://${host}${ogImageUrl}`;
+              } else if (!ogImageUrl.startsWith('http://') && !ogImageUrl.startsWith('https://')) {
+                ogImageUrl = `${protocol}://${host}/${ogImageUrl.replace(/^\/+/, '')}`;
+              }
             }
+
             if (!ogImageUrl) {
               ogImageUrl = `${protocol}://${host}/images/og-montessorinexus-es.png`;
+            }
+
+            let imageType = 'image/png';
+            const lowerOg = ogImageUrl.toLowerCase();
+            if (lowerOg.includes('.jpg') || lowerOg.includes('.jpeg')) {
+              imageType = 'image/jpeg';
+            } else if (lowerOg.includes('.webp')) {
+              imageType = 'image/webp';
+            } else if (lowerOg.includes('.gif')) {
+              imageType = 'image/gif';
             }
 
             const authorName = post.customAuthorName || post.author?.fullName || 'Equipo Montessori';
@@ -17933,21 +18030,22 @@ app.use(async (req, res) => {
               .replace(/>/g, '&gt;')
               .replace(/"/g, '&quot;');
 
-            html = html.replace(/<title>[^<]*<\/title>/, `<title>${escapeHtmlAttr(pageTitle)} | ${escapeHtmlAttr(siteBrand)}</title>`);
-            html = html.replace(/<meta name="description" content="[^"]*"\s*\/?>/, `<meta name="description" content="${escapeHtmlAttr(description)}" />`);
-            html = html.replace(/<meta property="og:title" content="[^"]*"\s*\/?>/, `<meta property="og:title" content="${escapeHtmlAttr(pageTitle)}" />`);
-            html = html.replace(/<meta property="og:description" content="[^"]*"\s*\/?>/, `<meta property="og:description" content="${escapeHtmlAttr(description)}" />`);
-            html = html.replace(/<meta property="og:image" content="[^"]*"\s*\/?>/, `<meta property="og:image" content="${ogImageUrl}" />`);
-            html = html.replace(/<meta name="twitter:title" content="[^"]*"\s*\/?>/, `<meta name="twitter:title" content="${escapeHtmlAttr(pageTitle)}" />`);
-            html = html.replace(/<meta name="twitter:description" content="[^"]*"\s*\/?>/, `<meta name="twitter:description" content="${escapeHtmlAttr(description)}" />`);
-            html = html.replace(/<meta name="twitter:image" content="[^"]*"\s*\/?>/, `<meta name="twitter:image" content="${ogImageUrl}" />`);
+            html = html.replace(/<title>[^<]*<\/title>/i, `<title>${escapeHtmlAttr(pageTitle)} | ${escapeHtmlAttr(siteBrand)}</title>`);
+            html = html.replace(/<meta\s+[^>]*name=["']description["'][^>]*\/?>/i, `<meta name="description" content="${escapeHtmlAttr(description)}" />`);
+            html = html.replace(/<meta\s+[^>]*property=["']og:title["'][^>]*\/?>/i, `<meta property="og:title" content="${escapeHtmlAttr(pageTitle)}" />`);
+            html = html.replace(/<meta\s+[^>]*property=["']og:description["'][^>]*\/?>/i, `<meta property="og:description" content="${escapeHtmlAttr(description)}" />`);
+            html = html.replace(/<meta\s+[^>]*property=["']og:image["'][^>]*\/?>/i, `<meta property="og:image" content="${ogImageUrl}" />`);
+            html = html.replace(/<meta\s+[^>]*name=["']twitter:title["'][^>]*\/?>/i, `<meta name="twitter:title" content="${escapeHtmlAttr(pageTitle)}" />`);
+            html = html.replace(/<meta\s+[^>]*name=["']twitter:description["'][^>]*\/?>/i, `<meta name="twitter:description" content="${escapeHtmlAttr(description)}" />`);
+            html = html.replace(/<meta\s+[^>]*name=["']twitter:image["'][^>]*\/?>/i, `<meta name="twitter:image" content="${ogImageUrl}" />`);
 
             const extraMetaTags = `
     <meta property="og:type" content="article" />
     <meta property="og:url" content="${canonicalUrl}" />
+    <meta property="og:image:secure_url" content="${ogImageUrl}" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:type" content="${imageType}" />
     <meta property="og:image:alt" content="${escapeHtmlAttr(post.coverImageAlt || pageTitle)}" />
     <meta property="og:site_name" content="${escapeHtmlAttr(siteBrand)}" />
     <meta property="article:published_time" content="${(post.publishedAt || post.createdAt).toISOString()}" />
