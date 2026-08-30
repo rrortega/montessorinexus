@@ -193,7 +193,7 @@ export const BlogIndexPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#faf9f5] dark:bg-[#0c140e] text-foreground flex flex-col selection:bg-[#C4661F] selection:text-white">
+    <div className="blog-root font-bricolage min-h-screen bg-[#faf9f5] dark:bg-[#0c140e] text-foreground flex flex-col selection:bg-[#C4661F] selection:text-white">
       {/* Unified Blog Header */}
       <BlogNavbar
         isSaaSBlog={isSaaSBlog}

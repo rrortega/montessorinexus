@@ -12,16 +12,42 @@ interface MermaidDiagramProps {
 // Module-level cache so diagrams never re-render or flash on page scroll
 const svgCache = new Map<string, string>();
 
+export function sanitizeMermaidChart(raw: string): string {
+  if (!raw) return '';
+  let chart = raw.trim();
+
+  // Normalize Unicode arrows
+  chart = chart.replace(/→/g, '-->');
+
+  // Convert A -- "text" --> B or A -- text --> B to A -->|text| B
+  chart = chart.replace(/--\s*"?([^"\n\r>|]+)"?\s*-->/g, '-->|$1|');
+  
+  // Convert A == "text" ==> B or A == text ==> B to A ==>|text| B
+  chart = chart.replace(/==\s*"?([^"\n\r>|]+)"?\s*==>/g, '==>|$1|');
+
+  // Convert malformed hybrid A -- "text" ==> B or A -- text ==> B to A -->|text| B
+  chart = chart.replace(/--\s*"?([^"\n\r>|]+)"?\s*==>/g, '-->|$1|');
+
+  // Convert A -. "text" .-> B or A -. text .-> B to A -.->|text| B
+  chart = chart.replace(/-\.\s*"?([^"\n\r>|]+)"?\s*\.->/g, '-.->|$1|');
+
+  // Fix any remaining malformed hybrid arrows like -==>, --==>, etc.
+  chart = chart.replace(/[-=]+==>/g, '-->');
+  chart = chart.replace(/[-=]{3,}>/g, '-->');
+
+  // Remove any quotes inside pipe labels: -->|"text"| -> -->|text|
+  chart = chart.replace(/-->\|"([^"]+)"\|/g, '-->|$1|');
+  chart = chart.replace(/==>\|"([^"]+)"\|/g, '==>|$1|');
+  chart = chart.replace(/-\.->\|"([^"]+)"\|/g, '-.->|$1|');
+
+  return chart;
+}
+
 export const MermaidDiagram: React.FC<MermaidDiagramProps> = React.memo(({ chart, isSaaSBlog }) => {
   const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
   const isSaaS = isSaaSBlog ?? (typeof window !== 'undefined' && !window.location.pathname.includes('/escuela/'));
 
-  const cleanChart = (chart || '')
-    .trim()
-    .replace(/→/g, '==>')
-    .replace(/->\|([^|]+)\|/g, '==>|$1|')
-    .replace(/(?<![-=])->(?![->])/g, '==>')
-    .replace(/-->/g, '==>');
+  const cleanChart = sanitizeMermaidChart(chart);
 
   const cacheKey = `${isSaaS ? 'saas' : 'school'}::${isDark ? 'dark' : 'light'}::${cleanChart}`;
   const cachedSvg = svgCache.get(cacheKey);

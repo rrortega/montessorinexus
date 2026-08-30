@@ -357,6 +357,18 @@ function slugifyHeading(text: string): string {
     return () => observer.disconnect();
   }, [tableOfContents]);
 
+  const handleScrollToHeading = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
+    e.preventDefault();
+    const element = document.getElementById(id);
+    if (element) {
+      const yOffset = -90;
+      const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+      setActiveHeadingId(id);
+      window.history.pushState(null, '', `#${id}`);
+    }
+  };
+
   // Base URLs
   const blogRootUrl = schoolSlugFromUrl ? `/colegio/${schoolSlugFromUrl}/blog` : (isSaaSBlog ? '/' : '/blog');
   const getPostUrl = (targetSlug: string) => {
@@ -557,7 +569,7 @@ function slugifyHeading(text: string): string {
   }
 
   return (
-    <div className="min-h-screen bg-[#faf9f5] dark:bg-[#0c140e] text-foreground flex flex-col selection:bg-[#C4661F] selection:text-white">
+    <div className="blog-root font-bricolage min-h-screen bg-[#faf9f5] dark:bg-[#0c140e] text-foreground flex flex-col selection:bg-[#C4661F] selection:text-white">
       {/* Dynamic SEO Meta Injection */}
       {post && (
         <BlogMetaSEO

@@ -17,6 +17,7 @@ export default {
         display: ['Outfit', 'system-ui', 'sans-serif'],
         body: ['Lexend', 'system-ui', 'sans-serif'],
         handwriting: ['Caveat', 'cursive'],
+        bricolage: ['"Bricolage Grotesque"', 'system-ui', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",

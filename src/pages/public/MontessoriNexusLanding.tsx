@@ -71,36 +71,13 @@ import { Button } from '@/components/ui/button';
 import { MontessoriNexusLogo } from '@/components/MontessoriNexusLogo';
 import { toast } from 'sonner';
 import salonImg from '@/assets/salon.jpeg';
+import {
+  PRICING_CONFIG,
+  calculatePricingSummary,
+  type OptionalModulesSelection
+} from '@/lib/pricing';
 
-// =========================================================================
-// CONFIGURABLE PRICING CONSTANTS (Supports Environment Variables)
-// =========================================================================
-export const PRICING_CONFIG = {
-  // Per-unit environment tiered pricing (1-3: $25, 4+: $10)
-  environmentTier1: Number(import.meta.env.VITE_PRICING_ENVIRONMENT_TIER1 ?? 25),
-  environmentTier2: Number(import.meta.env.VITE_PRICING_ENVIRONMENT_TIER2 ?? 10),
-  environmentTier1Limit: 3,
-  storage10GbUnit: Number(import.meta.env.VITE_PRICING_STORAGE_10GB ?? 5),
-
-  // Core Base Modules (Mandatory in membership)
-  waitlist: Number(import.meta.env.VITE_PRICING_WAITLIST ?? 1),
-  portalParents: Number(import.meta.env.VITE_PRICING_PORTAL_PARENTS ?? 5),
-  portalTeachers: Number(import.meta.env.VITE_PRICING_PORTAL_TEACHERS ?? 5),
-  progressTracking: Number(import.meta.env.VITE_PRICING_PROGRESS ?? 1),
-  attendance: Number(import.meta.env.VITE_PRICING_ATTENDANCE ?? 1),
-  calendar: Number(import.meta.env.VITE_PRICING_CALENDAR ?? 1),
-  internalAnnouncements: 0,
-  documentManagement: 0,
-  webGallery: 0,
-  baseStorageGb: 2, // 2 GB included for free
-
-  // Optional Add-on Modules
-  finances: Number(import.meta.env.VITE_PRICING_FINANCES ?? 12),
-  newsletterSmtp: Number(import.meta.env.VITE_PRICING_NEWSLETTER ?? 3),
-  websiteBuilder: Number(import.meta.env.VITE_PRICING_WEBSITE_BUILDER ?? 18),
-  forms: Number(import.meta.env.VITE_PRICING_FORMS ?? 9),
-  pipelines: Number(import.meta.env.VITE_PRICING_PIPELINES ?? 9),
-};
+export { PRICING_CONFIG };
 
 // =========================================================================
 // ANIMATED PRICING COUNTER (Smooth unit-by-unit acceleration)
@@ -489,6 +466,8 @@ const translations = {
       optFinancesDesc: 'Automated ledger reconciliation, recurring auto-pay, and family financial statements.',
       optWebBuilderTitle: 'Institutional Website + Visual Web Builder + Traffic Analytics',
       optWebBuilderDesc: 'Rich catalog of customizable sections, styles, school brand colors, multilingual and custom domain with SSL.',
+      optBlogTitle: 'Institutional Montessori Blog & Multilingual Publishing Engine',
+      optBlogDesc: 'SEO-optimized pedagogical blog, AI illustration integration, markdown editor, and automated translation in 5 languages.',
       optFormsTitle: 'Pro Form Builder (Typeform / Google Forms Alternative)',
       optFormsDesc: 'Data capture for admissions, health questionnaires, and surveys syncing directly into student records.',
       optPipelinesTitle: 'Customizable Process Pipelines (Kanban Stages)',
@@ -862,6 +841,8 @@ const translations = {
       optFinancesDesc: 'Configura suscripciones automatizadas y cobro recurrente con tu propia cuenta de Stripe o Mercado Pago, conciliación bancaria y estados de cuenta para familias.',
       optWebBuilderTitle: 'Sitio Web Institucional + Creador Web Visual + Analítica de Visitas',
       optWebBuilderDesc: 'Catálogo de secciones y estilos personalizables, colores de tu colegio, soporte multilingüe y dominio propio con SSL.',
+      optBlogTitle: 'Blog Pedagógico Institucional & Motor de Publicación Multilingüe',
+      optBlogDesc: 'Blog pedagógico optimizado para SEO, generación de portadas con IA, editor markdown y traducción automática a 5 idiomas.',
       optFormsTitle: 'Gestor de Formularios Pro (Alternativa a Typeform / Google Forms)',
       optFormsDesc: 'Captura de datos para admisiones, cuestionarios médicos y encuestas que alimentan el expediente del niño.',
       optPipelinesTitle: 'Pipelines de Procesos Configurables (Tableros Kanban)',
@@ -1235,6 +1216,8 @@ const translations = {
       optFinancesDesc: 'Conciliação bancária automática, débito recorrente e extrato financeiro para as famílias.',
       optWebBuilderTitle: 'Site Institucional + Criador Web Visual + Análise de Acessos',
       optWebBuilderDesc: 'Catálogo de seções e estilos personalizáveis, cores da sua escola, suporte multilíngue e domínio próprio com SSL.',
+      optBlogTitle: 'Blog Pedagógico Institucional & Motor de Publicação Multilíngue',
+      optBlogDesc: 'Blog pedagógico otimizado para SEO, capas geradas com IA, editor markdown e tradução automática em 5 idiomas.',
       optFormsTitle: 'Criador de Formulários Pro (Alternativa ao Google Forms / Typeform)',
       optFormsDesc: 'Captação de dados para matrículas, fichas de saúde e pesquisas sincronizadas ao prontuário do aluno.',
       optPipelinesTitle: 'Pipelines de Processos Flexíveis (Etapas Kanban)',
@@ -1608,6 +1591,8 @@ const translations = {
       optFinancesDesc: 'Rapprochement bancaire automatique, paiements récurrents et relevés de compte pour les familles.',
       optWebBuilderTitle: 'Site Web Institutionnel + Éditeur Web Visuel + Statistiques de Visite',
       optWebBuilderDesc: 'Catalogue de sections et styles personnalisables, charte graphique de votre école, multilingue et nom de domaine avec SSL.',
+      optBlogTitle: 'Blog Pédagogique Institutionnel & Moteur de Publication Multilingue',
+      optBlogDesc: 'Blog pédagogique optimisé pour le SEO, illustrations par IA, éditeur markdown et traduction automatique en 5 langues.',
       optFormsTitle: 'Générateur de Formulaires Pro (Alternative à Typeform / Google Forms)',
       optFormsDesc: 'Collecte de données pour les admissions, fiches de santé et sondages reliés directement au dossier de l’enfant.',
       optPipelinesTitle: 'Pipelines de Processus Flexibles (Tableau Kanban)',
@@ -3420,12 +3405,14 @@ export const MontessoriNexusLanding: React.FC = () => {
     finances: boolean;
     newsletterSmtp: boolean;
     websiteBuilder: boolean;
+    blog: boolean;
     forms: boolean;
     pipelines: boolean;
   }>({
     finances: true,
     newsletterSmtp: false,
     websiteBuilder: true,
+    blog: true,
     forms: true,
     pipelines: false
   });
@@ -3724,73 +3711,11 @@ export const MontessoriNexusLanding: React.FC = () => {
   // MODULAR PRICING REAL-TIME CALCULATION
   // =========================================================================
   const pricingSummary = useMemo(() => {
-    // 1. Mandatory Core Membership Base Total
-    const coreBaseTotal =
-      PRICING_CONFIG.waitlist +
-      PRICING_CONFIG.portalParents +
-      PRICING_CONFIG.portalTeachers +
-      PRICING_CONFIG.progressTracking +
-      PRICING_CONFIG.attendance +
-      PRICING_CONFIG.calendar; // $14 USD
-
-    // 2. Environments Tiered Cost (1-3: $25 USD, 4+: $10 USD)
-    let environmentsCost = 0;
-    if (environmentsCount <= PRICING_CONFIG.environmentTier1Limit) {
-      environmentsCost = environmentsCount * PRICING_CONFIG.environmentTier1;
-    } else {
-      environmentsCost =
-        PRICING_CONFIG.environmentTier1Limit * PRICING_CONFIG.environmentTier1 +
-        (environmentsCount - PRICING_CONFIG.environmentTier1Limit) * PRICING_CONFIG.environmentTier2;
-    }
-
-    // 3. Optional Modules Cost & Count
-    let optionalModulesCost = 0;
-    let selectedModulesCount = 0;
-    if (selectedOptionalModules.finances) {
-      optionalModulesCost += PRICING_CONFIG.finances;
-      selectedModulesCount++;
-    }
-    if (selectedOptionalModules.newsletterSmtp) {
-      optionalModulesCost += PRICING_CONFIG.newsletterSmtp;
-      selectedModulesCount++;
-    }
-    if (selectedOptionalModules.websiteBuilder) {
-      optionalModulesCost += PRICING_CONFIG.websiteBuilder;
-      selectedModulesCount++;
-    }
-    if (selectedOptionalModules.forms) {
-      optionalModulesCost += PRICING_CONFIG.forms;
-      selectedModulesCount++;
-    }
-    if (selectedOptionalModules.pipelines) {
-      optionalModulesCost += PRICING_CONFIG.pipelines;
-      selectedModulesCount++;
-    }
-
-    // 4. Storage Cost
-    let storageCost = 0;
-    if (storageTier === '12gb') storageCost = PRICING_CONFIG.storage10GbUnit * 1;
-    if (storageTier === '22gb') storageCost = PRICING_CONFIG.storage10GbUnit * 2;
-    if (storageTier === '52gb') storageCost = PRICING_CONFIG.storage10GbUnit * 5;
-    // 'byos_aws' & '2gb_free' are $0
-
-    // Monthly Subtotal
-    const monthlyTotal = coreBaseTotal + environmentsCost + optionalModulesCost + storageCost;
-
-    // Annual Calculation (Pay 10 months, get 12 = 2 months free)
-    const annualEquivalentMonthly = Math.round((monthlyTotal * 10) / 12);
-    const annualBilledTotal = monthlyTotal * 10;
-
-    return {
-      coreBaseTotal,
-      environmentsCost,
-      optionalModulesCost,
-      selectedModulesCount,
-      storageCost,
-      monthlyTotal,
-      annualEquivalentMonthly,
-      annualBilledTotal
-    };
+    return calculatePricingSummary({
+      environmentsCount,
+      optionalModules: selectedOptionalModules,
+      storageTier
+    });
   }, [environmentsCount, selectedOptionalModules, storageTier]);
 
   const handleDemoSubmit = (e: React.FormEvent) => {
@@ -3807,7 +3732,7 @@ export const MontessoriNexusLanding: React.FC = () => {
 
   return (
     <div
-      className={`min-h-screen font-sans transition-colors duration-300 ${isDark
+      className={`landing-page-root font-bricolage min-h-screen transition-colors duration-300 ${isDark
           ? 'bg-[#0e1710] text-[#f1f5f9] selection:bg-[#C4661F]/40 selection:text-white'
           : 'bg-[#FEFAE0] text-[#162218] selection:bg-[#C4661F]/20 selection:text-[#C4661F]'
         }`}
@@ -7182,9 +7107,14 @@ export const MontessoriNexusLanding: React.FC = () => {
                     type="button"
                     onClick={() => setEnvironmentsCount(Math.max(1, environmentsCount - 1))}
                     disabled={environmentsCount <= 1}
-                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-stone-200 dark:bg-slate-700 hover:bg-[#C4661F] hover:text-white disabled:opacity-30 disabled:hover:bg-stone-200 flex items-center justify-center font-bold text-base sm:text-lg transition-colors cursor-pointer shrink-0"
+                    className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl border flex items-center justify-center font-bold text-base sm:text-lg transition-all cursor-pointer shrink-0 shadow-2xs ${
+                      isDark
+                        ? 'bg-slate-800 hover:bg-[#C4661F] text-slate-100 hover:text-white border-slate-700 hover:border-[#C4661F] disabled:opacity-30 disabled:hover:bg-slate-800 disabled:hover:text-slate-400 disabled:hover:border-slate-700'
+                        : 'bg-white hover:bg-[#C4661F] text-stone-800 hover:text-white border-stone-300 hover:border-[#C4661F] disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-stone-400 disabled:hover:border-stone-300'
+                    }`}
+                    aria-label="Disminuir ambientes"
                   >
-                    <Minus className="w-4 h-4" />
+                    <Minus className="w-4 h-4 stroke-[2.5]" />
                   </button>
                   <span className="w-10 sm:w-12 text-center text-xl sm:text-2xl font-serif font-black text-[#C4661F]">
                     {environmentsCount}
@@ -7192,9 +7122,14 @@ export const MontessoriNexusLanding: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setEnvironmentsCount(environmentsCount + 1)}
-                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-stone-200 dark:bg-slate-700 hover:bg-[#C4661F] hover:text-white flex items-center justify-center font-bold text-base sm:text-lg transition-colors cursor-pointer shrink-0"
+                    className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl border flex items-center justify-center font-bold text-base sm:text-lg transition-all cursor-pointer shrink-0 shadow-2xs ${
+                      isDark
+                        ? 'bg-slate-800 hover:bg-[#C4661F] text-slate-100 hover:text-white border-slate-700 hover:border-[#C4661F]'
+                        : 'bg-white hover:bg-[#C4661F] text-stone-800 hover:text-white border-stone-300 hover:border-[#C4661F]'
+                    }`}
+                    aria-label="Aumentar ambientes"
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-4 h-4 stroke-[2.5]" />
                   </button>
                   <span className={`text-xs sm:text-sm font-bold font-mono ml-1 sm:ml-2 ${isDark ? 'text-slate-300' : 'text-stone-700'}`}>
                     = ${pricingSummary.environmentsCost} USD/{lang === 'en' ? 'mo' : lang === 'es' ? 'mes' : lang === 'pt' ? 'mês' : 'mois'}
@@ -7219,7 +7154,7 @@ export const MontessoriNexusLanding: React.FC = () => {
                 {/* Cobranza & Finanzas */}
                 <label className={`p-3.5 sm:p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 cursor-pointer transition-all ${selectedOptionalModules.finances
                     ? 'border-[#C4661F] bg-[#C4661F]/10'
-                    : isDark ? 'border-slate-800 bg-[#0e1710]' : 'border-stone-200 bg-[#FEFAE0]'
+                    : isDark ? 'border-slate-800 bg-[#0e1710] hover:border-slate-700' : 'border-stone-200 bg-[#FEFAE0] hover:border-stone-300'
                   }`}>
                   <div className="flex items-start gap-3">
                     <input
@@ -7232,20 +7167,24 @@ export const MontessoriNexusLanding: React.FC = () => {
                       <span className={`text-sm font-serif font-bold block ${isDark ? 'text-white' : 'text-[#162218]'}`}>
                         {t.pricing.optFinancesTitle}
                       </span>
-                      <span className={`text-xs block mt-0.5 ${isDark ? 'text-slate-400' : 'text-stone-500'}`}>
-                        {t.pricing.optFinancesDesc}
-                      </span>
+                      {selectedOptionalModules.finances && (
+                        <span className={`text-xs block mt-0.5 ${isDark ? 'text-slate-400' : 'text-stone-500'}`}>
+                          {t.pricing.optFinancesDesc}
+                        </span>
+                      )}
                     </div>
                   </div>
-                  <span className="text-xs font-mono font-bold text-[#C4661F] whitespace-nowrap shrink-0 sm:self-center self-end">
-                    +${PRICING_CONFIG.finances} USD/mo
-                  </span>
+                  {selectedOptionalModules.finances && (
+                    <span className="text-xs font-mono font-bold text-[#C4661F] whitespace-nowrap shrink-0 sm:self-center self-end">
+                      +${PRICING_CONFIG.finances} USD/mo
+                    </span>
+                  )}
                 </label>
 
                 {/* Website + Web Builder + Analytics */}
                 <label className={`p-3.5 sm:p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 cursor-pointer transition-all ${selectedOptionalModules.websiteBuilder
                     ? 'border-[#C4661F] bg-[#C4661F]/10'
-                    : isDark ? 'border-slate-800 bg-[#0e1710]' : 'border-stone-200 bg-[#FEFAE0]'
+                    : isDark ? 'border-slate-800 bg-[#0e1710] hover:border-slate-700' : 'border-stone-200 bg-[#FEFAE0] hover:border-stone-300'
                   }`}>
                   <div className="flex items-start gap-3">
                     <input
@@ -7258,20 +7197,54 @@ export const MontessoriNexusLanding: React.FC = () => {
                       <span className={`text-sm font-serif font-bold block ${isDark ? 'text-white' : 'text-[#162218]'}`}>
                         {t.pricing.optWebBuilderTitle}
                       </span>
-                      <span className={`text-xs block mt-0.5 ${isDark ? 'text-slate-400' : 'text-stone-500'}`}>
-                        {t.pricing.optWebBuilderDesc}
-                      </span>
+                      {selectedOptionalModules.websiteBuilder && (
+                        <span className={`text-xs block mt-0.5 ${isDark ? 'text-slate-400' : 'text-stone-500'}`}>
+                          {t.pricing.optWebBuilderDesc}
+                        </span>
+                      )}
                     </div>
                   </div>
-                  <span className="text-xs font-mono font-bold text-[#C4661F] whitespace-nowrap shrink-0 sm:self-center self-end">
-                    +${PRICING_CONFIG.websiteBuilder} USD/mo
-                  </span>
+                  {selectedOptionalModules.websiteBuilder && (
+                    <span className="text-xs font-mono font-bold text-[#C4661F] whitespace-nowrap shrink-0 sm:self-center self-end">
+                      +${PRICING_CONFIG.websiteBuilder} USD/mo
+                    </span>
+                  )}
+                </label>
+
+                {/* Blog Pedagógico Institucional & Motor Multilingüe */}
+                <label className={`p-3.5 sm:p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 cursor-pointer transition-all ${selectedOptionalModules.blog
+                    ? 'border-[#C4661F] bg-[#C4661F]/10'
+                    : isDark ? 'border-slate-800 bg-[#0e1710] hover:border-slate-700' : 'border-stone-200 bg-[#FEFAE0] hover:border-stone-300'
+                  }`}>
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedOptionalModules.blog}
+                      onChange={(e) => setSelectedOptionalModules({ ...selectedOptionalModules, blog: e.target.checked })}
+                      className="w-5 h-5 rounded-md accent-[#C4661F] mt-0.5 cursor-pointer shrink-0"
+                    />
+                    <div>
+                      <span className={`text-sm font-serif font-bold block ${isDark ? 'text-white' : 'text-[#162218]'}`}>
+                        {t.pricing.optBlogTitle}
+                      </span>
+                      {selectedOptionalModules.blog && (
+                        <span className={`text-xs block mt-0.5 ${isDark ? 'text-slate-400' : 'text-stone-500'}`}>
+                          {t.pricing.optBlogDesc}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {selectedOptionalModules.blog && (
+                    <span className="text-xs font-mono font-bold text-[#C4661F] whitespace-nowrap shrink-0 sm:self-center self-end">
+                      +${PRICING_CONFIG.blog} USD/mo
+                    </span>
+                  )}
                 </label>
 
                 {/* Gestor de Formularios Pro */}
                 <label className={`p-3.5 sm:p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 cursor-pointer transition-all ${selectedOptionalModules.forms
                     ? 'border-[#C4661F] bg-[#C4661F]/10'
-                    : isDark ? 'border-slate-800 bg-[#0e1710]' : 'border-stone-200 bg-[#FEFAE0]'
+                    : isDark ? 'border-slate-800 bg-[#0e1710] hover:border-slate-700' : 'border-stone-200 bg-[#FEFAE0] hover:border-stone-300'
                   }`}>
                   <div className="flex items-start gap-3">
                     <input
@@ -7291,20 +7264,24 @@ export const MontessoriNexusLanding: React.FC = () => {
                       <span className={`text-sm font-serif font-bold block ${isDark ? 'text-white' : 'text-[#162218]'}`}>
                         {t.pricing.optFormsTitle}
                       </span>
-                      <span className={`text-xs block mt-0.5 ${isDark ? 'text-slate-400' : 'text-stone-500'}`}>
-                        {t.pricing.optFormsDesc}
-                      </span>
+                      {selectedOptionalModules.forms && (
+                        <span className={`text-xs block mt-0.5 ${isDark ? 'text-slate-400' : 'text-stone-500'}`}>
+                          {t.pricing.optFormsDesc}
+                        </span>
+                      )}
                     </div>
                   </div>
-                  <span className="text-xs font-mono font-bold text-[#C4661F] whitespace-nowrap shrink-0 sm:self-center self-end">
-                    +${PRICING_CONFIG.forms} USD/mo
-                  </span>
+                  {selectedOptionalModules.forms && (
+                    <span className="text-xs font-mono font-bold text-[#C4661F] whitespace-nowrap shrink-0 sm:self-center self-end">
+                      +${PRICING_CONFIG.forms} USD/mo
+                    </span>
+                  )}
                 </label>
 
                 {/* Pipelines de Procesos Configurables (Depends on Forms) */}
                 <label className={`p-3.5 sm:p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 cursor-pointer transition-all ${selectedOptionalModules.pipelines
                     ? 'border-[#C4661F] bg-[#C4661F]/10'
-                    : isDark ? 'border-slate-800 bg-[#0e1710]' : 'border-stone-200 bg-[#FEFAE0]'
+                    : isDark ? 'border-slate-800 bg-[#0e1710] hover:border-slate-700' : 'border-stone-200 bg-[#FEFAE0] hover:border-stone-300'
                   }`}>
                   <div className="flex items-start gap-3">
                     <input
@@ -7329,20 +7306,24 @@ export const MontessoriNexusLanding: React.FC = () => {
                           Requiere Formularios
                         </span>
                       </div>
-                      <span className={`text-xs block mt-0.5 ${isDark ? 'text-slate-400' : 'text-stone-500'}`}>
-                        {t.pricing.optPipelinesDesc}
-                      </span>
+                      {selectedOptionalModules.pipelines && (
+                        <span className={`text-xs block mt-0.5 ${isDark ? 'text-slate-400' : 'text-stone-500'}`}>
+                          {t.pricing.optPipelinesDesc}
+                        </span>
+                      )}
                     </div>
                   </div>
-                  <span className="text-xs font-mono font-bold text-[#C4661F] whitespace-nowrap shrink-0 sm:self-center self-end">
-                    +${PRICING_CONFIG.pipelines} USD/mo
-                  </span>
+                  {selectedOptionalModules.pipelines && (
+                    <span className="text-xs font-mono font-bold text-[#C4661F] whitespace-nowrap shrink-0 sm:self-center self-end">
+                      +${PRICING_CONFIG.pipelines} USD/mo
+                    </span>
+                  )}
                 </label>
 
                 {/* SMTP / Newsletter Dedicado */}
                 <label className={`p-3.5 sm:p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 cursor-pointer transition-all ${selectedOptionalModules.newsletterSmtp
                     ? 'border-[#C4661F] bg-[#C4661F]/10'
-                    : isDark ? 'border-slate-800 bg-[#0e1710]' : 'border-stone-200 bg-[#FEFAE0]'
+                    : isDark ? 'border-slate-800 bg-[#0e1710] hover:border-slate-700' : 'border-stone-200 bg-[#FEFAE0] hover:border-stone-300'
                   }`}>
                   <div className="flex items-start gap-3">
                     <input
@@ -7355,14 +7336,18 @@ export const MontessoriNexusLanding: React.FC = () => {
                       <span className={`text-sm font-serif font-bold block ${isDark ? 'text-white' : 'text-[#162218]'}`}>
                         {t.pricing.optNewsletterTitle}
                       </span>
-                      <span className={`text-xs block mt-0.5 ${isDark ? 'text-slate-400' : 'text-stone-500'}`}>
-                        {t.pricing.optNewsletterDesc}
-                      </span>
+                      {selectedOptionalModules.newsletterSmtp && (
+                        <span className={`text-xs block mt-0.5 ${isDark ? 'text-slate-400' : 'text-stone-500'}`}>
+                          {t.pricing.optNewsletterDesc}
+                        </span>
+                      )}
                     </div>
                   </div>
-                  <span className="text-xs font-mono font-bold text-[#C4661F] whitespace-nowrap shrink-0 sm:self-center self-end">
-                    +${PRICING_CONFIG.newsletterSmtp} USD/mo
-                  </span>
+                  {selectedOptionalModules.newsletterSmtp && (
+                    <span className="text-xs font-mono font-bold text-[#C4661F] whitespace-nowrap shrink-0 sm:self-center self-end">
+                      +${PRICING_CONFIG.newsletterSmtp} USD/mo
+                    </span>
+                  )}
                 </label>
               </div>
             </div>

@@ -43,87 +43,26 @@ import {
   EyeOff,
   X,
   Loader2,
+  Globe,
+  Lightbulb,
   CheckCircle,
   AlertCircle,
   ChevronDown,
-  Globe,
   Search
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useSiteSettings } from '@/context/SettingsContext';
 import { getEnvironments, EnvironmentItem, School, testStorageConnection, testSmtpConnection } from '@/lib/sqlite';
 import { toast } from 'sonner';
+import {
+  PRICING_CONFIG,
+  EMAIL_TIERS,
+  type EmailTierOption,
+  calculatePricingSummary,
+  type OptionalModulesSelection
+} from '@/lib/pricing';
 
-// PRICING CONSTANTS
-export const PRICING_CONFIG = {
-  environmentTier1: Number(import.meta.env.VITE_PRICING_ENVIRONMENT_TIER1) || 25,
-  environmentTier2: Number(import.meta.env.VITE_PRICING_ENVIRONMENT_TIER2) || 10,
-  storage10GbUnit: Number(import.meta.env.VITE_PRICING_STORAGE_10GB) || 5,
-
-  // Core Base Modules (Mandatory in membership)
-  waitlist: Number(import.meta.env.VITE_PRICING_WAITLIST) || 1,
-  portalParents: Number(import.meta.env.VITE_PRICING_PORTAL_PARENTS) || 5,
-  portalGuides: Number(import.meta.env.VITE_PRICING_PORTAL_TEACHERS) || 4,
-  montessoriTracking: Number(import.meta.env.VITE_PRICING_PROGRESS) || 2,
-  attendanceTracker: Number(import.meta.env.VITE_PRICING_ATTENDANCE) || 1,
-  habitTrackers: Number(import.meta.env.VITE_PRICING_CALENDAR) || 1,
-
-  // Optional A-la-carte Modules (USD / mo)
-  finances: Number(import.meta.env.VITE_PRICING_FINANCES) || 12,
-  websiteBuilder: Number(import.meta.env.VITE_PRICING_WEBSITE_BUILDER) || 18,
-  forms: Number(import.meta.env.VITE_PRICING_FORMS) || 9,
-  pipelines: Number(import.meta.env.VITE_PRICING_PIPELINES) || 9,
-  newsletterSmtp: Number(import.meta.env.VITE_PRICING_NEWSLETTER) || 3.99
-};
-
-// EMAIL PACKAGE TIERS FOR NEWSLETTER MODULE
-export interface EmailTierOption {
-  id: string;
-  name: string;
-  desc: string;
-  extraUnits: number; // 0 for base 500 or SMTP, +1 for 1000 (+500), +3 for 2000 (+1500), +5 for 3000 (+2500)
-  emailsCountLabel: string;
-  isSmtp?: boolean;
-}
-
-export const EMAIL_TIERS: EmailTierOption[] = [
-  {
-    id: '500_included',
-    name: '500 Emails / mes',
-    desc: 'Solo comunidad escolar (Padres y Docentes registrados)',
-    extraUnits: 0,
-    emailsCountLabel: '500 emails/mes'
-  },
-  {
-    id: '1000_emails',
-    name: '1,000 Emails / mes',
-    desc: '+500 adicionales • Solo comunidad escolar (Padres y Docentes)',
-    extraUnits: 1,
-    emailsCountLabel: '1,000 emails/mes'
-  },
-  {
-    id: '2000_emails',
-    name: '2,000 Emails / mes',
-    desc: '+1,500 adicionales • Solo comunidad escolar (Padres y Docentes)',
-    extraUnits: 3,
-    emailsCountLabel: '2,000 emails/mes'
-  },
-  {
-    id: '3000_emails',
-    name: '3,000 Emails / mes',
-    desc: '+2,500 adicionales • Solo comunidad escolar (Padres y Docentes)',
-    extraUnits: 5,
-    emailsCountLabel: '3,000 emails/mes'
-  },
-  {
-    id: 'byo_smtp',
-    name: 'Servidor SMTP Propio',
-    desc: 'Envíos ilimitados a comunidad y destinatarios externos (AWS SES, SendGrid, etc.)',
-    extraUnits: 0,
-    emailsCountLabel: 'SMTP Propio (Ilimitado + Externos)',
-    isSmtp: true
-  }
-];
+export { PRICING_CONFIG, EMAIL_TIERS, type EmailTierOption };
 
 export interface SmtpPreset {
   name: string;
@@ -156,14 +95,19 @@ export const S3_REGIONS: S3RegionOption[] = [
   { id: 'us-west-1', name: 'US West (N. California)', loc: 'EE.UU. Oeste (N. California)', flag: '🇺🇸' },
   { id: 'us-west-2', name: 'US West (Oregon)', loc: 'EE.UU. Oeste (Oregon)', flag: '🇺🇸' },
   { id: 'mx-central-1', name: 'Mexico (Central)', loc: 'México (Central)', flag: '🇲🇽' },
-  { id: 'sa-east-1', name: 'South America (São Paulo)', loc: 'Sudamérica (São Paulo)', flag: '🇧🇷' },
-  { id: 'ca-central-1', name: 'Canada (Central)', loc: 'Canadá (Central)', flag: '🇨🇦' },
-  { id: 'eu-south-2', name: 'EU (Spain)', loc: 'Europa (España)', flag: '🇪🇸' },
-  { id: 'eu-west-1', name: 'EU (Ireland)', loc: 'Europa (Irlanda)', flag: '🇮🇪' },
-  { id: 'eu-west-3', name: 'EU (Paris)', loc: 'Europa (París)', flag: '🇫🇷' },
-  { id: 'eu-central-1', name: 'EU (Frankfurt)', loc: 'Europa (Frankfurt)', flag: '🇩🇪' },
-  { id: 'ap-southeast-1', name: 'Asia Pacific (Singapore)', loc: 'Asia Pacífico (Singapur)', flag: '🇸🇬' },
-  { id: 'custom', name: 'Personalizada / Otra región...', loc: 'Ingresar código manual de región', flag: '✨' }
+  { id: 'us-east-1', name: 'US East (N. Virginia)', loc: 'EE.UU. Este (N. Virginia)', flag: '' },
+  { id: 'us-east-2', name: 'US East (Ohio)', loc: 'EE.UU. Este (Ohio)', flag: '' },
+  { id: 'us-west-1', name: 'US West (N. California)', loc: 'EE.UU. Oeste (N. California)', flag: '' },
+  { id: 'us-west-2', name: 'US West (Oregon)', loc: 'EE.UU. Oeste (Oregon)', flag: '' },
+  { id: 'mx-central-1', name: 'Mexico (Central)', loc: 'México (Central)', flag: '' },
+  { id: 'sa-east-1', name: 'South America (São Paulo)', loc: 'Sudamérica (São Paulo)', flag: '' },
+  { id: 'ca-central-1', name: 'Canada (Central)', loc: 'Canadá (Central)', flag: '' },
+  { id: 'eu-south-2', name: 'EU (Spain)', loc: 'Europa (España)', flag: '' },
+  { id: 'eu-west-1', name: 'EU (Ireland)', loc: 'Europa (Irlanda)', flag: '' },
+  { id: 'eu-west-3', name: 'EU (Paris)', loc: 'Europa (París)', flag: '' },
+  { id: 'eu-central-1', name: 'EU (Frankfurt)', loc: 'Europa (Frankfurt)', flag: '' },
+  { id: 'ap-southeast-1', name: 'Asia Pacific (Singapore)', loc: 'Asia Pacífico (Singapur)', flag: '' },
+  { id: 'custom', name: 'Personalizada / Otra región...', loc: 'Ingresar código manual de región', flag: '' }
 ];
 
 export const CustomRegionDropdown: React.FC<{
@@ -223,8 +167,8 @@ export const CustomRegionDropdown: React.FC<{
   const filteredRegions = useMemo(() => {
     const regionsList = driver === 'minio'
       ? [
-          { id: 'us-east-1', name: 'us-east-1 (Por defecto)', loc: 'Región estándar recomendada para MinIO', flag: '⚡' },
-          { id: 'custom', name: 'Personalizada / Otra región...', loc: 'Ingresar región configurada en MinIO', flag: '✨' }
+          { id: 'us-east-1', name: 'us-east-1 (Por defecto)', loc: 'Región estándar recomendada para MinIO', flag: '' },
+          { id: 'custom', name: 'Personalizada / Otra región...', loc: 'Ingresar región configurada en MinIO', flag: '' }
         ]
       : S3_REGIONS;
 
@@ -284,7 +228,7 @@ export const CustomRegionDropdown: React.FC<{
         className="w-full p-2.5 rounded-xl border border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs flex items-center justify-between gap-2 text-left focus:ring-2 focus:ring-forest outline-none cursor-pointer transition-all hover:border-stone-400 dark:hover:border-slate-600 shadow-2xs"
       >
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-sm shrink-0">{selectedOption?.flag || '🌐'}</span>
+          <Globe className="w-4 h-4 text-stone-500 shrink-0" />
           <div className="min-w-0">
             <span className="font-bold text-xs block truncate">
               {selectedOption ? selectedOption.name : value || 'us-east-1'}
@@ -914,12 +858,14 @@ export const SchoolPricingSection: React.FC = () => {
   const [selectedOptionalModules, setSelectedOptionalModules] = useState<{
     finances: boolean;
     websiteBuilder: boolean;
+    blog: boolean;
     forms: boolean;
     pipelines: boolean;
     newsletterSmtp: boolean;
   }>({
     finances: feat.finances ?? false,
     websiteBuilder: feat.webBuilder ?? feat.website ?? false,
+    blog: feat.blog ?? false,
     forms: feat.forms ?? false,
     pipelines: feat.pipelines ?? false,
     newsletterSmtp: feat.newsletters ?? false,
@@ -962,93 +908,30 @@ export const SchoolPricingSection: React.FC = () => {
     setNewEnvironments((prev) => prev.filter((e) => e.id !== envId));
   };
 
-  // Modular Pricing Real-time Calculation with 50% discount from 2nd environment and live FX
+  // Modular Pricing Real-time Calculation with live FX and shared agnostic pricing service
   const pricingSummary = useMemo(() => {
-    // 1. Mandatory Core Base ($14 USD)
-    const coreBaseTotalUsd = 14;
-
-    // 2. Environments Cost (USD):
-    // 1st environment = $25 USD
-    // 2nd and subsequent = 50% discount ($10 USD each)
-    let environmentsCostUsd = 0;
-    if (totalActiveEnvsCount === 1) {
-      environmentsCostUsd = PRICING_CONFIG.environmentTier1; // $25
-    } else if (totalActiveEnvsCount > 1) {
-      environmentsCostUsd =
-        PRICING_CONFIG.environmentTier1 +
-        (totalActiveEnvsCount - 1) * PRICING_CONFIG.environmentTier2;
-    }
-
-    // 3. Optional Modules Cost (USD)
-    let optionalModulesCostUsd = 0;
-    let selectedModulesCount = 0;
-    if (selectedOptionalModules.finances) {
-      optionalModulesCostUsd += PRICING_CONFIG.finances;
-      selectedModulesCount++;
-    }
-    if (selectedOptionalModules.websiteBuilder) {
-      optionalModulesCostUsd += PRICING_CONFIG.websiteBuilder;
-      selectedModulesCount++;
-    }
-    if (selectedOptionalModules.forms) {
-      optionalModulesCostUsd += PRICING_CONFIG.forms;
-      selectedModulesCount++;
-    }
-    if (selectedOptionalModules.pipelines) {
-      optionalModulesCostUsd += PRICING_CONFIG.pipelines;
-      selectedModulesCount++;
-    }
-    let newsletterCostUsd = 0;
-    if (selectedOptionalModules.newsletterSmtp) {
-      const selectedTier = EMAIL_TIERS.find((t) => t.id === newsletterEmailTier) || EMAIL_TIERS[0];
-      const extraCost = selectedTier.extraUnits * PRICING_CONFIG.newsletterSmtp;
-      newsletterCostUsd = PRICING_CONFIG.newsletterSmtp + extraCost;
-      optionalModulesCostUsd += newsletterCostUsd;
-      selectedModulesCount++;
-    }
-
-    // 4. Storage Cost (USD)
-    let storageCostUsd = 0;
-    if (storageTier === '12gb') storageCostUsd = PRICING_CONFIG.storage10GbUnit * 1;
-    if (storageTier === '22gb') storageCostUsd = PRICING_CONFIG.storage10GbUnit * 2;
-    if (storageTier === '52gb') storageCostUsd = PRICING_CONFIG.storage10GbUnit * 5;
-
-    // Monthly Subtotal (USD)
-    const monthlyTotalUsd = coreBaseTotalUsd + environmentsCostUsd + optionalModulesCostUsd + storageCostUsd;
-
-    // Annual Calculation (Pay 10 months, get 12 = 2 months free) in USD
-    const annualEquivalentMonthlyUsd = Math.round((monthlyTotalUsd * 10) / 12);
-    const annualBilledTotalUsd = monthlyTotalUsd * 10;
-
-    // Converted to target currency (e.g. MXN)
     const rate = typeof fxRate === 'number' && fxRate > 0 ? fxRate : 1;
-    const monthlyTotal = Math.round(monthlyTotalUsd * rate);
-    const annualEquivalentMonthly = Math.round(annualEquivalentMonthlyUsd * rate);
-    const annualBilledTotal = Math.round(annualBilledTotalUsd * rate);
-    const environmentsCost = Math.round(environmentsCostUsd * rate);
-    const optionalModulesCost = Math.round(optionalModulesCostUsd * rate);
-    const newsletterCost = Math.round(newsletterCostUsd * rate);
-    const storageCost = Math.round(storageCostUsd * rate);
-    const coreBaseTotal = Math.round(coreBaseTotalUsd * rate);
+    const baseCalc = calculatePricingSummary({
+      environmentsCount: totalActiveEnvsCount,
+      optionalModules: selectedOptionalModules,
+      storageTier,
+      newsletterEmailTierId: newsletterEmailTier,
+      fxRate: rate
+    });
+
+    const environmentsCost = Math.round(baseCalc.environmentsCostUsd * rate);
+    const optionalModulesCost = Math.round(baseCalc.optionalModulesCostUsd * rate);
+    const newsletterCost = Math.round(baseCalc.newsletterCostUsd * rate);
+    const storageCost = Math.round(baseCalc.storageCostUsd * rate);
+    const coreBaseTotal = Math.round(baseCalc.coreBaseTotalUsd * rate);
 
     return {
-      coreBaseTotalUsd,
-      environmentsCostUsd,
-      optionalModulesCostUsd,
-      newsletterCostUsd,
-      storageCostUsd,
-      monthlyTotalUsd,
-      annualEquivalentMonthlyUsd,
-      annualBilledTotalUsd,
+      ...baseCalc,
       coreBaseTotal,
       environmentsCost,
       optionalModulesCost,
       newsletterCost,
-      selectedModulesCount,
-      storageCost,
-      monthlyTotal,
-      annualEquivalentMonthly,
-      annualBilledTotal
+      storageCost
     };
   }, [totalActiveEnvsCount, selectedOptionalModules, newsletterEmailTier, storageTier, fxRate]);
 
@@ -1111,6 +994,7 @@ export const SchoolPricingSection: React.FC = () => {
           finances: selectedOptionalModules.finances,
           webBuilder: selectedOptionalModules.websiteBuilder,
           website: selectedOptionalModules.websiteBuilder,
+          blog: selectedOptionalModules.blog,
           forms: selectedOptionalModules.forms,
           pipelines: selectedOptionalModules.pipelines,
           newsletters: selectedOptionalModules.newsletterSmtp,
@@ -1574,6 +1458,33 @@ export const SchoolPricingSection: React.FC = () => {
                   </span>
                 </label>
 
+                {/* Blog Pedagógico Institucional */}
+                <label className={`p-4 rounded-2xl border flex items-center justify-between gap-4 cursor-pointer transition-all ${
+                  selectedOptionalModules.blog
+                    ? 'border-forest bg-forest/5 ring-1 ring-forest/20'
+                    : 'border-stone-200 dark:border-slate-800 bg-stone-50/50 dark:bg-slate-900/50 hover:bg-stone-100/60'
+                }`}>
+                  <div className="flex items-start gap-3.5">
+                    <input
+                      type="checkbox"
+                      checked={selectedOptionalModules.blog}
+                      onChange={(e) => setSelectedOptionalModules({ ...selectedOptionalModules, blog: e.target.checked })}
+                      className="w-5 h-5 rounded-md accent-forest mt-0.5 cursor-pointer"
+                    />
+                    <div>
+                      <span className="text-sm font-bold block text-slate-900 dark:text-white">
+                        Blog Pedagógico Institucional & Motor Multilingüe
+                      </span>
+                      <span className="text-xs text-muted-foreground block mt-0.5">
+                        Publicación de artículos pedagógicos, generación de portadas con IA, editor markdown y traducción automática a 5 idiomas.
+                      </span>
+                    </div>
+                  </div>
+                  <span className="text-xs font-mono font-bold text-forest dark:text-emerald-400 whitespace-nowrap">
+                    +{formatPrice(PRICING_CONFIG.blog)}
+                  </span>
+                </label>
+
                 {/* Formularios Pro */}
                 <label className={`p-4 rounded-2xl border flex items-center justify-between gap-4 cursor-pointer transition-all ${
                   selectedOptionalModules.forms
@@ -1883,7 +1794,7 @@ export const SchoolPricingSection: React.FC = () => {
 
                       {/* Resend.com Recommendation Callout */}
                       <div className="p-3 sm:p-3.5 rounded-2xl bg-white/90 dark:bg-slate-900/90 border border-sky-200 dark:border-slate-800 flex items-center gap-2.5 text-xs shadow-2xs">
-                        <span className="text-base shrink-0">💡</span>
+                        <Lightbulb className="w-4 h-4 text-amber-500 shrink-0" />
                         <p className="text-[11.5px] text-slate-700 dark:text-slate-300 leading-relaxed">
                           <strong className="text-slate-900 dark:text-white font-semibold">Recomendación:</strong> Recomendamos el uso de <a href="https://resend.com" target="_blank" rel="noopener noreferrer" className="text-forest dark:text-emerald-400 font-bold underline underline-offset-2 hover:opacity-80">resend.com</a>, el cual ofrece <strong>3,000 emails transaccionales gratis al mes</strong> con excelente entregabilidad y configuración rápida.
                         </p>
@@ -1900,8 +1811,9 @@ export const SchoolPricingSection: React.FC = () => {
                   <p className="text-[11px] text-stone-600 dark:text-stone-300 leading-relaxed">
                     Los paquetes mensuales gestionados por Montessori Nexus incluyen envíos dirigidos <strong>exclusivamente a los correos registrados de padres de familia, tutores y docentes</strong> del colegio. No incluyen envíos a listas externas.
                   </p>
-                  <p className="text-[10.5px] text-muted-foreground pt-0.5">
-                    💡 Para enviar circulares o boletines a destinatarios externos, prospectos o exalumnos, selecciona la opción <strong>Servidor SMTP Propio</strong>.
+                  <p className="text-[10.5px] text-muted-foreground pt-0.5 flex items-center gap-1.5">
+                    <Lightbulb className="w-3.5 h-3.5 text-amber-500 shrink-0 inline" />
+                    <span>Para enviar circulares o boletines a destinatarios externos, prospectos o exalumnos, selecciona la opción <strong>Servidor SMTP Propio</strong>.</span>
                   </p>
                 </div>
               )}
@@ -2119,6 +2031,20 @@ export const SchoolPricingSection: React.FC = () => {
                       </div>
                     )}
 
+                    {selectedOptionalModules.blog && (
+                      <div className="p-3.5 rounded-xl border border-stone-200 dark:border-slate-800 bg-stone-50 dark:bg-slate-900/40 flex items-center justify-between gap-2 text-xs">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="w-2 h-2 rounded-full bg-forest shrink-0" />
+                          <span className="font-semibold text-slate-800 dark:text-slate-200 truncate">
+                            Blog Pedagógico & Multilingüe
+                          </span>
+                        </div>
+                        <span className="font-mono font-bold text-forest dark:text-emerald-400 shrink-0">
+                          +{formatPrice(PRICING_CONFIG.blog)}
+                        </span>
+                      </div>
+                    )}
+
                     {selectedOptionalModules.forms && (
                       <div className="p-3.5 rounded-xl border border-stone-200 dark:border-slate-800 bg-stone-50 dark:bg-slate-900/40 flex items-center justify-between gap-2 text-xs">
                         <div className="flex items-center gap-2 min-w-0">
@@ -2257,6 +2183,15 @@ export const SchoolPricingSection: React.FC = () => {
                   <span className="truncate pr-2">Creador de Sitios Web</span>
                   <span className="font-mono font-bold text-slate-900 dark:text-slate-100 shrink-0">
                     +{formatPrice(PRICING_CONFIG.websiteBuilder)}
+                  </span>
+                </div>
+              )}
+
+              {selectedOptionalModules.blog && (
+                <div className="flex items-center justify-between text-muted-foreground">
+                  <span className="truncate pr-2">Blog Pedagógico Institucional</span>
+                  <span className="font-mono font-bold text-slate-900 dark:text-slate-100 shrink-0">
+                    +{formatPrice(PRICING_CONFIG.blog)}
                   </span>
                 </div>
               )}
