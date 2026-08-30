@@ -26,6 +26,7 @@ export const PRICING_CONFIG = {
   attendanceTracker: Number(import.meta.env.VITE_PRICING_ATTENDANCE ?? 1),
   calendar: Number(import.meta.env.VITE_PRICING_CALENDAR ?? 1),
   habitTrackers: Number(import.meta.env.VITE_PRICING_CALENDAR ?? 1),
+  communityFeed: 0, // Interactive community feed (parents, guides, school AI) included
   internalAnnouncements: 0,
   documentManagement: 0,
   webGallery: 0,
