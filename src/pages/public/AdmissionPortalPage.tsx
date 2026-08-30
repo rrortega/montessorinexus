@@ -1047,6 +1047,41 @@ export const AdmissionPortalPage: React.FC = () => {
     loadPortalData();
   }, [token]);
 
+  useEffect(() => {
+    if (dossierData) {
+      const schoolName = dossierData.school?.name || 'Comunidad Montessori';
+      const processName = dossierData.application?.process?.name || dossierData.application?.process?.label || dossierData.stage?.name || 'Admisión';
+      const pageTitle = dossierData.stage?.name
+        ? `Proceso de ${processName} (${dossierData.stage.name}) | ${schoolName}`
+        : `Proceso de ${processName} | ${schoolName}`;
+      document.title = pageTitle;
+
+      const setMeta = (attr: string, key: string, content: string) => {
+        let el = document.querySelector(`meta[${attr}="${key}"]`);
+        if (!el) {
+          el = document.createElement('meta');
+          el.setAttribute(attr, key);
+          document.head.appendChild(el);
+        }
+        el.setAttribute('content', content);
+      };
+
+      const desc = `Portal interactivo de seguimiento para el proceso de ${processName} en ${schoolName}. Consulta etapas y requisitos en línea.`;
+      const ogImg = token ? `/api/og/processes/${token}.png` : '/images/og-montessorinexus-es.png';
+
+      setMeta('name', 'description', desc);
+      setMeta('property', 'og:title', pageTitle);
+      setMeta('property', 'og:description', desc);
+      setMeta('property', 'og:image', ogImg);
+      setMeta('property', 'og:type', 'website');
+      setMeta('property', 'og:site_name', `${schoolName} • Montessori Nexus`);
+      setMeta('name', 'twitter:card', 'summary_large_image');
+      setMeta('name', 'twitter:title', pageTitle);
+      setMeta('name', 'twitter:description', desc);
+      setMeta('name', 'twitter:image', ogImg);
+    }
+  }, [dossierData, token]);
+
   // Sync active form when subroute formId changes or dossierData loads
   useEffect(() => {
     if (!dossierData) return;
@@ -3141,7 +3176,7 @@ export const AdmissionPortalPage: React.FC = () => {
                   {!validationCheck.isValid && (
                     <div className="text-[10.5px] text-amber-800 bg-amber-50 p-2.5 rounded-lg border border-amber-200/70 flex flex-col gap-0.5">
                       {validationCheck.warnings.map((w, idx) => (
-                        <span key={idx}>⚠️ {w}</span>
+                        <span key={idx}>{w}</span>
                       ))}
                     </div>
                   )}
@@ -4203,7 +4238,7 @@ export const AdmissionPortalPage: React.FC = () => {
                                 <span className="text-[10px] font-mono text-white/70 uppercase">Paso {idx + 1}</span>
                                 <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded-sm ${isPast ? 'bg-emerald-500/30 text-emerald-300' : isCurrent ? 'bg-amber-400/30 text-amber-300' : 'bg-white/20 text-white/80'
                                   }`}>
-                                  {isPast ? '✓ Completada' : isCurrent ? '● Fase Actual' : 'Por transitar'}
+                                  {isPast ? 'Completada' : isCurrent ? '● Fase Actual' : 'Por transitar'}
                                 </span>
                               </div>
                               <p className="font-bold text-xs text-white pt-0.5">{stg.name}</p>
@@ -4292,7 +4327,7 @@ export const AdmissionPortalPage: React.FC = () => {
                             <div className="space-y-2.5">
                               <div className="flex items-center justify-between gap-2">
                                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold border bg-emerald-100 text-emerald-800 border-emerald-200">
-                                  ✓ Completado
+                                  Completado
                                 </span>
                                 <span className="text-[10px] font-mono text-muted-foreground flex items-center gap-1">
                                   <Clock className="w-3 h-3 text-forest/50" />
@@ -4370,7 +4405,7 @@ export const AdmissionPortalPage: React.FC = () => {
                                 ? 'bg-amber-50 text-amber-800 border-amber-200'
                                 : 'bg-forest/5 text-forest border-forest/10'
                               }`}>
-                              {isCompleted ? '✓ Completado' : req.isMandatory ? 'Obligatorio' : 'Opcional'}
+                              {isCompleted ? 'Completado' : req.isMandatory ? 'Obligatorio' : 'Opcional'}
                             </span>
                             <span className="text-[10px] font-mono text-muted-foreground flex items-center gap-1">
                               <Clock className="w-3 h-3 text-forest/50" />

@@ -38,6 +38,7 @@ const quickLinks = [
   { label: 'Nuestro Método', href: '#metodo' },
   { label: 'Programas', href: '#programas' },
   { label: 'Admisiones', href: '#admisiones' },
+  { label: 'Blog', href: '/blog' },
   { label: 'Contacto', href: '#contacto' },
 ];
 

@@ -25,6 +25,10 @@ export default defineConfig(({ mode }) => {
           target: "http://localhost:3001",
           changeOrigin: true,
         },
+        "/feed": {
+          target: "http://localhost:3001",
+          changeOrigin: true,
+        },
         "/admin/queues": {
           target: "http://localhost:3001",
           changeOrigin: true,

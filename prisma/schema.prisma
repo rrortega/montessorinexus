@@ -71,6 +71,10 @@ model School {
   processFormTemplates  ProcessFormTemplate[]
   newsletters       Newsletter[]
   announcements     Announcement[]
+  feedPosts         FeedPost[]
+  blogPosts         BlogPost[]
+  blogCategories    BlogCategory[]
+  blogTags          BlogTag[]
 
   @@map("schools")
 }
@@ -98,6 +102,7 @@ model Environment {
   eventTargets EventTargetEnvironment[]
   processApplications   ProcessApplication[]
   materials    EnvironmentMaterial[]
+  feedPosts    FeedPost[]
 
   @@map("environments")
 }
@@ -153,6 +158,10 @@ model User {
   authoredCharacterizations StudentCharacterization[]
   staffDocuments           UserDocument[]
   announcementViews        AnnouncementView[]
+  authoredFeedPosts        FeedPost[]                 @relation("AuthoredFeedPosts")
+  authoredFeedComments     FeedComment[]              @relation("AuthoredFeedComments")
+  userFeedLikes            FeedLike[]                 @relation("UserFeedLikes")
+  authoredBlogPosts        BlogPost[]                 @relation("AuthoredBlogPosts")
 
   @@map("users")
 }
@@ -230,6 +239,7 @@ model Student {
   feeInstallments   FeeInstallment[]
   processApplications ProcessApplication[]
   waitlistEntries     WaitlistEntry[]
+  feedPosts           FeedPost[]
 
   @@map("students")
 }
@@ -350,6 +360,8 @@ model GalleryImage {
   hasConsentIssues Boolean  @default(false) @map("has_consent_issues")
   showOnWeb        Boolean  @default(true) @map("show_on_web")
   showOnPortal     Boolean  @default(true) @map("show_on_portal")
+  isReportedByParent Boolean @default(false) @map("is_reported_by_parent")
+  parentReport     String?  @default("") @map("parent_report")
   createdAt        DateTime @default(now()) @map("created_at")
 
   school   School          @relation(fields: [schoolId], references: [id], onDelete: Cascade)
@@ -1188,6 +1200,212 @@ model AnnouncementView {
   @@unique([announcementId, userId])
   @@map("announcement_views")
 }
+
+// FEED & COMMUNITY POSTS
+model FeedPost {
+  id               String        @id @default(uuid())
+  schoolId         String        @map("school_id")
+  authorId         String?       @map("author_id")
+  authorRole       Role?         @map("author_role")
+  type             String        @default("POST") // 'POST', 'OBSERVATION', 'PROGRESS', 'ATTENDANCE', 'ANNOUNCEMENT', 'NEWSLETTER'
+  title            String?       @default("")
+  content          String
+  mediaUrls        Json?         @default("[]") @map("media_urls")
+  linkPreview      Json?         @map("link_preview")
+  poll             Json?
+  allowComments    Boolean       @default(true) @map("allow_comments")
+  targetAudience   String        @default("ALL_SCHOOL") @map("target_audience") // 'ALL_SCHOOL', 'STAFF_ONLY', 'PARENTS_ONLY', 'CLASSROOM_PARENTS', 'CLASSROOM_ALL'
+  environmentId    String?       @map("environment_id")
+  studentId        String?       @map("student_id")
+  refId            String?       @map("ref_id")
+  refType          String?       @map("ref_type")
+  likesCount       Int           @default(0) @map("likes_count")
+  commentsCount    Int           @default(0) @map("comments_count")
+  pinned           Boolean       @default(false)
+  moderationStatus String        @default("APPROVED") @map("moderation_status") // 'PENDING_REVIEW', 'APPROVED', 'REJECTED'
+  moderationReason String?       @map("moderation_reason")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  school           School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  author           User?         @relation("AuthoredFeedPosts", fields: [authorId], references: [id], onDelete: SetNull)
+  environment      Environment?  @relation(fields: [environmentId], references: [id], onDelete: SetNull)
+  student          Student?      @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  comments         FeedComment[]
+  likes            FeedLike[]
+
+  @@index([schoolId, createdAt])
+  @@index([environmentId])
+  @@index([studentId])
+  @@index([type])
+  @@index([moderationStatus])
+  @@map("feed_posts")
+}
+
+model FeedComment {
+  id                  String         @id @default(uuid())
+  postId              String         @map("feed_post_id")
+  parentId            String?        @map("parent_id")
+  authorId            String?        @map("author_id")
+  authorRole          Role           @default(STAFF) @map("author_role")
+  content             String
+  mediaUrl            String?        @map("media_url")
+  isInternalGuideOnly Boolean        @default(false) @map("is_internal_guide_only")
+  isAiAgent           Boolean        @default(false) @map("is_ai_agent")
+  aiAgentName         String?        @map("ai_agent_name")
+  aiAgentAvatar       String?        @map("ai_agent_avatar")
+  moderationStatus    String         @default("APPROVED") @map("moderation_status") // 'PENDING_REVIEW', 'APPROVED', 'REJECTED'
+  moderationReason    String?        @map("moderation_reason")
+  createdAt           DateTime       @default(now()) @map("created_at")
+  updatedAt           DateTime       @updatedAt @map("updated_at")
+
+  post                FeedPost       @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author              User?          @relation("AuthoredFeedComments", fields: [authorId], references: [id], onDelete: SetNull)
+  parent              FeedComment?   @relation("FeedCommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies             FeedComment[]  @relation("FeedCommentReplies")
+
+  @@index([postId, createdAt])
+  @@index([parentId])
+  @@index([moderationStatus])
+  @@map("feed_comments")
+}
+
+model FeedLike {
+  id        String   @id @default(uuid())
+  postId    String   @map("feed_post_id")
+  userId    String   @map("user_id")
+  reaction  String   @default("❤️")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  post      FeedPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation("UserFeedLikes", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@map("feed_likes")
+}
+
+model AiTokenUsage {
+  id               String   @id @default(uuid())
+  schoolId         String   @map("school_id")
+  yearMonth        String   @map("year_month") // e.g. "2026-08"
+  promptTokens     Int      @default(0) @map("prompt_tokens")
+  completionTokens Int      @default(0) @map("completion_tokens")
+  totalTokens      Int      @default(0) @map("total_tokens")
+  requestCount     Int      @default(0) @map("request_count")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@unique([schoolId, yearMonth])
+  @@index([schoolId])
+  @@map("ai_token_usages")
+}
+
+enum BlogPostStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+  ARCHIVED
+}
+
+model BlogPost {
+  id                 String          @id @default(uuid())
+  schoolId           String?         @map("school_id")
+  authorId           String          @map("author_id")
+  customAuthorName   String?         @map("custom_author_name")
+  customAuthorAvatar String?         @map("custom_author_avatar")
+  coverImage         String?         @default("") @map("cover_image")
+  coverImageAlt      String?         @default("") @map("cover_image_alt")
+  status             BlogPostStatus  @default(DRAFT)
+  isFeatured         Boolean         @default(false) @map("is_featured")
+  publishedAt        DateTime?       @map("published_at")
+  readingTimeMinutes Int             @default(1) @map("reading_time_minutes")
+  viewsCount         Int             @default(0) @map("views_count")
+  createdAt          DateTime        @default(now()) @map("created_at")
+  updatedAt          DateTime        @updatedAt @map("updated_at")
+
+  school             School?         @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  author             User            @relation("AuthoredBlogPosts", fields: [authorId], references: [id], onDelete: Restrict)
+  translations       BlogPostTranslation[]
+  categories         BlogPostCategory[]
+  tags               BlogPostTag[]
+
+  @@index([schoolId, status, publishedAt])
+  @@map("blog_posts")
+}
+
+model BlogPostTranslation {
+  id              String    @id @default(uuid())
+  postId          String    @map("post_id")
+  locale          String    @default("es")
+  slug            String
+  title           String
+  excerpt         String?   @default("")
+  content         String
+  metaTitle       String?   @default("") @map("meta_title")
+  metaDescription String?   @default("") @map("meta_description")
+  canonicalUrl    String?   @default("") @map("canonical_url")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  post            BlogPost  @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, locale])
+  @@index([locale, slug])
+  @@map("blog_post_translations")
+}
+
+model BlogCategory {
+  id          String             @id @default(uuid())
+  schoolId    String?            @map("school_id")
+  slug        String
+  name        String
+  description String?            @default("")
+  createdAt   DateTime           @default(now()) @map("created_at")
+
+  school      School?            @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  posts       BlogPostCategory[]
+
+  @@unique([schoolId, slug])
+  @@map("blog_categories")
+}
+
+model BlogPostCategory {
+  postId     String       @map("post_id")
+  categoryId String       @map("category_id")
+
+  post       BlogPost     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  category   BlogCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([postId, categoryId])
+  @@map("blog_post_categories")
+}
+
+model BlogTag {
+  id        String        @id @default(uuid())
+  schoolId  String?       @map("school_id")
+  slug      String
+  name      String
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  school    School?       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  posts     BlogPostTag[]
+
+  @@unique([schoolId, slug])
+  @@map("blog_tags")
+}
+
+model BlogPostTag {
+  postId String   @map("post_id")
+  tagId  String   @map("tag_id")
+
+  post   BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag    BlogTag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
+  @@map("blog_post_tags")
+}
+
+
 
 
 

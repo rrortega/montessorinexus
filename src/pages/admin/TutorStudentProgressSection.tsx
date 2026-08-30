@@ -68,7 +68,8 @@ export const TutorStudentProgressSection: React.FC = () => {
       setLoading(true);
       try {
         let studentList: StudentItem[] = [];
-        if (role === 'TUTOR') {
+        const isTutor = role === 'TUTOR' || activeMembership?.role === 'TUTOR' || user?.staffRole === 'TUTOR';
+        if (isTutor) {
           studentList = user?.email ? await getMyTutorStudents(user.email) : [];
         } else {
           studentList = await getStudents();
@@ -153,16 +154,49 @@ export const TutorStudentProgressSection: React.FC = () => {
         <div className="space-y-6">
           {students.map((student) => {
             const isActive = student.status === 'active';
+            const isGraduated = student.status === 'graduated';
+            const isInactive = !isActive && !isGraduated;
+
+            const environmentLabel = isGraduated 
+              ? 'Sin ambiente / Egreso'
+              : isInactive
+                ? 'Sin ambiente / Inactivo'
+                : student.environment_name || student.grade || 'Ambiente Montessori';
 
             return (
               <div 
                 key={student.id}
-                className="bg-white rounded-3xl border border-forest/10 shadow-xs hover:shadow-md transition-all p-6 md:p-7 space-y-6"
+                className={`bg-white rounded-3xl border transition-all p-6 md:p-7 space-y-6 ${
+                  isGraduated 
+                    ? 'border-sky-200/80 shadow-2xs hover:shadow-md bg-gradient-to-b from-sky-50/20 to-white' 
+                    : isActive 
+                      ? 'border-forest/10 shadow-xs hover:shadow-md'
+                      : 'border-amber-200/80 shadow-2xs opacity-90'
+                }`}
               >
+                {/* Graduated Banner Notice */}
+                {isGraduated && (
+                  <div className="bg-sky-500/10 border border-sky-300/60 rounded-2xl p-3 px-4 flex items-center justify-between gap-3 text-xs text-sky-950 animate-in fade-in slide-in-from-top-1">
+                    <div className="flex items-center gap-2 font-medium">
+                      <GraduationCap className="w-4 h-4 text-sky-700 shrink-0" />
+                      <span>
+                        <strong>Alumno Egresado:</strong> {student.full_name} completó satisfactoriamente su ciclo escolar. Puedes consultar su historial y reportes archivados.
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider bg-sky-200/70 text-sky-900 px-2 py-0.5 rounded-md shrink-0">
+                      Historial
+                    </span>
+                  </div>
+                )}
+
                 {/* Student Top Bar */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-forest/10">
                   <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-2xl overflow-hidden bg-forest/10 flex items-center justify-center font-bold text-forest text-2xl font-display shrink-0 shadow-2xs border border-forest/15">
+                    <div className={`w-16 h-16 rounded-2xl overflow-hidden flex items-center justify-center font-bold text-2xl font-display shrink-0 shadow-2xs border ${
+                      isGraduated
+                        ? 'bg-sky-100 text-sky-900 border-sky-300/60'
+                        : 'bg-forest/10 text-forest border-forest/15'
+                    }`}>
                       {student.avatar_url ? (
                         <img src={student.avatar_url} alt={student.full_name} className="w-full h-full object-cover" />
                       ) : (
@@ -170,12 +204,23 @@ export const TutorStudentProgressSection: React.FC = () => {
                       )}
                     </div>
                     <div>
-                      <h2 className="text-xl font-bold font-display text-forest">
-                        {student.full_name}
-                      </h2>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h2 className="text-xl font-bold font-display text-forest">
+                          {student.full_name}
+                        </h2>
+                        {isGraduated && (
+                          <span className="text-[10px] bg-sky-100 text-sky-800 font-bold px-2.5 py-0.5 rounded-full border border-sky-200 flex items-center gap-1">
+                            <GraduationCap className="w-3 h-3 text-sky-600" />
+                            <span>Egresado</span>
+                          </span>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-wrap">
-                        <span className="font-semibold text-forest/90">
-                          {student.grade || 'Ambiente Montessori'}
+                        <span className={`font-semibold flex items-center gap-1 ${
+                          isGraduated ? 'text-sky-800 font-bold' : isInactive ? 'text-amber-800' : 'text-forest/90'
+                        }`}>
+                          {isGraduated && <GraduationCap className="w-3.5 h-3.5 text-sky-600 inline" />}
+                          <span>{environmentLabel}</span>
                         </span>
                         {student.blood_type && (
                           <span className="text-[10px] bg-red-50 text-red-700 px-2 py-0.5 rounded-md border border-red-100 font-bold flex items-center gap-1">
@@ -195,20 +240,26 @@ export const TutorStudentProgressSection: React.FC = () => {
                       onClick={() => handleCopyCode(student.enrollment_code, student.id)}
                       title={student.enrollment_code ? `Clic para copiar matrícula: ${student.enrollment_code}` : 'Estado escolar'}
                       className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs group/copy cursor-pointer active:scale-95 ${
-                        isActive 
-                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300' 
-                          : 'bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100'
+                        isGraduated
+                          ? 'bg-sky-50 text-sky-900 border border-sky-200 hover:bg-sky-100 hover:border-sky-300'
+                          : isActive 
+                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300' 
+                            : 'bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100'
                       }`}
                     >
-                      {isActive ? (
-                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                      {isGraduated ? (
+                        <GraduationCap className="w-3.5 h-3.5 text-sky-700" />
+                      ) : isActive ? (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                       ) : (
-                        <Lock className="w-3 h-3 text-amber-700" />
+                        <Lock className="w-3.5 h-3.5 text-amber-700" />
                       )}
                       <span>
-                        {isActive 
-                          ? `Matrícula Activa${student.enrollment_code ? ` • ${student.enrollment_code}` : ''}`
-                          : 'Inactivo / Archivo Histórico'}
+                        {isGraduated
+                          ? `Egresado / Graduado${student.enrollment_code ? ` • ${student.enrollment_code}` : ''}`
+                          : isActive 
+                            ? `Matrícula Activa${student.enrollment_code ? ` • ${student.enrollment_code}` : ''}`
+                            : `Inactivo${student.enrollment_code ? ` • ${student.enrollment_code}` : ''}`}
                       </span>
                       {student.enrollment_code && (
                         copiedStudentId === student.id ? (

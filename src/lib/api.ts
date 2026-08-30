@@ -1,13 +1,17 @@
 export async function uploadPhysicalFile(
   file: File, 
   folder: 'gallery' | 'documents' = 'gallery',
-  title?: string
+  title?: string,
+  isGlobal: boolean = false
 ): Promise<{ url: string; fileName: string; size: number }> {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('folder', folder);
   if (title) {
     formData.append('title', title);
+  }
+  if (isGlobal) {
+    formData.append('isGlobal', 'true');
   }
 
   const schoolId = localStorage.getItem('ceiba_active_school_id') || '';

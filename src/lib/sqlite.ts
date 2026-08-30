@@ -111,6 +111,7 @@ export interface StudentItem {
   id: string;
   school_id: string;
   environment_id?: string | null;
+  environment_name?: string;
   full_name: string;
   avatar_url?: string;
   gender?: string;
@@ -257,6 +258,16 @@ export interface GalleryImageItem {
   has_consent_issues?: boolean;
   show_on_web?: boolean;
   show_on_portal?: boolean;
+  is_reported_by_parent?: boolean;
+  parent_report?: {
+    tutorId?: string;
+    tutorName?: string;
+    tutorEmail?: string;
+    studentId?: string;
+    studentName?: string;
+    comment?: string;
+    reportedAt?: string;
+  } | null;
   created_at: string;
 }
 
@@ -1010,6 +1021,13 @@ const mapGalleryImage = (i: any): GalleryImageItem => {
       parsedFaces = typeof rawFaces === 'string' ? JSON.parse(rawFaces) : rawFaces;
     } catch {}
   }
+  let parsedParentReport = null;
+  if (i.parentReport || i.parent_report) {
+    const rawReport = i.parentReport || i.parent_report;
+    try {
+      parsedParentReport = typeof rawReport === 'string' ? JSON.parse(rawReport) : rawReport;
+    } catch {}
+  }
   return {
     id: i.id,
     category_id: i.categoryId || i.category_id,
@@ -1027,6 +1045,8 @@ const mapGalleryImage = (i: any): GalleryImageItem => {
     has_consent_issues: Boolean(i.hasConsentIssues ?? i.has_consent_issues ?? false),
     show_on_web: i.showOnWeb ?? i.show_on_web ?? true,
     show_on_portal: i.showOnPortal ?? i.show_on_portal ?? true,
+    is_reported_by_parent: Boolean(i.isReportedByParent ?? i.is_reported_by_parent ?? false),
+    parent_report: parsedParentReport,
     created_at: i.createdAt || i.created_at,
   };
 };
@@ -2502,6 +2522,32 @@ export interface SchoolUsageStats {
     remainingGb: number;
     percentage: number;
   };
+  ai?: {
+    providerMode: 'platform' | 'custom';
+    isCustom: boolean;
+    hasCustomKey: boolean;
+    customBaseUrl?: string;
+    customModelText?: string;
+    customModelVision?: string;
+    monthlyPlanUsd: number;
+    tokensPer10Usd: number;
+    includedLimit: number;
+    used: number;
+    remaining: number;
+    percentage: number;
+    requestCount: number;
+    isFreeTrial?: boolean;
+    yearMonth?: string;
+    startOfMonth?: string;
+    endOfMonth?: string;
+    startOfCycle?: string;
+    endOfCycle?: string;
+    renewalDate?: string;
+    renewalDay?: number;
+    renewalDescription?: string;
+    isNonCumulative?: boolean;
+    hasFallback: boolean;
+  };
 }
 
 export async function getSchoolUsage(): Promise<SchoolUsageStats> {
@@ -2545,6 +2591,24 @@ export async function testCalendarWebhook(data: {
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: 'Error al enviar webhook de prueba de calendario' }));
     throw new Error(err.error || 'Error al enviar webhook de prueba de calendario');
+  }
+  return await res.json();
+}
+
+export async function improveTextWithAi(data: {
+  text: string;
+  context?: 'general' | 'event' | 'appointment' | 'newsletter';
+  tone?: 'professional' | 'warm';
+  schoolId?: string;
+}): Promise<{ success: boolean; improvedText: string; originalText: string }> {
+  const res = await fetch('/api/ai/improve-text', {
+    method: 'POST',
+    headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Error al procesar el texto con IA' }));
+    throw new Error(err.error || 'Error al procesar el texto con IA');
   }
   return await res.json();
 }
@@ -3049,14 +3113,17 @@ export async function getMyTutorStudents(email: string): Promise<StudentItem[]> 
     return data.map((s: any) => ({
       id: s.id,
       school_id: s.schoolId,
-      full_name: s.fullName,
-      grade: s.grade || '',
-      enrollment_code: s.enrollmentCode || '',
-      date_of_birth: s.dateOfBirth,
-      status: s.status,
+      environment_id: s.environmentId || s.environment_id || null,
+      environment_name: s.environmentName || s.environment?.name || s.grade || '',
+      full_name: s.fullName || s.full_name || '',
+      avatar_url: s.avatarUrl || s.avatar_url || '',
+      grade: s.environmentName || s.environment?.name || s.grade || '',
+      enrollment_code: s.enrollmentCode || s.enrollment_code || '',
+      date_of_birth: s.dateOfBirth || s.date_of_birth,
+      status: s.status || 'active',
       relationship: s.relationship,
-      created_at: s.createdAt,
-      updated_at: s.updatedAt,
+      created_at: s.createdAt || s.created_at,
+      updated_at: s.updatedAt || s.updated_at,
     }));
   } catch (e) {
     console.error('getMyTutorStudents error', e);
@@ -3428,6 +3495,24 @@ export async function retryGalleryImageAi(id: string): Promise<{ success: boolea
     image: data.image ? mapGalleryImage(data.image) : undefined
   };
 }
+
+export async function reportGalleryImageByParent(id: string, data: {
+  comment: string;
+  studentId?: string;
+  studentName?: string;
+}): Promise<{ success: boolean; message: string }> {
+  const res = await fetch(`/api/gallery/images/${id}/report-by-parent`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Error al reportar imagen' }));
+    throw new Error(err.error || 'Error al reportar imagen');
+  }
+  return await res.json();
+}
+
 
 export async function retryAllFailedGalleryAi(): Promise<{ success: boolean; count: number }> {
   const res = await fetch('/api/gallery/images/retry-failed-ai', {
@@ -4565,7 +4650,10 @@ export async function deleteSchoolEvent(id: string): Promise<void> {
     method: 'DELETE',
     headers: getAuthHeaders()
   });
-  if (!res.ok) throw new Error('Error al eliminar evento');
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Error al eliminar evento' }));
+    throw new Error(err.error || 'Error al eliminar evento');
+  }
 }
 
 export async function rsvpSchoolEvent(eventId: string, data: {
@@ -5472,6 +5560,88 @@ export async function toggleTrackerItemActive(id: string): Promise<TrackerItem> 
   return await res.json();
 }
 
+/**
+ * Extracts and maps tracker records from student observations for matrix visualization.
+ */
+export function parseTrackerLogsFromObservations(
+  observations: any[],
+  trackerCategories: TrackerCategoryItem[]
+): Record<string, {
+  value: 'YES' | 'NO' | 'PARTIAL';
+  notes?: string;
+  publicNotes?: string;
+  privateNotes?: string;
+  photoUrl?: string;
+  date?: string;
+  updatedAt?: string;
+  trackerItemId?: string;
+}> {
+  const logs: Record<string, any> = {};
+  if (!Array.isArray(observations) || !Array.isArray(trackerCategories)) return logs;
+
+  const itemMap = new Map<string, { id: string; name: string }>();
+  trackerCategories.forEach(cat => {
+    (cat.subcategories || []).forEach(sub => {
+      (sub.items || []).forEach(item => {
+        itemMap.set(item.name.toLowerCase().trim(), item);
+        if (item.id) {
+          itemMap.set(item.id.toLowerCase().trim(), item);
+        }
+      });
+    });
+  });
+
+  const sorted = [...observations].sort(
+    (a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime()
+  );
+
+  sorted.forEach(obs => {
+    if (!obs.content || !obs.studentId) return;
+
+    // Pattern: [Tracker Item Name]: Status
+    const match = obs.content.match(/^\[(.*?)\]:\s*(Realizado|En proceso|No realizado|YES|NO|PARTIAL|yes|no|partial)/i);
+    if (!match) return;
+
+    const itemNameRaw = match[1].trim().toLowerCase();
+    const statusRaw = match[2].trim().toLowerCase();
+
+    const item = itemMap.get(itemNameRaw);
+    if (!item) return;
+
+    let val: 'YES' | 'NO' | 'PARTIAL' = 'YES';
+    if (statusRaw === 'no realizado' || statusRaw === 'no') {
+      val = 'NO';
+    } else if (statusRaw === 'en proceso' || statusRaw === 'partial') {
+      val = 'PARTIAL';
+    }
+
+    const famMatch = obs.content.match(/Familias:\s*([\s\S]*?)(?=\n\nInterno Guía:|$)/i);
+    const intMatch = obs.content.match(/Interno Guía:\s*([\s\S]*?)$/i);
+    const publicNotes = famMatch ? famMatch[1].trim() : '';
+    const privateNotes = intMatch ? intMatch[1].trim() : '';
+    const obsDate = obs.createdAt ? obs.createdAt.split('T')[0] : new Date().toISOString().split('T')[0];
+
+    const logEntry = {
+      value: val,
+      notes: obs.content,
+      publicNotes,
+      privateNotes,
+      photoUrl: obs.photoUrl || '',
+      date: obsDate,
+      updatedAt: obs.updatedAt || obs.createdAt,
+      trackerItemId: item.id
+    };
+
+    // Store in both key styles:
+    // 1. `${item.id}_${studentId}`
+    // 2. `${item.id}_${studentId}_${obsDate}`
+    logs[`${item.id}_${obs.studentId}`] = logEntry;
+    logs[`${item.id}_${obs.studentId}_${obsDate}`] = logEntry;
+  });
+
+  return logs;
+}
+
 // ================= NEWSLETTERS & COMUNICADOS =================
 
 export type NewsletterTargetType = 'ALL_SCHOOL' | 'ENVIRONMENTS' | 'STAFF_ONLY' | 'SPECIFIC_CONTACTS';
@@ -5774,6 +5944,395 @@ export async function markAnnouncementAsViewed(id: string): Promise<{ success: b
   }
   return await res.json();
 }
+
+export interface StructuredAiResult {
+  // Common
+  studentId?: string | null;
+  studentName?: string;
+  // Lesson specific
+  areaId?: string | null;
+  areaName?: string;
+  lessonId?: string | null;
+  lessonName?: string;
+  status?: string; // 'PRESENTED' | 'PRACTICING' | 'MASTERED' | 'SURPASSED' | 'YES' | 'NO' | 'PARTIAL'
+  notes?: string;
+  // Tracker specific
+  trackerCategoryId?: string | null;
+  trackerCategoryName?: string;
+  trackerItemId?: string | null;
+  trackerItemName?: string;
+  publicNote?: string;
+  internalNote?: string;
+  // Legacy alias
+  cleanContent?: string;
+}
+
+export type StructuredAiObservation = StructuredAiResult;
+
+export interface MontessoriAiStatusResponse {
+  configured: boolean;
+  model: string;
+  provider: string;
+}
+
+export async function getMontessoriAiStatus(): Promise<MontessoriAiStatusResponse> {
+  const res = await fetch('/api/montessori/ai/status', {
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) {
+    return { configured: false, model: 'gpt-5.6-luna', provider: 'None' };
+  }
+  return await res.json();
+}
+
+export async function structureMontessoriVoiceObservation(data: {
+  rawText: string;
+  targetType?: 'lesson' | 'tracker';
+  environmentId?: string;
+  studentId?: string;
+}): Promise<{
+  success: boolean;
+  rawText: string;
+  targetType: 'lesson' | 'tracker';
+  modelUsed: string;
+  results: StructuredAiResult[];
+  observations?: StructuredAiResult[];
+}> {
+  const res = await fetch('/api/montessori/ai/structure-observation', {
+    method: 'POST',
+    headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Error al estructurar con IA' }));
+    const errorObj = new Error(err.error || 'Error al procesar con IA') as any;
+    errorObj.code = err.code;
+    throw errorObj;
+  }
+  return await res.json();
+}
+
+export async function saveStructuredMontessoriObservation(data: {
+  studentId: string;
+  content: string;
+  isPublic?: boolean;
+  photoUrl?: string;
+  guideUserId?: string;
+  updateLessonProgress?: boolean;
+  lessonId?: string;
+  lessonPeriod?: 'PRESENTED' | 'PRACTICING' | 'MASTERED';
+  date?: string;
+  createdAt?: string;
+}): Promise<{
+  success: boolean;
+  observation: any;
+  progress?: any;
+}> {
+  const res = await fetch('/api/montessori/ai/save-structured-observation', {
+    method: 'POST',
+    headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Error al guardar observación estructurada' }));
+    throw new Error(err.error || 'Error al guardar');
+  }
+  return await res.json();
+}
+
+// ==========================================
+// FEED & COMMUNITY CLIENT API
+// ==========================================
+
+export interface FeedAuthor {
+  id: string;
+  email: string;
+  fullName?: string;
+  avatarUrl?: string;
+  jobTitle?: string;
+  staffRole?: string;
+}
+
+export interface FeedCommentItem {
+  id: string;
+  postId: string;
+  parentId?: string | null;
+  authorId?: string;
+  authorRole: Role;
+  content: string;
+  mediaUrl?: string | null;
+  isInternalGuideOnly: boolean;
+  isAiAgent?: boolean;
+  aiAgentName?: string;
+  aiAgentAvatar?: string;
+  moderationStatus?: 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED' | string;
+  moderationReason?: string | null;
+  createdAt: string;
+  author?: FeedAuthor;
+}
+
+export interface FeedItem {
+  id: string;
+  schoolId: string;
+  authorId?: string | null;
+  authorRole?: Role | null;
+  type: 'POST' | 'OBSERVATION' | 'PROGRESS' | 'ATTENDANCE' | 'ANNOUNCEMENT' | 'NEWSLETTER' | string;
+  title?: string;
+  content: string;
+  mediaUrls?: string[];
+  allowComments: boolean;
+  targetAudience: string;
+  environmentId?: string | null;
+  studentId?: string | null;
+  refId?: string | null;
+  refType?: string | null;
+  likesCount: number;
+  commentsCount: number;
+  pinned: boolean;
+  moderationStatus?: 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED' | string;
+  moderationReason?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  author?: FeedAuthor | null;
+  environment?: { id: string; name: string; stage?: string; color?: string } | null;
+  student?: { id: string; fullName: string; avatarUrl?: string; environmentId?: string } | null;
+  comments: FeedCommentItem[];
+  isLikedByMe?: boolean;
+  myReaction?: string | null;
+  reactionsSummary?: Record<string, number>;
+  linkPreview?: {
+    url: string;
+    title?: string;
+    description?: string;
+    image?: string;
+    domain?: string;
+    siteName?: string;
+  } | null;
+  poll?: FeedPoll | null;
+  school?: { id: string; name: string; logoUrl?: string; slug: string };
+}
+
+export interface FeedPollOption {
+  id: string;
+  text: string;
+  voterIds?: string[];
+  votesCount?: number;
+  percentage?: number;
+}
+
+export interface FeedPoll {
+  question?: string;
+  options: FeedPollOption[];
+  expiresAt?: string | null;
+  allowMultiple?: boolean;
+  totalVotes?: number;
+  myVotedOptionIds?: string[];
+  hasVoted?: boolean;
+  isClosed?: boolean;
+}
+
+export interface FeedResponse {
+  success: boolean;
+  items: FeedItem[];
+  total: number;
+  userRole: Role;
+  assignedEnvIds: string[];
+  tutorChildIds: string[];
+}
+
+export async function getFeed(params?: {
+  schoolId?: string;
+  environmentId?: string;
+  studentId?: string;
+  type?: string;
+  search?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<FeedResponse> {
+  const qs = new URLSearchParams();
+  if (params?.schoolId) qs.set('schoolId', params.schoolId);
+  if (params?.environmentId) qs.set('environmentId', params.environmentId);
+  if (params?.studentId) qs.set('studentId', params.studentId);
+  if (params?.type) qs.set('type', params.type);
+  if (params?.search) qs.set('search', params.search);
+  if (params?.limit) qs.set('limit', String(params.limit));
+  if (params?.offset) qs.set('offset', String(params.offset));
+
+  const res = await fetch(`/api/feed?${qs.toString()}`, {
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Error al cargar el feed' }));
+    throw new Error(err.error || 'Error al cargar el feed');
+  }
+  return await res.json();
+}
+
+export async function createFeedPost(data: {
+  title?: string;
+  content: string;
+  mediaUrls?: string[];
+  poll?: {
+    question?: string;
+    options: string[];
+    durationDays?: number;
+    allowMultiple?: boolean;
+  } | null;
+  allowComments?: boolean;
+  targetAudience?: string;
+  environmentId?: string | null;
+  studentId?: string | null;
+  pinned?: boolean;
+}): Promise<{ success: boolean; post: FeedItem }> {
+  const res = await fetch('/api/feed/posts', {
+    method: 'POST',
+    headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Error al publicar' }));
+    throw new Error(err.error || 'Error al publicar');
+  }
+  return await res.json();
+}
+
+export async function deleteFeedPost(id: string): Promise<{ success: boolean; message?: string }> {
+  const res = await fetch(`/api/feed/posts/${id}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Error al eliminar publicación' }));
+    throw new Error(err.error || 'Error al eliminar');
+  }
+  return await res.json();
+}
+
+export async function addFeedComment(postId: string, data: {
+  content: string;
+  isInternalGuideOnly?: boolean;
+  parentId?: string | null;
+}): Promise<{ success: boolean; comment: FeedCommentItem }> {
+  const res = await fetch(`/api/feed/posts/${postId}/comments`, {
+    method: 'POST',
+    headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Error al agregar comentario' }));
+    throw new Error(err.error || 'Error al agregar comentario');
+  }
+  return await res.json();
+}
+
+export async function deleteFeedComment(commentId: string): Promise<{ success: boolean }> {
+  const res = await fetch(`/api/feed/comments/${commentId}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Error al eliminar comentario' }));
+    throw new Error(err.error || 'Error al eliminar');
+  }
+  return await res.json();
+}
+
+export async function toggleFeedLike(postId: string, reaction: string = '❤️'): Promise<{
+  success: boolean;
+  liked: boolean;
+  myReaction: string | null;
+  likesCount: number;
+  reactionsSummary: Record<string, number>;
+}> {
+  const res = await fetch(`/api/feed/posts/${postId}/like`, {
+    method: 'POST',
+    headers: {
+      ...getAuthHeaders(),
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ reaction })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Error al reaccionar' }));
+    throw new Error(err.error || 'Error al reaccionar');
+  }
+  return await res.json();
+}
+
+export async function uploadFeedImages(files: File[]): Promise<{ success: boolean; urls: string[] }> {
+  const formData = new FormData();
+  files.forEach(f => formData.append('files', f));
+
+  const auth = getAuthHeaders();
+  const headers: Record<string, string> = {};
+  if (auth['x-user-email']) headers['x-user-email'] = auth['x-user-email'];
+  if (auth['x-school-id']) headers['x-school-id'] = auth['x-school-id'];
+
+  const res = await fetch('/api/feed/upload', {
+    method: 'POST',
+    headers,
+    body: formData
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Error al subir imágenes' }));
+    throw new Error(err.error || 'Error al subir imágenes');
+  }
+  return await res.json();
+}
+
+export async function voteFeedPoll(postId: string, optionId: string): Promise<{
+  success: boolean;
+  poll: FeedPoll;
+}> {
+  const res = await fetch(`/api/feed/posts/${postId}/vote`, {
+    method: 'POST',
+    headers: {
+      ...getAuthHeaders(),
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ optionId })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Error al registrar voto' }));
+    throw new Error(err.error || 'Error al registrar voto');
+  }
+  return await res.json();
+}
+
+export async function updateFeedPost(postId: string, data: { content: string }): Promise<{
+  success: boolean;
+  post: FeedItem;
+}> {
+  const res = await fetch(`/api/feed/posts/${postId}`, {
+    method: 'PUT',
+    headers: {
+      ...getAuthHeaders(),
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Error al actualizar publicación' }));
+    throw new Error(err.error || 'Error al actualizar publicación');
+  }
+  return await res.json();
+}
+
+export async function getFeedPost(postId: string): Promise<{
+  success: boolean;
+  post: FeedItem;
+}> {
+  const res = await fetch(`/api/feed/posts/${postId}`, {
+    headers: getAuthHeaders()
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Error al cargar publicación' }));
+    throw new Error(err.error || 'Error al cargar publicación');
+  }
+  return await res.json();
+}
+
+
 
 
 

@@ -27,13 +27,30 @@ import {
   enqueueCurpVerificationJob,
   enqueueGalleryConsentJob,
   enqueueScanAllGalleryConsentsJob,
+  enqueueStudentAvatarReprocessingJob,
   getKycQueue
 } from './kyc-queue.js';
 import {
+  getFeedQueue,
+  enqueueFeedPostJob,
+  enqueueFeedCommentJob
+} from './feed-queue.js';
+import {
+  processFeedPostModerationJob,
+  processFeedCommentModerationJob,
+  getAuthorSubtitleInfo,
+  getSchoolAiUsageStats,
+  recordSchoolAiTokenUsage,
+  deletePhysicalFeedMedia
+} from './feed-service.js';
+import {
   processGalleryImageFaceConsent,
-  scanAllGalleryImagesForConsents
+  scanAllGalleryImagesForConsents,
+  reprocessUnmatchedGalleryImagesForStudent
 } from './face-consent-service.js';
-import { getEmailQueue, getRedisConnectionConfig } from './email-queue.js';
+import { generateFormOgImage, generateProcessOgImage } from './og-image-service.js';
+import { getEmailQueue, getRedisConnectionConfig, isQueueEnabled } from './email-queue.js';
+import { Worker } from 'bullmq';
 import Redis from 'ioredis';
 import { createBullBoard } from '@bull-board/api';
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
@@ -42,6 +59,7 @@ import {
   saveAdmissionAsset,
   deleteAdmissionFolder,
   deleteFormFolder,
+  DEFAULT_LOCAL_ROOT,
   testStorageConfig,
   testStorageWebhookConfig,
   streamPrivateAsset,
@@ -52,10 +70,19 @@ import {
   deleteGenericFolder,
   storageServiceFor,
   SchoolStorageService,
-  extractStorageRelativePath
+  extractStorageRelativePath,
+  getCachedFilePath
 } from './storage-service.js';
 import { extractDocumentDataWithOpenAI } from './document-ocr-service.js';
+import { structureMontessoriVoiceObservation, getSchoolAiConfig } from './ai-bitacora-service.js';
 import { generateFormSubmissionPdf } from './form-pdf-service.js';
+import {
+  getStripeClient,
+  createStripeSubscriptionCheckoutSession,
+  createStripeBillingPortalSession
+} from './stripe-service.js';
+import { getExchangeRates, getUsdExchangeRate } from './fx-service.js';
+import { createBlogRouter } from './routes-blog.js';
 
 let redisClient = null;
 try {
@@ -144,10 +171,14 @@ async function publishDeepstreamRealtimeEvent(eventName, data) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        topic: 'EVENT',
-        action: 'EMIT',
-        eventName,
-        data
+        body: [
+          {
+            topic: 'event',
+            action: 'emit',
+            eventName,
+            data
+          }
+        ]
       })
     });
   } catch (err) {
@@ -582,7 +613,19 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const connectionString = process.env.DATABASE_URL;
-const pool = new Pool({ connectionString });
+const pool = new Pool({
+  connectionString,
+  keepAlive: true,
+  keepAliveInitialDelayMillis: 10000,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
+  max: 20
+});
+
+pool.on('error', (err) => {
+  console.warn('[PG POOL] Unexpected error on idle PostgreSQL client:', err?.message || err);
+});
+
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 prisma.admissionStage = prisma.processStage;
@@ -651,16 +694,22 @@ const rootDir = path.join(__dirname, '..');
 const publicDir = path.join(rootDir, 'public');
 const galleryDir = path.join(publicDir, 'gallery');
 const documentsDir = path.join(publicDir, 'documents');
+const feedDir = path.join(publicDir, 'feed');
 
 // Ensure physical directories exist on server disk
-[galleryDir, documentsDir].forEach(dir => {
+[galleryDir, documentsDir, feedDir].forEach(dir => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
 });
 
 app.use(cors());
-app.use(express.json({ limit: '100mb' }));
+app.use(express.json({
+  limit: '100mb',
+  verify: (req, res, buf) => {
+    req.rawBody = buf;
+  }
+}));
 
 // Healthcheck endpoint for Docker & Easypanel container liveness checks
 app.get('/api/health', (req, res) => {
@@ -671,9 +720,10 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Serve static public assets from public/ (gallery, public docs) and dist/ (frontend)
+// Serve static public assets from public/ (gallery, public docs, feed) and dist/ (frontend)
 app.use('/gallery', express.static(galleryDir));
 app.use('/documents', express.static(documentsDir));
+app.use('/feed', express.static(feedDir));
 app.use(express.static(path.join(rootDir, 'dist')));
 
 // Helper to convert title text into a clean URL-friendly slug
@@ -769,7 +819,9 @@ function generateDefaultSubdomain(name) {
   return slug.toLowerCase();
 }
 
-// MULTI-TENANT RESOLUTION MIDDLEWARE
+// MULTI-TENANT RESOLUTION MIDDLEWARE WITH GRACEFUL CACHE
+const schoolResolutionCache = new Map();
+
 async function resolveSchool(req, res, next) {
   try {
     const rawSlug = req.headers['x-school-slug'] || req.query.schoolSlug;
@@ -780,17 +832,32 @@ async function resolveSchool(req, res, next) {
 
     let school = null;
     if (schoolId) {
-      school = await prisma.school.findUnique({ where: { id: schoolId } });
+      if (schoolResolutionCache.has(`id:${schoolId}`)) {
+        school = schoolResolutionCache.get(`id:${schoolId}`);
+      } else {
+        school = await prisma.school.findUnique({ where: { id: schoolId } });
+        if (school) {
+          schoolResolutionCache.set(`id:${school.id}`, school);
+          schoolResolutionCache.set(`slug:${school.slug}`, school);
+        }
+      }
     }
     if (!school && schoolSlug) {
-      school = await prisma.school.findUnique({ where: { slug: schoolSlug } });
-      if (!school) {
-        // Also check if any school has SiteSetting key='subdomain' matching schoolSlug
-        const subSetting = await prisma.siteSetting.findFirst({
-          where: { key: 'subdomain', value: schoolSlug },
-          include: { school: true }
-        });
-        if (subSetting?.school) school = subSetting.school;
+      if (schoolResolutionCache.has(`slug:${schoolSlug}`)) {
+        school = schoolResolutionCache.get(`slug:${schoolSlug}`);
+      } else {
+        school = await prisma.school.findUnique({ where: { slug: schoolSlug } });
+        if (!school) {
+          const subSetting = await prisma.siteSetting.findFirst({
+            where: { key: 'subdomain', value: schoolSlug },
+            include: { school: true }
+          });
+          if (subSetting?.school) school = subSetting.school;
+        }
+        if (school) {
+          schoolResolutionCache.set(`id:${school.id}`, school);
+          schoolResolutionCache.set(`slug:${school.slug}`, school);
+        }
       }
     }
 
@@ -800,31 +867,38 @@ async function resolveSchool(req, res, next) {
       const hostname = hostHeader.split(':')[0].toLowerCase().trim();
 
       if (hostname && hostname !== 'localhost' && hostname !== '127.0.0.1' && hostname !== '0.0.0.0') {
-        // 1. Check if hostname matches custom_domain in siteSetting
-        const customDomainSetting = await prisma.siteSetting.findFirst({
-          where: { key: 'custom_domain', value: hostname },
-          include: { school: true }
-        });
-        if (customDomainSetting?.school) {
-          school = customDomainSetting.school;
-        }
+        if (schoolResolutionCache.has(`host:${hostname}`)) {
+          school = schoolResolutionCache.get(`host:${hostname}`);
+        } else {
+          // 1. Check if hostname matches custom_domain in siteSetting
+          const customDomainSetting = await prisma.siteSetting.findFirst({
+            where: { key: 'custom_domain', value: hostname },
+            include: { school: true }
+          });
+          if (customDomainSetting?.school) {
+            school = customDomainSetting.school;
+          }
 
-        // 2. Check if hostname is a subdomain (e.g. ceiba.ceiba-roots.com, ceiba.chamba.pro, ceiba.localhost)
-        if (!school) {
-          const parts = hostname.split('.');
-          if (parts.length >= 2) {
-            const sub = parts[0];
-            const ignoredSubs = ['www', 'api', 'app', 'panel', 'admin', 'console', 'mail', 'staging', 'dev'];
-            if (!ignoredSubs.includes(sub)) {
-              school = await prisma.school.findUnique({ where: { slug: sub } });
-              if (!school) {
-                const subSetting = await prisma.siteSetting.findFirst({
-                  where: { key: 'subdomain', value: sub },
-                  include: { school: true }
-                });
-                if (subSetting?.school) school = subSetting.school;
+          // 2. Check if hostname is a subdomain (e.g. ceiba.ceiba-roots.com, ceiba.chamba.pro, ceiba.localhost)
+          if (!school) {
+            const parts = hostname.split('.');
+            if (parts.length >= 2) {
+              const sub = parts[0];
+              const ignoredSubs = ['www', 'api', 'app', 'panel', 'admin', 'console', 'mail', 'staging', 'dev', 'blog'];
+              if (!ignoredSubs.includes(sub)) {
+                school = await prisma.school.findUnique({ where: { slug: sub } });
+                if (!school) {
+                  const subSetting = await prisma.siteSetting.findFirst({
+                    where: { key: 'subdomain', value: sub },
+                    include: { school: true }
+                  });
+                  if (subSetting?.school) school = subSetting.school;
+                }
               }
             }
+          }
+          if (school) {
+            schoolResolutionCache.set(`host:${hostname}`, school);
           }
         }
       }
@@ -833,33 +907,46 @@ async function resolveSchool(req, res, next) {
     if (!school) {
       // Default to ceiba school or first school
       school = await prisma.school.findFirst({ where: { slug: 'ceiba' } }) || await prisma.school.findFirst();
+      if (school) {
+        schoolResolutionCache.set(`id:${school.id}`, school);
+        schoolResolutionCache.set(`slug:${school.slug}`, school);
+      }
     }
 
     if (!school) {
-      school = await prisma.school.create({
-        data: {
-          id: crypto.randomUUID(),
-          slug: 'ceiba',
-          name: 'Ceiba Montessori International',
-          logoUrl: '/favicon.png',
-        }
-      });
+      school = {
+        id: schoolId || 'school_ceiba',
+        slug: schoolSlug || 'ceiba',
+        name: 'Ceiba Montessori International',
+        logoUrl: '/favicon.png'
+      };
     }
 
     req.school = school;
     next();
   } catch (err) {
-    console.error('Error in resolveSchool middleware:', err);
-    res.status(500).json({ error: 'Tenant resolution error' });
+    console.error('Warning in resolveSchool middleware (using fallback):', err.message);
+    req.school = {
+      id: req.headers['x-school-id'] || 'school_ceiba',
+      slug: req.headers['x-school-slug'] || 'ceiba',
+      name: 'Ceiba Montessori International',
+      logoUrl: '/favicon.png'
+    };
+    next();
   }
 }
 
 app.use('/api', resolveSchool);
+app.use('/api', createBlogRouter(prisma));
 
 app.get('/api/schools/resolve-host', async (req, res) => {
   try {
     const hostHeader = req.query.host || req.headers['x-forwarded-host'] || req.headers.host || '';
     const hostname = String(hostHeader).split(':')[0].toLowerCase().trim();
+
+    if (hostname === 'blog.montessorinexus.com' || hostname === 'blog.localhost') {
+      return res.json({ isPlatformRoot: true, isPlatformBlog: true, school: null, type: 'platform_blog' });
+    }
 
     if (!hostname || hostname === 'localhost' || hostname === '127.0.0.1' || hostname === 'montessorinexus.com' || hostname === 'www.montessorinexus.com') {
       return res.json({ isPlatformRoot: true, school: null, type: 'platform_root' });
@@ -878,7 +965,7 @@ app.get('/api/schools/resolve-host', async (req, res) => {
     const parts = hostname.split('.');
     if (parts.length >= 2) {
       const sub = parts[0];
-      const ignoredSubs = ['www', 'api', 'app', 'panel', 'admin', 'console', 'staging', 'dev'];
+      const ignoredSubs = ['www', 'api', 'app', 'panel', 'admin', 'console', 'staging', 'dev', 'blog'];
       if (!ignoredSubs.includes(sub)) {
         let school = await prisma.school.findUnique({ where: { slug: sub } });
         if (!school) {
@@ -924,9 +1011,17 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
     const uniqueSuffix = `${Date.now().toString(36)}-${crypto.randomBytes(3).toString('hex')}`;
     const cleanFilename = `${baseSlug}-${uniqueSuffix}${ext}`;
 
+    const isGlobal = req.body.isGlobal === 'true' || req.query.isGlobal === 'true';
+
     let relativePath = '';
     const formId = req.body.formId || req.query.formId;
-    if (formId || folderType === 'forms' || folderType.startsWith('forms/') || folderType === 'selfie_biometrics' || folderType === 'kyc' || folderType === 'form_uploads') {
+    
+    if (isGlobal) {
+      const cleanSubFolder = folderType.startsWith('public/') 
+        ? folderType.slice('public/'.length) 
+        : (folderType === 'public' ? 'gallery' : folderType);
+      relativePath = `public/${cleanSubFolder}/${cleanFilename}`;
+    } else if (formId || folderType === 'forms' || folderType.startsWith('forms/') || folderType === 'selfie_biometrics' || folderType === 'kyc' || folderType === 'form_uploads') {
       const cleanFormId = formId || (folderType.startsWith('forms/') ? folderType.slice('forms/'.length) : (folderType !== 'forms' && folderType !== 'selfie_biometrics' && folderType !== 'kyc' && folderType !== 'form_uploads' ? folderType : 'general'));
       relativePath = `schools/${schoolId}/forms/${cleanFormId}/${cleanFilename}`;
     } else if (folderType === 'documents' && employeeId) {
@@ -941,7 +1036,7 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
       relativePath = `schools/${schoolId}/public/${cleanSubFolder}/${cleanFilename}`;
     }
 
-    const storage = await storageServiceFor(schoolId, prisma);
+    const storage = await storageServiceFor(isGlobal ? 'default' : schoolId, prisma);
     const result = await storage.upload({
       relativePath,
       buffer: req.file.buffer,
@@ -1144,6 +1239,244 @@ app.post('/api/superadmin/schools/:id/subscription', async (req, res) => {
   } catch (e) {
     console.error('Error updating school subscription:', e);
     res.status(500).json({ error: e.message });
+  }
+});
+
+// ==========================================
+// STRIPE SUBSCRIPTIONS & CHECKOUT INTEGRATION
+// ==========================================
+
+// Get public Stripe configuration
+app.get('/api/stripe/config', (req, res) => {
+  res.json({
+    publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || '',
+    configured: Boolean(process.env.STRIPE_SECRET_KEY)
+  });
+});
+
+// Live FX / Exchange Rates endpoint
+app.get('/api/fx/rates', async (req, res) => {
+  try {
+    const base = (req.query.base || 'USD').toUpperCase();
+    const rates = await getExchangeRates(base);
+    res.json({ base, rates, timestamp: Date.now() });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Create dynamic On-The-Fly Subscription Checkout Session with FX Conversion
+app.post('/api/stripe/create-checkout-session', async (req, res) => {
+  try {
+    const {
+      schoolId,
+      selectedOptionalModules = {},
+      newsletterEmailTier = '500_included',
+      storageTier = 'included',
+      billingCycle = 'monthly',
+      environmentsCount = 1
+    } = req.body;
+
+    if (!schoolId) {
+      return res.status(400).json({ error: 'schoolId es requerido' });
+    }
+
+    const school = await prisma.school.findUnique({ where: { id: schoolId } });
+    if (!school) {
+      return res.status(404).json({ error: 'Colegio no encontrado' });
+    }
+
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+    const host = req.headers['x-forwarded-host'] || req.headers.host;
+    const origin = req.headers.origin || `${protocol}://${host}`;
+
+    const successUrl = `${origin}/admin/${school.slug}/pricing?session_id={CHECKOUT_SESSION_ID}&payment_status=success`;
+    const cancelUrl = `${origin}/admin/${school.slug}/pricing?payment_status=cancelled`;
+
+    const { session, fxRate, currency } = await createStripeSubscriptionCheckoutSession({
+      school,
+      selectedOptionalModules,
+      newsletterEmailTier,
+      storageTier,
+      billingCycle,
+      environmentsCount: Number(environmentsCount) || 1,
+      successUrl,
+      cancelUrl
+    });
+
+    res.json({
+      success: true,
+      url: session.url,
+      sessionId: session.id,
+      fxRate,
+      currency
+    });
+  } catch (err) {
+    console.error('[STRIPE ERROR] Error creating checkout session:', err);
+    res.status(500).json({ error: err.message || 'Error interno al crear sesión de checkout con Stripe' });
+  }
+});
+
+// Create Stripe Customer Billing Portal Session
+app.post('/api/stripe/create-portal-session', async (req, res) => {
+  try {
+    const { schoolId } = req.body;
+    if (!schoolId) return res.status(400).json({ error: 'schoolId es requerido' });
+
+    const school = await prisma.school.findUnique({ where: { id: schoolId } });
+    if (!school) return res.status(404).json({ error: 'Colegio no encontrado' });
+
+    const feat = (school.features && typeof school.features === 'object') ? school.features : {};
+    const customerId = feat.stripeCustomerId;
+    if (!customerId) {
+      return res.status(400).json({ error: 'El colegio no tiene un cliente de Stripe asociado aún.' });
+    }
+
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+    const host = req.headers['x-forwarded-host'] || req.headers.host;
+    const origin = req.headers.origin || `${protocol}://${host}`;
+    const returnUrl = `${origin}/admin/${school.slug}/pricing`;
+
+    const portalSession = await createStripeBillingPortalSession({
+      customerId,
+      returnUrl
+    });
+
+    res.json({ success: true, url: portalSession.url });
+  } catch (err) {
+    console.error('[STRIPE PORTAL ERROR] Error creating portal session:', err);
+    res.status(500).json({ error: err.message || 'Error al generar portal de cliente de Stripe' });
+  }
+});
+
+// Stripe Webhook Event Handler
+app.post('/api/stripe/webhook', async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  let event;
+  try {
+    const stripe = getStripeClient();
+    if (endpointSecret && sig) {
+      event = stripe.webhooks.constructEvent(req.rawBody || JSON.stringify(req.body), sig, endpointSecret);
+    } else {
+      // Fallback for direct events in development if webhook secret is not set
+      event = req.body;
+    }
+  } catch (err) {
+    console.error(`⚠️ [STRIPE WEBHOOK ERROR] Verification failed: ${err.message}`);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  try {
+    console.log(`🔔 [STRIPE EVENT RECEIVED] ${event.type}`);
+
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        const session = event.data.object;
+        const schoolId = session.client_reference_id || session.metadata?.schoolId;
+        if (!schoolId) {
+          console.warn('[STRIPE WEBHOOK] No schoolId found in session metadata or client_reference_id.');
+          break;
+        }
+
+        const school = await prisma.school.findUnique({ where: { id: schoolId } });
+        if (!school) {
+          console.warn(`[STRIPE WEBHOOK] School not found for id: ${schoolId}`);
+          break;
+        }
+
+        const feat = (school.features && typeof school.features === 'object') ? { ...school.features } : {};
+        let parsedModules = {};
+        try {
+          if (session.metadata?.modules) {
+            parsedModules = JSON.parse(session.metadata.modules);
+          }
+        } catch {
+          // ignore json parse error
+        }
+
+        feat.subscriptionStatus = 'ACTIVE_PAID';
+        feat.stripeCustomerId = session.customer || feat.stripeCustomerId;
+        feat.stripeSubscriptionId = session.subscription || feat.stripeSubscriptionId;
+        feat.billingCycle = session.metadata?.billingCycle || feat.billingCycle || 'monthly';
+        feat.storageTier = session.metadata?.storageTier || feat.storageTier || 'included';
+        feat.newsletterEmailTier = session.metadata?.newsletterEmailTier || feat.newsletterEmailTier || '500_included';
+
+        if (session.metadata?.environmentsCount) {
+          feat.configuredEnvironmentsCount = Number(session.metadata.environmentsCount);
+        }
+
+        // Enable or update selected module features
+        if (typeof parsedModules.finances === 'boolean') feat.finances = parsedModules.finances;
+        if (typeof parsedModules.websiteBuilder === 'boolean') {
+          feat.webBuilder = parsedModules.websiteBuilder;
+          feat.website = parsedModules.websiteBuilder;
+        }
+        if (typeof parsedModules.forms === 'boolean') feat.forms = parsedModules.forms;
+        if (typeof parsedModules.pipelines === 'boolean') feat.pipelines = parsedModules.pipelines;
+        if (typeof parsedModules.newsletterSmtp === 'boolean') feat.newsletters = parsedModules.newsletterSmtp;
+
+        // Record payment in history
+        const amountPaid = session.amount_total ? (session.amount_total / 100) : 0;
+        if (amountPaid > 0) {
+          feat.totalPaid = (feat.totalPaid || 0) + amountPaid;
+          feat.lastPaymentDate = new Date().toISOString();
+
+          const history = Array.isArray(feat.paymentHistory) ? [...feat.paymentHistory] : [];
+          history.unshift({
+            id: crypto.randomUUID(),
+            amount: amountPaid,
+            date: new Date().toISOString(),
+            method: 'Stripe Subscription',
+            reference: session.id || session.subscription || '',
+            notes: `Suscripción ${feat.billingCycle} activada con éxito.`
+          });
+          feat.paymentHistory = history;
+        }
+
+        await prisma.school.update({
+          where: { id: schoolId },
+          data: { features: feat }
+        });
+
+        console.log(`✅ [STRIPE WEBHOOK] School ${school.slug} subscription activated to ACTIVE_PAID.`);
+        break;
+      }
+
+      case 'customer.subscription.deleted': {
+        const sub = event.data.object;
+        const schoolId = sub.metadata?.schoolId;
+        if (schoolId) {
+          const school = await prisma.school.findUnique({ where: { id: schoolId } });
+          if (school) {
+            const feat = (school.features && typeof school.features === 'object') ? { ...school.features } : {};
+            feat.subscriptionStatus = 'CANCELED';
+            await prisma.school.update({
+              where: { id: schoolId },
+              data: { features: feat }
+            });
+            console.log(`🛑 [STRIPE WEBHOOK] School ${school.slug} subscription canceled.`);
+          }
+        }
+        break;
+      }
+
+      case 'invoice.payment_failed': {
+        const invoice = event.data.object;
+        console.warn(`⚠️ [STRIPE WEBHOOK] Invoice payment failed for customer: ${invoice.customer}`);
+        break;
+      }
+
+      default:
+        // Other events ignored or acknowledged
+        break;
+    }
+
+    res.json({ received: true });
+  } catch (err) {
+    console.error('[STRIPE WEBHOOK HANDLER ERROR]:', err);
+    res.status(500).json({ error: 'Webhook processing error' });
   }
 });
 
@@ -1379,6 +1712,136 @@ app.get('/api/schools/current', async (req, res) => {
   res.json(req.school);
 });
 
+/**
+ * Recursively calculates directory size on disk
+ */
+const calculateDirSize = (dir) => {
+  if (!fs.existsSync(dir)) return 0;
+  let size = 0;
+  try {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        size += calculateDirSize(fullPath);
+      } else if (entry.isFile()) {
+        size += fs.statSync(fullPath).size;
+      }
+    }
+  } catch (err) {
+    // ignore
+  }
+  return size;
+};
+
+/**
+ * Calculates complete storage stats and limit enforcement for a school,
+ * including documents, gallery, disk storage, and public/feed/
+ */
+async function getSchoolStorageStats(schoolId) {
+  try {
+    const school = await prisma.school.findUnique({
+      where: { id: schoolId }
+    });
+    if (!school) {
+      return { isByos: false, limitGb: 2, limitBytes: 2 * 1024 * 1024 * 1024, usedBytes: 0, usedMb: 0, usedGb: 0, remainingGb: 2, percentage: 0, isFull: false };
+    }
+
+    const settingsList = await prisma.siteSetting.findMany({
+      where: { schoolId }
+    });
+    const settingsMap = {};
+    settingsList.forEach(s => { settingsMap[s.key] = s.value; });
+
+    const feat = (school && school.features && typeof school.features === 'object') ? school.features : {};
+
+    const isStorageByos = Boolean(
+      settingsMap.storage_driver === 's3' ||
+      settingsMap.storage_driver === 'minio' ||
+      feat.storageTier === 'byos_aws' ||
+      feat.storageTier === 'byos_s3' ||
+      feat.storageTier === 'byos_minio'
+    );
+
+    let storageLimitGb = 2; // Default 2 GB free base
+    if (feat.storageTier === '12gb' || feat.storage_limit === '12gb') storageLimitGb = 12;
+    else if (feat.storageTier === '22gb' || feat.storage_limit === '22gb') storageLimitGb = 22;
+    else if (feat.storageTier === '52gb' || feat.storage_limit === '52gb') storageLimitGb = 52;
+    else if (feat.storageTier === 'byos_aws' || feat.storageTier === 'byos_s3' || feat.storageTier === 'byos_minio') storageLimitGb = 0;
+    else if (feat.storageLimitGb) storageLimitGb = Number(feat.storageLimitGb);
+
+    const storageLimitBytes = storageLimitGb * 1024 * 1024 * 1024;
+
+    // 1. Documents in DB
+    const documents = await prisma.document.findMany({
+      where: { schoolId },
+      select: { fileData: true }
+    });
+    let docsBytes = 0;
+    documents.forEach(d => {
+      if (d.fileData) {
+        if (d.fileData.startsWith('data:')) {
+          docsBytes += Math.round(d.fileData.length * 0.75);
+        } else {
+          docsBytes += 150 * 1024;
+        }
+      }
+    });
+
+    // 2. Gallery images
+    const galleryImages = await prisma.galleryImage.findMany({
+      where: { schoolId },
+      select: { id: true }
+    });
+    let galleryBytes = galleryImages.length * 350 * 1024;
+
+    // 3. Folder on disk calculation for schools/:schoolId
+    let diskBytes = 0;
+    try {
+      const schoolStorageDir = path.join(DEFAULT_LOCAL_ROOT, 'schools', String(schoolId));
+      diskBytes = calculateDirSize(schoolStorageDir);
+    } catch (diskErr) {
+      console.warn('[STORAGE USAGE DISK CALC]', diskErr.message);
+    }
+
+    // 4. Feed directory calculation on disk for public/feed/:schoolId
+    let feedBytes = 0;
+    try {
+      const schoolFeedDir = path.join(feedDir, String(schoolId));
+      feedBytes = calculateDirSize(schoolFeedDir);
+    } catch (feedErr) {
+      console.warn('[FEED STORAGE DISK CALC]', feedErr.message);
+    }
+
+    const totalStorageBytes = Math.max(docsBytes + galleryBytes, diskBytes) + feedBytes;
+    const storageUsedMb = Number((totalStorageBytes / (1024 * 1024)).toFixed(2));
+    const storageUsedGb = Number((totalStorageBytes / (1024 * 1024 * 1024)).toFixed(3));
+    const storageRemainingGb = isStorageByos ? 0 : Math.max(0, Number((storageLimitGb - storageUsedGb).toFixed(2)));
+    const storagePercentage = isStorageByos || storageLimitBytes === 0 ? 0 : Math.min(100, Math.round((totalStorageBytes / storageLimitBytes) * 100));
+    const isFull = !isStorageByos && storageLimitBytes > 0 && totalStorageBytes >= storageLimitBytes;
+
+    return {
+      isByos: isStorageByos,
+      limitGb: storageLimitGb,
+      limitBytes: storageLimitBytes,
+      usedBytes: totalStorageBytes,
+      usedMb: storageUsedMb,
+      usedGb: storageUsedGb,
+      remainingGb: storageRemainingGb,
+      percentage: storagePercentage,
+      feedBytes,
+      isFull
+    };
+  } catch (err) {
+    console.error('Error calculating school storage stats:', err);
+    return { isByos: false, limitGb: 2, limitBytes: 2 * 1024 * 1024 * 1024, usedBytes: 0, usedMb: 0, usedGb: 0, remainingGb: 2, percentage: 0, isFull: false };
+  }
+}
+
+// ==========================================
+// AI TOKENS ALLOCATION & USAGE TRACKING (Imported from feed-service.js)
+// ==========================================
+
 app.get('/api/schools/current/usage', async (req, res) => {
   try {
     const schoolId = req.school.id;
@@ -1421,76 +1884,11 @@ app.get('/api/schools/current/usage', async (req, res) => {
     const emailRemaining = hasCustomSmtp ? 0 : Math.max(0, emailLimit - emailsUsed);
     const emailPercentage = hasCustomSmtp || emailLimit === 0 ? 0 : Math.min(100, Math.round((emailsUsed / emailLimit) * 100));
 
-    // 3. Storage calculation
-    const isStorageByos = Boolean(
-      settingsMap.storage_driver === 's3' ||
-      settingsMap.storage_driver === 'minio' ||
-      feat.storageTier === 'byos_aws' ||
-      feat.storageTier === 'byos_s3' ||
-      feat.storageTier === 'byos_minio'
-    );
+    // 3. Storage calculation via helper
+    const storageStats = await getSchoolStorageStats(schoolId);
 
-    let storageLimitGb = 2; // Default 2 GB free base
-    if (feat.storageTier === '12gb' || feat.storage_limit === '12gb') storageLimitGb = 12;
-    else if (feat.storageTier === '22gb' || feat.storage_limit === '22gb') storageLimitGb = 22;
-    else if (feat.storageTier === '52gb' || feat.storage_limit === '52gb') storageLimitGb = 52;
-    else if (feat.storageTier === 'byos_aws' || feat.storageTier === 'byos_s3' || feat.storageTier === 'byos_minio') storageLimitGb = 0;
-    else if (feat.storageLimitGb) storageLimitGb = Number(feat.storageLimitGb);
-
-    const storageLimitBytes = storageLimitGb * 1024 * 1024 * 1024;
-
-    // Calculate actual documents size in DB
-    const documents = await prisma.document.findMany({
-      where: { schoolId },
-      select: { fileData: true }
-    });
-    let docsBytes = 0;
-    documents.forEach(d => {
-      if (d.fileData) {
-        if (d.fileData.startsWith('data:')) {
-          docsBytes += Math.round(d.fileData.length * 0.75);
-        } else {
-          docsBytes += 150 * 1024;
-        }
-      }
-    });
-
-    // Gallery images
-    const galleryImages = await prisma.galleryImage.findMany({
-      where: { schoolId },
-      select: { url: true }
-    });
-    let galleryBytes = galleryImages.length * 350 * 1024; // avg 350KB per image
-
-    // Folder on disk calculation for schools/:schoolId
-    let diskBytes = 0;
-    try {
-      const schoolStorageDir = path.join(DEFAULT_LOCAL_ROOT, 'schools', String(schoolId));
-      if (fs.existsSync(schoolStorageDir)) {
-        const calculateDirSize = (dir) => {
-          let size = 0;
-          const entries = fs.readdirSync(dir, { withFileTypes: true });
-          for (const entry of entries) {
-            const fullPath = path.join(dir, entry.name);
-            if (entry.isDirectory()) {
-              size += calculateDirSize(fullPath);
-            } else if (entry.isFile()) {
-              size += fs.statSync(fullPath).size;
-            }
-          }
-          return size;
-        };
-        diskBytes = calculateDirSize(schoolStorageDir);
-      }
-    } catch (diskErr) {
-      console.warn('[STORAGE USAGE DISK CALC]', diskErr.message);
-    }
-
-    const totalStorageBytes = Math.max(docsBytes + galleryBytes, diskBytes);
-    const storageUsedMb = Number((totalStorageBytes / (1024 * 1024)).toFixed(2));
-    const storageUsedGb = Number((totalStorageBytes / (1024 * 1024 * 1024)).toFixed(3));
-    const storageRemainingGb = isStorageByos ? 0 : Math.max(0, Number((storageLimitGb - storageUsedGb).toFixed(2)));
-    const storagePercentage = isStorageByos || storageLimitBytes === 0 ? 0 : Math.min(100, Math.round((totalStorageBytes / storageLimitBytes) * 100));
+    // 4. AI tokens allocation & usage calculation
+    const aiStats = await getSchoolAiUsageStats(schoolId);
 
     res.json({
       emails: {
@@ -1504,15 +1902,17 @@ app.get('/api/schools/current/usage', async (req, res) => {
         endOfMonth
       },
       storage: {
-        isByos: isStorageByos,
-        limitGb: storageLimitGb,
-        limitBytes: storageLimitBytes,
-        usedBytes: totalStorageBytes,
-        usedMb: storageUsedMb,
-        usedGb: storageUsedGb,
-        remainingGb: storageRemainingGb,
-        percentage: storagePercentage
-      }
+        isByos: storageStats.isByos,
+        limitGb: storageStats.limitGb,
+        limitBytes: storageStats.limitBytes,
+        usedBytes: storageStats.usedBytes,
+        usedMb: storageStats.usedMb,
+        usedGb: storageStats.usedGb,
+        remainingGb: storageStats.remainingGb,
+        percentage: storageStats.percentage,
+        isFull: storageStats.isFull
+      },
+      ai: aiStats
     });
   } catch (e) {
     console.error('Error fetching school usage:', e);
@@ -1560,11 +1960,9 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(401).json({ success: false, error: 'Credenciales inválidas.' });
     }
 
-    // If user is OWNER or ADMIN in any school, ensure they have access to all schools
-    const isSuperAdmin = user.memberships.some(m => m.role === 'OWNER' || m.role === 'ADMIN') ||
-      cleanEmail === 'admin@montessorinexus.com' ||
-      cleanEmail === 'admin@ceibamontessori.com' ||
-      cleanEmail === (process.env.SUPERADMIN_EMAIL || '').trim().toLowerCase();
+    // If user is the global SaaS SuperAdmin, ensure they have access to all schools
+    const superAdminEmail = (process.env.SUPERADMIN_EMAIL || 'admin@montessorinexus.com').trim().toLowerCase();
+    const isSuperAdmin = cleanEmail === superAdminEmail;
     if (isSuperAdmin) {
       const allSchools = await prisma.school.findMany();
       for (const s of allSchools) {
@@ -2097,8 +2495,38 @@ app.put('/api/tutors/:id', async (req, res) => {
 
 app.get('/api/students', async (req, res) => {
   try {
+    const userEmail = req.headers['x-user-email'];
+    let tutorFilterUserId = null;
+
+    if (userEmail) {
+      const callerUser = await prisma.user.findUnique({
+        where: { email: String(userEmail).trim().toLowerCase() },
+        include: {
+          memberships: {
+            where: { schoolId: req.school.id }
+          }
+        }
+      });
+
+      const callerRole = callerUser?.memberships?.[0]?.role || callerUser?.staffRole;
+      if (callerRole === 'TUTOR') {
+        tutorFilterUserId = callerUser.id;
+      }
+    }
+
+    const where = {
+      schoolId: req.school.id,
+      ...(tutorFilterUserId ? {
+        tutors: {
+          some: {
+            tutorUserId: tutorFilterUserId
+          }
+        }
+      } : {})
+    };
+
     const students = await prisma.student.findMany({
-      where: { schoolId: req.school.id },
+      where,
       include: {
         environment: true,
         tutors: {
@@ -2119,8 +2547,39 @@ app.get('/api/students', async (req, res) => {
 
 app.get('/api/students/:id', async (req, res) => {
   try {
+    const userEmail = req.headers['x-user-email'];
+    let tutorFilterUserId = null;
+
+    if (userEmail) {
+      const callerUser = await prisma.user.findUnique({
+        where: { email: String(userEmail).trim().toLowerCase() },
+        include: {
+          memberships: {
+            where: { schoolId: req.school.id }
+          }
+        }
+      });
+
+      const callerRole = callerUser?.memberships?.[0]?.role || callerUser?.staffRole;
+      if (callerRole === 'TUTOR') {
+        tutorFilterUserId = callerUser.id;
+      }
+    }
+
+    const where = {
+      id: req.params.id,
+      schoolId: req.school.id,
+      ...(tutorFilterUserId ? {
+        tutors: {
+          some: {
+            tutorUserId: tutorFilterUserId
+          }
+        }
+      } : {})
+    };
+
     const student = await prisma.student.findFirst({
-      where: { id: req.params.id, schoolId: req.school.id },
+      where,
       include: {
         environment: true,
         tutors: {
@@ -2132,7 +2591,7 @@ app.get('/api/students/:id', async (req, res) => {
         }
       }
     });
-    if (!student) return res.status(404).json({ error: 'Estudiante no encontrado' });
+    if (!student) return res.status(404).json({ error: 'Estudiante no encontrado o sin autorización' });
     res.json(student);
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -2319,6 +2778,19 @@ app.put('/api/students/:id', async (req, res) => {
       ? (Array.isArray(consents) ? JSON.stringify(consents) : String(consents))
       : undefined;
 
+    // Check if avatar was updated to trigger gallery re-scan
+    const existingStudent = await prisma.student.findUnique({
+      where: { id: req.params.id },
+      select: { avatarUrl: true, schoolId: true, fullName: true }
+    });
+
+    const isAvatarChanged = Boolean(
+      avatarUrl !== undefined && 
+      avatarUrl !== null && 
+      avatarUrl.trim() !== '' && 
+      avatarUrl.trim() !== (existingStudent?.avatarUrl || '').trim()
+    );
+
     const student = await prisma.student.update({
       where: { id: req.params.id },
       data: {
@@ -2353,6 +2825,17 @@ app.put('/api/students/:id', async (req, res) => {
         }
       }
     });
+
+    // If avatar changed, reprocess all gallery images in this school where student was not yet identified
+    if (isAvatarChanged && student.schoolId) {
+      console.log(`📸 [STUDENT AVATAR CHANGED] Profile photo updated for "${student.fullName}". Triggering gallery re-processing for school "${student.schoolId}"...`);
+      enqueueStudentAvatarReprocessingJob(student.id, student.schoolId).catch(() => {
+        // Fallback: direct background async execution
+        reprocessUnmatchedGalleryImagesForStudent(student.id, student.schoolId, prisma).catch(err => {
+          console.error('Error in fallback reprocessUnmatchedGalleryImagesForStudent:', err);
+        });
+      });
+    }
 
     res.json(student);
   } catch (e) {
@@ -4974,6 +5457,113 @@ function parseFormSchema(rawSchema) {
   return [];
 }
 
+// GET /api/og/forms/:id (.png) - Dynamic on-the-fly OpenGraph image generator
+const handleFormOgImageRequest = async (req, res) => {
+  try {
+    const rawId = String(req.params.id || '').replace(/\.png$/i, '').trim();
+    if (!rawId) return res.status(400).send('Invalid form id');
+
+    const form = await prisma.admissionFormTemplate.findUnique({
+      where: { id: rawId },
+      include: { school: true }
+    });
+
+    if (!form) {
+      return res.status(404).send('Form not found');
+    }
+
+    let school = form.school;
+    if (!school && form.schoolId) {
+      school = await prisma.school.findUnique({ where: { id: form.schoolId } });
+    }
+
+    const pngBuffer = await generateFormOgImage({
+      form,
+      school,
+      rootDir
+    });
+
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400');
+    return res.send(pngBuffer);
+  } catch (err) {
+    console.error('Error generating dynamic form OG image:', err);
+    return res.status(500).send('Error generating OG image');
+  }
+};
+
+app.get('/api/og/forms/:id', handleFormOgImageRequest);
+app.get('/api/og/form/:id', handleFormOgImageRequest);
+
+// GET /api/og/processes/:id (.png) - Dynamic on-the-fly Process & Admission Dossier OpenGraph image generator
+const handleProcessOgImageRequest = async (req, res) => {
+  try {
+    const rawId = String(req.params.id || '').replace(/\.png$/i, '').trim();
+    if (!rawId) return res.status(400).send('Invalid process or portal id');
+
+    // 1. Try finding by Application Portal Token or ID
+    let app = await prisma.admissionApplication.findFirst({
+      where: { portalToken: rawId },
+      include: { school: true, stage: true, process: { include: { stages: true } } }
+    });
+    if (!app) {
+      app = await prisma.admissionApplication.findUnique({
+        where: { id: rawId },
+        include: { school: true, stage: true, process: { include: { stages: true } } }
+      });
+    }
+
+    let process = app?.process;
+    let school = app?.school;
+    let stage = app?.stage;
+
+    // 2. If not found as application, try finding as direct Process ID or Slug
+    if (!process) {
+      process = await prisma.process.findUnique({
+        where: { id: rawId },
+        include: { school: true, stages: true }
+      });
+      if (!process) {
+        process = await prisma.process.findFirst({
+          where: { slug: rawId },
+          include: { school: true, stages: true }
+        });
+      }
+      if (process) {
+        school = process.school;
+      }
+    }
+
+    if (!process && !app) {
+      return res.status(404).send('Process or admission dossier not found');
+    }
+
+    if (!school && process?.schoolId) {
+      school = await prisma.school.findUnique({ where: { id: process.schoolId } });
+    }
+
+    const pngBuffer = await generateProcessOgImage({
+      process,
+      application: app,
+      school,
+      stage,
+      rootDir
+    });
+
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400');
+    return res.send(pngBuffer);
+  } catch (err) {
+    console.error('Error generating dynamic process OG image:', err);
+    return res.status(500).send('Error generating OG image');
+  }
+};
+
+app.get('/api/og/processes/:id', handleProcessOgImageRequest);
+app.get('/api/og/process/:id', handleProcessOgImageRequest);
+app.get('/api/og/admissions/:id', handleProcessOgImageRequest);
+app.get('/api/og/admision/:id', handleProcessOgImageRequest);
+
 // GET /api/admissions/public/standalone-forms/:id
 app.get('/api/admissions/public/standalone-forms/:id', async (req, res) => {
   try {
@@ -6398,7 +6988,7 @@ app.post('/api/admissions/public/portal/:token/submit-form', async (req, res) =>
 
     // Automatically book calendar slots / RSVP if schedule_event fields are included
     await processEventBookingsFromFormData(data, {
-      guestName: filledByName || application.tutorName || cleanRespondentName(application),
+      guestName: filledByName || application.tutorName || application.applicantName || application.childName || 'Familiar / Tutor',
       guestEmail: application.tutorEmail || '',
       guestPhone: application.tutorPhone || '',
       formTitle: template.title,
@@ -6604,12 +7194,18 @@ app.get('/api/tutor/my-students', async (req, res) => {
         student: { schoolId: req.school.id }
       },
       include: {
-        student: true
+        student: {
+          include: {
+            environment: true
+          }
+        }
       }
     });
 
     res.json(links.map(l => ({
       ...l.student,
+      environmentName: l.student.environment?.name || null,
+      grade: l.student.environment?.name || l.student.grade || '',
       relationship: l.relationship
     })));
   } catch (e) {
@@ -7117,7 +7713,7 @@ async function executeGalleryAiGeneration({
 
   let apiKey = getSetting(['ai_api_key', 'openai_api_key', 'OPENAI_API_KEY'], process.env.OPENAI_API_KEY || process.env.AI_API_KEY || '');
   let baseUrl = getSetting(['ai_base_url', 'openai_base_url'], process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1').replace(/\/+$/, '');
-  let visionModel = getSetting(['ai_model_vision', 'openai_model'], process.env.OPENAI_VISION_MODEL || 'gpt-4o-mini').replace(/^models\//, '');
+  let visionModel = getSetting(['ai_model_vision', 'openai_model'], process.env.OPENAI_VISION_MODEL || 'gpt-5.6-luna').replace(/^models\//, '');
   const catName = categoryLabel || categoryId || 'Montessori';
 
   if (!apiKey) {
@@ -7279,8 +7875,9 @@ function triggerGalleryAiProcess(imageId, schoolId) {
 
 app.get('/api/gallery/images', async (req, res) => {
   try {
-    const { categoryId, target } = req.query;
+    const { categoryId, target, studentId } = req.query;
     const isPublicWeb = target === 'web';
+    const userEmail = req.headers['x-user-email'] || req.query.email;
 
     const where = {
       schoolId: req.school.id,
@@ -7306,6 +7903,49 @@ app.get('/api/gallery/images', async (req, res) => {
         };
       });
       return res.json(sanitized);
+    }
+
+    // If requester is a Tutor/Parent, filter images so they ONLY see images where at least one of their children appears
+    if (userEmail) {
+      const user = await prisma.user.findUnique({
+        where: { email: String(userEmail).trim().toLowerCase() },
+        include: {
+          memberships: { where: { schoolId: req.school.id } },
+          studentLinks: {
+            include: { student: true }
+          }
+        }
+      });
+
+      const membership = user?.memberships?.[0];
+      const role = membership?.role || user?.staffRole;
+
+      if (role === 'TUTOR') {
+        const tutorStudentIds = (user.studentLinks || [])
+          .map(st => st.student)
+          .filter(s => s && s.schoolId === req.school.id)
+          .map(s => s.id);
+
+        if (tutorStudentIds.length === 0) {
+          return res.json([]);
+        }
+
+        const effectiveStudentIds = (studentId && tutorStudentIds.includes(String(studentId)))
+          ? [String(studentId)]
+          : tutorStudentIds;
+
+        const tutorImages = images.filter(img => {
+          let faces = [];
+          try {
+            faces = typeof img.detectedFaces === 'string' ? JSON.parse(img.detectedFaces || '[]') : (img.detectedFaces || []);
+          } catch {
+            faces = [];
+          }
+          return faces.some(f => f.studentId && effectiveStudentIds.includes(f.studentId));
+        });
+
+        return res.json(tutorImages);
+      }
     }
 
     res.json(images);
@@ -7473,8 +8113,85 @@ app.post('/api/gallery/images/retry-failed-ai', async (req, res) => {
   }
 });
 
+app.post('/api/gallery/images/:id/report-by-parent', async (req, res) => {
+  try {
+    const userEmail = req.headers['x-user-email'] || req.body.tutorEmail;
+    if (!userEmail) {
+      return res.status(401).json({ error: 'Se requiere sesión de tutor/padre para reportar la imagen' });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: String(userEmail).trim().toLowerCase() },
+      include: {
+        memberships: { where: { schoolId: req.school.id } },
+        studentLinks: { include: { student: true } }
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    const image = await prisma.galleryImage.findUnique({
+      where: { id: req.params.id }
+    });
+
+    if (!image || image.schoolId !== req.school.id) {
+      return res.status(404).json({ error: 'Imagen no encontrada' });
+    }
+
+    const comment = String(req.body.comment || '').trim();
+    if (!comment) {
+      return res.status(400).json({ error: 'Por favor indica el motivo o comentario del reporte' });
+    }
+
+    const tutorStudentIds = (user.studentLinks || [])
+      .map(st => st.student)
+      .filter(s => s && s.schoolId === req.school.id);
+
+    const reportData = {
+      tutorId: user.id,
+      tutorName: user.fullName || 'Tutor',
+      tutorEmail: user.email,
+      studentId: req.body.studentId || (tutorStudentIds[0]?.id || null),
+      studentName: req.body.studentName || (tutorStudentIds[0]?.fullName || null),
+      comment,
+      reportedAt: new Date().toISOString()
+    };
+
+    const updated = await prisma.galleryImage.update({
+      where: { id: req.params.id },
+      data: {
+        showOnWeb: false,
+        showOnPortal: false,
+        isReportedByParent: true,
+        parentReport: JSON.stringify(reportData)
+      }
+    });
+
+    console.log(`🔒 [GALLERY IMAGE REPORTED & LOCKED] Image ${image.id} was deactivated and permanently locked by tutor ${user.fullName} (${user.email}). Reason: "${comment}"`);
+
+    res.json({
+      success: true,
+      message: 'Imagen retirada y desactivada inmediatamente de la galería.',
+      image: updated
+    });
+  } catch (e) {
+    console.error('Error reporting gallery image by parent:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.put('/api/gallery/images/:id', async (req, res) => {
   try {
+    const existing = await prisma.galleryImage.findUnique({
+      where: { id: req.params.id }
+    });
+
+    if (!existing) {
+      return res.status(404).json({ error: 'Imagen no encontrada' });
+    }
+
     const {
       categoryId,
       src,
@@ -7488,6 +8205,15 @@ app.put('/api/gallery/images/:id', async (req, res) => {
       showOnWeb,
       showOnPortal
     } = req.body || {};
+
+    // If image was locked by parent report, reactivation is strictly forbidden
+    if (existing.isReportedByParent) {
+      if (showOnWeb === true || showOnPortal === true) {
+        return res.status(403).json({
+          error: 'Esta imagen fue retirada y bloqueada permanentemente por un reporte de privacidad del padre/tutor y no puede ser reactivada. Solo el Owner o Superadmin pueden eliminarla.'
+        });
+      }
+    }
 
     const updateData = {};
 
@@ -7524,8 +8250,8 @@ app.put('/api/gallery/images/:id', async (req, res) => {
     }
     if (aiStatus !== undefined) updateData.aiStatus = aiStatus;
     if (aiError !== undefined) updateData.aiError = aiError;
-    if (showOnWeb !== undefined) updateData.showOnWeb = Boolean(showOnWeb);
-    if (showOnPortal !== undefined) updateData.showOnPortal = Boolean(showOnPortal);
+    if (showOnWeb !== undefined && !existing.isReportedByParent) updateData.showOnWeb = Boolean(showOnWeb);
+    if (showOnPortal !== undefined && !existing.isReportedByParent) updateData.showOnPortal = Boolean(showOnPortal);
 
     const img = await prisma.galleryImage.update({
       where: { id: req.params.id },
@@ -7542,6 +8268,33 @@ app.delete('/api/gallery/images/:id', async (req, res) => {
     const existing = await prisma.galleryImage.findUnique({
       where: { id: req.params.id }
     });
+
+    if (!existing) {
+      return res.status(404).json({ error: 'Imagen no encontrada' });
+    }
+
+    // If locked by parent report, ONLY Owner or Superadmin can delete it
+    if (existing.isReportedByParent) {
+      const userEmail = req.headers['x-user-email'];
+      const user = userEmail ? await prisma.user.findUnique({
+        where: { email: String(userEmail).trim().toLowerCase() },
+        include: { memberships: { where: { schoolId: req.school.id } } }
+      }) : null;
+
+      const membershipRole = user?.memberships?.[0]?.role;
+      const isSuperAdmin = Boolean(user?.staffRole === 'SUPERADMIN' || user?.isSuperAdmin);
+      const isOwner = Boolean(
+        membershipRole === 'OWNER' || 
+        user?.staffRole === 'OWNER' || 
+        (req.school.creatorUserId && req.school.creatorUserId === user?.id)
+      );
+
+      if (!isSuperAdmin && !isOwner) {
+        return res.status(403).json({
+          error: 'Esta imagen está bloqueada por un reporte de privacidad de los padres. Solo el Owner del colegio o un Superadmin tienen autorización para eliminarla.'
+        });
+      }
+    }
 
     if (existing?.src) {
       const storage = await storageServiceFor(req.school.id, prisma);
@@ -7798,7 +8551,7 @@ app.post('/api/settings/fetch-ai-models', async (req, res) => {
 // POST /api/settings/test-openai (OpenAI-compatible connection test)
 app.post('/api/settings/test-openai', async (req, res) => {
   try {
-    const { baseUrl = 'https://api.openai.com/v1', apiKey, model = 'gpt-4o-mini' } = req.body;
+    const { baseUrl = 'https://api.openai.com/v1', apiKey, model = 'gpt-5.6-luna' } = req.body;
     let keyToUse = (apiKey || '').trim();
 
     if (!keyToUse) {
@@ -7825,16 +8578,16 @@ app.post('/api/settings/test-openai', async (req, res) => {
     // Clean model string and strip 'models/' prefix if present
     let cleanModel = (model || '').trim().replace(/^models\//, '');
     if (!cleanModel) {
-      cleanModel = /gemini|google/i.test(cleanBaseUrl) ? 'gemini-2.0-flash' : 'gpt-4o-mini';
+      cleanModel = /gemini|google/i.test(cleanBaseUrl) ? 'gemini-2.0-flash' : 'gpt-5.6-luna';
     }
 
     // Image-only models cannot be used with /chat/completions directly
     const isImageOnly = /dall-e|imagen|flux|stable-diffusion|midjourney/i.test(cleanModel);
     if (isImageOnly) {
-      cleanModel = /gemini|google/i.test(cleanBaseUrl) ? 'gemini-2.0-flash' : 'gpt-4o-mini';
+      cleanModel = /gemini|google/i.test(cleanBaseUrl) ? 'gemini-2.0-flash' : 'gpt-5.6-luna';
     }
 
-    const isReasoning = /o[134]|deepseek-reasoner|r1/i.test(cleanModel);
+    const isReasoning = /o[134]|deepseek-reasoner|r1|luna|gpt-5/i.test(cleanModel);
 
     async function sendChatProbe(useMaxCompletionTokens) {
       const bodyPayload = {
@@ -8225,9 +8978,9 @@ app.get(/^\/api\/storage\/(.+)$/, async (req, res) => {
       return res.status(400).json({ error: 'Ruta de archivo no especificada' });
     }
 
-    // Normalize: if path starts with schools/, use as is; if format is :schoolId/:folder/:file, map to schools/:schoolId/...
+    // Normalize: if path starts with schools/ or public/, use as is; if format is :schoolId/:folder/:file, map to schools/:schoolId/...
     let relativePath = rawPath.replace(/^\/+/, '');
-    if (!relativePath.startsWith('schools/')) {
+    if (!relativePath.startsWith('schools/') && !relativePath.startsWith('public/')) {
       relativePath = `schools/${relativePath}`;
     }
 
@@ -9920,8 +10673,10 @@ app.get('/api/montessori/observations', async (req, res) => {
 
 app.post('/api/montessori/observations', async (req, res) => {
   try {
-    const { studentId, content, photoUrl, isPublic = false, guideUserId } = req.body;
+    const { studentId, content, photoUrl, isPublic = false, guideUserId, createdAt, date } = req.body;
     if (!studentId || !content) return res.status(400).json({ error: 'studentId y content son requeridos' });
+
+    const targetDate = createdAt ? new Date(createdAt) : (date ? new Date(date) : undefined);
 
     const obs = await prisma.studentObservation.create({
       data: {
@@ -9930,11 +10685,132 @@ app.post('/api/montessori/observations', async (req, res) => {
         content,
         photoUrl: photoUrl || '',
         isPublic: Boolean(isPublic),
-        guideUserId: guideUserId || 'guide_auto'
+        guideUserId: guideUserId || 'guide_auto',
+        ...(targetDate && !isNaN(targetDate.getTime()) ? { createdAt: targetDate, updatedAt: targetDate } : {})
       }
     });
     res.json(obs);
   } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// AI Montessori Bitacora & Observation Structuring Endpoints
+app.get('/api/montessori/ai/status', async (req, res) => {
+  try {
+    const { apiKey, model, baseUrl } = await getSchoolAiConfig(req.school.id, prisma);
+    res.json({
+      configured: Boolean(apiKey),
+      model: model || 'gpt-5.6-luna',
+      provider: baseUrl.includes('gemini') ? 'Google Gemini' : (baseUrl.includes('openai') ? 'OpenAI' : 'Custom OpenAI-Compatible')
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/montessori/ai/structure-observation', async (req, res) => {
+  try {
+    const { rawText, targetType = 'lesson', environmentId, studentId } = req.body;
+    if (!rawText || !rawText.trim()) {
+      return res.status(400).json({ error: 'El texto dictado o escrito es requerido' });
+    }
+
+    const result = await structureMontessoriVoiceObservation({
+      rawText,
+      targetType,
+      schoolId: req.school.id,
+      environmentId,
+      studentId,
+      prisma
+    });
+
+    res.json(result);
+  } catch (e) {
+    if (e.code === 'NO_AI_KEY_CONFIGURED' || e.message === 'NO_AI_KEY_CONFIGURED') {
+      return res.status(400).json({
+        code: 'NO_AI_KEY_CONFIGURED',
+        error: 'No hay un proveedor de IA (BYOK) configurado en el colegio. Configuralo en Ajustes del Sistema.'
+      });
+    }
+    console.error('[AI BITACORA ERROR]', e);
+    res.status(500).json({ error: e.message || 'Error al procesar la observación con IA' });
+  }
+});
+
+app.post('/api/montessori/ai/save-structured-observation', async (req, res) => {
+  try {
+    const {
+      studentId,
+      content,
+      isPublic = false,
+      photoUrl = '',
+      guideUserId = 'guide_auto',
+      updateLessonProgress = false,
+      lessonId,
+      lessonPeriod, // 'PRESENTED' | 'PRACTICING' | 'MASTERED'
+      date,
+      createdAt
+    } = req.body;
+
+    if (!studentId || !content) {
+      return res.status(400).json({ error: 'studentId y content son requeridos' });
+    }
+
+    const targetDate = createdAt ? new Date(createdAt) : (date ? new Date(date) : undefined);
+
+    // 1. Create Observation in Journal
+    const obs = await prisma.studentObservation.create({
+      data: {
+        schoolId: req.school.id,
+        studentId,
+        content,
+        photoUrl: photoUrl || '',
+        isPublic: Boolean(isPublic),
+        guideUserId: guideUserId || 'guide_auto',
+        ...(targetDate && !isNaN(targetDate.getTime()) ? { createdAt: targetDate, updatedAt: targetDate } : {})
+      },
+      include: {
+        student: {
+          select: { id: true, fullName: true, avatarUrl: true, grade: true }
+        }
+      }
+    });
+
+    // 2. Optionally update lesson progress
+    let progressRecord = null;
+    if (updateLessonProgress && lessonId && lessonPeriod) {
+      progressRecord = await prisma.studentLessonProgress.upsert({
+        where: {
+          studentId_lessonId: {
+            studentId,
+            lessonId
+          }
+        },
+        update: {
+          status: lessonPeriod,
+          notes: content,
+          presentedAt: lessonPeriod === 'PRESENTED' ? new Date() : undefined,
+          masteredAt: lessonPeriod === 'MASTERED' ? new Date() : undefined
+        },
+        create: {
+          studentId,
+          lessonId,
+          status: lessonPeriod,
+          notes: content,
+          presentedAt: new Date(),
+          masteredAt: lessonPeriod === 'MASTERED' ? new Date() : null
+        }
+      });
+    }
+
+    res.json({
+      success: true,
+      observation: obs,
+      progress: progressRecord
+    });
+  } catch (e) {
+    console.error('[SAVE STRUCTURED OBS ERROR]', e);
     res.status(500).json({ error: e.message });
   }
 });
@@ -11512,6 +12388,24 @@ app.put('/api/events/:id', async (req, res) => {
 // 6. Delete Event
 app.delete('/api/events/:id', async (req, res) => {
   try {
+    const existingEvent = await prisma.schoolEvent.findUnique({
+      where: { id: req.params.id },
+      include: {
+        bookings: true
+      }
+    });
+
+    if (!existingEvent) {
+      return res.status(404).json({ error: 'Evento no encontrado' });
+    }
+
+    const activeBookings = existingEvent.bookings?.filter(b => b.status === 'CONFIRMED' || b.status === 'PENDING') || [];
+    if (activeBookings.length > 0) {
+      return res.status(400).json({
+        error: `No se puede eliminar el evento porque tiene ${activeBookings.length} reserva(s) activa(s). Primero cancela todas las reservas asociadas y luego elimina el evento.`
+      });
+    }
+
     await prisma.schoolEvent.delete({ where: { id: req.params.id } });
 
     emitCalendarWebhookNotification({
@@ -12404,8 +13298,8 @@ app.post('/api/montessori/characterizations/ai-interview', async (req, res) => {
     let apiKey = getSetting(['ai_api_key', 'openai_api_key', 'OPENAI_API_KEY'], process.env.OPENAI_API_KEY || process.env.AI_API_KEY || '');
     let baseUrl = getSetting(['ai_base_url', 'openai_base_url'], 'https://api.openai.com/v1').replace(/\/+$/, '');
     baseUrl = baseUrl.replace(/\/models$/, '').replace(/\/chat\/completions$/, '');
-    let model = getSetting(['ai_model_vision', 'openai_model'], 'gpt-4o-mini').replace(/^models\//, '');
-    if (!model) model = /gemini|google/i.test(baseUrl) ? 'gemini-2.0-flash' : 'gpt-4o-mini';
+    let model = getSetting(['ai_model_vision', 'openai_model'], 'gpt-5.6-luna').replace(/^models\//, '');
+    if (!model) model = /gemini|google/i.test(baseUrl) ? 'gemini-2.0-flash' : 'gpt-5.6-luna';
 
     const systemPrompt = `Eres una consultora y mentora pedagógica Montessori experta, cálida y empática de Ceiba Roots.
 Tu objetivo es guiar en una breve entrevista conversacional al observador (${authorName || 'la guía/personal'}, rol sugerido: ${authorRole}) para recopilar su mirada holística sobre el estudiante "${studentName || 'el estudiante'}".
@@ -14368,8 +15262,8 @@ function isAnnouncementCurrentlyActive(ann, now) {
   return now >= latestCycleStart && now <= cycleEnd;
 }
 
-// GET /api/announcements/active - List active announcements visible to caller
-app.get('/api/announcements/active', async (req, res) => {
+// GET/POST /api/announcements/active - List active announcements visible to caller
+app.all('/api/announcements/active', async (req, res) => {
   try {
     const userEmail = req.headers['x-user-email'];
     const now = new Date();
@@ -14521,61 +15415,2292 @@ app.post('/api/announcements', async (req, res) => {
   }
 });
 
-// PUT /api/announcements/:id - Update announcement
-app.put('/api/announcements/:id', async (req, res) => {
-  try {
-    const {
-      title,
-      content,
-      targetAudience,
-      targetEnvironmentIds,
-      sendEmail,
-      style,
-      isMarquee,
-      isPeriodic,
-      periodicity,
-      displayDurationHours,
-      startDate,
-      endDate,
-      status
-    } = req.body;
+// ==========================================
+// FEED & COMMUNITY SOCIAL SYSTEM
+// ==========================================
 
-    const announcement = await prisma.announcement.update({
-      where: { id: req.params.id },
-      data: {
-        title,
-        content,
-        targetAudience,
-        targetEnvironmentIds,
-        sendEmail: Boolean(sendEmail),
-        style,
-        isMarquee: Boolean(isMarquee),
-        isPeriodic: Boolean(isPeriodic),
-        periodicity,
-        displayDurationHours: displayDurationHours ? Number(displayDurationHours) : null,
-        startDate: startDate ? new Date(startDate) : undefined,
-        endDate: endDate ? new Date(endDate) : null,
-        status
+function decodeHtmlEntities(str) {
+  if (!str) return '';
+  return str
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&copy;/g, '©')
+    .replace(/&reg;/g, '®')
+    .replace(/&bull;/g, '•')
+    .replace(/&middot;/g, '·')
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(dec))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+}
+
+function stripHtmlAndExtractLinks(htmlOrText, existingCoverUrl = null) {
+  if (!htmlOrText) return { cleanText: '', urls: [], mediaUrls: existingCoverUrl ? [existingCoverUrl] : [] };
+
+  const raw = String(htmlOrText);
+
+  // 1. Extract embedded images <img src="...">
+  const imgMatches = Array.from(raw.matchAll(/<img[^>]+src=["']([^"']+)["']/gi));
+  const embeddedImages = imgMatches.map(m => m[1]).filter(url => url && !url.startsWith('data:image/svg'));
+
+  // 2. Extract links from <a href="..."> and raw text URLs
+  const hrefMatches = Array.from(raw.matchAll(/<a[^>]+href=["']([^"']+)["']/gi));
+  const hrefUrls = hrefMatches.map(m => m[1]).filter(url => url && url.startsWith('http'));
+
+  const rawUrlMatches = Array.from(raw.matchAll(/(https?:\/\/[^\s<>"']+)/gi));
+  const textUrls = rawUrlMatches.map(m => m[1]);
+
+  const allUrls = Array.from(new Set([...hrefUrls, ...textUrls]));
+
+  // 3. Convert HTML structure to clean natural text paragraphs
+  let text = raw
+    .replace(/<\s*br\s*\/?>/gi, '\n')
+    .replace(/<\s*\/\s*(?:p|div|h[1-6]|li|tr|blockquote|section|article)\s*>/gi, '\n\n')
+    .replace(/<\s*(?:script|style)[^>]*>[\s\S]*?<\s*\/\s*(?:script|style)\s*>/gi, '')
+    .replace(/<[^>]+>/g, ' ');
+
+  text = decodeHtmlEntities(text);
+  
+  // Collapse whitespace
+  text = text
+    .split('\n')
+    .map(line => line.replace(/[ \t]+/g, ' ').trim())
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+  const mediaUrls = [];
+  if (existingCoverUrl) mediaUrls.push(existingCoverUrl);
+  embeddedImages.forEach(img => {
+    if (!mediaUrls.includes(img)) mediaUrls.push(img);
+  });
+
+  return {
+    cleanText: text,
+    urls: allUrls,
+    mediaUrls
+  };
+}
+
+async function discoverOpenGraph(targetUrl) {
+  try {
+    if (!targetUrl || !targetUrl.startsWith('http')) return null;
+    const urlObj = new URL(targetUrl);
+    const domain = urlObj.hostname.replace(/^www\./, '');
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+    const res = await fetch(targetUrl, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 MontessoriNexus-Bot/1.0',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+      }
+    });
+    clearTimeout(timeoutId);
+
+    if (!res.ok) return { url: targetUrl, domain };
+
+    const html = await res.text();
+
+    const getMetaContent = (propName) => {
+      const regex = new RegExp(`<meta\\s+(?:property|name)=["'](?:og:|twitter:)?${propName}["']\\s+content=["'](.*?)["']`, 'i');
+      const match = html.match(regex);
+      if (match) return match[1];
+      const regexAlt = new RegExp(`<meta\\s+content=["'](.*?)["']\\s+(?:property|name)=["'](?:og:|twitter:)?${propName}["']`, 'i');
+      const matchAlt = html.match(regexAlt);
+      return matchAlt ? matchAlt[1] : null;
+    };
+
+    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+    const ogTitle = getMetaContent('title') || (titleMatch ? titleMatch[1].trim() : domain);
+    const ogDesc = getMetaContent('description');
+    let ogImage = getMetaContent('image');
+
+    if (ogImage && !ogImage.startsWith('http')) {
+      try {
+        ogImage = new URL(ogImage, targetUrl).href;
+      } catch {}
+    }
+
+    return {
+      url: targetUrl,
+      title: ogTitle ? decodeHtmlEntities(ogTitle) : domain,
+      description: ogDesc ? decodeHtmlEntities(ogDesc) : undefined,
+      image: ogImage || undefined,
+      domain
+    };
+  } catch (err) {
+    try {
+      const urlObj = new URL(targetUrl);
+      return { url: targetUrl, domain: urlObj.hostname.replace(/^www\./, '') };
+    } catch {
+      return null;
+    }
+  }
+}
+
+function extractPublicAndInternalNotes(rawContent) {
+  if (!rawContent) return { publicContent: '', internalNote: '' };
+  
+  // Match patterns like "Familias: ... \n\nInterno Guía: ..." or "Nota pública: ... Nota interna: ..."
+  const famMatch = rawContent.match(/(?:Familias|Nota pública|Público):\s*([\s\S]*?)(?=\n\n(?:Interno Guía|Nota interna|Interno):|$)/i);
+  const intMatch = rawContent.match(/(?:Interno Guía|Nota interna|Interno):\s*([\s\S]*?)$/i);
+  
+  if (intMatch) {
+    const internalNote = intMatch[1].trim();
+    let publicContent = famMatch ? famMatch[1].trim() : rawContent.replace(/(?:\n\n)?(?:Interno Guía|Nota interna|Interno):|$[\s\S]*$/i, '').trim();
+    return {
+      publicContent: publicContent || 'Registro de actividad pedagógica Montessori.',
+      internalNote
+    };
+  }
+  
+  return { publicContent: rawContent.trim(), internalNote: '' };
+}
+
+async function syncSystemActivityToFeed(schoolId) {
+  if (!schoolId) return;
+  try {
+    // 1. Sync recent Montessori Observations
+    const observations = await prisma.studentObservation.findMany({
+      where: { schoolId },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      include: {
+        student: {
+          select: { id: true, fullName: true, avatarUrl: true, environmentId: true }
+        }
       }
     });
 
-    res.json(announcement);
-  } catch (e) {
-    console.error('Error updating announcement:', e);
-    res.status(500).json({ error: e.message });
+    for (const obs of observations) {
+      const feedPostId = `obs_${obs.id}`;
+      const { publicContent, internalNote } = extractPublicAndInternalNotes(obs.content);
+
+      let guideUser = null;
+      if (obs.guideUserId && obs.guideUserId !== 'guide_auto') {
+        guideUser = await prisma.user.findUnique({ where: { id: obs.guideUserId } });
+      }
+
+      await prisma.feedPost.upsert({
+        where: { id: feedPostId },
+        update: {
+          content: publicContent || 'Registro de actividad pedagógica Montessori.',
+          mediaUrls: obs.photoUrl ? [obs.photoUrl] : [],
+          environmentId: obs.student?.environmentId || null
+        },
+        create: {
+          id: feedPostId,
+          schoolId,
+          authorId: guideUser ? guideUser.id : null,
+          authorRole: 'TEACHER',
+          type: 'OBSERVATION',
+          title: `Bitácora Montessori • ${obs.student?.fullName || 'Estudiante'}`,
+          content: publicContent || 'Registro de actividad pedagógica Montessori.',
+          mediaUrls: obs.photoUrl ? [obs.photoUrl] : [],
+          allowComments: true,
+          targetAudience: 'CLASSROOM_ALL',
+          environmentId: obs.student?.environmentId || null,
+          studentId: obs.studentId,
+          refId: obs.id,
+          refType: 'OBSERVATION',
+          createdAt: obs.createdAt,
+          updatedAt: obs.updatedAt
+        }
+      });
+
+      // Internal note as first internal comment
+      if (internalNote) {
+        let commentAuthorId = guideUser?.id;
+        if (!commentAuthorId) {
+          const staffUser = await prisma.user.findFirst({
+            where: { memberships: { some: { schoolId, role: { in: ['OWNER', 'ADMIN', 'TEACHER'] } } } }
+          });
+          commentAuthorId = staffUser?.id;
+        }
+
+        if (commentAuthorId) {
+          const internalCommentId = `comment_obs_int_${obs.id}`;
+          await prisma.feedComment.upsert({
+            where: { id: internalCommentId },
+            update: {
+              content: internalNote,
+              isInternalGuideOnly: true
+            },
+            create: {
+              id: internalCommentId,
+              postId: feedPostId,
+              authorId: commentAuthorId,
+              authorRole: 'TEACHER',
+              content: internalNote,
+              isInternalGuideOnly: true,
+              createdAt: obs.createdAt,
+              updatedAt: obs.updatedAt
+            }
+          });
+        }
+      }
+    }
+
+    // 2. Sync active Announcements
+    const announcements = await prisma.announcement.findMany({
+      where: { schoolId, status: 'ACTIVE' },
+      orderBy: { createdAt: 'desc' },
+      take: 20
+    });
+
+    for (const ann of announcements) {
+      const feedPostId = `ann_${ann.id}`;
+      const { cleanText, urls, mediaUrls } = stripHtmlAndExtractLinks(ann.content);
+
+      let linkPreview = null;
+      if (urls.length > 0) {
+        linkPreview = await discoverOpenGraph(urls[0]);
+        if (linkPreview?.image && !mediaUrls.includes(linkPreview.image)) {
+          mediaUrls.unshift(linkPreview.image);
+        }
+      }
+
+      let envId = null;
+      if (Array.isArray(ann.targetEnvironmentIds) && ann.targetEnvironmentIds.length === 1) {
+        envId = ann.targetEnvironmentIds[0];
+      }
+
+      await prisma.feedPost.upsert({
+        where: { id: feedPostId },
+        update: {
+          title: `Aviso Escolar: ${ann.title}`,
+          content: cleanText || ann.title,
+          mediaUrls,
+          linkPreview: linkPreview || undefined,
+          targetAudience: ann.targetAudience === 'STAFF' ? 'STAFF_ONLY' : (ann.targetAudience === 'PARENTS' ? 'PARENTS_ONLY' : 'ALL_SCHOOL'),
+          environmentId: envId
+        },
+        create: {
+          id: feedPostId,
+          schoolId,
+          authorRole: 'OWNER',
+          type: 'ANNOUNCEMENT',
+          title: `Aviso Escolar: ${ann.title}`,
+          content: cleanText || ann.title,
+          mediaUrls,
+          linkPreview: linkPreview || undefined,
+          allowComments: false,
+          targetAudience: ann.targetAudience === 'STAFF' ? 'STAFF_ONLY' : (ann.targetAudience === 'PARENTS' ? 'PARENTS_ONLY' : 'ALL_SCHOOL'),
+          environmentId: envId,
+          refId: ann.id,
+          refType: 'ANNOUNCEMENT',
+          createdAt: ann.createdAt,
+          updatedAt: ann.updatedAt
+        }
+      });
+    }
+
+    // 3. Sync sent Newsletters
+    const newsletters = await prisma.newsletter.findMany({
+      where: { schoolId, status: 'SENT' },
+      orderBy: { sentAt: 'desc' },
+      take: 20
+    });
+
+    for (const news of newsletters) {
+      const feedPostId = `news_${news.id}`;
+      const { cleanText, urls, mediaUrls } = stripHtmlAndExtractLinks(news.contentHtml, news.coverImageUrl);
+
+      let linkPreview = null;
+      if (urls.length > 0) {
+        linkPreview = await discoverOpenGraph(urls[0]);
+        if (linkPreview?.image && !mediaUrls.includes(linkPreview.image)) {
+          mediaUrls.unshift(linkPreview.image);
+        }
+      }
+
+      let envId = null;
+      if (Array.isArray(news.targetEnvironmentIds) && news.targetEnvironmentIds.length === 1) {
+        envId = news.targetEnvironmentIds[0];
+      }
+
+      const targetAudience = news.targetAudience === 'STAFF'
+        ? 'STAFF_ONLY'
+        : (news.targetAudience === 'PARENTS' ? 'PARENTS_ONLY' : 'ALL_SCHOOL');
+
+      await prisma.feedPost.upsert({
+        where: { id: feedPostId },
+        update: {
+          title: `Boletín: ${news.title || news.subject || 'Comunicado Escolar'}`,
+          content: cleanText || news.title || 'Boletín informativo enviado por la escuela.',
+          mediaUrls,
+          linkPreview: linkPreview || undefined,
+          targetAudience,
+          environmentId: envId
+        },
+        create: {
+          id: feedPostId,
+          schoolId,
+          authorRole: 'OWNER',
+          type: 'NEWSLETTER',
+          title: `Boletín: ${news.title || news.subject || 'Comunicado Escolar'}`,
+          content: cleanText || news.title || 'Boletín informativo enviado por la escuela.',
+          mediaUrls,
+          linkPreview: linkPreview || undefined,
+          allowComments: true,
+          targetAudience,
+          environmentId: envId,
+          refId: news.id,
+          refType: 'NEWSLETTER',
+          createdAt: news.sentAt || news.createdAt,
+          updatedAt: news.updatedAt
+        }
+      });
+    }
+  } catch (syncErr) {
+    console.warn('[FEED AUTO SYNC WARNING]', syncErr.message);
+  }
+}
+
+// ==========================================
+// FEED AI MODERATION & INTERACTIVE AI AGENT
+// ==========================================
+
+async function getSchoolFeedAiConfig(schoolId) {
+  const settings = await prisma.siteSetting.findMany({
+    where: {
+      schoolId,
+      key: {
+        in: [
+          'ai_provider_mode',
+          'ai_api_key', 'openai_api_key', 'OPENAI_API_KEY',
+          'ai_base_url', 'openai_base_url',
+          'ai_model_text',
+          'feed_ai_moderation_tutors',
+          'feed_ai_moderation_guides',
+          'feed_ai_agent_enabled',
+          'feed_ai_agent_name',
+          'feed_ai_agent_role',
+          'feed_ai_agent_instructions'
+        ]
+      }
+    }
+  });
+
+  const getVal = (keys, fallback = '') => {
+    const match = settings.find(s => keys.includes(s.key));
+    return match?.value !== undefined && match?.value !== '' ? match.value.trim() : fallback;
+  };
+
+  const school = await prisma.school.findUnique({
+    where: { id: schoolId },
+    select: { id: true, name: true, logoUrl: true, slug: true, features: true }
+  });
+
+  const defaultAgentName = school?.name
+    ? school.name.split(' ')[0].replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ]/g, '')
+    : 'Ceiba';
+
+  const providerMode = getVal(['ai_provider_mode'], 'platform');
+  const customApiKey = getVal(['ai_api_key', 'openai_api_key', 'OPENAI_API_KEY'], '');
+  const platformApiKey = (process.env.DEFAULT_AI_API_KEY || process.env.OPENAI_API_KEY || process.env.AI_API_KEY || '').trim();
+
+  const hasCustomKey = Boolean(customApiKey);
+  const hasPlatformKey = Boolean(platformApiKey);
+
+  let usePlatform = true;
+  if (providerMode === 'custom' && hasCustomKey) {
+    usePlatform = false;
+  } else if (providerMode === 'platform') {
+    if (hasPlatformKey) {
+      usePlatform = true;
+    } else if (hasCustomKey) {
+      usePlatform = false;
+    }
+  } else if (hasCustomKey && !hasPlatformKey) {
+    usePlatform = false;
+  }
+
+  const apiKey = usePlatform ? (platformApiKey || customApiKey) : (customApiKey || platformApiKey);
+  const baseUrl = usePlatform
+    ? (process.env.DEFAULT_AI_BASE_URL || process.env.OPENAI_BASE_URL || process.env.AI_BASE_URL || 'https://api.openai.com/v1').replace(/\/+$/, '')
+    : getVal(['ai_base_url', 'openai_base_url'], 'https://api.openai.com/v1').replace(/\/+$/, '');
+  const textModel = usePlatform
+    ? (process.env.DEFAULT_AI_MODEL || process.env.OPENAI_TEXT_MODEL || process.env.AI_MODEL || 'gpt-4o-mini').replace(/^models\//, '')
+    : getVal(['ai_model_text'], 'gpt-4o-mini').replace(/^models\//, '');
+
+  return {
+    providerMode,
+    isCustom: !usePlatform,
+    customApiKey,
+    platformApiKey,
+    apiKey,
+    baseUrl,
+    textModel,
+    moderationTutors: getVal(['feed_ai_moderation_tutors'], 'true') === 'true',
+    moderationGuides: getVal(['feed_ai_moderation_guides'], 'false') === 'true',
+    agentEnabled: getVal(['feed_ai_agent_enabled'], 'true') === 'true',
+    agentName: getVal(['feed_ai_agent_name'], defaultAgentName || 'Ceiba'),
+    agentRole: getVal(['feed_ai_agent_role'], 'Asistente Pedagógico Montessori'),
+    agentInstructions: getVal(['feed_ai_agent_instructions'], ''),
+    school
+  };
+}
+
+async function executeSchoolAiChatCompletion({
+  schoolId,
+  messages,
+  temperature = 0.7,
+  maxTokens = 600,
+  responseFormat = null,
+  customModel = null
+}) {
+  const aiConfig = await getSchoolFeedAiConfig(schoolId);
+  const platformApiKey = (process.env.DEFAULT_AI_API_KEY || process.env.OPENAI_API_KEY || process.env.AI_API_KEY || '').trim();
+  const platformBaseUrl = (process.env.DEFAULT_AI_BASE_URL || process.env.OPENAI_BASE_URL || process.env.AI_BASE_URL || 'https://api.openai.com/v1').replace(/\/+$/, '');
+  const platformModel = (process.env.DEFAULT_AI_MODEL || process.env.OPENAI_TEXT_MODEL || process.env.AI_MODEL || 'gpt-4o-mini').replace(/^models\//, '');
+
+  const keyToUse = aiConfig.apiKey || aiConfig.customApiKey || platformApiKey;
+  if (!keyToUse) {
+    throw new Error('No hay proveedor de IA configurado ni clave de API disponible.');
+  }
+
+  const urlToUse = aiConfig.baseUrl || platformBaseUrl || 'https://api.openai.com/v1';
+  const modelToUse = customModel || aiConfig.textModel || platformModel || 'gpt-4o-mini';
+
+  const cleanBaseUrl = urlToUse.replace(/\/models$/, '').replace(/\/chat\/completions$/, '');
+  const reqBody = {
+    model: modelToUse,
+    messages,
+    temperature,
+    max_tokens: maxTokens,
+    ...(responseFormat && { response_format: responseFormat })
+  };
+
+  const res = await fetch(`${cleanBaseUrl}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${keyToUse}`
+    },
+    body: JSON.stringify(reqBody)
+  });
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    throw new Error(`AI API Error (${res.status}): ${errText}`);
+  }
+
+  const json = await res.json();
+  const content = json.choices?.[0]?.message?.content || '';
+  const usage = json.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
+
+  // Record token usage on the school's platform included quota
+  await recordSchoolAiTokenUsage({
+    schoolId,
+    promptTokens: usage.prompt_tokens || 0,
+    completionTokens: usage.completion_tokens || 0,
+    totalTokens: usage.total_tokens || 0
+  });
+
+  return {
+    content,
+    raw: json,
+    usage,
+    provider: aiConfig.isCustom ? 'custom' : 'platform',
+    wasFallback: false
+  };
+}
+
+async function moderateFeedTextWithAi({ text, schoolId, authorRole }) {
+  try {
+    const aiConfig = await getSchoolFeedAiConfig(schoolId);
+    if (!aiConfig.apiKey && !aiConfig.platformApiKey) {
+      return { approved: true, reason: null };
+    }
+
+    const systemPrompt = `Eres un evaluador de moderación ética y pedagógica para el muro escolar de una comunidad educativa Montessori (${aiConfig.school?.name || 'Montessori'}).
+Tu objetivo es garantizar un entorno armónico, respetuoso y seguro para familias, niños y docentes.
+
+Evalúa el mensaje del usuario y determina si debe ser APROBADO o RECHAZADO:
+- RECHAZAR (approved: false) si contiene:
+  1. Insultos, groserías, lenguaje vulgar, descalificaciones o agresiones verbales.
+  2. Acoso, intimidación, hostigamiento o ciberacoso contra alumnos, docentes o familias.
+  3. Discurso de odio, discriminación o contenido explícito.
+  4. Difamación o ataques directos a la comunidad.
+  5. Spam comercial no autorizado o enlaces sospechosos.
+- APROBAR (approved: true) si:
+  Es una duda, consulta, felicitación, saludo, reflexión o comentario respetuoso y constructivo.
+
+Devuelve ÚNICAMENTE un objeto JSON válido con este formato exacto:
+{
+  "approved": boolean,
+  "reason": "Explicación breve, cortés y respetuosa en español del motivo por el cual no cumple las normas escolares (solo cuando approved sea false)"
+}`;
+
+    const completion = await executeSchoolAiChatCompletion({
+      schoolId,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: `Autor (${authorRole}): "${text}"` }
+      ],
+      temperature: 0.1,
+      maxTokens: 300,
+      responseFormat: { type: 'json_object' }
+    });
+
+    const parsed = JSON.parse(completion.content || '{}');
+    return {
+      approved: Boolean(parsed.approved),
+      reason: parsed.reason || (parsed.approved ? null : 'El contenido fue marcado por no cumplir con las normas de respeto de la comunidad escolar.')
+    };
+  } catch (err) {
+    console.error('[AI MODERATION ERROR]', err);
+    return { approved: true, reason: null };
+  }
+}
+
+async function processBackgroundFeedPostModeration(postId) {
+  try {
+    const post = await prisma.feedPost.findUnique({ where: { id: postId } });
+    if (!post || post.moderationStatus !== 'PENDING_REVIEW') return;
+
+    const result = await moderateFeedTextWithAi({
+      text: post.content,
+      schoolId: post.schoolId,
+      authorRole: post.authorRole || 'TUTOR'
+    });
+
+    const newStatus = result.approved ? 'APPROVED' : 'REJECTED';
+    const updatedPost = await prisma.feedPost.update({
+      where: { id: postId },
+      data: {
+        moderationStatus: newStatus,
+        moderationReason: result.reason || null
+      },
+      include: {
+        author: { select: { id: true, email: true, fullName: true, avatarUrl: true, jobTitle: true, staffRole: true } },
+        environment: { select: { id: true, name: true, stage: true, color: true } },
+        student: { select: { id: true, fullName: true, avatarUrl: true } },
+        comments: {
+          include: {
+            author: { select: { id: true, email: true, fullName: true, avatarUrl: true, staffRole: true } }
+          }
+        },
+        likes: true,
+        school: { select: { id: true, name: true, logoUrl: true, slug: true } }
+      }
+    });
+
+    publishDeepstreamRealtimeEvent(`feed-post-moderated:${post.schoolId}`, {
+      postId,
+      moderationStatus: newStatus,
+      moderationReason: result.reason || null,
+      post: updatedPost,
+      schoolId: post.schoolId
+    });
+    publishDeepstreamRealtimeEvent(`feed-post-moderated`, {
+      postId,
+      moderationStatus: newStatus,
+      moderationReason: result.reason || null,
+      post: updatedPost,
+      schoolId: post.schoolId
+    });
+
+    if (result.approved) {
+      checkAndTriggerSchoolAiAgent({
+        postId,
+        content: post.content,
+        schoolId: post.schoolId,
+        authorName: updatedPost.author?.fullName || 'Comunidad',
+        authorRole: post.authorRole,
+        authorEmail: updatedPost.author?.email || post.author?.email || null,
+        isDirectPostMention: true
+      });
+    }
+  } catch (err) {
+    console.error('[PROCESS FEED POST MODERATION ERROR]', err);
+  }
+}
+
+async function processBackgroundFeedCommentModeration(commentId) {
+  try {
+    const comment = await prisma.feedComment.findUnique({
+      where: { id: commentId },
+      include: { post: true }
+    });
+    if (!comment || comment.moderationStatus !== 'PENDING_REVIEW') return;
+
+    const result = await moderateFeedTextWithAi({
+      text: comment.content,
+      schoolId: comment.post.schoolId,
+      authorRole: comment.authorRole || 'TUTOR'
+    });
+
+    const newStatus = result.approved ? 'APPROVED' : 'REJECTED';
+    const updatedComment = await prisma.feedComment.update({
+      where: { id: commentId },
+      data: {
+        moderationStatus: newStatus,
+        moderationReason: result.reason || null
+      },
+      include: {
+        author: { select: { id: true, email: true, fullName: true, avatarUrl: true, staffRole: true } }
+      }
+    });
+
+    publishDeepstreamRealtimeEvent(`feed-comment-moderated:${comment.postId}`, {
+      commentId,
+      postId: comment.postId,
+      moderationStatus: newStatus,
+      moderationReason: result.reason || null,
+      comment: updatedComment,
+      schoolId: comment.post.schoolId
+    });
+
+    if (result.approved) {
+      checkAndTriggerSchoolAiAgent({
+        postId: comment.postId,
+        content: comment.content,
+        schoolId: comment.post.schoolId,
+        authorName: updatedComment.author?.fullName || 'Comunidad',
+        authorRole: comment.authorRole,
+        authorEmail: updatedComment.author?.email || null,
+        isDirectPostMention: false
+      });
+    }
+  } catch (err) {
+    console.error('[PROCESS FEED COMMENT MODERATION ERROR]', err);
+  }
+}
+
+const MONTESSORI_WISDOM_CORPUS = `
+Compendio de Filosofía y Citas de María Montessori para encauzar reflexiones pedagógicas:
+
+1. Sobre la independencia y autonomía del niño:
+- «Ayúdame a hacerlo por mí mismo» (Lema principal del método).
+- «Nunca ayudes a un niño en una tarea en la que siente que puede tener éxito».
+- «Cualquier ayuda innecesaria es un obstáculo para el desarrollo del niño».
+- «El instinto más grande de los niños es precisamente liberarse del adulto».
+- «No hagas por un niño nada que él sea capaz de hacer por sí mismo».
+
+2. Sobre la mente absorbente y el aprendizaje natural:
+- «La mente del niño no es un recipiente para llenar, sino un fuego que encender».
+- «Los niños tienen una mente absorbente. Absorben conocimientos del entorno sin fatigarse».
+- «La educación es un proceso natural llevado a cabo por el niño y no adquirido por la escuela».
+- «La mano es el instrumento de la inteligencia».
+- «Lo que la mano hace, la mente lo recuerda».
+
+3. Sobre el rol del maestro y del adulto preparado:
+- «No me sigan a mí, sigan al niño».
+- «Esta es nuestra obligación hacia el niño: darle un rayo de luz y seguir nuestro camino».
+- «La mayor señal de éxito para un profesor es poder decir: "Los niños están trabajando como si yo no existiera"».
+- «Enseñar enseñando, no corrigiendo».
+- «No les digas cómo hacerlo. Muéstrales cómo hacerlo y no digas ni una palabra. Si les dices, se fijarán en tus labios. Si les muestras, querrán hacerlo ellos mismos».
+- «La mejor enseñanza es la que utiliza la menor cantidad de palabras necesarias para la tarea».
+
+4. Sobre el respeto, el entorno preparado y la libertad con límites:
+- «Si criticas al niño con demasiada frecuencia, aprenderá a juzgar. Si lo elogias con regularidad, le enseñarás a valorar».
+- «Debemos recordar algo fundamental: dar libertad a un niño no significa dejarlo solo ni, mucho menos, abandonarlo».
+- «No hay descripción, ni imagen, ni libro que pueda reemplazar ver árboles reales y toda la vida que los rodea en un bosque».
+- «Cuando un niño se siente seguro de sí mismo, deja entonces de buscar la aprobación».
+- «Educar a niños felices equivale a educar a adultos felices».
+
+5. Sobre la sociedad y la paz mundial:
+- «La educación desde el comienzo de la vida podría cambiar verdaderamente el presente y futuro de la sociedad».
+- «Sembrad en los niños ideas buenas, aunque no las entiendan; los años se encargarán de descifrarlas en su entendimiento y de hacerlas florecer en su corazón».
+- «Si la ayuda y la salvación han de llegar, será a través de los niños, porque los niños son los creadores de la humanidad».
+`;
+
+function convertImageToDataUri(imgUrl) {
+  if (!imgUrl || typeof imgUrl !== 'string') return null;
+  const trimmed = imgUrl.trim();
+  if (trimmed.startsWith('data:image/')) return trimmed;
+
+  try {
+    let relativeCandidate = trimmed;
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      if (trimmed.includes('localhost') || trimmed.includes('127.0.0.1')) {
+        const parsed = new URL(trimmed);
+        relativeCandidate = parsed.pathname + (parsed.search || '');
+      } else {
+        return trimmed;
+      }
+    }
+
+    // 1. Check if it is a school storage path (/api/storage/schools/... or /api/storage/stream?file=...)
+    const storageRel = extractStorageRelativePath(relativeCandidate);
+    if (storageRel) {
+      const cached = getCachedFilePath(storageRel);
+      const localFs = path.join(DEFAULT_LOCAL_ROOT, storageRel);
+      const targetFilePath = fs.existsSync(cached) ? cached : (fs.existsSync(localFs) ? localFs : null);
+      if (targetFilePath && fs.statSync(targetFilePath).isFile()) {
+        const ext = path.extname(targetFilePath).toLowerCase().replace('.', '') || 'jpeg';
+        let mimeType = 'image/jpeg';
+        if (ext === 'png') mimeType = 'image/png';
+        else if (ext === 'webp') mimeType = 'image/webp';
+        else if (ext === 'gif') mimeType = 'image/gif';
+        else if (ext === 'svg') mimeType = 'image/svg+xml';
+
+        const fileBuffer = fs.readFileSync(targetFilePath);
+        return `data:${mimeType};base64,${fileBuffer.toString('base64')}`;
+      }
+    }
+
+    // 2. Legacy public directory fallback (/feed/..., /gallery/..., etc.)
+    const cleanRelative = relativeCandidate.split('?')[0].replace(/^\/+/, '');
+    const absolutePath = path.join(publicDir, cleanRelative);
+    if (fs.existsSync(absolutePath) && fs.statSync(absolutePath).isFile()) {
+      const ext = path.extname(absolutePath).toLowerCase().replace('.', '') || 'jpeg';
+      let mimeType = 'image/jpeg';
+      if (ext === 'png') mimeType = 'image/png';
+      else if (ext === 'webp') mimeType = 'image/webp';
+      else if (ext === 'gif') mimeType = 'image/gif';
+      else if (ext === 'svg') mimeType = 'image/svg+xml';
+
+      const fileBuffer = fs.readFileSync(absolutePath);
+      return `data:${mimeType};base64,${fileBuffer.toString('base64')}`;
+    }
+  } catch (err) {
+    console.warn('[SERVER INDEX CONVERT IMAGE ERROR]', err.message);
+  }
+
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return trimmed;
+  }
+  return null;
+}
+
+async function checkAndTriggerSchoolAiAgent({
+  postId,
+  content,
+  schoolId,
+  authorName = 'Miembro de la comunidad',
+  authorRole = 'TUTOR',
+  authorEmail = null,
+  isDirectPostMention = false
+}) {
+  try {
+    const aiConfig = await getSchoolFeedAiConfig(schoolId);
+    if (!aiConfig.agentEnabled || (!aiConfig.apiKey && !aiConfig.platformApiKey)) return;
+
+    const rawAgentName = (aiConfig.agentName || 'Ceiba').trim();
+    const agentName = rawAgentName.replace(/^@+/, '').trim() || 'Ceiba';
+    if (!agentName) return;
+
+    // Check if content mentions @AgentName (e.g. @Ceiba, @ceiba, @ceiba:, etc.)
+    const escapedName = agentName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const mentionRegex = new RegExp(`@${escapedName}(?:\\b|[\\s,.:;!?)]|$)`, 'i');
+    if (!mentionRegex.test(content)) {
+      return;
+    }
+
+    const post = await prisma.feedPost.findUnique({
+      where: { id: postId },
+      include: {
+        author: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            jobTitle: true,
+            staffRole: true,
+            studentLinks: {
+              include: { student: { select: { fullName: true } } }
+            }
+          }
+        },
+        environment: { select: { id: true, name: true, stage: true } },
+        student: { select: { id: true, fullName: true } },
+        comments: {
+          where: { moderationStatus: 'APPROVED' },
+          orderBy: { createdAt: 'asc' },
+          include: {
+            author: { select: { id: true, fullName: true, staffRole: true } }
+          }
+        },
+        school: { select: { id: true, name: true, logoUrl: true } }
+      }
+    });
+    if (!post) return;
+
+    const schoolTitle = post.school?.name || 'Comunidad Montessori';
+    const now = new Date();
+    const formattedDate = now.toLocaleDateString('es-ES', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    const superAdminEmail = (process.env.SUPERADMIN_EMAIL || 'admin@montessorinexus.com').trim().toLowerCase();
+    const cleanAuthorEmail = (authorEmail || (isDirectPostMention ? post.author?.email : null) || '').trim().toLowerCase();
+    const rawAuthorName = (authorName || post.author?.fullName || 'Familia').trim();
+    const isSuperAdminAuthor = Boolean(
+      (cleanAuthorEmail && cleanAuthorEmail === superAdminEmail) ||
+      authorRole === 'SUPERADMIN' ||
+      rawAuthorName.toLowerCase() === 'superadmin' ||
+      rawAuthorName.toLowerCase() === 'nexus' ||
+      rawAuthorName.toLowerCase().includes('superadmin') ||
+      (post.author?.email && post.author.email.toLowerCase() === superAdminEmail && isDirectPostMention)
+    );
+
+    const authorCleanName = isSuperAdminAuthor
+      ? 'Nexus'
+      : rawAuthorName.replace(/^(Administrador|Admin|Director|Directora|Guía|Profesor|Profesora|Tutor|Tutora|Docente)\s+/i, '');
+    const authorFirstName = isSuperAdminAuthor
+      ? 'Nexus'
+      : (authorCleanName.split(/\s+/)[0] || rawAuthorName.split(/\s+/)[0] || 'Familia').trim();
+
+    // Determine author role description
+    let authorRoleDesc = isSuperAdminAuthor ? 'Superadministrador de la Plataforma (Nexus)' : 'Miembro de la comunidad';
+    if (!isSuperAdminAuthor) {
+      if (authorRole === 'TEACHER' || authorRole === 'STAFF') {
+        authorRoleDesc = `Guía / Docente (${post.author?.jobTitle || post.author?.staffRole || 'Guía'})`;
+      } else if (authorRole === 'TUTOR') {
+        const children = post.author?.studentLinks?.map(sl => sl.student?.fullName).filter(Boolean).join(', ');
+        authorRoleDesc = children ? `Familia / Tutor (de ${children})` : 'Familia / Tutor';
+      } else if (authorRole === 'OWNER' || authorRole === 'ADMIN') {
+        authorRoleDesc = 'Dirección / Administración Escolar';
+      }
+    }
+
+    const systemPrompt = `Eres @${agentName}, el Agente de Inteligencia Artificial Oficial de la escuela "${schoolTitle}".
+Hoy es: ${formattedDate}.
+
+Personalidad y Tono:
+- Tono neutral, ejecutivo, refinado y respetuoso, pero con profunda ternura y calidez hacia el niño y la comunidad escolar.
+- Puedes reír de un chiste con elegancia o comprender el doble sentido con sutileza, pero siempre encauzas la conversación hacia una comunidad de padres y educadores Montessori constructiva, armónica y reflexiva.
+- Evitas caer en sesgos de la enseñanza tradicional (evita promover castigos, recompensas extrínsecas, comparaciones entre alumnos, autoritarismo o memorización pasiva).
+- Promueves la autonomía del niño, la observación consciente, el ambiente preparado, la concentración y el respeto al ritmo individual de desarrollo.
+
+${MONTESSORI_WISDOM_CORPUS}
+
+Pautas para tus respuestas:
+1. Si el contexto lo permite de forma natural y pertinente, parafrasea o cita las ideas y frases de María Montessori para enriquecer el diálogo, sin sonar forzado ni artificial.
+2. Si la publicación incluye imágenes, dispones de visión directa de la imagen en alta resolución. OBSERVA E INTERPRETA CON RIGUROSA EXACTITUD lo que verdaderamente se aprecia en la imagen.
+3. PROHIBIDO INVENTAR O ALUCINAR ELEMENTOS VISUALES: NUNCA inventes paisajes, tierra, cielo, naturaleza, árboles, animales, personas, niños o materiales que NO se encuentren visibles de forma inequívoca en la foto.
+4. Si te preguntan explícitamente sobre la foto (ej: "¿qué vemos en la foto?", "¿qué hay en la imagen?"), describe con exactitud y fidelidad los objetos, materiales, niños o acciones reales que se observan, conectándolo con su sentido pedagógico únicamente si es aplicable.
+5. Sé claro, elocuente y conciso (1 a 3 párrafos bien estructurados), ideal para un hilo de comentarios en una red social escolar.
+6. ${isSuperAdminAuthor ? `El autor que te ha mencionado es el SUPERADMINISTRADOR de la plataforma ("Nexus"). NO uses su nombre personal ni le llames "Superadmin". Debes dirigirte a él SIEMPRE y ÚNICAMENTE como "Nexus" (ej: "Hola Nexus, ...").` : `Responde con empatía y calidez pedagógica dirigiéndote a ${authorFirstName} (${authorRoleDesc}).`}
+${aiConfig.agentInstructions ? `\nInstrucciones específicas adicionales de la escuela:\n${aiConfig.agentInstructions}` : ''}`;
+
+    // Extract media images if any
+    let mediaUrls = [];
+    if (Array.isArray(post.mediaUrls)) {
+      mediaUrls = post.mediaUrls;
+    } else if (typeof post.mediaUrls === 'string') {
+      try {
+        mediaUrls = JSON.parse(post.mediaUrls);
+      } catch {
+        mediaUrls = [post.mediaUrls];
+      }
+    }
+    mediaUrls = Array.isArray(mediaUrls) ? mediaUrls.filter(Boolean) : [];
+
+    const validImageDataUris = [];
+    for (const url of mediaUrls.slice(0, 3)) {
+      const dataUri = convertImageToDataUri(url);
+      if (dataUri) {
+        validImageDataUris.push(dataUri);
+      }
+    }
+
+    // Context Messages construction
+    const contextMessages = [
+      { role: 'system', content: systemPrompt }
+    ];
+
+    // Original Post Content message (multimodal if images exist)
+    const postHeader = `[PUBLICACIÓN ORIGINAL EN EL MURO ESCOLAR]
+Escuela: ${schoolTitle}
+Fecha de hoy: ${formattedDate}
+Autor de la publicación: ${post.author?.fullName || 'Comunidad'} (${post.authorRole || 'Miembro'})
+Ambiente: ${post.environment ? `${post.environment.name} (${post.environment.stage || ''})` : 'Toda la escuela'}
+${post.student ? `Estudiante mencionado: ${post.student.fullName}\n` : ''}${post.title ? `Título: ${post.title}\n` : ''}Contenido de la publicación:
+"${post.content}"`;
+
+    if (validImageDataUris.length > 0) {
+      const contentParts = [{ type: 'text', text: postHeader }];
+      validImageDataUris.forEach(imgDataUri => {
+        contentParts.push({
+          type: 'image_url',
+          image_url: { url: imgDataUri, detail: 'high' }
+        });
+      });
+      contextMessages.push({ role: 'user', content: contentParts });
+    } else {
+      contextMessages.push({ role: 'user', content: postHeader });
+    }
+
+    // Append full comments conversation script in chronological order
+    if (post.comments.length > 0) {
+      post.comments.forEach(c => {
+        if (c.isAiAgent) {
+          contextMessages.push({
+            role: 'assistant',
+            content: `${c.aiAgentName || `@${agentName}`}: ${c.content}`
+          });
+        } else {
+          const commentImgUri = c.mediaUrl ? convertImageToDataUri(c.mediaUrl) : null;
+          if (commentImgUri) {
+            contextMessages.push({
+              role: 'user',
+              content: [
+                { type: 'text', text: `[Comentario previo de ${c.author?.fullName || 'Miembro'}]: "${c.content || 'Adjunta una imagen:'}"` },
+                { type: 'image_url', image_url: { url: commentImgUri, detail: 'high' } }
+              ]
+            });
+          } else {
+            contextMessages.push({
+              role: 'user',
+              content: `[Comentario previo de ${c.author?.fullName || 'Miembro'}]: "${c.content}"`
+            });
+          }
+        }
+      });
+    }
+
+    // Trigger Turn
+    const authorCallName = isSuperAdminAuthor ? 'Nexus' : authorFirstName;
+    const visionDirectInstruction = validImageDataUris.length > 0
+      ? `\n\n[INSTRUCCIÓN CRÍTICA DE VISIÓN]: La publicación contiene ${validImageDataUris.length} imagen(es) adjunta(s). Obsérvala(s) directamente y con sumo cuidado. NUNCA inventes paisajes, tierra, naturaleza ni elementos que no aparezcan. Si ${authorCallName} te pregunta sobre la foto (ej: "¿qué vemos en la foto?"), describe con fidelidad, precisión y valor pedagógico lo que REALMENTE está en la imagen.`
+      : '';
+
+    if (isDirectPostMention) {
+      contextMessages.push({
+        role: 'user',
+        content: `${authorCallName} (${authorRoleDesc}) ha mencionado a @${agentName} directamente en la publicación:\n"${content}"${visionDirectInstruction}\n\nPor favor, responde como @${agentName} iniciando con "Hola ${authorCallName}, ..." con una reflexión pedagógica y cálida para la comunidad escolar.`
+      });
+    } else {
+      contextMessages.push({
+        role: 'user',
+        content: `${authorCallName} (${authorRoleDesc}) te ha mencionado en un comentario:\n"${content}"${visionDirectInstruction}\n\nPor favor, responde directamente a este comentario iniciando con "Hola ${authorCallName}, ..." manteniendo el contexto completo del post y siguiendo todas tus reglas.`
+      });
+    }
+
+    const completion = await executeSchoolAiChatCompletion({
+      schoolId,
+      messages: contextMessages,
+      temperature: 0.7,
+      maxTokens: 650
+    });
+
+    const replyContent = completion.content?.trim();
+    if (!replyContent) return;
+
+    // Create AI Comment
+    const aiComment = await prisma.feedComment.create({
+      data: {
+        postId,
+        authorRole: 'STAFF',
+        content: replyContent,
+        isInternalGuideOnly: false,
+        isAiAgent: true,
+        aiAgentName: `@${agentName}`,
+        aiAgentAvatar: post.school?.logoUrl || undefined,
+        moderationStatus: 'APPROVED'
+      },
+      include: {
+        author: {
+          select: { id: true, email: true, fullName: true, avatarUrl: true, staffRole: true }
+        }
+      }
+    });
+
+    // Increment post comments count
+    await prisma.feedPost.update({
+      where: { id: postId },
+      data: { commentsCount: { increment: 1 } }
+    });
+
+    // Realtime broadcast of AI comment
+    publishDeepstreamRealtimeEvent(`feed-post-comment:${postId}`, {
+      postId,
+      comment: aiComment,
+      schoolId: post.schoolId,
+      action: 'created'
+    });
+    publishDeepstreamRealtimeEvent(`feed-post-comment`, {
+      postId,
+      comment: aiComment,
+      schoolId: post.schoolId,
+      action: 'created'
+    });
+  } catch (err) {
+    console.error('[School-AI-Agent] Error running feed AI agent:', err);
+  }
+}
+
+// POST /api/ai/improve-text - Polish and improve spelling, grammar, clarity, and tone with AI
+app.post('/api/ai/improve-text', async (req, res) => {
+  try {
+    const { text, context = 'general', tone = 'professional' } = req.body;
+    const requestedSchoolId = req.headers['x-school-id'] || req.body.schoolId || req.school?.id;
+    const userEmail = req.headers['x-user-email'];
+
+    if (!text || !text.trim()) {
+      return res.status(400).json({ error: 'El texto es requerido.' });
+    }
+
+    let schoolId = requestedSchoolId;
+    if (!schoolId && userEmail) {
+      const u = await prisma.user.findUnique({
+        where: { email: userEmail.trim().toLowerCase() },
+        include: { memberships: true }
+      });
+      schoolId = u?.memberships?.[0]?.schoolId;
+    }
+
+    if (!schoolId) {
+      const firstSchool = await prisma.school.findFirst({ select: { id: true } });
+      schoolId = firstSchool?.id;
+    }
+
+    const aiConfig = await getSchoolFeedAiConfig(schoolId, prisma);
+    const isCustomAi = aiConfig.isCustom && aiConfig.apiKey;
+    if (!isCustomAi) {
+      const stats = await getSchoolAiUsageStats(schoolId, prisma);
+      if (stats.remaining <= 0 && !aiConfig.platformApiKey) {
+        return res.status(403).json({
+          error: 'Has alcanzado el límite de tokens de IA incluidos para este ciclo. Actualiza tu suscripción o utiliza una API Key propia en configuración.'
+        });
+      }
+    }
+
+    let contextInstruction = 'para un entorno escolar y pedagógico Montessori';
+    if (context === 'event' || context === 'appointment') {
+      contextInstruction = 'para la descripción, nota, minuta o comentario de una cita, reunión escolar o evento de la comunidad';
+    } else if (context === 'newsletter') {
+      contextInstruction = 'para un boletín informativo escolar dirigido a padres de familia, docentes y comunidad escolar';
+    }
+
+    const systemPrompt = `Eres un asistente experto de redacción y corrección de estilo ${contextInstruction} (${aiConfig.school?.name || 'Montessori'}).
+Tu objetivo es tomar el texto redactado por el usuario (o transcrito de su voz) y mejorarlo con máxima calidad:
+1. Corrige TODAS las faltas de ortografía, tildes/acentos, mayúsculas, concordancia y signos de puntuación (¿? ¡!).
+2. Mejora la fluidez, claridad, vocabulario y elegancia de la redacción manteniendo un tono ${tone === 'warm' ? 'cálido, cercano y empático' : 'profesional, claro, cordial y pedagógico'}.
+3. PRESERVA FIELMENTE todos los datos clave: fechas, horarios, nombres propios, lugares, variables como {{...}}, enlaces/URLs, teléfonos y emojis.
+4. Devuelve ÚNICAMENTE el texto mejorado final, sin preámbulos, sin comillas envolventes y sin explicaciones adicionales.`;
+
+    const completion = await executeSchoolAiChatCompletion({
+      schoolId,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: text.trim() }
+      ],
+      temperature: 0.3,
+      maxTokens: Math.max(800, Math.ceil(text.length * 2)),
+      prisma
+    });
+
+    const improvedText = (completion.content || text).trim();
+
+    res.json({
+      success: true,
+      improvedText,
+      originalText: text
+    });
+  } catch (err) {
+    console.error('Error improving text with AI:', err);
+    res.status(500).json({ error: err.message || 'Error al procesar el texto con IA' });
   }
 });
 
-// DELETE /api/announcements/:id - Delete announcement
-app.delete('/api/announcements/:id', async (req, res) => {
+// GET /api/feed - Get unified role-filtered social feed
+app.get('/api/feed', async (req, res) => {
   try {
-    await prisma.announcement.delete({
-      where: { id: req.params.id }
+    const userEmail = req.headers['x-user-email'] || req.query.email;
+    const requestedSchoolId = req.headers['x-school-id'] || req.query.schoolId || req.school?.id;
+    const { environmentId, studentId, type, search, limit = 50, offset = 0 } = req.query;
+
+    const superAdminEmail = (process.env.SUPERADMIN_EMAIL || 'admin@montessorinexus.com').trim().toLowerCase();
+    let currentUser = null;
+    if (userEmail) {
+      currentUser = await prisma.user.findUnique({
+        where: { email: userEmail.trim().toLowerCase() },
+        include: {
+          memberships: { include: { school: true } },
+          studentLinks: { include: { student: true } },
+          assignedEnvironments: true
+        }
+      });
+    }
+
+    const isGlobalSuperAdmin = currentUser && currentUser.email.toLowerCase() === superAdminEmail;
+
+    // Determine active school & membership
+    let schoolId = requestedSchoolId;
+    let membership = null;
+    if (currentUser) {
+      membership = currentUser.memberships.find(m => m.schoolId === schoolId) || currentUser.memberships[0];
+      if (!schoolId && membership) schoolId = membership.schoolId;
+    }
+
+    const role = isGlobalSuperAdmin ? 'OWNER' : (membership?.role || 'TUTOR');
+
+    // Auto-sync recent observations, announcements, and newsletters if schoolId is known
+    if (schoolId) {
+      await syncSystemActivityToFeed(schoolId);
+    }
+
+    let assignedEnvIds = [];
+    let tutorChildIds = [];
+    let tutorEnvIds = [];
+
+    if (currentUser) {
+      if (role === 'TEACHER' || role === 'STAFF') {
+        const envGuides = await prisma.environmentGuide.findMany({
+          where: { userId: currentUser.id }
+        });
+        assignedEnvIds = envGuides.map(g => g.environmentId);
+        if (schoolId) {
+          const envs = await prisma.environment.findMany({
+            where: { schoolId },
+            include: { guides: true }
+          });
+          envs.forEach(env => {
+            if (env.guides?.some(g => g.userId === currentUser.id)) {
+              if (!assignedEnvIds.includes(env.id)) assignedEnvIds.push(env.id);
+            }
+          });
+        }
+      } else if (role === 'TUTOR') {
+        const tutorLinks = await prisma.studentTutor.findMany({
+          where: { tutorUserId: currentUser.id },
+          include: { student: true }
+        });
+        tutorChildIds = tutorLinks.map(l => l.studentId);
+        tutorEnvIds = tutorLinks.map(l => l.student?.environmentId).filter(Boolean);
+      }
+    }
+
+    // Build feed query filters
+    const feedWhere = {};
+    if (schoolId && !isGlobalSuperAdmin) {
+      feedWhere.schoolId = schoolId;
+    } else if (schoolId && isGlobalSuperAdmin) {
+      feedWhere.schoolId = schoolId;
+    }
+
+    if (environmentId && environmentId !== 'ALL') {
+      feedWhere.environmentId = environmentId;
+    }
+    if (studentId && studentId !== 'ALL') {
+      feedWhere.studentId = studentId;
+    }
+
+    // Role-based visibility filtering
+    if (!isGlobalSuperAdmin && role !== 'OWNER' && role !== 'ADMIN') {
+      if (role === 'TEACHER' || role === 'STAFF') {
+        feedWhere.AND = [
+          ...(feedWhere.AND || []),
+          {
+            OR: [
+              { targetAudience: { in: ['ALL_SCHOOL', 'STAFF_ONLY'] } },
+              { environmentId: { in: assignedEnvIds.length > 0 ? assignedEnvIds : ['none'] } },
+              { authorId: currentUser?.id }
+            ]
+          }
+        ];
+      } else if (role === 'TUTOR') {
+        feedWhere.AND = [
+          ...(feedWhere.AND || []),
+          {
+            OR: [
+              // Generic school/parent posts
+              { targetAudience: { in: ['ALL_SCHOOL', 'PARENTS_ONLY'] } },
+              // Classroom community posts where their children are enrolled
+              { targetAudience: { in: ['CLASSROOM_ALL', 'CLASSROOM_PARENTS'] }, environmentId: { in: tutorEnvIds.length > 0 ? tutorEnvIds : ['none'] } },
+              // Child specific observations
+              { type: 'OBSERVATION', studentId: { in: tutorChildIds.length > 0 ? tutorChildIds : ['none'] } },
+              // Authored by themselves
+              { authorId: currentUser?.id }
+            ]
+          }
+        ];
+      }
+    }
+
+    // Moderation visibility filter: Non-admins only see approved posts OR posts they authored
+    if (!isGlobalSuperAdmin && role !== 'OWNER' && role !== 'ADMIN') {
+      feedWhere.AND = [
+        ...(feedWhere.AND || []),
+        {
+          OR: [
+            { moderationStatus: 'APPROVED' },
+            ...(currentUser?.id ? [{ authorId: currentUser.id }] : [])
+          ]
+        }
+      ];
+    }
+
+    if (type && type !== 'ALL') {
+      feedWhere.type = type;
+    }
+
+    if (search && search.trim()) {
+      feedWhere.OR = [
+        { title: { contains: search.trim(), mode: 'insensitive' } },
+        { content: { contains: search.trim(), mode: 'insensitive' } }
+      ];
+    }
+
+    const posts = await prisma.feedPost.findMany({
+      where: feedWhere,
+      orderBy: [{ pinned: 'desc' }, { createdAt: 'desc' }],
+      take: Number(limit),
+      skip: Number(offset),
+      include: {
+        author: {
+          select: {
+            id: true,
+            email: true,
+            fullName: true,
+            avatarUrl: true,
+            jobTitle: true,
+            staffRole: true
+          }
+        },
+        environment: {
+          select: { id: true, name: true, stage: true, color: true }
+        },
+        student: {
+          select: { id: true, fullName: true, avatarUrl: true, environmentId: true }
+        },
+        comments: {
+          orderBy: { createdAt: 'asc' },
+          include: {
+            author: {
+              select: { id: true, email: true, fullName: true, avatarUrl: true, staffRole: true }
+            }
+          }
+        },
+        likes: {
+          select: { userId: true, reaction: true }
+        },
+        school: {
+          select: { id: true, name: true, logoUrl: true, slug: true }
+        }
+      }
     });
-    res.json({ success: true });
-  } catch (e) {
-    console.error('Error deleting announcement:', e);
-    res.status(500).json({ error: e.message });
+
+    const isOwnerOrAdminOrSuper = isGlobalSuperAdmin || role === 'OWNER' || role === 'ADMIN';
+
+    // Map & filter comments for tutors and aggregate reactions
+    const mappedPosts = posts.map(p => {
+      const userLike = currentUser ? p.likes.find(l => l.userId === currentUser.id) : null;
+      const isLikedByMe = Boolean(userLike);
+      const myReaction = userLike ? (userLike.reaction || '❤️') : null;
+
+      const reactionsSummary = {};
+      p.likes.forEach(l => {
+        const r = l.reaction || '❤️';
+        reactionsSummary[r] = (reactionsSummary[r] || 0) + 1;
+      });
+
+      let visibleComments = p.comments.filter(c => {
+        // Moderation filter for comments
+        if (!isOwnerOrAdminOrSuper) {
+          if (c.moderationStatus === 'REJECTED' || c.moderationStatus === 'PENDING_REVIEW') {
+            if (!currentUser || c.authorId !== currentUser.id) return false;
+          }
+        }
+        if (role === 'TUTOR') return !c.isInternalGuideOnly;
+        if (role === 'TEACHER' || role === 'STAFF') {
+          const isGuideOfSalon = !p.environmentId || assignedEnvIds.includes(p.environmentId);
+          if (!isGuideOfSalon) return !c.isInternalGuideOnly;
+        }
+        return true;
+      });
+
+      let formattedPoll = null;
+      if (p.poll && Array.isArray(p.poll.options)) {
+        const totalVotes = p.poll.options.reduce((acc, opt) => acc + (opt.voterIds?.length || 0), 0);
+        const myVotedOptionIds = currentUser ? p.poll.options.filter(o => o.voterIds?.includes(currentUser.id)).map(o => o.id) : [];
+        formattedPoll = {
+          ...p.poll,
+          totalVotes,
+          myVotedOptionIds,
+          hasVoted: myVotedOptionIds.length > 0,
+          isClosed: Boolean(p.poll.expiresAt && new Date() > new Date(p.poll.expiresAt)),
+          options: p.poll.options.map(opt => {
+            const count = opt.voterIds?.length || 0;
+            return {
+              id: opt.id,
+              text: opt.text,
+              votesCount: count,
+              percentage: totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0
+            };
+          })
+        };
+      }
+
+      return {
+        ...p,
+        poll: formattedPoll,
+        isLikedByMe,
+        myReaction,
+        reactionsSummary,
+        commentsCount: visibleComments.length,
+        comments: visibleComments
+      };
+    });
+
+    res.json({
+      success: true,
+      items: mappedPosts,
+      total: mappedPosts.length,
+      userRole: role,
+      assignedEnvIds,
+      tutorChildIds
+    });
+  } catch (err) {
+    console.error('Error fetching feed:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/feed/upload - Upload image assets for feed using School Storage Service (BYOS S3/MinIO or SaaS fallback)
+app.post('/api/feed/upload', upload.array('files', 10), async (req, res) => {
+  try {
+    const schoolId = req.headers['x-school-id'] || req.body.schoolId || req.school?.id;
+    if (!schoolId) {
+      return res.status(400).json({ error: 'schoolId es requerido' });
+    }
+
+    // Check school storage quota
+    const storageStats = await getSchoolStorageStats(schoolId);
+    if (storageStats.isFull) {
+      return res.status(400).json({
+        error: 'El colegio ha alcanzado el 100% de su capacidad de almacenamiento. No se pueden subir imágenes hasta liberar espacio o ampliar el plan.'
+      });
+    }
+
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'No se subieron archivos' });
+    }
+
+    const storage = await storageServiceFor(schoolId, prisma);
+    const uploadedUrls = [];
+
+    for (const file of req.files) {
+      const ext = path.extname(file.originalname) || '.jpg';
+      const cleanBaseName = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9_-]/g, '_');
+      const uniqueFileName = `feed_${Date.now()}_${crypto.randomBytes(4).toString('hex')}_${cleanBaseName}${ext}`;
+      const relativePath = `schools/${schoolId}/feed/${uniqueFileName}`;
+
+      const uploadResult = await storage.upload({
+        relativePath,
+        buffer: file.buffer,
+        mimeType: file.mimetype || 'image/jpeg'
+      });
+
+      uploadedUrls.push(uploadResult.url);
+    }
+
+    res.json({
+      success: true,
+      urls: uploadedUrls,
+      storageStats
+    });
+  } catch (err) {
+    console.error('Error in /api/feed/upload:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/feed/posts/:id - Fetch a single feed post with all comments, poll, and reactions
+app.get('/api/feed/posts/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userEmail = req.headers['x-user-email'] || req.query.email;
+    const superAdminEmail = (process.env.SUPERADMIN_EMAIL || 'admin@montessorinexus.com').trim().toLowerCase();
+
+    let currentUser = null;
+    if (userEmail) {
+      currentUser = await prisma.user.findUnique({
+        where: { email: userEmail.trim().toLowerCase() },
+        include: {
+          memberships: true,
+          studentLinks: true
+        }
+      });
+    }
+
+    const p = await prisma.feedPost.findUnique({
+      where: { id },
+      include: {
+        author: {
+          select: {
+            id: true,
+            email: true,
+            fullName: true,
+            avatarUrl: true,
+            staffRole: true,
+            jobTitle: true,
+            studentLinks: {
+              include: { student: { select: { id: true, fullName: true, environmentId: true } } }
+            }
+          }
+        },
+        environment: { select: { id: true, name: true, stage: true } },
+        student: { select: { id: true, fullName: true, avatarUrl: true } },
+        comments: {
+          orderBy: { createdAt: 'asc' },
+          include: {
+            author: {
+              select: { id: true, email: true, fullName: true, avatarUrl: true, staffRole: true, jobTitle: true }
+            }
+          }
+        },
+        likes: true,
+        school: { select: { id: true, name: true, logoUrl: true, slug: true } }
+      }
+    });
+
+    if (!p) {
+      return res.status(404).json({ error: 'Publicación no encontrada.' });
+    }
+
+    const membership = currentUser?.memberships?.find(m => m.schoolId === p.schoolId);
+    const isOwnerOrAdmin = currentUser && (
+      currentUser.email.toLowerCase() === superAdminEmail ||
+      membership?.role === 'OWNER' ||
+      membership?.role === 'ADMIN'
+    );
+    const role = isOwnerOrAdmin ? 'OWNER' : (membership?.role || 'TUTOR');
+
+    const myLikeRecord = currentUser ? p.likes.find(l => l.userId === currentUser.id) : null;
+    const isLikedByMe = Boolean(myLikeRecord);
+    const myReaction = myLikeRecord?.reaction || (isLikedByMe ? '❤️' : null);
+
+    const reactionsSummary = {};
+    p.likes.forEach(l => {
+      const r = l.reaction || '❤️';
+      reactionsSummary[r] = (reactionsSummary[r] || 0) + 1;
+    });
+
+    let visibleComments = p.comments.filter(c => {
+      if (!isOwnerOrAdmin) {
+        if (c.moderationStatus === 'REJECTED' || c.moderationStatus === 'PENDING_REVIEW') {
+          if (!currentUser || c.authorId !== currentUser.id) return false;
+        }
+      }
+      if (role === 'TUTOR') return !c.isInternalGuideOnly;
+      return true;
+    });
+
+    let formattedPoll = null;
+    if (p.poll && Array.isArray(p.poll.options)) {
+      const totalVotes = p.poll.options.reduce((acc, opt) => acc + (opt.voterIds?.length || 0), 0);
+      const myVotedOptionIds = currentUser ? p.poll.options.filter(o => o.voterIds?.includes(currentUser.id)).map(o => o.id) : [];
+      formattedPoll = {
+        ...p.poll,
+        totalVotes,
+        myVotedOptionIds,
+        hasVoted: myVotedOptionIds.length > 0,
+        isClosed: Boolean(p.poll.expiresAt && new Date() > new Date(p.poll.expiresAt)),
+        options: p.poll.options.map(opt => {
+          const count = opt.voterIds?.length || 0;
+          return {
+            id: opt.id,
+            text: opt.text,
+            votesCount: count,
+            percentage: totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0
+          };
+        })
+      };
+    }
+
+    const mappedPost = {
+      ...p,
+      poll: formattedPoll,
+      isLikedByMe,
+      myReaction,
+      reactionsSummary,
+      commentsCount: visibleComments.length,
+      comments: visibleComments
+    };
+
+    res.json({ success: true, post: mappedPost });
+  } catch (err) {
+    console.error('Error fetching single post:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/feed/posts - Create a new community or generic post (Photo, Text, or Poll)
+app.post('/api/feed/posts', async (req, res) => {
+  try {
+    const userEmail = req.headers['x-user-email'] || req.body.authorEmail;
+    const requestedSchoolId = req.headers['x-school-id'] || req.body.schoolId || req.school?.id;
+    const {
+      title,
+      content,
+      mediaUrls = [],
+      poll = null,
+      allowComments = true,
+      targetAudience = 'ALL_SCHOOL', // 'ALL_SCHOOL', 'STAFF_ONLY', 'PARENTS_ONLY', 'CLASSROOM_PARENTS', 'CLASSROOM_ALL'
+      environmentId,
+      studentId,
+      pinned = false
+    } = req.body;
+
+    if (!content || !content.trim()) {
+      return res.status(400).json({ error: 'El contenido de la publicación es requerido.' });
+    }
+
+    const superAdminEmail = (process.env.SUPERADMIN_EMAIL || 'admin@montessorinexus.com').trim().toLowerCase();
+    let currentUser = null;
+    if (userEmail) {
+      currentUser = await prisma.user.findUnique({
+        where: { email: userEmail.trim().toLowerCase() },
+        include: { memberships: true }
+      });
+    }
+
+    const isGlobalSuperAdmin = currentUser && currentUser.email.toLowerCase() === superAdminEmail;
+    let schoolId = requestedSchoolId;
+    let membership = null;
+    if (currentUser) {
+      membership = currentUser.memberships.find(m => m.schoolId === schoolId) || currentUser.memberships[0];
+      if (!schoolId && membership) schoolId = membership.schoolId;
+    }
+
+    if (!schoolId) {
+      return res.status(400).json({ error: 'Colegio no identificado para publicar.' });
+    }
+
+    const role = isGlobalSuperAdmin ? 'OWNER' : (membership?.role || 'TUTOR');
+
+    // Storage capacity check if media is attached
+    if (Array.isArray(mediaUrls) && mediaUrls.length > 0) {
+      const storageStats = await getSchoolStorageStats(schoolId);
+      if (storageStats.isFull) {
+        return res.status(400).json({
+          error: 'El colegio ha alcanzado el 100% de su capacidad de almacenamiento. No se pueden publicar imágenes.'
+        });
+      }
+    }
+
+    // Role-based targetAudience validation
+    let sanitizedAudience = targetAudience;
+    if (role === 'TUTOR') {
+      if (sanitizedAudience === 'STAFF_ONLY') sanitizedAudience = 'CLASSROOM_ALL';
+    }
+
+    const { cleanText, urls, mediaUrls: extractedMedia } = stripHtmlAndExtractLinks(content);
+    let finalMediaUrls = Array.isArray(mediaUrls) && mediaUrls.length > 0 ? mediaUrls : extractedMedia;
+    let linkPreview = null;
+    if (finalMediaUrls.length === 0 && urls.length > 0) {
+      linkPreview = await discoverOpenGraph(urls[0]);
+      if (linkPreview?.image) {
+        finalMediaUrls = [linkPreview.image];
+      }
+    }
+
+    // Poll sanitizer
+    let finalPoll = null;
+    if (poll && Array.isArray(poll.options)) {
+      const cleanOptions = poll.options
+        .map(o => typeof o === 'string' ? o.trim() : (o?.text || '').trim())
+        .filter(t => t.length > 0);
+
+      if (cleanOptions.length >= 2) {
+        let expiresAt = null;
+        if (poll.durationDays && Number(poll.durationDays) > 0) {
+          expiresAt = new Date(Date.now() + Number(poll.durationDays) * 24 * 60 * 60 * 1000).toISOString();
+        }
+        finalPoll = {
+          question: poll.question?.trim() || cleanText || content.trim(),
+          options: cleanOptions.map((text, idx) => ({
+            id: `opt_${idx + 1}_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+            text,
+            voterIds: []
+          })),
+          expiresAt,
+          allowMultiple: Boolean(poll.allowMultiple)
+        };
+      }
+    }
+
+    const aiConfig = await getSchoolFeedAiConfig(schoolId);
+    const needsModeration =
+      (role === 'TUTOR' && aiConfig.moderationTutors) ||
+      ((role === 'TEACHER' || role === 'STAFF') && aiConfig.moderationGuides);
+    const initialStatus = needsModeration ? 'PENDING_REVIEW' : 'APPROVED';
+
+    const post = await prisma.feedPost.create({
+      data: {
+        schoolId,
+        authorId: currentUser?.id || null,
+        authorRole: role,
+        type: finalPoll ? 'POLL' : 'POST',
+        title: title || '',
+        content: cleanText || content.trim(),
+        mediaUrls: finalMediaUrls,
+        linkPreview: linkPreview || undefined,
+        poll: finalPoll || undefined,
+        allowComments: Boolean(allowComments),
+        targetAudience: sanitizedAudience,
+        environmentId: environmentId || null,
+        studentId: studentId || null,
+        pinned: Boolean(pinned && (role === 'OWNER' || role === 'ADMIN' || isGlobalSuperAdmin)),
+        moderationStatus: initialStatus,
+        moderationReason: null
+      },
+      include: {
+        author: {
+          select: { id: true, email: true, fullName: true, avatarUrl: true, jobTitle: true, staffRole: true }
+        },
+        environment: {
+          select: { id: true, name: true, stage: true, color: true }
+        },
+        student: {
+          select: { id: true, fullName: true, avatarUrl: true }
+        },
+        comments: true,
+        likes: true,
+        school: {
+          select: { id: true, name: true, logoUrl: true, slug: true }
+        }
+      }
+    });
+
+    let formattedPoll = null;
+    if (post.poll && Array.isArray(post.poll.options)) {
+      formattedPoll = {
+        ...post.poll,
+        totalVotes: 0,
+        myVotedOptionIds: [],
+        hasVoted: false,
+        isClosed: false,
+        options: post.poll.options.map(opt => ({
+          id: opt.id,
+          text: opt.text,
+          votesCount: 0,
+          percentage: 0
+        }))
+      };
+    }
+
+    const responsePost = {
+      ...post,
+      poll: formattedPoll,
+      isLikedByMe: false
+    };
+
+    res.json({
+      success: true,
+      post: responsePost
+    });
+
+    // Publish Realtime Event via Deepstream
+    publishDeepstreamRealtimeEvent(`feed-post-created:${schoolId}`, { post: responsePost, schoolId });
+    publishDeepstreamRealtimeEvent('feed-post-created', { post: responsePost, schoolId });
+
+    // Direct background processing for post moderation and AI Agent mention triggering
+    setImmediate(async () => {
+      try {
+        await processFeedPostModerationJob(post.id, prisma);
+      } catch (procErr) {
+        console.error('[DIRECT POST AI TRIGGER ERROR]', procErr);
+      }
+    });
+
+    // Enqueue background processing (moderation integrity + AI Agent mention response)
+    enqueueFeedPostJob({
+      postId: post.id,
+      schoolId,
+      authorRole: post.authorRole || currentUser?.role || 'TUTOR',
+      fallbackProcessor: (pId) => processFeedPostModerationJob(pId, prisma)
+    });
+  } catch (err) {
+    console.error('Error creating feed post:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/feed/posts/:id/vote - Vote in a poll
+app.post('/api/feed/posts/:id/vote', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { optionId } = req.body;
+    const userEmail = req.headers['x-user-email'] || req.body.userEmail;
+
+    if (!optionId) {
+      return res.status(400).json({ error: 'optionId es requerido para votar' });
+    }
+
+    let currentUser = null;
+    if (userEmail) {
+      currentUser = await prisma.user.findUnique({
+        where: { email: userEmail.trim().toLowerCase() }
+      });
+    }
+    if (!currentUser) return res.status(401).json({ error: 'Usuario no autenticado' });
+
+    const post = await prisma.feedPost.findUnique({ where: { id } });
+    if (!post) return res.status(404).json({ error: 'Publicación no encontrada' });
+    if (!post.poll || !Array.isArray(post.poll.options)) {
+      return res.status(400).json({ error: 'Esta publicación no contiene una encuesta.' });
+    }
+
+    const poll = post.poll;
+    if (poll.expiresAt && new Date() > new Date(poll.expiresAt)) {
+      return res.status(400).json({ error: 'Esta encuesta ya ha finalizado.' });
+    }
+
+    const targetOption = poll.options.find(o => o.id === optionId);
+    if (!targetOption) {
+      return res.status(404).json({ error: 'Opción de encuesta no encontrada.' });
+    }
+
+    const userId = currentUser.id;
+
+    // Toggle or switch vote
+    const updatedOptions = poll.options.map(opt => {
+      const voters = Array.isArray(opt.voterIds) ? opt.voterIds : [];
+      const hasVotedThis = voters.includes(userId);
+
+      if (opt.id === optionId) {
+        if (hasVotedThis) {
+          // Desmarcar voto (toggle off)
+          return { ...opt, voterIds: voters.filter(v => v !== userId) };
+        } else {
+          // Votar por esta opción
+          return { ...opt, voterIds: [...voters, userId] };
+        }
+      } else {
+        // En encuesta de opción única, quitar voto previo de otras opciones
+        return { ...opt, voterIds: voters.filter(v => v !== userId) };
+      }
+    });
+
+    const totalVotes = updatedOptions.reduce((acc, opt) => acc + (opt.voterIds?.length || 0), 0);
+    const updatedPoll = {
+      ...poll,
+      options: updatedOptions
+    };
+
+    await prisma.feedPost.update({
+      where: { id },
+      data: { poll: updatedPoll }
+    });
+
+    // Format poll for response
+    const myVotedOptionIds = updatedOptions.filter(o => o.voterIds?.includes(userId)).map(o => o.id);
+    const formattedPoll = {
+      ...updatedPoll,
+      totalVotes,
+      myVotedOptionIds,
+      hasVoted: myVotedOptionIds.length > 0,
+      isClosed: Boolean(updatedPoll.expiresAt && new Date() > new Date(updatedPoll.expiresAt)),
+      options: updatedOptions.map(opt => {
+        const count = opt.voterIds?.length || 0;
+        return {
+          id: opt.id,
+          text: opt.text,
+          votesCount: count,
+          percentage: totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0
+        };
+      })
+    };
+
+    res.json({
+      success: true,
+      poll: formattedPoll
+    });
+
+    // Realtime Deepstream Broadcast
+    publishDeepstreamRealtimeEvent(`feed-post-poll-voted:${id}`, {
+      postId: id,
+      poll: formattedPoll,
+      schoolId: post.schoolId
+    });
+    publishDeepstreamRealtimeEvent(`feed-post-poll-voted`, {
+      postId: id,
+      poll: formattedPoll,
+      schoolId: post.schoolId
+    });
+  } catch (err) {
+    console.error('Error voting in poll:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /api/feed/posts/:id - Update feed post content (e.g. edit after moderation or typo)
+app.put('/api/feed/posts/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { content } = req.body;
+    const userEmail = req.headers['x-user-email'];
+    const superAdminEmail = (process.env.SUPERADMIN_EMAIL || 'admin@montessorinexus.com').trim().toLowerCase();
+
+    if (!content || !content.trim()) {
+      return res.status(400).json({ error: 'El contenido es requerido.' });
+    }
+
+    const post = await prisma.feedPost.findUnique({ where: { id } });
+    if (!post) return res.status(404).json({ error: 'Publicación no encontrada' });
+
+    let currentUser = null;
+    if (userEmail) {
+      currentUser = await prisma.user.findUnique({
+        where: { email: userEmail.trim().toLowerCase() },
+        include: { memberships: true }
+      });
+    }
+
+    const isGlobalSuperAdmin = currentUser && currentUser.email.toLowerCase() === superAdminEmail;
+    const isAuthor = currentUser && currentUser.id === post.authorId;
+    const membership = currentUser?.memberships.find(m => m.schoolId === post.schoolId);
+    const isOwnerOrAdmin = membership && (membership.role === 'OWNER' || membership.role === 'ADMIN');
+
+    if (!isAuthor && !isOwnerOrAdmin && !isGlobalSuperAdmin) {
+      return res.status(403).json({ error: 'No tienes permiso para editar esta publicación.' });
+    }
+
+    const { cleanText } = stripHtmlAndExtractLinks(content);
+    const finalContent = cleanText || content.trim();
+
+    const aiConfig = await getSchoolFeedAiConfig(post.schoolId);
+    const needsModeration =
+      (post.authorRole === 'TUTOR' && aiConfig.moderationTutors) ||
+      ((post.authorRole === 'TEACHER' || post.authorRole === 'STAFF') && aiConfig.moderationGuides);
+
+    const updatedPost = await prisma.feedPost.update({
+      where: { id },
+      data: {
+        content: finalContent,
+        moderationStatus: needsModeration ? 'PENDING_REVIEW' : 'APPROVED',
+        moderationReason: null
+      },
+      include: {
+        author: { select: { id: true, email: true, fullName: true, avatarUrl: true, jobTitle: true, staffRole: true } },
+        environment: { select: { id: true, name: true, stage: true, color: true } },
+        student: { select: { id: true, fullName: true, avatarUrl: true } },
+        comments: true,
+        likes: true,
+        school: { select: { id: true, name: true, logoUrl: true, slug: true } }
+      }
+    });
+
+    res.json({ success: true, post: updatedPost });
+
+    // Realtime update broadcast
+    publishDeepstreamRealtimeEvent(`feed-post-updated:${post.schoolId}`, { post: updatedPost, schoolId: post.schoolId });
+    publishDeepstreamRealtimeEvent('feed-post-updated', { post: updatedPost, schoolId: post.schoolId });
+
+    // Enqueue background processing (moderation integrity + AI Agent mention response)
+    enqueueFeedPostJob({
+      postId: id,
+      schoolId: post.schoolId,
+      authorRole: updatedPost.authorRole,
+      fallbackProcessor: (pId) => processFeedPostModerationJob(pId, prisma)
+    });
+  } catch (err) {
+    console.error('Error updating feed post:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /api/feed/posts/:id - Delete a feed post
+app.delete('/api/feed/posts/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userEmail = req.headers['x-user-email'];
+    const superAdminEmail = (process.env.SUPERADMIN_EMAIL || 'admin@montessorinexus.com').trim().toLowerCase();
+
+    const post = await prisma.feedPost.findUnique({
+      where: { id },
+      include: {
+        comments: { select: { id: true, mediaUrl: true } }
+      }
+    });
+    if (!post) return res.status(404).json({ error: 'Publicación no encontrada' });
+
+    let currentUser = null;
+    if (userEmail) {
+      currentUser = await prisma.user.findUnique({
+        where: { email: userEmail.trim().toLowerCase() },
+        include: { memberships: true }
+      });
+    }
+
+    const isGlobalSuperAdmin = currentUser && currentUser.email.toLowerCase() === superAdminEmail;
+    const isAuthor = currentUser && currentUser.id === post.authorId;
+    const membership = currentUser?.memberships.find(m => m.schoolId === post.schoolId);
+    const isOwnerOrAdmin = membership && (membership.role === 'OWNER' || membership.role === 'ADMIN');
+
+    if (!isAuthor && !isOwnerOrAdmin && !isGlobalSuperAdmin) {
+      return res.status(403).json({ error: 'No tienes permiso para eliminar esta publicación.' });
+    }
+
+    // Physically delete all media assets belonging to the post and all its comments from school storage
+    const allMediaUrls = [];
+    if (Array.isArray(post.mediaUrls)) {
+      allMediaUrls.push(...post.mediaUrls);
+    }
+    if (post.comments && post.comments.length > 0) {
+      post.comments.forEach(c => {
+        if (c.mediaUrl) allMediaUrls.push(c.mediaUrl);
+      });
+    }
+
+    if (allMediaUrls.length > 0) {
+      await deletePhysicalFeedMedia({
+        schoolId: post.schoolId,
+        urls: allMediaUrls,
+        prisma
+      });
+    }
+
+    await prisma.feedPost.delete({ where: { id } });
+    res.json({ success: true, message: 'Publicación eliminada correctamente.' });
+
+    // Publish Realtime Event via Deepstream
+    publishDeepstreamRealtimeEvent(`feed-post-deleted:${post.schoolId}`, { postId: id, schoolId: post.schoolId });
+    publishDeepstreamRealtimeEvent('feed-post-deleted', { postId: id, schoolId: post.schoolId });
+  } catch (err) {
+    console.error('Error deleting feed post:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/feed/posts/:id/comments - Add comment to post
+app.post('/api/feed/posts/:id/comments', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { content = '', mediaUrl = null, isInternalGuideOnly = false, parentId = null } = req.body;
+    const userEmail = req.headers['x-user-email'] || req.body.authorEmail;
+
+    if ((!content || !content.trim()) && !mediaUrl) {
+      return res.status(400).json({ error: 'El contenido del comentario o una imagen es requerido.' });
+    }
+
+    const superAdminEmail = (process.env.SUPERADMIN_EMAIL || 'admin@montessorinexus.com').trim().toLowerCase();
+    let currentUser = null;
+    if (userEmail) {
+      currentUser = await prisma.user.findUnique({
+        where: { email: userEmail.trim().toLowerCase() },
+        include: { memberships: true }
+      });
+    }
+
+    if (!currentUser) {
+      return res.status(401).json({ error: 'Usuario no autenticado.' });
+    }
+
+    const isGlobalSuperAdmin = currentUser.email.toLowerCase() === superAdminEmail;
+    const post = await prisma.feedPost.findUnique({
+      where: { id },
+      include: { environment: true, student: true }
+    });
+
+    if (!post) {
+      return res.status(404).json({ error: 'Publicación no encontrada.' });
+    }
+
+    const membership = currentUser.memberships.find(m => m.schoolId === post.schoolId) || currentUser.memberships[0];
+    const role = isGlobalSuperAdmin ? 'OWNER' : (membership?.role || 'TUTOR');
+
+    // Rule 1: Comments on student activities / observations
+    if (post.type === 'OBSERVATION' || post.type === 'PROGRESS') {
+      if (role === 'TUTOR') {
+        return res.status(403).json({
+          error: 'Los padres de familia no pueden comentar registros de bitácora u observaciones para preservar la imparcialidad del juicio evaluativo de la guía.'
+        });
+      }
+      if (role === 'TEACHER' && post.environmentId) {
+        const isAssigned = await prisma.environmentGuide.findFirst({
+          where: { environmentId: post.environmentId, userId: currentUser.id }
+        });
+        if (!isAssigned && role !== 'OWNER' && role !== 'ADMIN' && !isGlobalSuperAdmin) {
+          return res.status(403).json({ error: 'Solo guías asignadas a este ambiente o dirección pueden comentar esta observación.' });
+        }
+      }
+    }
+
+    // Rule 2: Generic posts comments enabled check
+    if (post.type === 'POST' && !post.allowComments) {
+      return res.status(400).json({ error: 'Los comentarios están desactivados en esta publicación.' });
+    }
+
+    const aiConfig = await getSchoolFeedAiConfig(post.schoolId);
+    const needsModeration =
+      (role === 'TUTOR' && aiConfig.moderationTutors) ||
+      ((role === 'TEACHER' || role === 'STAFF') && aiConfig.moderationGuides);
+    const initialStatus = needsModeration ? 'PENDING_REVIEW' : 'APPROVED';
+
+    const comment = await prisma.feedComment.create({
+      data: {
+        postId: id,
+        parentId: parentId || null,
+        authorId: currentUser.id,
+        authorRole: role,
+        content: (content || '').trim(),
+        mediaUrl: mediaUrl || null,
+        isInternalGuideOnly: Boolean(isInternalGuideOnly || post.type === 'OBSERVATION' || post.type === 'PROGRESS'),
+        moderationStatus: initialStatus,
+        moderationReason: null
+      },
+      include: {
+        author: {
+          select: { id: true, email: true, fullName: true, avatarUrl: true, staffRole: true }
+        }
+      }
+    });
+
+    // Update comments count on post if approved
+    if (initialStatus === 'APPROVED') {
+      await prisma.feedPost.update({
+        where: { id },
+        data: { commentsCount: { increment: 1 } }
+      });
+    }
+
+    res.json({
+      success: true,
+      comment
+    });
+
+    // Publish Realtime Event via Deepstream
+    publishDeepstreamRealtimeEvent(`feed-post-comment:${id}`, { postId: id, comment, schoolId: post.schoolId, action: 'created' });
+
+    // Send Realtime Notification Balloon to Post Author if commenter is someone else
+    if (post.authorId && post.authorId !== currentUser.id) {
+      getAuthorSubtitleInfo(currentUser.id, post.schoolId, prisma).then(actorSubtitle => {
+        const notificationPayload = {
+          id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+          type: 'COMMENT',
+          postId: id,
+          postAuthorId: post.authorId,
+          actorId: currentUser.id,
+          actorName: currentUser.fullName || 'Miembro de la comunidad',
+          actorSubtitle: actorSubtitle || (role === 'TUTOR' ? 'Familia' : 'Docente'),
+          actorAvatar: currentUser.avatarUrl || '',
+          contentPreview: content.trim().slice(0, 100),
+          reaction: null,
+          schoolId: post.schoolId,
+          createdAt: new Date().toISOString()
+        };
+        publishDeepstreamRealtimeEvent(`feed-author-notification:${post.authorId}`, notificationPayload);
+        publishDeepstreamRealtimeEvent('feed-author-notification', notificationPayload);
+      }).catch(err => console.warn('[NOTIF COMMENT ERROR]', err.message));
+    }
+
+    // Direct background processing for comment moderation and AI Agent mention triggering
+    setImmediate(async () => {
+      try {
+        await processFeedCommentModerationJob(comment.id, prisma);
+      } catch (procErr) {
+        console.error('[DIRECT COMMENT AI TRIGGER ERROR]', procErr);
+      }
+    });
+
+    // Enqueue background processing (moderation integrity + AI Agent mention response)
+    enqueueFeedCommentJob({
+      commentId: comment.id,
+      postId: id,
+      schoolId: post.schoolId,
+      authorRole: comment.authorRole || currentUser.role || 'TUTOR',
+      fallbackProcessor: (cId) => processFeedCommentModerationJob(cId, prisma)
+    });
+  } catch (err) {
+    console.error('Error adding comment:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /api/feed/comments/:id - Delete a comment
+app.delete('/api/feed/comments/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userEmail = req.headers['x-user-email'];
+    const superAdminEmail = (process.env.SUPERADMIN_EMAIL || 'admin@montessorinexus.com').trim().toLowerCase();
+
+    const comment = await prisma.feedComment.findUnique({
+      where: { id },
+      include: { post: true }
+    });
+    if (!comment) return res.status(404).json({ error: 'Comentario no encontrado' });
+
+    let currentUser = null;
+    if (userEmail) {
+      currentUser = await prisma.user.findUnique({
+        where: { email: userEmail.trim().toLowerCase() },
+        include: { memberships: true }
+      });
+    }
+
+    const isGlobalSuperAdmin = currentUser && currentUser.email.toLowerCase() === superAdminEmail;
+    const isAuthor = currentUser && currentUser.id === comment.authorId;
+    const membership = currentUser?.memberships.find(m => m.schoolId === comment.post.schoolId);
+    const isOwnerOrAdmin = membership && (membership.role === 'OWNER' || membership.role === 'ADMIN');
+
+    if (!isAuthor && !isOwnerOrAdmin && !isGlobalSuperAdmin) {
+      return res.status(403).json({ error: 'No tienes permiso para eliminar este comentario.' });
+    }
+
+    // Find child comments / replies if any
+    const childComments = await prisma.feedComment.findMany({
+      where: { parentId: id },
+      select: { id: true, mediaUrl: true }
+    });
+
+    const commentMediaUrls = [];
+    if (comment.mediaUrl) commentMediaUrls.push(comment.mediaUrl);
+    if (childComments && childComments.length > 0) {
+      childComments.forEach(c => {
+        if (c.mediaUrl) commentMediaUrls.push(c.mediaUrl);
+      });
+    }
+
+    if (commentMediaUrls.length > 0) {
+      await deletePhysicalFeedMedia({
+        schoolId: comment.post.schoolId,
+        urls: commentMediaUrls,
+        prisma
+      });
+    }
+
+    await prisma.feedComment.delete({ where: { id } });
+    await prisma.feedPost.update({
+      where: { id: comment.postId },
+      data: { commentsCount: { decrement: 1 } }
+    });
+
+    res.json({ success: true, message: 'Comentario eliminado.' });
+
+    // Publish Realtime Event via Deepstream
+    publishDeepstreamRealtimeEvent(`feed-post-comment:${comment.postId}`, { postId: comment.postId, commentId: id, schoolId: comment.post.schoolId, action: 'deleted' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/feed/posts/:id/like - Toggle or update emotion reaction
+app.post('/api/feed/posts/:id/like', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userEmail = req.headers['x-user-email'] || req.body.userEmail;
+    const requestedReaction = req.body.reaction || '❤️';
+
+    let currentUser = null;
+    if (userEmail) {
+      currentUser = await prisma.user.findUnique({
+        where: { email: userEmail.trim().toLowerCase() }
+      });
+    }
+    if (!currentUser) return res.status(401).json({ error: 'Usuario no autenticado' });
+
+    const post = await prisma.feedPost.findUnique({ where: { id } });
+    if (!post) return res.status(404).json({ error: 'Publicación no encontrada' });
+
+    const existingLike = await prisma.feedLike.findUnique({
+      where: {
+        postId_userId: {
+          postId: id,
+          userId: currentUser.id
+        }
+      }
+    });
+
+    let isLiked = false;
+    let myReaction = null;
+
+    if (existingLike) {
+      if (existingLike.reaction === requestedReaction) {
+        // Quitar reacción / desmarcar corazón
+        await prisma.feedLike.delete({
+          where: { id: existingLike.id }
+        });
+        await prisma.feedPost.update({
+          where: { id },
+          data: { likesCount: { decrement: 1 } }
+        });
+        isLiked = false;
+        myReaction = null;
+      } else {
+        // Cambiar tipo de emoción / reacción
+        await prisma.feedLike.update({
+          where: { id: existingLike.id },
+          data: { reaction: requestedReaction }
+        });
+        isLiked = true;
+        myReaction = requestedReaction;
+      }
+    } else {
+      // Registrar nueva reacción
+      await prisma.feedLike.create({
+        data: {
+          postId: id,
+          userId: currentUser.id,
+          reaction: requestedReaction
+        }
+      });
+      await prisma.feedPost.update({
+        where: { id },
+        data: { likesCount: { increment: 1 } }
+      });
+      isLiked = true;
+      myReaction = requestedReaction;
+    }
+
+    const allLikes = await prisma.feedLike.findMany({
+      where: { postId: id },
+      select: { reaction: true }
+    });
+
+    const reactionsSummary = {};
+    allLikes.forEach(l => {
+      const r = l.reaction || '❤️';
+      reactionsSummary[r] = (reactionsSummary[r] || 0) + 1;
+    });
+
+    res.json({
+      success: true,
+      liked: isLiked,
+      myReaction,
+      likesCount: allLikes.length,
+      reactionsSummary
+    });
+
+    // Publish Realtime Event via Deepstream
+    publishDeepstreamRealtimeEvent(`feed-post-reaction:${id}`, {
+      postId: id,
+      reactionsSummary,
+      isLiked,
+      likesCount: allLikes.length,
+      userId: currentUser.id,
+      schoolId: post.schoolId
+    });
+
+    // Send Realtime Notification Balloon to Post Author if reaction was added and reactor is someone else
+    if (isLiked && post.authorId && post.authorId !== currentUser.id) {
+      getAuthorSubtitleInfo(currentUser.id, post.schoolId, prisma).then(actorSubtitle => {
+        const notificationPayload = {
+          id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+          type: 'REACTION',
+          postId: id,
+          postAuthorId: post.authorId,
+          actorId: currentUser.id,
+          actorName: currentUser.fullName || 'Miembro de la comunidad',
+          actorSubtitle: actorSubtitle || 'Miembro de la comunidad',
+          actorAvatar: currentUser.avatarUrl || '',
+          contentPreview: post.content ? post.content.slice(0, 80) : '',
+          reaction: myReaction || requestedReaction || '❤️',
+          schoolId: post.schoolId,
+          createdAt: new Date().toISOString()
+        };
+        publishDeepstreamRealtimeEvent(`feed-author-notification:${post.authorId}`, notificationPayload);
+        publishDeepstreamRealtimeEvent('feed-author-notification', notificationPayload);
+      }).catch(err => console.warn('[NOTIF REACTION ERROR]', err.message));
+    }
+  } catch (err) {
+    console.error('Error toggling reaction:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -14602,6 +17727,15 @@ try {
   console.warn('[BULL BOARD] KYC queue not active:', e.message);
 }
 
+try {
+  const feedQueue = getFeedQueue();
+  if (feedQueue) {
+    activeQueues.push(new BullMQAdapter(feedQueue));
+  }
+} catch (e) {
+  console.warn('[BULL BOARD] Feed queue not active:', e.message);
+}
+
 if (activeQueues.length > 0) {
   createBullBoard({
     queues: activeQueues,
@@ -14611,6 +17745,28 @@ if (activeQueues.length > 0) {
   console.log('📊 [BULL BOARD] Dashboard mounted at /admin/queues');
 } else {
   console.warn('📊 [BULL BOARD] No active queues found. Dashboard not initialized.');
+}
+
+// Automatically listen to feed queue for reactive background AI processing
+if (isQueueEnabled()) {
+  try {
+    const redisConn = getRedisConnectionConfig();
+    const embeddedFeedWorker = new Worker(
+      'feed-queue',
+      async (job) => {
+        if (job.name === 'process-feed-post') {
+          return await processFeedPostModerationJob(job.data.postId, prisma);
+        } else if (job.name === 'process-feed-comment') {
+          return await processFeedCommentModerationJob(job.data.commentId, prisma);
+        }
+      },
+      { connection: redisConn, concurrency: 3 }
+    );
+    embeddedFeedWorker.on('error', (e) => console.warn('[EMBEDDED FEED WORKER WARNING]', e.message));
+    console.log('⚡ [EMBEDDED FEED WORKER] Listening on "feed-queue" for reactive processing...');
+  } catch (wErr) {
+    console.warn('[EMBEDDED WORKER INIT ERROR]', wErr.message);
+  }
 }
 
 // Multilingual SEO metadata dictionary for server-side HTML pre-rendering
@@ -14645,8 +17801,8 @@ const SAAS_OG_METAS = {
   }
 };
 
-// Fallback for SPA routing with Dynamic Multilingual OpenGraph Pre-rendering
-app.use((req, res) => {
+// Fallback for SPA routing with Dynamic OpenGraph Pre-rendering (Forms + Multilingual SaaS)
+app.use(async (req, res) => {
   const distIndexPath = path.join(rootDir, 'dist', 'index.html');
   const rootIndexPath = path.join(rootDir, 'index.html');
   const targetPath = fs.existsSync(distIndexPath) ? distIndexPath : (fs.existsSync(rootIndexPath) ? rootIndexPath : null);
@@ -14654,8 +17810,162 @@ app.use((req, res) => {
   if (targetPath) {
     try {
       let html = fs.readFileSync(targetPath, 'utf8');
+      const host = req.headers['x-forwarded-host'] || req.headers.host || 'montessorinexus.com';
+      const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+      const canonicalUrl = `${protocol}://${host}${req.originalUrl || '/'}`;
 
-      // Detect language from query param (?lang=) or Accept-Language header
+      // Check if the route is a dynamic form route (/forms/:id, /f/:id, /formulario/:id)
+      const formMatch = req.path.match(/^\/(?:forms|f|formulario)\/([a-zA-Z0-9_-]+)/i);
+      if (formMatch) {
+        const formId = formMatch[1];
+        try {
+          const form = await prisma.admissionFormTemplate.findUnique({
+            where: { id: formId },
+            include: { school: true }
+          });
+
+          if (form) {
+            let school = form.school;
+            if (!school && form.schoolId) {
+              school = await prisma.school.findUnique({ where: { id: form.schoolId } });
+            }
+
+            const schoolName = school?.name || 'Comunidad Montessori';
+            const pageTitle = `${form.title} | ${schoolName}`;
+            const rawDesc = form.description ? String(form.description).replace(/<[^>]*>?/gm, '').trim() : '';
+            const description = rawDesc 
+              ? (rawDesc.length > 200 ? rawDesc.slice(0, 197) + '...' : rawDesc)
+              : `Formulario oficial de ${schoolName}. Completa tu información de forma segura en línea a través de Montessori Nexus.`;
+            const ogImageUrl = `${protocol}://${host}/api/og/forms/${form.id}.png`;
+
+            // Helper to escape XML
+            const escapeHtmlAttr = (str) => String(str || '')
+              .replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;');
+
+            html = html.replace(/<title>[^<]*<\/title>/, `<title>${escapeHtmlAttr(pageTitle)}</title>`);
+            html = html.replace(/<meta name="description" content="[^"]*"\s*\/?>/, `<meta name="description" content="${escapeHtmlAttr(description)}" />`);
+            html = html.replace(/<meta property="og:title" content="[^"]*"\s*\/?>/, `<meta property="og:title" content="${escapeHtmlAttr(pageTitle)}" />`);
+            html = html.replace(/<meta property="og:description" content="[^"]*"\s*\/?>/, `<meta property="og:description" content="${escapeHtmlAttr(description)}" />`);
+            html = html.replace(/<meta property="og:image" content="[^"]*"\s*\/?>/, `<meta property="og:image" content="${ogImageUrl}" />`);
+            html = html.replace(/<meta name="twitter:title" content="[^"]*"\s*\/?>/, `<meta name="twitter:title" content="${escapeHtmlAttr(pageTitle)}" />`);
+            html = html.replace(/<meta name="twitter:description" content="[^"]*"\s*\/?>/, `<meta name="twitter:description" content="${escapeHtmlAttr(description)}" />`);
+            html = html.replace(/<meta name="twitter:image" content="[^"]*"\s*\/?>/, `<meta name="twitter:image" content="${ogImageUrl}" />`);
+
+            // Extra rich OpenGraph tags
+            const extraMetaTags = `
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="${canonicalUrl}" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:site_name" content="${escapeHtmlAttr(schoolName)} • Montessori Nexus" />
+    <meta name="twitter:card" content="summary_large_image" />`;
+
+            if (html.includes('</head>')) {
+              html = html.replace('</head>', `${extraMetaTags}\n  </head>`);
+            }
+
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            return res.send(html);
+          }
+        } catch (dbErr) {
+          console.warn('[SPA-Form-OG] Could not load form for OpenGraph metadata:', dbErr.message);
+        }
+      }
+
+      // Check if the route is a dynamic process or admission portal route (/admision/:token, /admissions/portal/:token, /proceso/:id, /process/:id)
+      const processMatch = req.path.match(/^\/(?:admision|admissions(?:\/portal)?|proceso|process|procesos)(?:\/expediente)?\/([a-zA-Z0-9_-]+)/i);
+      if (processMatch) {
+        const tokenOrId = processMatch[1];
+        try {
+          // 1. Try finding application by portalToken or id
+          let app = await prisma.admissionApplication.findFirst({
+            where: { portalToken: tokenOrId },
+            include: { school: true, stage: true, process: { include: { stages: true } } }
+          });
+          if (!app) {
+            app = await prisma.admissionApplication.findUnique({
+              where: { id: tokenOrId },
+              include: { school: true, stage: true, process: { include: { stages: true } } }
+            });
+          }
+
+          let process = app?.process;
+          let school = app?.school;
+          let stage = app?.stage;
+
+          // 2. If not found as application, try finding process by id or slug
+          if (!process) {
+            process = await prisma.process.findUnique({
+              where: { id: tokenOrId },
+              include: { school: true, stages: true }
+            });
+            if (!process) {
+              process = await prisma.process.findFirst({
+                where: { slug: tokenOrId },
+                include: { school: true, stages: true }
+              });
+            }
+            if (process) {
+              school = process.school;
+            }
+          }
+
+          if (process || app) {
+            if (!school && process?.schoolId) {
+              school = await prisma.school.findUnique({ where: { id: process.schoolId } });
+            }
+
+            const schoolName = school?.name || 'Comunidad Montessori';
+            const procName = process?.name || process?.label || 'Admisión';
+            const pageTitle = stage?.name
+              ? `Proceso de ${procName} (${stage.name}) | ${schoolName}`
+              : `Proceso de ${procName} | ${schoolName}`;
+            const description = process?.description
+              ? String(process.description).replace(/<[^>]*>?/gm, '').trim().slice(0, 200)
+              : `Portal interactivo de seguimiento para el proceso de ${procName} en ${schoolName}. Consulta etapas y requisitos en línea.`;
+            const ogImageUrl = `${protocol}://${host}/api/og/processes/${tokenOrId}.png`;
+
+            const escapeHtmlAttr = (str) => String(str || '')
+              .replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;');
+
+            html = html.replace(/<title>[^<]*<\/title>/, `<title>${escapeHtmlAttr(pageTitle)}</title>`);
+            html = html.replace(/<meta name="description" content="[^"]*"\s*\/?>/, `<meta name="description" content="${escapeHtmlAttr(description)}" />`);
+            html = html.replace(/<meta property="og:title" content="[^"]*"\s*\/?>/, `<meta property="og:title" content="${escapeHtmlAttr(pageTitle)}" />`);
+            html = html.replace(/<meta property="og:description" content="[^"]*"\s*\/?>/, `<meta property="og:description" content="${escapeHtmlAttr(description)}" />`);
+            html = html.replace(/<meta property="og:image" content="[^"]*"\s*\/?>/, `<meta property="og:image" content="${ogImageUrl}" />`);
+            html = html.replace(/<meta name="twitter:title" content="[^"]*"\s*\/?>/, `<meta name="twitter:title" content="${escapeHtmlAttr(pageTitle)}" />`);
+            html = html.replace(/<meta name="twitter:description" content="[^"]*"\s*\/?>/, `<meta name="twitter:description" content="${escapeHtmlAttr(description)}" />`);
+            html = html.replace(/<meta name="twitter:image" content="[^"]*"\s*\/?>/, `<meta name="twitter:image" content="${ogImageUrl}" />`);
+
+            const extraMetaTags = `
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="${canonicalUrl}" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:site_name" content="${escapeHtmlAttr(schoolName)} • Montessori Nexus" />
+    <meta name="twitter:card" content="summary_large_image" />`;
+
+            if (html.includes('</head>')) {
+              html = html.replace('</head>', `${extraMetaTags}\n  </head>`);
+            }
+
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            return res.send(html);
+          }
+        } catch (dbErr) {
+          console.warn('[SPA-Process-OG] Could not load process for OpenGraph metadata:', dbErr.message);
+        }
+      }
+
+      // Default Multilingual SaaS Meta injection
       const rawQueryLang = String(req.query.lang || '').toLowerCase().trim();
       const acceptLang = String(req.headers['accept-language'] || '').toLowerCase();
       let detectedLang = 'es';
@@ -14673,10 +17983,7 @@ app.use((req, res) => {
       }
 
       const meta = SAAS_OG_METAS[detectedLang] || SAAS_OG_METAS.es;
-      const host = req.headers['x-forwarded-host'] || req.headers.host || 'montessorinexus.com';
-      const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
       const fullOgImageUrl = `${protocol}://${host}${meta.image}`;
-      const fullCanonicalUrl = `${protocol}://${host}${req.originalUrl || '/'}`;
 
       html = html.replace(/<html lang="[^"]*"/, `<html lang="${meta.lang}"`);
       html = html.replace(/<title>[^<]*<\/title>/, `<title>${meta.title}</title>`);

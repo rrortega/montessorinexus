@@ -8,12 +8,18 @@ const { Pool } = pgPkg;
 
 import { QUEUE_NAME, getRedisConnectionConfig } from './email-queue.js';
 import { KYC_QUEUE_NAME } from './kyc-queue.js';
+import { FEED_QUEUE_NAME } from './feed-queue.js';
 import { detectFaceInDocumentImage } from './kyc-service.js';
 import { scrapeCurp } from './curp-scraper.js';
 import {
   processGalleryImageFaceConsent,
-  scanAllGalleryImagesForConsents
+  scanAllGalleryImagesForConsents,
+  reprocessUnmatchedGalleryImagesForStudent
 } from './face-consent-service.js';
+import {
+  processFeedPostModerationJob,
+  processFeedCommentModerationJob
+} from './feed-service.js';
 import {
   processNewsletterDispatch,
   processNewsletterTest,
@@ -269,6 +275,13 @@ const kycWorker = new Worker(
         const duration = Date.now() - startTime;
         await job.log(`[SUCCESS] Full gallery scan completed in ${duration}ms. Total: ${result.total}`);
         return result;
+      } else if (job.name === 'reprocess-student-gallery') {
+        const { studentId, schoolId } = job.data;
+        await job.log(`Starting gallery images re-processing for Student ID: ${studentId} (School: ${schoolId})`);
+        const result = await reprocessUnmatchedGalleryImagesForStudent(studentId, schoolId, prisma);
+        const duration = Date.now() - startTime;
+        await job.log(`[SUCCESS] Student gallery re-processing completed in ${duration}ms. Reprocessed: ${result.totalReprocessed}`);
+        return result;
       }
     } catch (err) {
       console.error(`❌ [KYC JOB FAILED] Job ID: ${job.id} | Name: ${job.name} | Error: ${err.message}`);
@@ -294,6 +307,56 @@ kycWorker.on('failed', (job, err) => {
   console.error(`💥 [KYC JOB ERROR] Job ${job?.id} failed: ${err.message}`);
 });
 
+// 3. Feed & AI Moderation Worker Instance
+const feedWorker = new Worker(
+  FEED_QUEUE_NAME,
+  async (job) => {
+    const startTime = Date.now();
+    console.log(`\n🛡️ [FEED JOB START] Processing Job ID: ${job.id} | Name: ${job.name} (Attempt ${job.attemptsMade + 1}/${job.opts.attempts || 1})`);
+
+    try {
+      await job.log(`[START] Processing feed job: ${job.name}`);
+      let result;
+
+      if (job.name === 'process-feed-post') {
+        const { postId } = job.data;
+        await job.log(`Validating integrity and AI mention for Feed Post ID: ${postId}`);
+        result = await processFeedPostModerationJob(postId, prisma);
+        const duration = Date.now() - startTime;
+        await job.log(`[SUCCESS] Feed post processing completed in ${duration}ms. Result: ${JSON.stringify(result)}`);
+        return result;
+      } else if (job.name === 'process-feed-comment') {
+        const { commentId } = job.data;
+        await job.log(`Validating integrity and AI mention for Feed Comment ID: ${commentId}`);
+        result = await processFeedCommentModerationJob(commentId, prisma);
+        const duration = Date.now() - startTime;
+        await job.log(`[SUCCESS] Feed comment processing completed in ${duration}ms. Result: ${JSON.stringify(result)}`);
+        return result;
+      }
+    } catch (err) {
+      console.error(`❌ [FEED JOB FAILED] Job ID: ${job.id} | Name: ${job.name} | Error: ${err.message}`);
+      await job.log(`[ERROR] Job failed: ${err.message}\nStack:\n${err.stack}`);
+      throw err;
+    }
+  },
+  {
+    connection: redisConnection,
+    concurrency
+  }
+);
+
+feedWorker.on('ready', () => {
+  console.log(`🟢 [FEED WORKER READY] BullMQ Feed Worker is listening on queue "${FEED_QUEUE_NAME}"...`);
+});
+
+feedWorker.on('error', (err) => {
+  console.error('🔴 [FEED WORKER ERROR] BullMQ Worker runtime error:', err);
+});
+
+feedWorker.on('failed', (job, err) => {
+  console.error(`💥 [FEED JOB ERROR] Job ${job?.id} failed: ${err.message}`);
+});
+
 
 // Graceful shutdown handling
 let isShuttingDown = false;
@@ -304,6 +367,7 @@ const shutdown = async (signal) => {
   try {
     await worker.close();
     await kycWorker.close();
+    await feedWorker.close();
     console.log('🔒 BullMQ Workers closed.');
     await prisma.$disconnect();
     try {

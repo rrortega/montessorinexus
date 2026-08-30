@@ -660,21 +660,82 @@ export async function processGalleryImageFaceConsent(imageId, schoolId, prisma) 
 }
 
 /**
- * Scans all gallery images of a school for face consent
+ * Reprocesses all gallery images in a school where a specific student is NOT yet identified.
+ * Called when a student's avatar/profile photo is added or updated.
  */
-export async function scanAllGalleryImagesForConsents(schoolId, prisma) {
-  const images = await prisma.galleryImage.findMany({
-    where: { schoolId },
-    select: { id: true }
-  });
+export async function reprocessUnmatchedGalleryImagesForStudent(studentId, schoolId, prisma) {
+  console.log(`\n🔄 [STUDENT AVATAR REPROCESS] Checking gallery images to re-scan for Student ID: ${studentId} (School: ${schoolId})`);
 
-  console.log(`🚀 [FACE CONSENT SCAN] Enqueuing batch consent check for ${images.length} images in school ${schoolId}`);
+  try {
+    const student = await prisma.student.findUnique({
+      where: { id: studentId }
+    });
 
-  const results = [];
-  for (const img of images) {
-    const res = await processGalleryImageFaceConsent(img.id, schoolId, prisma);
-    results.push({ imageId: img.id, ...res });
+    if (!student || !student.avatarUrl || student.avatarUrl.trim() === '') {
+      console.log(`[FACE CONSENT REPROCESS] Student ${studentId} has no avatarUrl. Skipping.`);
+      return { totalReprocessed: 0, matchedImages: [] };
+    }
+
+    const allImages = await prisma.galleryImage.findMany({
+      where: { schoolId },
+      select: {
+        id: true,
+        detectedFaces: true
+      }
+    });
+
+    // Filter to images where student is NOT yet identified
+    const imagesToReprocess = allImages.filter(img => {
+      let faces = [];
+      try {
+        faces = typeof img.detectedFaces === 'string' ? JSON.parse(img.detectedFaces || '[]') : (img.detectedFaces || []);
+      } catch {
+        faces = [];
+      }
+      const alreadyIdentified = faces.some(f => f.studentId === studentId);
+      return !alreadyIdentified;
+    });
+
+    console.log(`📸 [FACE CONSENT REPROCESS] Found ${imagesToReprocess.length} image(s) where student ${student.fullName} was not previously identified. Starting re-scan...`);
+
+    const reprocessedResults = [];
+    for (const img of imagesToReprocess) {
+      const res = await processGalleryImageFaceConsent(img.id, schoolId, prisma);
+      reprocessedResults.push({ imageId: img.id, ...res });
+    }
+
+    console.log(`✅ [FACE CONSENT REPROCESS] Completed re-scan for student ${student.fullName}. Total processed: ${imagesToReprocess.length}`);
+    return {
+      totalReprocessed: imagesToReprocess.length,
+      results: reprocessedResults
+    };
+  } catch (err) {
+    console.error(`❌ [FACE CONSENT REPROCESS ERROR] Error re-scanning for student ${studentId}:`, err);
+    return { totalReprocessed: 0, error: err.message };
   }
-
-  return { total: images.length, results };
 }
+
+export async function scanAllGalleryImagesForConsents(schoolId, prisma) {
+  try {
+    const images = await prisma.galleryImage.findMany({
+      where: { schoolId },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    console.log(`📸 [SCAN ALL CONSENTS] Scanning all ${images.length} images for school ${schoolId}...`);
+    const results = [];
+    for (const img of images) {
+      const res = await processGalleryImageFaceConsent(img.id, schoolId, prisma);
+      results.push({ imageId: img.id, ...res });
+    }
+
+    return {
+      total: images.length,
+      results
+    };
+  } catch (err) {
+    console.error(`❌ [SCAN ALL CONSENTS ERROR] Error scanning gallery images for school ${schoolId}:`, err);
+    throw err;
+  }
+}
+

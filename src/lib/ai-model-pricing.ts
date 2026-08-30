@@ -68,7 +68,10 @@ export function findModelPricing(modelId: string): ModelPricingEntry | null {
     return AI_MODELS_PRICING.find((m) => m.id === 'ollama-local') || null;
   }
 
-  // 4. OpenAI Family Patterns (e.g., 'gpt-4o-mini', 'gpt4mini', 'openai/gpt-4.1-mini', 'model360-gpt4-mini')
+  // 4. OpenAI Family Patterns (e.g., 'gpt-5.6-luna', 'luna', 'gpt-4o-mini', 'gpt4mini', 'openai/gpt-4.1-mini', 'model360-gpt4-mini')
+  if (alpha.includes('luna') || alpha.includes('gpt56') || alpha.includes('gpt5')) {
+    return AI_MODELS_PRICING.find((m) => m.id === 'gpt-5.6-luna') || null;
+  }
   if (alpha.includes('gpt4omini') || (alpha.includes('gpt4') && alpha.includes('mini')) || alpha.includes('gpt41mini')) {
     return AI_MODELS_PRICING.find((m) => m.id === 'gpt-4o-mini') || null;
   }

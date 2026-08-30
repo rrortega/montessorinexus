@@ -63,9 +63,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('ceiba_active_school_slug', activeMembership.school.slug);
     }
 
-    // If logged in as admin/owner, keep all schools synchronized in memberships list
+    // If logged in as global SaaS superadmin, keep all schools synchronized in memberships list
     async function syncSuperadminSchools() {
-      if (user && (role === 'OWNER' || role === 'ADMIN' || user.email === 'admin@montessorinexus.com' || user.email === 'admin@ceibamontessori.com')) {
+      const superAdminEmail = (import.meta.env.VITE_SUPERADMIN_EMAIL || 'admin@montessorinexus.com').trim().toLowerCase();
+      if (user && user.email?.toLowerCase() === superAdminEmail) {
         try {
           const res = await fetch('/api/schools');
           if (res.ok) {

@@ -96,3 +96,17 @@ export async function enqueueScanAllGalleryConsentsJob(schoolId) {
   }
   return { enqueued: false };
 }
+
+/**
+ * Enqueues gallery images re-processing when a student profile photo/avatar changes
+ */
+export async function enqueueStudentAvatarReprocessingJob(studentId, schoolId) {
+  const queue = getKycQueue();
+  if (queue) {
+    console.log(`[KYC QUEUE] Enqueueing student avatar gallery reprocess for student: ${studentId}`);
+    const job = await queue.add('reprocess-student-gallery', { studentId, schoolId });
+    return { enqueued: true, jobId: job.id };
+  }
+  return { enqueued: false };
+}
+

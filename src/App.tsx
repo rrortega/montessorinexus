@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import MontessoriNexusLanding from "./pages/public/MontessoriNexusLanding";
 import { PrivacyPolicyPage } from "./pages/public/PrivacyPolicyPage";
@@ -15,7 +15,10 @@ import DocumentosPage from "./pages/DocumentosPage";
 import AplicativosPage from "./pages/AplicativosPage";
 import { AdmissionPortalPage } from "./pages/public/AdmissionPortalPage";
 import { PublicFormPage } from "./pages/public/PublicFormPage";
+import { BlogIndexPage } from "./pages/public/BlogIndexPage";
+import { BlogPostDetailPage } from "./pages/public/BlogPostDetailPage";
 import { CTAWidget } from "@/components/CTAWidget";
+import { FeedRealtimeNotificationBalloon } from "@/components/feed/FeedRealtimeNotificationBalloon";
 
 import { SettingsProvider, useSiteSettings, checkIsPlatformRootSync } from "@/context/SettingsContext";
 import { AuthProvider } from "@/context/AuthContext";
@@ -33,10 +36,17 @@ const DomainRoutes: React.FC = () => {
     location.pathname.startsWith('/admin') ||
     location.pathname.startsWith('/console');
 
+  const isBlogHost = typeof window !== 'undefined' && (
+    window.location.hostname === 'blog.montessorinexus.com' ||
+    window.location.hostname === 'blog.localhost' ||
+    window.location.hostname.startsWith('blog.')
+  );
+
   // SaaS platform landing routes should render immediately without a loading indicator
   const isPlatformLanding =
-    (isPlatformRoot || checkIsPlatformRootSync()) &&
+    (isPlatformRoot || checkIsPlatformRootSync() || isBlogHost) &&
     (location.pathname === '/' ||
+      location.pathname.startsWith('/blog') ||
       location.pathname === '/platform' ||
       location.pathname === '/nexus' ||
       location.pathname === '/privacidad' ||
@@ -59,9 +69,25 @@ const DomainRoutes: React.FC = () => {
 
   return (
     <>
-      {!isPlatformRoot && <CTAWidget />}
+      <FeedRealtimeNotificationBalloon />
+      {!isPlatformRoot && !isBlogHost && <CTAWidget />}
       <Routes>
-        <Route path="/" element={isPlatformRoot ? <MontessoriNexusLanding /> : <Index />} />
+        {isBlogHost ? (
+          <>
+            <Route path="/" element={<BlogIndexPage />} />
+            <Route path="/:slug" element={<BlogPostDetailPage />} />
+            <Route path="/blog" element={<BlogIndexPage />} />
+            <Route path="/blog/:slug" element={<BlogPostDetailPage />} />
+          </>
+        ) : (
+          <Route path="/" element={isPlatformRoot ? <MontessoriNexusLanding /> : <Index />} />
+        )}
+        <Route path="/blog" element={<BlogIndexPage />} />
+        <Route path="/blog/:slug" element={<BlogPostDetailPage />} />
+        <Route path="/colegio/:schoolSlug/blog" element={<BlogIndexPage />} />
+        <Route path="/colegio/:schoolSlug/blog/:slug" element={<BlogPostDetailPage />} />
+        <Route path="/school/:schoolSlug/blog" element={<BlogIndexPage />} />
+        <Route path="/school/:schoolSlug/blog/:slug" element={<BlogPostDetailPage />} />
         <Route path="/platform" element={<MontessoriNexusLanding />} />
         <Route path="/nexus" element={<MontessoriNexusLanding />} />
         <Route path="/privacidad" element={<PrivacyPolicyPage />} />
@@ -72,6 +98,14 @@ const DomainRoutes: React.FC = () => {
         <Route path="/terms" element={<TermsOfServicePage />} />
         <Route path="/terminos-de-servicio" element={<TermsOfServicePage />} />
         <Route path="/terms-of-service" element={<TermsOfServicePage />} />
+        {/* Explicit Demo Path Redirects */}
+        <Route path="/demo" element={<Navigate to="/" replace />} />
+        <Route path="/demo/*" element={<Navigate to="/" replace />} />
+        <Route path="/colegio/ceiba" element={<Navigate to="/" replace />} />
+        <Route path="/colegio/ceiba/*" element={<Navigate to="/" replace />} />
+        <Route path="/school/ceiba" element={<Navigate to="/" replace />} />
+        <Route path="/school/ceiba/*" element={<Navigate to="/" replace />} />
+
         <Route path="/colegio/:slug" element={<Index />} />
         <Route path="/school/:slug" element={<Index />} />
         <Route path="/panel" element={<AdminPage />} />

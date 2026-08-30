@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   HeartHandshake, 
@@ -14,20 +14,30 @@ import {
   Lock,
   Mail,
   Paperclip,
-  X
+  X,
+  Camera,
+  Loader2,
+  Images,
+  Maximize2,
+  ShieldAlert
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { MobileMenuButton } from './AdminDashboard';
 import { useAuth } from '@/context/AuthContext';
+import { uploadPhysicalFile } from '@/lib/api';
 import { 
   getMyTutorStudents, 
   getDocuments, 
   getApplications, 
   getTutorNewsletters,
+  getGalleryImages,
+  updateStudent,
+  reportGalleryImageByParent,
   StudentItem, 
   DocumentItem, 
   ApplicationItem,
-  NewsletterItem
+  NewsletterItem,
+  GalleryImageItem
 } from '@/lib/sqlite';
 
 export const TutorPortalSection: React.FC = () => {
@@ -39,9 +49,17 @@ export const TutorPortalSection: React.FC = () => {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [applications, setApplications] = useState<ApplicationItem[]>([]);
   const [newsletters, setNewsletters] = useState<NewsletterItem[]>([]);
+  const [galleryImages, setGalleryImages] = useState<GalleryImageItem[]>([]);
   const [readingNewsletter, setReadingNewsletter] = useState<NewsletterItem | null>(null);
+  const [previewGalleryImage, setPreviewGalleryImage] = useState<GalleryImageItem | null>(null);
+  const [reportingImage, setReportingImage] = useState<GalleryImageItem | null>(null);
+  const [reportComment, setReportComment] = useState<string>('');
+  const [isSubmittingReport, setIsSubmittingReport] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
+  const [loadingGallery, setLoadingGallery] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [copiedStudentId, setCopiedStudentId] = useState<string | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const handleCopyCode = (code?: string, id?: string) => {
     if (!code) return;
@@ -51,15 +69,63 @@ export const TutorPortalSection: React.FC = () => {
     setTimeout(() => setCopiedStudentId(null), 2000);
   };
 
+  const loadGallery = async () => {
+    setLoadingGallery(true);
+    try {
+      const imgs = await getGalleryImages(undefined, 'portal');
+      setGalleryImages(imgs);
+    } catch {
+      setGalleryImages([]);
+    } finally {
+      setLoadingGallery(false);
+    }
+  };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !activeStudent) return;
+
+    try {
+      setIsUploadingAvatar(true);
+      toast.loading('Subiendo y optimizando nueva foto de perfil...', { id: 'upload-avatar' });
+      
+      const uploadRes = await uploadPhysicalFile(file, 'gallery', `Avatar-${activeStudent.full_name}`);
+      
+      await updateStudent(activeStudent.id, {
+        avatarUrl: uploadRes.url
+      });
+
+      // Update in local state
+      setStudents(prev => prev.map(s => s.id === activeStudent.id ? { ...s, avatar_url: uploadRes.url } : s));
+
+      toast.success('Foto de perfil actualizada exitosamente.', { id: 'upload-avatar' });
+      toast.info('Se están reprocesando las fotos de la galería para identificar automáticamente a tu hijo.', { duration: 5000 });
+
+      // Refresh gallery after a few seconds to reflect newly identified photos
+      setTimeout(() => {
+        loadGallery();
+      }, 4000);
+    } catch (err: any) {
+      console.error('Error updating child avatar:', err);
+      toast.error(err.message || 'Error al actualizar la foto de perfil', { id: 'upload-avatar' });
+    } finally {
+      setIsUploadingAvatar(false);
+      if (avatarInputRef.current) {
+        avatarInputRef.current.value = '';
+      }
+    }
+  };
+
   useEffect(() => {
     const loadData = async () => {
       if (!user?.email) return;
       setLoading(true);
-      const [studs, docs, apps, news] = await Promise.all([
+      const [studs, docs, apps, news, imgs] = await Promise.all([
         getMyTutorStudents(user.email),
         getDocuments(),
         getApplications(),
-        getTutorNewsletters().catch(() => [])
+        getTutorNewsletters().catch(() => []),
+        getGalleryImages(undefined, 'portal').catch(() => [])
       ]);
       setStudents(studs);
       if (studs.length > 0) {
@@ -68,6 +134,7 @@ export const TutorPortalSection: React.FC = () => {
       setDocuments(docs);
       setApplications(apps);
       setNewsletters(news);
+      setGalleryImages(imgs);
       setLoading(false);
     };
 
@@ -121,112 +188,213 @@ export const TutorPortalSection: React.FC = () => {
               <span className="text-xs font-bold text-forest/70 uppercase tracking-wider mr-2">
                 Hijos registrados:
               </span>
-              {students.map(s => (
-                <button
-                  key={s.id}
-                  onClick={() => setSelectedStudentId(s.id)}
-                  className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
-                    selectedStudentId === s.id
-                      ? 'bg-forest text-white shadow-xs'
-                      : 'bg-white border border-forest/10 text-forest hover:bg-forest/5'
-                  }`}
-                >
-                  {s.avatar_url ? (
-                    <img src={s.avatar_url} alt={s.full_name} className="w-4 h-4 rounded-full object-cover" />
-                  ) : (
-                    <GraduationCap className="w-4 h-4" />
-                  )}
-                  <span>{s.full_name}</span>
-                </button>
-              ))}
+              {students.map(s => {
+                const isGrad = s.status === 'graduated';
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => setSelectedStudentId(s.id)}
+                    className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
+                      selectedStudentId === s.id
+                        ? isGrad
+                          ? 'bg-sky-900 text-white shadow-xs'
+                          : 'bg-forest text-white shadow-xs'
+                        : isGrad
+                          ? 'bg-sky-50/70 border border-sky-200 text-sky-900 hover:bg-sky-100/70'
+                          : 'bg-white border border-forest/10 text-forest hover:bg-forest/5'
+                    }`}
+                  >
+                    {s.avatar_url ? (
+                      <img src={s.avatar_url} alt={s.full_name} className="w-4 h-4 rounded-full object-cover" />
+                    ) : (
+                      <GraduationCap className="w-4 h-4" />
+                    )}
+                    <span>{s.full_name}</span>
+                    {isGrad && (
+                      <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold uppercase ${
+                        selectedStudentId === s.id ? 'bg-white/20 text-white' : 'bg-sky-200/80 text-sky-950'
+                      }`}>
+                        Egreso
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           )}
 
           {/* Active Student Card */}
-          {activeStudent && (
-            <div className="bg-white rounded-3xl p-6 border border-forest/10 shadow-xs relative">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-forest/10">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-2xl overflow-hidden bg-forest/10 border border-forest/15 text-forest font-bold flex items-center justify-center text-2xl font-display shadow-2xs shrink-0">
-                    {activeStudent.avatar_url ? (
-                      <img src={activeStudent.avatar_url} alt={activeStudent.full_name} className="w-full h-full object-cover" />
-                    ) : (
-                      activeStudent.full_name.charAt(0)
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-forest text-lg font-display">{activeStudent.full_name}</h3>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-xs font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                        {activeStudent.grade || 'Ambiente Montessori'}
+          {activeStudent && (() => {
+            const isGraduated = activeStudent.status === 'graduated';
+            const isActive = activeStudent.status === 'active';
+            const environmentDisplay = isGraduated 
+              ? 'Sin ambiente / Egreso' 
+              : !isActive 
+                ? 'Sin ambiente / Inactivo' 
+                : activeStudent.environment_name || activeStudent.grade || 'Ambiente Montessori';
+
+            return (
+              <div className={`bg-white rounded-3xl p-6 border shadow-xs relative transition-all ${
+                isGraduated 
+                  ? 'border-sky-200 bg-gradient-to-b from-sky-50/20 to-white' 
+                  : 'border-forest/10'
+              }`}>
+                {/* Notice for graduated student */}
+                {isGraduated && (
+                  <div className="mb-4 bg-sky-500/10 border border-sky-300/60 rounded-2xl p-3 px-4 flex items-center justify-between gap-3 text-xs text-sky-950">
+                    <div className="flex items-center gap-2 font-medium">
+                      <GraduationCap className="w-4 h-4 text-sky-700 shrink-0" />
+                      <span>
+                        <strong>Expediente Histórico:</strong> {activeStudent.full_name} completó su ciclo escolar (Graduado/Egreso). Puedes revisar sus evaluaciones y constancias emitidas.
                       </span>
+                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider bg-sky-200/70 text-sky-900 px-2 py-0.5 rounded-md shrink-0">
+                      Egreso
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-forest/10">
+                  <div className="flex items-center gap-4">
+                    {/* Hidden input for changing child avatar */}
+                    <input
+                      type="file"
+                      ref={avatarInputRef}
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleAvatarChange}
+                    />
+
+                    {/* Interactive Avatar with Hover Camera Overlay */}
+                    <div 
+                      onClick={() => !isUploadingAvatar && avatarInputRef.current?.click()}
+                      className={`group relative w-16 h-16 rounded-2xl overflow-hidden border font-bold flex items-center justify-center text-2xl font-display shadow-2xs shrink-0 cursor-pointer transition-all hover:scale-105 hover:ring-2 hover:ring-forest/30 ${
+                        isGraduated 
+                          ? 'bg-sky-100 border-sky-300/60 text-sky-900' 
+                          : 'bg-forest/10 border-forest/15 text-forest'
+                      }`}
+                      title="Clic para cambiar la foto de perfil de tu hijo"
+                    >
+                      {isUploadingAvatar ? (
+                        <div className="flex flex-col items-center justify-center">
+                          <Loader2 className="w-6 h-6 animate-spin text-forest" />
+                        </div>
+                      ) : activeStudent.avatar_url ? (
+                        <img src={activeStudent.avatar_url} alt={activeStudent.full_name} className="w-full h-full object-cover" />
+                      ) : (
+                        activeStudent.full_name.charAt(0)
+                      )}
+
+                      {/* Camera icon on hover */}
+                      {!isUploadingAvatar && (
+                        <div className="absolute inset-0 bg-black/40 text-white flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Camera className="w-4 h-4" />
+                          <span className="text-[8px] font-bold mt-0.5 uppercase tracking-wider">Cambiar</span>
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-bold text-forest text-lg font-display">{activeStudent.full_name}</h3>
+                        {isGraduated && (
+                          <span className="text-[10px] bg-sky-100 text-sky-800 font-bold px-2 py-0.5 rounded-md border border-sky-200 flex items-center gap-1">
+                            <GraduationCap className="w-3 h-3 text-sky-600" />
+                            <span>Egresado</span>
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => !isUploadingAvatar && avatarInputRef.current?.click()}
+                          className="text-[10px] text-forest/70 hover:text-forest hover:underline flex items-center gap-1 font-semibold cursor-pointer"
+                        >
+                          <Camera className="w-3 h-3" />
+                          <span>Cambiar foto</span>
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${
+                          isGraduated 
+                            ? 'text-sky-800 bg-sky-50 border-sky-200 font-bold' 
+                            : isActive 
+                              ? 'text-emerald-800 bg-emerald-50 border-emerald-200' 
+                              : 'text-amber-800 bg-amber-50 border-amber-200'
+                        }`}>
+                          {environmentDisplay}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2.5 flex-wrap justify-end">
+                    {/* Copyable Status & Enrollment Badge (Top Right) */}
+                    <button
+                      type="button"
+                      onClick={() => handleCopyCode(activeStudent.enrollment_code, activeStudent.id)}
+                      title={activeStudent.enrollment_code ? `Clic para copiar matrícula: ${activeStudent.enrollment_code}` : 'Estado escolar'}
+                      className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs group/copy cursor-pointer active:scale-95 ${
+                        isGraduated
+                          ? 'bg-sky-50 text-sky-900 border border-sky-200 hover:bg-sky-100 hover:border-sky-300'
+                          : isActive
+                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300'
+                            : 'bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100'
+                      }`}
+                    >
+                      {isGraduated ? (
+                        <GraduationCap className="w-3.5 h-3.5 text-sky-700" />
+                      ) : isActive ? (
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      ) : (
+                        <Lock className="w-3 h-3 text-amber-700" />
+                      )}
+                      <span>
+                        {isGraduated
+                          ? `Egresado / Graduado${activeStudent.enrollment_code ? ` • ${activeStudent.enrollment_code}` : ''}`
+                          : isActive
+                            ? `Matrícula Activa${activeStudent.enrollment_code ? ` • ${activeStudent.enrollment_code}` : ''}`
+                            : `Inactivo${activeStudent.enrollment_code ? ` • ${activeStudent.enrollment_code}` : ''}`}
+                      </span>
+                      {activeStudent.enrollment_code && (
+                        copiedStudentId === activeStudent.id ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5 opacity-50 group-hover/copy:opacity-100 transition-opacity shrink-0" />
+                        )
+                      )}
+                    </button>
+
+                    <div className="flex items-center gap-2 text-xs text-forest/80 bg-cream/70 px-3.5 py-1.5 rounded-xl border border-forest/10">
+                      <UserCheck className="w-4 h-4 text-emerald-600" />
+                      <span>Tu rol: <strong>{activeStudent.relationship === 'FATHER' ? 'Padre' : activeStudent.relationship === 'MOTHER' ? 'Madre' : 'Tutor'}</strong></span>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2.5 flex-wrap justify-end">
-                  {/* Copyable Status & Enrollment Badge (Top Right) */}
-                  <button
-                    type="button"
-                    onClick={() => handleCopyCode(activeStudent.enrollment_code, activeStudent.id)}
-                    title={activeStudent.enrollment_code ? `Clic para copiar matrícula: ${activeStudent.enrollment_code}` : 'Estado escolar'}
-                    className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs group/copy cursor-pointer active:scale-95 ${
-                      activeStudent.status === 'active'
-                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300'
-                        : 'bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100'
-                    }`}
-                  >
-                    {activeStudent.status === 'active' ? (
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    ) : (
-                      <Lock className="w-3 h-3 text-amber-700" />
-                    )}
-                    <span>
-                      {activeStudent.status === 'active'
-                        ? `Matrícula Activa${activeStudent.enrollment_code ? ` • ${activeStudent.enrollment_code}` : ''}`
-                        : 'Inactivo / Archivo Histórico'}
+                {/* Quick Info Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                  <div className="bg-cream/40 p-4 rounded-2xl border border-forest/5">
+                    <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">Ambiente Asignado</span>
+                    <span className={`text-sm font-bold mt-1 block ${isGraduated ? 'text-sky-900' : 'text-forest'}`}>
+                      {environmentDisplay}
                     </span>
-                    {activeStudent.enrollment_code && (
-                      copiedStudentId === activeStudent.id ? (
-                        <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      ) : (
-                        <Copy className="w-3.5 h-3.5 opacity-50 group-hover/copy:opacity-100 transition-opacity shrink-0" />
-                      )
-                    )}
-                  </button>
+                  </div>
 
-                  <div className="flex items-center gap-2 text-xs text-forest/80 bg-cream/70 px-3.5 py-1.5 rounded-xl border border-forest/10">
-                    <UserCheck className="w-4 h-4 text-emerald-600" />
-                    <span>Tu rol: <strong>{activeStudent.relationship === 'FATHER' ? 'Padre' : activeStudent.relationship === 'MOTHER' ? 'Madre' : 'Tutor'}</strong></span>
+                  <div className="bg-cream/40 p-4 rounded-2xl border border-forest/5">
+                    <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">Colegio / Campus</span>
+                    <span className="text-sm font-bold text-forest mt-1 block">
+                      {activeMembership?.school.name}
+                    </span>
+                  </div>
+
+                  <div className="bg-cream/40 p-4 rounded-2xl border border-forest/5">
+                    <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">Atención Familiar</span>
+                    <span className="text-xs text-muted-foreground mt-1 block">
+                      {activeMembership?.school.phone || '+52 998 350 2849'}
+                    </span>
                   </div>
                 </div>
               </div>
-
-              {/* Quick Info Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                <div className="bg-cream/40 p-4 rounded-2xl border border-forest/5">
-                  <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">Ambiente Asignado</span>
-                  <span className="text-sm font-bold text-forest mt-1 block">
-                    {activeStudent.grade || 'Ambiente Montessori'}
-                  </span>
-                </div>
-
-                <div className="bg-cream/40 p-4 rounded-2xl border border-forest/5">
-                  <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">Colegio / Campus</span>
-                  <span className="text-sm font-bold text-forest mt-1 block">
-                    {activeMembership?.school.name}
-                  </span>
-                </div>
-
-                <div className="bg-cream/40 p-4 rounded-2xl border border-forest/5">
-                  <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">Atención Familiar</span>
-                  <span className="text-xs text-muted-foreground mt-1 block">
-                    {activeMembership?.school.phone || '+52 998 350 2849'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Quick Applications & Portals */}
           {applications.length > 0 && (
@@ -349,7 +517,231 @@ export const TutorPortalSection: React.FC = () => {
               </div>
             )}
           </div>
+
+          {/* Student Identified Gallery Photos */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-forest text-base flex items-center gap-2">
+                <Images className="w-5 h-5 text-forest" />
+                Fotografías Escolares de {activeStudent.full_name}
+              </h3>
+              {galleryImages.length > 0 && (
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-forest/10 text-forest border border-forest/15">
+                  {galleryImages.length} {galleryImages.length === 1 ? 'fotografía' : 'fotografías'}
+                </span>
+              )}
+            </div>
+
+            {loadingGallery ? (
+              <div className="bg-white p-8 rounded-3xl border border-forest/10 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                <Loader2 className="w-4 h-4 animate-spin text-forest" />
+                <span>Cargando fotografías identificadas...</span>
+              </div>
+            ) : galleryImages.length === 0 ? (
+              <div className="bg-white p-6 rounded-3xl border border-forest/10 text-center space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  Aún no hay fotografías donde se haya identificado a <strong>{activeStudent.full_name}</strong>.
+                </p>
+                <p className="text-[11px] text-muted-foreground/80">
+                  💡 Tip: Puedes subir o cambiar su foto de perfil arriba para que el sistema inteligente escanee y etiquete automáticamente a tu hijo en las fotos de la escuela.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {galleryImages.map(img => (
+                  <div
+                    key={img.id}
+                    onClick={() => setPreviewGalleryImage(img)}
+                    className="group relative aspect-4/3 rounded-2xl overflow-hidden border border-forest/10 bg-slate-100 shadow-xs cursor-pointer hover:shadow-md hover:border-forest/30 transition-all"
+                  >
+                    <img
+                      src={img.src}
+                      alt={img.title || 'Foto de galería'}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-2.5 flex flex-col justify-between">
+                      <div className="flex justify-end">
+                        <span className="p-1 rounded-lg bg-black/40 text-white backdrop-blur-xs">
+                          <Maximize2 className="w-3.5 h-3.5" />
+                        </span>
+                      </div>
+                      <div>
+                        {img.title && (
+                          <h6 className="text-white text-xs font-bold truncate">{img.title}</h6>
+                        )}
+                        {img.created_at && (
+                          <span className="text-[10px] text-white/80 block">
+                            {new Date(img.created_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </>
+      )}
+
+      {/* GALLERY PHOTO LIGHTBOX MODAL */}
+      {previewGalleryImage && (
+        <div 
+          onClick={() => setPreviewGalleryImage(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-in fade-in cursor-pointer"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-white/20 overflow-hidden animate-in zoom-in-95 cursor-default"
+          >
+            <div className="relative bg-black flex items-center justify-center max-h-[65vh] overflow-hidden">
+              <img
+                src={previewGalleryImage.src}
+                alt={previewGalleryImage.title || 'Foto'}
+                className="max-h-[65vh] w-auto object-contain mx-auto"
+              />
+              <button
+                type="button"
+                onClick={() => setPreviewGalleryImage(null)}
+                className="absolute top-3 right-3 p-1.5 rounded-full bg-black/60 text-white hover:bg-black/80 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h4 className="font-bold text-forest text-base">{previewGalleryImage.title || 'Fotografía Escolar'}</h4>
+                {previewGalleryImage.description && (
+                  <p className="text-xs text-muted-foreground mt-0.5">{previewGalleryImage.description}</p>
+                )}
+              </div>
+              <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReportingImage(previewGalleryImage);
+                    setReportComment('');
+                  }}
+                  className="px-3.5 py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5 cursor-pointer"
+                  title="Solicitar retiro inmediato de esta foto de la galería"
+                >
+                  <ShieldAlert className="w-4 h-4 text-rose-600" />
+                  <span>Reportar / Retirar</span>
+                </button>
+                <a
+                  href={previewGalleryImage.src}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  download
+                  className="px-4 py-2 bg-forest text-white hover:bg-forest/90 rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Descargar</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PARENT PRIVACY REPORT MODAL */}
+      {reportingImage && (
+        <div 
+          onClick={() => !isSubmittingReport && setReportingImage(null)}
+          className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-rose-200 overflow-hidden animate-in zoom-in-95 space-y-4"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
+                  <ShieldAlert className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-forest text-base">Solicitar Retiro de Fotografía</h3>
+                  <p className="text-xs text-muted-foreground">Privacidad y protección de imagen del alumno</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                disabled={isSubmittingReport}
+                onClick={() => setReportingImage(null)}
+                className="p-1.5 rounded-lg text-muted-foreground hover:text-forest hover:bg-forest/5 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="bg-rose-50/70 border border-rose-200/80 rounded-2xl p-3.5 text-xs text-rose-900 space-y-1">
+              <p className="font-semibold">⚠️ Acción Inmediata de Protección</p>
+              <p className="text-[11px] text-rose-800/90 leading-relaxed">
+                Al enviar este reporte, la imagen se <strong>desactivará automáticamente y de forma permanente</strong> de la galería pública y del portal escolar. Quedará registrada con tu comentario y nadie podrá reactivarla (solo el Owner o Superadmin podrán eliminarla).
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-forest block">
+                Motivo del retiro / Comentario familiar: <span className="text-rose-600">*</span>
+              </label>
+              <textarea
+                value={reportComment}
+                onChange={(e) => setReportComment(e.target.value)}
+                placeholder="Ej. Solicito retirar esta imagen por privacidad de mi hijo / No autorizo la difusión de esta foto."
+                rows={3}
+                className="w-full text-xs p-3 rounded-xl border border-forest/20 focus:outline-none focus:ring-2 focus:ring-rose-500/30 focus:border-rose-500 bg-white"
+              />
+            </div>
+
+            <div className="pt-2 border-t border-forest/10 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                disabled={isSubmittingReport}
+                onClick={() => setReportingImage(null)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={isSubmittingReport || !reportComment.trim()}
+                onClick={async () => {
+                  if (!reportComment.trim() || !reportingImage) return;
+                  try {
+                    setIsSubmittingReport(true);
+                    await reportGalleryImageByParent(reportingImage.id, {
+                      comment: reportComment.trim(),
+                      studentId: activeStudent?.id,
+                      studentName: activeStudent?.full_name
+                    });
+                    toast.success('La fotografía fue retirada y bloqueada de la galería exitosamente.');
+                    setReportingImage(null);
+                    setPreviewGalleryImage(null);
+                    loadGallery();
+                  } catch (err: any) {
+                    toast.error(err.message || 'Error al reportar imagen');
+                  } finally {
+                    setIsSubmittingReport(false);
+                  }
+                }}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5 shadow-sm cursor-pointer"
+              >
+                {isSubmittingReport ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Retirando imagen...</span>
+                  </>
+                ) : (
+                  <>
+                    <ShieldAlert className="w-3.5 h-3.5" />
+                    <span>Confirmar Retiro Inmediato</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* NEWSLETTER READER MODAL */}
@@ -385,24 +777,15 @@ export const TutorPortalSection: React.FC = () => {
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-6">
-              {readingNewsletter.coverImageUrl && (
-                <img
-                  src={readingNewsletter.coverImageUrl}
-                  alt={readingNewsletter.title}
-                  className="w-full max-h-64 object-cover rounded-2xl shadow-xs"
-                />
-              )}
-
-              {readingNewsletter.preheader && (
-                <div className="text-xs uppercase tracking-wider text-muted-foreground font-bold">
-                  {readingNewsletter.preheader}
-                </div>
-              )}
-
-              <h1 className="font-display text-xl sm:text-2xl font-bold text-forest leading-tight">
-                {readingNewsletter.title}
-              </h1>
+            <div className="p-6 overflow-y-auto space-y-4">
+              <div className="flex items-center justify-between text-xs text-muted-foreground pb-3 border-b border-forest/10">
+                <span>
+                  Publicado: {readingNewsletter.sentAt ? new Date(readingNewsletter.sentAt).toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Reciente'}
+                </span>
+                <span className="px-2.5 py-0.5 rounded-full bg-forest/10 text-forest font-bold text-[10px]">
+                  Boletín Oficial
+                </span>
+              </div>
 
               <div
                 className="prose prose-sm max-w-none text-slate-700 leading-relaxed"

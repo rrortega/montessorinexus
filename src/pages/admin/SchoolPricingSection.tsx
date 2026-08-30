@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { getExchangeRateForCurrency } from '@/lib/fx';
 import {
   Sparkles,
   CheckCircle2,
@@ -433,9 +434,58 @@ export interface NewEnvironmentEntry {
 
 export const SchoolPricingSection: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { activeMembership, user } = useAuth();
   const { settings, updateSettings } = useSiteSettings();
   const school = activeMembership?.school;
+
+  // Currency and Real-time FX Conversion
+  const [schoolCurrency, setSchoolCurrency] = useState<string>(() => {
+    return (school?.currency || settings?.currency || 'MXN').toUpperCase();
+  });
+  const [currencySymbol, setCurrencySymbol] = useState<string>(() => {
+    return school?.currencySymbol || '$';
+  });
+  const [fxRate, setFxRate] = useState<number>(1);
+
+  useEffect(() => {
+    if (school?.currency) {
+      setSchoolCurrency(school.currency.toUpperCase());
+      if (school.currencySymbol) setCurrencySymbol(school.currencySymbol);
+    } else {
+      fetch('/api/schools/current')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data && data.currency) {
+            setSchoolCurrency(data.currency.toUpperCase());
+            if (data.currencySymbol) setCurrencySymbol(data.currencySymbol);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [school?.currency, school?.currencySymbol]);
+
+  const targetCurrency = schoolCurrency.toUpperCase();
+
+  useEffect(() => {
+    let isMounted = true;
+    getExchangeRateForCurrency(targetCurrency).then((rate) => {
+      if (isMounted) setFxRate(rate);
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [targetCurrency]);
+
+  const formatPrice = (usdAmount: number, withSuffix = true, suffix = '/mes') => {
+    const converted = Math.round(usdAmount * fxRate);
+    const formatted = new Intl.NumberFormat('es-MX', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
+    }).format(converted);
+
+    return `${currencySymbol}${formatted} ${targetCurrency}${withSuffix ? ` ${suffix}` : ''}`;
+  };
 
   // Storage Modal & Connection State
   const [isStorageModalOpen, setIsStorageModalOpen] = useState(false);
@@ -912,65 +962,84 @@ export const SchoolPricingSection: React.FC = () => {
     setNewEnvironments((prev) => prev.filter((e) => e.id !== envId));
   };
 
-  // Modular Pricing Real-time Calculation with 50% discount from 2nd environment
+  // Modular Pricing Real-time Calculation with 50% discount from 2nd environment and live FX
   const pricingSummary = useMemo(() => {
     // 1. Mandatory Core Base ($14 USD)
-    const coreBaseTotal = 14;
+    const coreBaseTotalUsd = 14;
 
-    // 2. Environments Cost:
+    // 2. Environments Cost (USD):
     // 1st environment = $25 USD
     // 2nd and subsequent = 50% discount ($10 USD each)
-    let environmentsCost = 0;
+    let environmentsCostUsd = 0;
     if (totalActiveEnvsCount === 1) {
-      environmentsCost = PRICING_CONFIG.environmentTier1; // $25
+      environmentsCostUsd = PRICING_CONFIG.environmentTier1; // $25
     } else if (totalActiveEnvsCount > 1) {
-      environmentsCost =
+      environmentsCostUsd =
         PRICING_CONFIG.environmentTier1 +
         (totalActiveEnvsCount - 1) * PRICING_CONFIG.environmentTier2;
     }
 
-    // 3. Optional Modules Cost
-    let optionalModulesCost = 0;
+    // 3. Optional Modules Cost (USD)
+    let optionalModulesCostUsd = 0;
     let selectedModulesCount = 0;
     if (selectedOptionalModules.finances) {
-      optionalModulesCost += PRICING_CONFIG.finances;
+      optionalModulesCostUsd += PRICING_CONFIG.finances;
       selectedModulesCount++;
     }
     if (selectedOptionalModules.websiteBuilder) {
-      optionalModulesCost += PRICING_CONFIG.websiteBuilder;
+      optionalModulesCostUsd += PRICING_CONFIG.websiteBuilder;
       selectedModulesCount++;
     }
     if (selectedOptionalModules.forms) {
-      optionalModulesCost += PRICING_CONFIG.forms;
+      optionalModulesCostUsd += PRICING_CONFIG.forms;
       selectedModulesCount++;
     }
     if (selectedOptionalModules.pipelines) {
-      optionalModulesCost += PRICING_CONFIG.pipelines;
+      optionalModulesCostUsd += PRICING_CONFIG.pipelines;
       selectedModulesCount++;
     }
-    let newsletterCost = 0;
+    let newsletterCostUsd = 0;
     if (selectedOptionalModules.newsletterSmtp) {
       const selectedTier = EMAIL_TIERS.find((t) => t.id === newsletterEmailTier) || EMAIL_TIERS[0];
       const extraCost = selectedTier.extraUnits * PRICING_CONFIG.newsletterSmtp;
-      newsletterCost = PRICING_CONFIG.newsletterSmtp + extraCost;
-      optionalModulesCost += newsletterCost;
+      newsletterCostUsd = PRICING_CONFIG.newsletterSmtp + extraCost;
+      optionalModulesCostUsd += newsletterCostUsd;
       selectedModulesCount++;
     }
 
-    // 4. Storage Cost
-    let storageCost = 0;
-    if (storageTier === '12gb') storageCost = PRICING_CONFIG.storage10GbUnit * 1;
-    if (storageTier === '22gb') storageCost = PRICING_CONFIG.storage10GbUnit * 2;
-    if (storageTier === '52gb') storageCost = PRICING_CONFIG.storage10GbUnit * 5;
+    // 4. Storage Cost (USD)
+    let storageCostUsd = 0;
+    if (storageTier === '12gb') storageCostUsd = PRICING_CONFIG.storage10GbUnit * 1;
+    if (storageTier === '22gb') storageCostUsd = PRICING_CONFIG.storage10GbUnit * 2;
+    if (storageTier === '52gb') storageCostUsd = PRICING_CONFIG.storage10GbUnit * 5;
 
-    // Monthly Subtotal
-    const monthlyTotal = coreBaseTotal + environmentsCost + optionalModulesCost + storageCost;
+    // Monthly Subtotal (USD)
+    const monthlyTotalUsd = coreBaseTotalUsd + environmentsCostUsd + optionalModulesCostUsd + storageCostUsd;
 
-    // Annual Calculation (Pay 10 months, get 12 = 2 months free)
-    const annualEquivalentMonthly = Math.round((monthlyTotal * 10) / 12);
-    const annualBilledTotal = monthlyTotal * 10;
+    // Annual Calculation (Pay 10 months, get 12 = 2 months free) in USD
+    const annualEquivalentMonthlyUsd = Math.round((monthlyTotalUsd * 10) / 12);
+    const annualBilledTotalUsd = monthlyTotalUsd * 10;
+
+    // Converted to target currency (e.g. MXN)
+    const rate = typeof fxRate === 'number' && fxRate > 0 ? fxRate : 1;
+    const monthlyTotal = Math.round(monthlyTotalUsd * rate);
+    const annualEquivalentMonthly = Math.round(annualEquivalentMonthlyUsd * rate);
+    const annualBilledTotal = Math.round(annualBilledTotalUsd * rate);
+    const environmentsCost = Math.round(environmentsCostUsd * rate);
+    const optionalModulesCost = Math.round(optionalModulesCostUsd * rate);
+    const newsletterCost = Math.round(newsletterCostUsd * rate);
+    const storageCost = Math.round(storageCostUsd * rate);
+    const coreBaseTotal = Math.round(coreBaseTotalUsd * rate);
 
     return {
+      coreBaseTotalUsd,
+      environmentsCostUsd,
+      optionalModulesCostUsd,
+      newsletterCostUsd,
+      storageCostUsd,
+      monthlyTotalUsd,
+      annualEquivalentMonthlyUsd,
+      annualBilledTotalUsd,
       coreBaseTotal,
       environmentsCost,
       optionalModulesCost,
@@ -981,7 +1050,7 @@ export const SchoolPricingSection: React.FC = () => {
       annualEquivalentMonthly,
       annualBilledTotal
     };
-  }, [totalActiveEnvsCount, selectedOptionalModules, newsletterEmailTier, storageTier]);
+  }, [totalActiveEnvsCount, selectedOptionalModules, newsletterEmailTier, storageTier, fxRate]);
 
   const maxStep = selectedOptionalModules.newsletterSmtp ? 5 : 4;
   const isEmailStep = selectedOptionalModules.newsletterSmtp && currentStep === 3;
@@ -1063,28 +1132,47 @@ export const SchoolPricingSection: React.FC = () => {
       }
 
       toast.success('Configuración de suscripción guardada.');
-      toast.info('Redirigiendo a pasarela segura de pago...');
+      toast.info('Redirigiendo a pasarela segura de Stripe Checkout...');
 
-      const environmentsListStr = activeEnvironmentsList.map((e, idx) => `  ${idx + 1}. ${e.name} ${e.isExisting ? '(Existente)' : '(Nuevo)'}`).join('\n');
-      const optionalModulesStr = [
-        selectedOptionalModules.finances ? 'Finanzas Escolares & Facturación' : null,
-        selectedOptionalModules.websiteBuilder ? 'Creador de Sitios Web' : null,
-        selectedOptionalModules.forms ? 'Formularios Dinámicos & Encuestas' : null,
-        selectedOptionalModules.pipelines ? 'Pipelines de Admisión & CRM' : null,
-        selectedOptionalModules.newsletterSmtp ? `Gestión de Boletines (${getEmailTierLabel(newsletterEmailTier)})` : null
-      ].filter(Boolean).join(', ') || 'Ninguno';
+      const stripeRes = await fetch('/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          schoolId: school.id,
+          selectedOptionalModules,
+          newsletterEmailTier,
+          storageTier,
+          billingCycle,
+          environmentsCount: totalActiveEnvsCount
+        })
+      });
 
-      const subject = encodeURIComponent(`Activación Suscripción Colegio ${school.name}`);
-      const body = encodeURIComponent(
-        `Hola Equipo de Montessori Nexus,\n\nDeseo activar la membresía para el colegio: ${school.name} (${school.slug})\n\nConfiguración elegida:\n- Ambientes (${totalActiveEnvsCount}):\n${environmentsListStr}\n\n- Facturación: ${billingCycle === 'annual' ? 'Anual (2 meses gratis)' : 'Mensual'}\n- Módulos opcionales: ${optionalModulesStr}\n- Almacenamiento: ${getStorageTierLabel(storageTier)}\n- Total estimado: $${billingCycle === 'annual' ? pricingSummary.annualEquivalentMonthly : pricingSummary.monthlyTotal} USD/mes (Facturado: $${billingCycle === 'annual' ? pricingSummary.annualBilledTotal : pricingSummary.monthlyTotal} USD)\n\nPor favor envíenme el enlace de pago seguro con tarjeta o los datos para transferencia bancaria SPEI.`
-      );
-      window.location.href = `mailto:soporte@montessorinexus.com?subject=${subject}&body=${body}`;
+      if (!stripeRes.ok) {
+        const errData = await stripeRes.json();
+        throw new Error(errData.error || 'Error al iniciar pago seguro en Stripe');
+      }
+
+      const stripeData = await stripeRes.json();
+      if (stripeData.url) {
+        window.location.href = stripeData.url;
+      } else {
+        throw new Error('No se recibió la URL de pago de Stripe');
+      }
     } catch (err: any) {
       toast.error(err.message || 'Error al procesar suscripción');
     } finally {
       setIsSaving(false);
     }
   };
+
+  useEffect(() => {
+    const paymentStatus = searchParams.get('payment_status');
+    if (paymentStatus === 'success') {
+      toast.success('¡Pago completado con éxito! Tu suscripción con Stripe está activa.');
+    } else if (paymentStatus === 'cancelled') {
+      toast.info('El proceso de pago fue cancelado. Puedes reintentar cuando gustes.');
+    }
+  }, [searchParams]);
 
   return (
     <div className="space-y-8 font-body animate-in fade-in duration-300 pb-32 xl:pb-20 max-w-7xl mx-auto px-4 sm:px-6">
@@ -1220,12 +1308,12 @@ export const SchoolPricingSection: React.FC = () => {
                     Selecciona y agrega los ambientes de tu colegio
                   </h3>
                   <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                    Marca los salones existentes que deseas mantener activos o añade nuevos ambientes. El 1er ambiente cuesta $25 USD y cada ambiente adicional tiene un <strong>50% de descuento ($10 USD)</strong>.
+                    Marca los salones existentes que deseas mantener activos o añade nuevos ambientes. El 1er ambiente cuesta {formatPrice(25, false)} y cada ambiente adicional tiene un <strong>50% de descuento ({formatPrice(10, false)})</strong>.
                   </p>
                 </div>
                 <div className="text-right">
                   <span className="text-xs font-bold font-mono text-forest bg-forest/10 px-3 py-1.5 rounded-xl inline-block">
-                    ${pricingSummary.environmentsCost} USD/mes
+                    {formatPrice(pricingSummary.environmentsCostUsd)}
                   </span>
                 </div>
               </div>
@@ -1381,9 +1469,9 @@ export const SchoolPricingSection: React.FC = () => {
                     </div>
                     <div className="font-mono text-xs font-bold text-slate-700 dark:text-slate-300">
                       {totalActiveEnvsCount === 1 ? (
-                        <span>1 salón base = $25 USD/mes</span>
+                        <span>1 salón base = {formatPrice(25)}</span>
                       ) : (
-                        <span>1 salón base ($25) + {totalActiveEnvsCount - 1} adicional{totalActiveEnvsCount - 1 > 1 ? 'es' : ''} con 50% OFF (${(totalActiveEnvsCount - 1) * PRICING_CONFIG.environmentTier2}) = ${pricingSummary.environmentsCost} USD/mes</span>
+                        <span>1 salón base ({formatPrice(25, false)}) + {totalActiveEnvsCount - 1} adicional{totalActiveEnvsCount - 1 > 1 ? 'es' : ''} con 50% OFF ({formatPrice((totalActiveEnvsCount - 1) * PRICING_CONFIG.environmentTier2, false)}) = {formatPrice(pricingSummary.environmentsCostUsd)}</span>
                       )}
                     </div>
                   </div>
@@ -1427,7 +1515,7 @@ export const SchoolPricingSection: React.FC = () => {
                   </p>
                 </div>
                 <span className="text-xs font-bold font-mono text-forest bg-forest/10 px-3 py-1.5 rounded-xl shrink-0">
-                  +${pricingSummary.optionalModulesCost} USD/mes
+                  +{formatPrice(pricingSummary.optionalModulesCostUsd)}
                 </span>
               </div>
 
@@ -1455,7 +1543,7 @@ export const SchoolPricingSection: React.FC = () => {
                     </div>
                   </div>
                   <span className="text-xs font-mono font-bold text-forest dark:text-emerald-400 whitespace-nowrap">
-                    +${PRICING_CONFIG.finances} USD/mes
+                    +{formatPrice(PRICING_CONFIG.finances)}
                   </span>
                 </label>
 
@@ -1482,7 +1570,7 @@ export const SchoolPricingSection: React.FC = () => {
                     </div>
                   </div>
                   <span className="text-xs font-mono font-bold text-forest dark:text-emerald-400 whitespace-nowrap">
-                    +${PRICING_CONFIG.websiteBuilder} USD/mes
+                    +{formatPrice(PRICING_CONFIG.websiteBuilder)}
                   </span>
                 </label>
 
@@ -1516,7 +1604,7 @@ export const SchoolPricingSection: React.FC = () => {
                     </div>
                   </div>
                   <span className="text-xs font-mono font-bold text-forest dark:text-emerald-400 whitespace-nowrap">
-                    +${PRICING_CONFIG.forms} USD/mes
+                    +{formatPrice(PRICING_CONFIG.forms)}
                   </span>
                 </label>
 
@@ -1555,7 +1643,7 @@ export const SchoolPricingSection: React.FC = () => {
                     </div>
                   </div>
                   <span className="text-xs font-mono font-bold text-forest dark:text-emerald-400 whitespace-nowrap">
-                    +${PRICING_CONFIG.pipelines} USD/mes
+                    +{formatPrice(PRICING_CONFIG.pipelines)}
                   </span>
                 </label>
 
@@ -1587,7 +1675,7 @@ export const SchoolPricingSection: React.FC = () => {
                     </div>
                   </div>
                   <span className="text-xs font-mono font-bold text-forest dark:text-emerald-400 whitespace-nowrap">
-                    Desde ${PRICING_CONFIG.newsletterSmtp} USD/mes
+                    Desde {formatPrice(PRICING_CONFIG.newsletterSmtp)}
                   </span>
                 </label>
               </div>
@@ -1637,7 +1725,7 @@ export const SchoolPricingSection: React.FC = () => {
                 </div>
                 <div className="text-right">
                   <span className="text-xs font-bold font-mono text-forest bg-forest/10 px-3 py-1.5 rounded-xl inline-block">
-                    +${pricingSummary.newsletterCost} USD/mes
+                    +{formatPrice(pricingSummary.newsletterCostUsd)}
                   </span>
                 </div>
               </div>
@@ -1647,7 +1735,7 @@ export const SchoolPricingSection: React.FC = () => {
                 {EMAIL_TIERS.map((tier) => {
                   const isSelected = newsletterEmailTier === tier.id;
                   const extraCost = tier.extraUnits * PRICING_CONFIG.newsletterSmtp;
-                  const totalTierCost = (PRICING_CONFIG.newsletterSmtp + extraCost).toFixed(2);
+                  const totalTierCostUsd = PRICING_CONFIG.newsletterSmtp + extraCost;
 
                   return (
                     <button
@@ -1703,11 +1791,11 @@ export const SchoolPricingSection: React.FC = () => {
                             <span className={`text-xs font-mono font-bold block whitespace-nowrap ${
                               isSelected ? 'text-forest dark:text-emerald-400' : 'text-stone-700 dark:text-slate-300'
                             }`}>
-                              ${totalTierCost} USD/mes
+                              {formatPrice(totalTierCostUsd)}
                             </span>
                             {extraCost > 0 && (
                               <span className="text-[9.5px] text-muted-foreground font-mono block whitespace-nowrap">
-                                (+${extraCost.toFixed(2)} adicional)
+                                (+{formatPrice(extraCost, false)} adicional)
                               </span>
                             )}
                           </>
@@ -1866,16 +1954,16 @@ export const SchoolPricingSection: React.FC = () => {
                   </p>
                 </div>
                 <span className="text-xs font-bold font-mono text-forest bg-forest/10 px-3 py-1.5 rounded-xl shrink-0">
-                  {storageTier === '2gb_free' || storageTier === 'byos_aws' ? '$0 USD' : storageTier === '12gb' ? '+$5 USD/mes' : storageTier === '22gb' ? '+$10 USD/mes' : '+$25 USD/mes'}
+                  {storageTier === '2gb_free' || storageTier === 'byos_aws' ? `${currencySymbol}0 ${targetCurrency}` : storageTier === '12gb' ? `+${formatPrice(5)}` : storageTier === '22gb' ? `+${formatPrice(10)}` : `+${formatPrice(25)}`}
                 </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
                   { id: '2gb_free', label: '2 GB Base (Incluido Gratis)', desc: 'Espacio gratuito incluido', price: 'Incluido ($0)' },
-                  { id: '12gb', label: '12 GB Cloud (+10 GB)', desc: 'Ideal para bitácoras', price: '+$5 USD/mes' },
-                  { id: '22gb', label: '22 GB Cloud (+20 GB)', desc: 'Uso intensivo de fotos', price: '+$10 USD/mes' },
-                  { id: '52gb', label: '52 GB Cloud (+50 GB)', desc: 'Colegios grandes', price: '+$25 USD/mes' },
+                  { id: '12gb', label: '12 GB Cloud (+10 GB)', desc: 'Ideal para bitácoras', price: `+${formatPrice(5)}` },
+                  { id: '22gb', label: '22 GB Cloud (+20 GB)', desc: 'Uso intensivo de fotos', price: `+${formatPrice(10)}` },
+                  { id: '52gb', label: '52 GB Cloud (+50 GB)', desc: 'Colegios grandes', price: `+${formatPrice(25)}` },
                   { id: 'byos_aws', label: 'Tu Propio Almacenamiento (S3)', desc: 'Conecta tu bucket S3 o MinIO', price: 'Sin costo ($0)' }
                 ].map((tier) => {
                   const isSelected = storageTier === tier.id;
@@ -1950,7 +2038,7 @@ export const SchoolPricingSection: React.FC = () => {
               <div className="p-4 rounded-2xl bg-stone-50 dark:bg-slate-900/60 border border-stone-200 dark:border-slate-800 space-y-3">
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
-                    Módulos Esenciales Incluidos (100% Gratis con Membresía Base $14 USD)
+                    Módulos Esenciales Incluidos (100% Gratis con Membresía Base {formatPrice(14, false)})
                   </h4>
                   <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
                     Incluido
@@ -1994,9 +2082,9 @@ export const SchoolPricingSection: React.FC = () => {
                   <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                     Módulos Adicionales Seleccionados ({pricingSummary.selectedModulesCount}):
                   </h4>
-                  {pricingSummary.optionalModulesCost > 0 && (
+                  {pricingSummary.optionalModulesCostUsd > 0 && (
                     <span className="text-xs font-bold font-mono text-forest dark:text-emerald-400">
-                      +${pricingSummary.optionalModulesCost} USD/mes
+                      +{formatPrice(pricingSummary.optionalModulesCostUsd)}
                     </span>
                   )}
                 </div>
@@ -2012,7 +2100,7 @@ export const SchoolPricingSection: React.FC = () => {
                           </span>
                         </div>
                         <span className="font-mono font-bold text-forest dark:text-emerald-400 shrink-0">
-                          +${PRICING_CONFIG.finances} USD/mes
+                          +{formatPrice(PRICING_CONFIG.finances)}
                         </span>
                       </div>
                     )}
@@ -2026,7 +2114,7 @@ export const SchoolPricingSection: React.FC = () => {
                           </span>
                         </div>
                         <span className="font-mono font-bold text-forest dark:text-emerald-400 shrink-0">
-                          +${PRICING_CONFIG.websiteBuilder} USD/mes
+                          +{formatPrice(PRICING_CONFIG.websiteBuilder)}
                         </span>
                       </div>
                     )}
@@ -2040,7 +2128,7 @@ export const SchoolPricingSection: React.FC = () => {
                           </span>
                         </div>
                         <span className="font-mono font-bold text-forest dark:text-emerald-400 shrink-0">
-                          +${PRICING_CONFIG.forms} USD/mes
+                          +{formatPrice(PRICING_CONFIG.forms)}
                         </span>
                       </div>
                     )}
@@ -2054,7 +2142,7 @@ export const SchoolPricingSection: React.FC = () => {
                           </span>
                         </div>
                         <span className="font-mono font-bold text-forest dark:text-emerald-400 shrink-0">
-                          +${PRICING_CONFIG.pipelines} USD/mes
+                          +{formatPrice(PRICING_CONFIG.pipelines)}
                         </span>
                       </div>
                     )}
@@ -2073,7 +2161,7 @@ export const SchoolPricingSection: React.FC = () => {
                           </span>
                         </div>
                         <span className="font-mono font-bold text-forest dark:text-emerald-400 shrink-0">
-                          +${pricingSummary.newsletterCost} USD/mes
+                          +{formatPrice(pricingSummary.newsletterCostUsd)}
                         </span>
                       </div>
                     )}
@@ -2095,7 +2183,7 @@ export const SchoolPricingSection: React.FC = () => {
                     {getStorageTierLabel(storageTier)}
                   </span>
                   <span className="font-mono font-bold text-forest dark:text-emerald-400">
-                    {pricingSummary.storageCost > 0 ? `+$${pricingSummary.storageCost} USD/mes` : 'Incluido'}
+                    {pricingSummary.storageCostUsd > 0 ? `+${formatPrice(pricingSummary.storageCostUsd)}` : 'Incluido'}
                   </span>
                 </div>
               </div>
@@ -2144,7 +2232,7 @@ export const SchoolPricingSection: React.FC = () => {
                   value={billingCycle === 'annual' ? pricingSummary.annualEquivalentMonthly : pricingSummary.monthlyTotal}
                   className="text-4xl sm:text-5xl font-display font-black text-forest dark:text-emerald-400"
                 />
-                <span className="text-xs font-bold text-muted-foreground">USD / mes</span>
+                <span className="text-xs font-bold text-muted-foreground">{targetCurrency} / mes</span>
               </div>
             </div>
 
@@ -2152,14 +2240,14 @@ export const SchoolPricingSection: React.FC = () => {
             <div className="space-y-2.5 text-xs border-t border-stone-200 dark:border-slate-800 pt-4">
               <div className="flex items-center justify-between text-muted-foreground">
                 <span>Ambientes ({totalActiveEnvsCount})</span>
-                <span className="font-mono font-bold text-slate-900 dark:text-slate-100">${pricingSummary.environmentsCost} USD/mes</span>
+                <span className="font-mono font-bold text-slate-900 dark:text-slate-100">{formatPrice(pricingSummary.environmentsCostUsd)}</span>
               </div>
 
               {selectedOptionalModules.finances && (
                 <div className="flex items-center justify-between text-muted-foreground">
                   <span className="truncate pr-2">Finanzas & Facturación</span>
                   <span className="font-mono font-bold text-slate-900 dark:text-slate-100 shrink-0">
-                    +${PRICING_CONFIG.finances} USD/mes
+                    +{formatPrice(PRICING_CONFIG.finances)}
                   </span>
                 </div>
               )}
@@ -2168,7 +2256,7 @@ export const SchoolPricingSection: React.FC = () => {
                 <div className="flex items-center justify-between text-muted-foreground">
                   <span className="truncate pr-2">Creador de Sitios Web</span>
                   <span className="font-mono font-bold text-slate-900 dark:text-slate-100 shrink-0">
-                    +${PRICING_CONFIG.websiteBuilder} USD/mes
+                    +{formatPrice(PRICING_CONFIG.websiteBuilder)}
                   </span>
                 </div>
               )}
@@ -2177,7 +2265,7 @@ export const SchoolPricingSection: React.FC = () => {
                 <div className="flex items-center justify-between text-muted-foreground">
                   <span className="truncate pr-2">Formularios & Encuestas</span>
                   <span className="font-mono font-bold text-slate-900 dark:text-slate-100 shrink-0">
-                    +${PRICING_CONFIG.forms} USD/mes
+                    +{formatPrice(PRICING_CONFIG.forms)}
                   </span>
                 </div>
               )}
@@ -2186,7 +2274,7 @@ export const SchoolPricingSection: React.FC = () => {
                 <div className="flex items-center justify-between text-muted-foreground">
                   <span className="truncate pr-2">Pipelines & CRM</span>
                   <span className="font-mono font-bold text-slate-900 dark:text-slate-100 shrink-0">
-                    +${PRICING_CONFIG.pipelines} USD/mes
+                    +{formatPrice(PRICING_CONFIG.pipelines)}
                   </span>
                 </div>
               )}
@@ -2195,7 +2283,7 @@ export const SchoolPricingSection: React.FC = () => {
                 <div className="flex items-center justify-between text-muted-foreground">
                   <span className="truncate pr-2">Gestión de Boletines ({getEmailTierLabel(newsletterEmailTier)})</span>
                   <span className="font-mono font-bold text-slate-900 dark:text-slate-100 shrink-0">
-                    +${pricingSummary.newsletterCost} USD/mes
+                    +{formatPrice(pricingSummary.newsletterCostUsd)}
                   </span>
                 </div>
               )}
@@ -2203,7 +2291,7 @@ export const SchoolPricingSection: React.FC = () => {
               <div className="flex items-center justify-between text-muted-foreground">
                 <span className="truncate pr-2">Almacenamiento ({getStorageTierLabel(storageTier)})</span>
                 <span className="font-mono font-bold text-slate-900 dark:text-slate-100 shrink-0">
-                  {pricingSummary.storageCost > 0 ? `+$${pricingSummary.storageCost} USD/mes` : '$0 USD/mes'}
+                  {pricingSummary.storageCostUsd > 0 ? `+${formatPrice(pricingSummary.storageCostUsd)}` : `${currencySymbol}0 ${targetCurrency}/mes`}
                 </span>
               </div>
             </div>
@@ -2215,7 +2303,7 @@ export const SchoolPricingSection: React.FC = () => {
       <div className="fixed bottom-0 left-0 right-0 z-40 xl:hidden bg-white/95 dark:bg-[#162218]/95 backdrop-blur-md border-t border-forest/20 shadow-2xl p-3 flex items-center justify-between gap-3 animate-in slide-in-from-bottom duration-200">
         <div className="space-y-0.5 min-w-0">
           <span className="text-lg font-display font-black text-forest dark:text-emerald-400">
-            ${billingCycle === 'annual' ? pricingSummary.annualEquivalentMonthly : pricingSummary.monthlyTotal} USD/mes
+            {currencySymbol}{new Intl.NumberFormat('es-MX').format(billingCycle === 'annual' ? pricingSummary.annualEquivalentMonthly : pricingSummary.monthlyTotal)} {targetCurrency}/mes
           </span>
         </div>
         <div>

@@ -28,8 +28,16 @@ import {
   School,
   Mail,
   Calendar,
-  Layers
+  Layers,
+  Mic,
+  MicOff,
+  Loader2,
+  RefreshCw,
+  Wand2
 } from 'lucide-react';
+import { toast } from 'sonner';
+import { improveTextWithAi } from '@/lib/sqlite';
+import { useSiteSettings } from '@/context/SettingsContext';
 
 export interface DynamicVariable {
   code: string;
@@ -97,6 +105,9 @@ export interface RichTextEditorProps {
   placeholder?: string;
   minHeight?: string;
   showVariables?: boolean;
+  showAiImprove?: boolean;
+  showVoiceDictation?: boolean;
+  context?: 'general' | 'event' | 'appointment' | 'newsletter';
 }
 
 export const RichTextEditor: React.FC<RichTextEditorProps> = ({
@@ -104,8 +115,14 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   onChange,
   placeholder = 'Escribe el contenido aquí con formato enriquecido...',
   minHeight = '220px',
-  showVariables = false
+  showVariables = false,
+  showAiImprove = true,
+  showVoiceDictation = true,
+  context = 'newsletter'
 }) => {
+  const { settings } = useSiteSettings();
+  const isWritingAssistantEnabled = settings?.ai_writing_assistant_enabled === 'true' || settings?.ai_writing_assistant_enabled === undefined;
+
   const editorRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [isFocused, setIsFocused] = useState(false);
@@ -114,6 +131,17 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   const [linkUrl, setLinkUrl] = useState('');
   const [linkText, setLinkText] = useState('');
   const savedSelectionRef = useRef<Range | null>(null);
+
+  // Voice & AI State
+  const [isRecording, setIsRecording] = useState(false);
+  const [isImprovingWithAi, setIsImprovingWithAi] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const recognitionRef = useRef<any>(null);
+  const timerIntervalRef = useRef<any>(null);
+
+  const isSpeechSupported = typeof window !== 'undefined' && Boolean(
+    (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+  );
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -220,6 +248,120 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     }
     setLinkModalOpen(false);
     handleInput();
+  };
+
+  // Timer for voice dictation
+  useEffect(() => {
+    if (isRecording) {
+      setRecordingSeconds(0);
+      timerIntervalRef.current = setInterval(() => {
+        setRecordingSeconds(prev => prev + 1);
+      }, 1000);
+    } else {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
+    }
+    return () => {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+      }
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch {}
+      }
+    };
+  }, [isRecording]);
+
+  const startVoiceDictation = () => {
+    if (!isSpeechSupported) {
+      toast.error('Tu navegador no soporta reconocimiento de voz directo.');
+      return;
+    }
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = false;
+      recognition.lang = 'es-MX';
+
+      recognition.onresult = (event: any) => {
+        let chunk = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            chunk += event.results[i][0].transcript + ' ';
+          }
+        }
+        if (chunk.trim()) {
+          if (editorRef.current) {
+            editorRef.current.focus();
+            restoreSelection();
+            document.execCommand('insertText', false, chunk.trim() + ' ');
+            handleInput();
+            saveSelection();
+          }
+        }
+      };
+
+      recognition.onerror = (event: any) => {
+        console.warn('SpeechRecognition error:', event.error);
+        if (event.error === 'not-allowed') {
+          toast.error('Permiso de micrófono denegado en el navegador.');
+        }
+        stopVoiceDictation();
+      };
+
+      recognition.onend = () => {
+        setIsRecording(false);
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+      setIsRecording(true);
+      toast.success('Dictado por voz activo. Habla claramente...');
+    } catch (e: any) {
+      toast.error('Error al iniciar el dictado por voz');
+    }
+  };
+
+  const stopVoiceDictation = () => {
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch {}
+      recognitionRef.current = null;
+    }
+    setIsRecording(false);
+  };
+
+  const handleAiImprove = async () => {
+    const rawText = editorRef.current?.innerText || '';
+    if (!rawText.trim()) {
+      toast.info('Escribe o dicta algún texto primero para mejorarlo con IA.');
+      return;
+    }
+    try {
+      setIsImprovingWithAi(true);
+      const res = await improveTextWithAi({
+        text: rawText,
+        context,
+        tone: 'professional'
+      });
+      if (res.improvedText) {
+        const paragraphs = res.improvedText
+          .split('\n\n')
+          .filter(p => p.trim())
+          .map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`)
+          .join('');
+        onChange(paragraphs);
+        if (editorRef.current) {
+          editorRef.current.innerHTML = paragraphs;
+        }
+        toast.success('Contenido mejorado y corregido con IA exitosamente');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Error al mejorar el texto con IA');
+    } finally {
+      setIsImprovingWithAi(false);
+    }
   };
 
   return (
@@ -462,6 +604,58 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
             <RemoveFormatting className="w-3.5 h-3.5" />
           </button>
         </div>
+
+        {/* AI WRITING ASSISTANT & VOICE DICTATION TOOLS */}
+        {isWritingAssistantEnabled && (
+          <div className="flex items-center gap-1 ml-auto">
+            {showAiImprove && (
+              <button
+                type="button"
+                disabled={isImprovingWithAi}
+                onClick={handleAiImprove}
+                className="px-2.5 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1.5 disabled:opacity-40 disabled:hover:scale-100"
+                title="Mejorar ortografía, redacción y estilo con IA"
+              >
+                {isImprovingWithAi ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 text-emerald-600 animate-spin" />
+                    <span>Mejorando...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Mejorar con IA</span>
+                  </>
+                )}
+              </button>
+            )}
+
+            {showVoiceDictation && isSpeechSupported && (
+              <button
+                type="button"
+                onClick={isRecording ? stopVoiceDictation : startVoiceDictation}
+                className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95 flex items-center gap-1.5 ${
+                  isRecording
+                    ? 'bg-rose-500 text-white animate-pulse shadow-md shadow-rose-500/30'
+                    : 'bg-forest/5 hover:bg-forest/15 text-forest border border-forest/20'
+                }`}
+                title={isRecording ? 'Detener dictado por voz' : 'Dictar texto por voz'}
+              >
+                {isRecording ? (
+                  <>
+                    <Mic className="w-3.5 h-3.5 animate-bounce" />
+                    <span>Grabando ({recordingSeconds}s)...</span>
+                  </>
+                ) : (
+                  <>
+                    <Mic className="w-3.5 h-3.5 text-forest" />
+                    <span>Dictar Voz</span>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* QUICK VARIABLES PILLS STRIP */}

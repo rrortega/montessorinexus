@@ -57,10 +57,19 @@ import {
   Fingerprint,
   Smartphone,
   Smile,
-  Heart
+  Heart,
+  Mic,
+  Volume2,
+  Radio,
+  Play,
+  RotateCcw,
+  MousePointer,
+  Upload
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MontessoriNexusLogo } from '@/components/MontessoriNexusLogo';
+import { toast } from 'sonner';
+import salonImg from '@/assets/salon.jpeg';
 
 // =========================================================================
 // CONFIGURABLE PRICING CONSTANTS (Supports Environment Variables)
@@ -296,11 +305,11 @@ const translations = {
           highlight: '100% GDPR & Child Data Protection Compliance'
         },
         {
-          tag: 'School Voice & Narrative',
-          title: 'Montessori Narrative Writing Assistant',
-          desc: 'Guides jot down a few bullet notes and AI weaves a warm, eloquent progress narrative respecting Maria Montessori’s authentic terminology and your school’s unique tone.',
-          icon: 'brain',
-          highlight: 'Saves over 4 hours per guide every week'
+          tag: 'Voice Dictation & Real-Time AI',
+          title: 'Voice-to-Observation & Pedagogical Structuring',
+          desc: 'Guides speak freely about one or multiple children during the work cycle. AI recognizes student names phonetically, maps lessons to the 3-Period Séguin hierarchy (Presented, Practicing, Mastered), separates Public family narratives from Confidential internal notes, and links photo evidence without friction.',
+          icon: 'mic',
+          highlight: 'Cuts observation logging from minutes to seconds'
         },
         {
           tag: 'Qualitative Diagnostics',
@@ -587,7 +596,7 @@ const translations = {
   es: {
     announcement: {
       badge: 'Nuevo',
-      text: 'Web Builder Institucional con catálogo de estilos y secciones adaptables a tu marca, Pipelines Dinámicos y Suite de IA Ética ya disponible.',
+      text: '{modI18n.webbuilder.badge1} con catálogo de estilos y secciones adaptables a tu marca, Pipelines Dinámicos y Suite de IA Ética ya disponible.',
       link: 'Ver demo de Colegio Ceiba →'
     },
     nav: {
@@ -669,11 +678,11 @@ const translations = {
           highlight: '100% Blindaje GDPR & Ley de Protección de Datos'
         },
         {
-          tag: 'Voz Institucional & Redacción',
-          title: 'Asistente de Redacción Narrativa Montessori',
-          desc: 'La guía dicta o escribe 3 notas breves y la IA construye un reporte pedagógico elocuente y cálido, respetando el vocabulario oficial de Maria Montessori y la personalidad de tu colegio.',
-          icon: 'brain',
-          highlight: 'Ahorro de más de 4 horas semanales por guía'
+          tag: 'Dictado por Voz & IA en Tiempo Real',
+          title: '{modI18n.tracking.simModal.badge}',
+          desc: 'Las guías hablan libremente durante el ciclo de trabajo. La IA identifica fonéticamente a los alumnos, clasifica el avance en los 3 Tiempos de Séguin (Presentado, Practicando, Dominado), separa Notas Públicas familiares de Notas Internas confidenciales y adjunta evidencia fotográfica en segundos.',
+          icon: 'mic',
+          highlight: 'Reduce el registro de observaciones de minutos a segundos'
         },
         {
           tag: 'Diagnóstico Cualitativo',
@@ -811,7 +820,7 @@ const translations = {
           icon: 'chat'
         },
         {
-          title: 'Gestión de Guías, Asistentes & Roles',
+          title: '{modI18n.staff.title}',
           desc: 'Permisos granulares por ambiente, planeación colaborativa de materiales y memoria pedagógica histórica de tu institución.',
           icon: 'users'
         }
@@ -1042,11 +1051,11 @@ const translations = {
           highlight: '100% em conformidade com LGPD e Proteção de Dados'
         },
         {
-          tag: 'Voz da Escola & Redação',
-          title: 'Assistente de Redação Narrativa Montessori',
-          desc: 'A guia anota tópicos breves e a IA constrói um relatório pedagógico eloqüente e caloroso, respeitando o vocabulário oficial de Maria Montessori e a identidade da sua escola.',
-          icon: 'brain',
-          highlight: 'Economia de mais de 4 horas semanais por guia'
+          tag: 'Ditado por Voz & IA em Tempo Real',
+          title: 'Ditado por Voz & Estruturação Pedagógica com IA',
+          desc: 'As guias falam livremente durante o ciclo de trabalho. A IA identifica foneticamente os alunos, classifica o progresso nos 3 Tempos de Séguin, separa Notas Públicas familiares de Notas Internas confidenciais e anexa fotos de evidência.',
+          icon: 'mic',
+          highlight: 'Reduz o tempo de registro de observações para segundos'
         },
         {
           tag: 'Diagnóstico Qualitativo',
@@ -1415,11 +1424,11 @@ const translations = {
           highlight: '100% Conforme RGPD et Protection des Données Enfants'
         },
         {
-          tag: 'Voix de l’École & Rédaction',
-          title: 'Assistant de Rédaction Pédagogique Montessori',
-          desc: 'L’éducatrice note quelques mots clés et l’IA génère un bilan chaleureux et fidèle au vocabulaire officiel de Maria Montessori et au ton de votre établissement.',
-          icon: 'brain',
-          highlight: 'Plus de 4 heures de travail économisées par semaine'
+          tag: 'Dictée Vocale & IA en Temps Réel',
+          title: 'Dictée Vocale & Structuration Pédagogique par IA',
+          desc: 'Les éducatrices dictent librement leurs observations pendant le cycle de travail. L’IA identifie phonétiquement les élèves, classe les leçons selon les 3 Temps de Séguin, sépare Notes Publiques et Notes Internes confidentielles, et associe des photos instantanément.',
+          icon: 'mic',
+          highlight: 'Réduit la saisie des observations de quelques minutes à quelques secondes'
         },
         {
           tag: 'Diagnostic Qualitatif',
@@ -1817,6 +1826,1207 @@ const HeroInteractiveWaves: React.FC<{ isDark: boolean }> = ({ isDark }) => {
   );
 };
 
+// =========================================================================
+// SPECIALIZED MODULES SHOWCASE MULTI-LANGUAGE DICTIONARY (ES, EN, PT, IT, FR)
+// =========================================================================
+const MODULES_SHOWCASE_I18N: Record<string, any> = {
+  es: {
+    tabs: [
+      { id: 'tracking', label: 'Registro & Seguimiento', subtitle: 'Lecciones, Trackers & Dictado IA' },
+      { id: 'forms', label: 'Formularios & KYC', subtitle: 'RENAPO & Biometría' },
+      { id: 'gallery', label: 'Galería Inteligente', subtitle: 'IA Narrativa & Blur Facial' },
+      { id: 'webbuilder', label: 'Web Builder Institucional', subtitle: 'Drag & Drop Modular' },
+      { id: 'finances', label: 'Cobranza & Facturación', subtitle: 'Stripe · Mercado Pago · SPEI' },
+      { id: 'pipelines', label: 'Pipelines Kanban', subtitle: 'Admisiones por Etapas' },
+      { id: 'calendar', label: 'Calendario & Citas', subtitle: 'Google & Apple Sync' },
+      { id: 'family', label: 'Portal de Familias', subtitle: 'Privado sin WhatsApp' },
+      { id: 'staff', label: 'Guías & Roles de Equipo', subtitle: 'Permisos por Ambiente' },
+    ],
+    tracking: {
+      badge1: 'Matriz en Tiempo Real',
+      badge2: 'Dictado IA por Voz',
+      title: 'Registro, Seguimiento Pedagógico & Dictado por Voz',
+      subtitle: 'Captura observaciones de aula al instante con tu propia voz. La IA identifica al alumno, asocia la lección del currículo y actualiza la matriz en segundos.',
+      liveBadge: 'Matriz Pedagógica en Directo',
+      demoBtn: 'Ver demo animado',
+      demoBtnPlaying: 'Reproduciendo demo...',
+      syncBadge: '100% Sync en Vivo',
+      videoOverlay: {
+        badge: 'Demostración Guiada • Dictado por Voz & Matriz',
+        title: 'Observación en Vivo, Transcripción IA & Registro en Matriz',
+        desc: 'Observa cómo una guía graba una nota de voz sobre Elena R. y la IA estructura la observación pedagógica actualizando la matriz curricular en tiempo real.',
+        playCta: 'Haz clic para reproducir demo interactivo',
+        skipCta: 'O explorar matriz libremente →'
+      },
+      matrixTitle: 'Casa de los Niños 3-6 • Lenguaje & Vida Práctica',
+      matrixSubtitle: 'Ciclo de Trabajo Matutino • 24 Alumnos',
+      cols: {
+        student: 'Alumno',
+        activity: 'Actividad Actual',
+        area: 'Área',
+        status: 'Estado Pedagógico',
+        action: 'Acción'
+      },
+      statuses: {
+        mastered: 'Dominado (3er Tiempo)',
+        in_progress: 'En Proceso (2do Tiempo)',
+        presented: 'Presentado (1er Tiempo)'
+      },
+      dictateBtn: 'Dictar',
+      detailsBtn: 'Detalles',
+      simModal: {
+        badge: 'Dictado por Voz & Estructuración Pedagógica con IA',
+        status: 'GRABANDO EN VIVO',
+        speechText: 'Elena armó palabras con el alfabeto móvil durante 30 minutos... fonemas /m/ /a/ /s/ /a/ consolidados y autorregulación espontánea.',
+        audioDetect: 'Sensor de Onda Sonora • Procesamiento gpt-5.6-luna',
+        cancelBtn: 'Cancelar',
+        finishBtn: 'Finalizar & Estructurar IA'
+      },
+      flashToast: 'Observación sincronizada con éxito en el expediente de Elena R.',
+      cellDetail: {
+        publicTitle: 'Narrativa Pedagógica Familiar (Boletín / Diario):',
+        publicNote: '«Elena demostró un periodo de concentración prolongada en el área de lenguaje, interiorizando con entusiasmo la correspondencia fonética y la construcción de palabras.»',
+        privateTitle: 'Bitácora Interna de la Guía (Expediente Escolar):',
+        privateNote: '«Consolidó fonemas /m/ /a/ /s/ /a/ sin error espontáneo. Lista para letras de lija serie azul la próxima semana.»',
+        badgeSynced: 'Sincronizado con Expediente & Diario Familiar'
+      },
+      pillars: [
+        { title: 'Dictado Natural por Voz', desc: 'Habla libremente y la IA estructura la observación con rigor AMI.' },
+        { title: 'Matriz Montessori Viva', desc: 'Seguimiento visual de lecciones, 3 tiempos y periodos sensibles.' },
+        { title: 'Boletín Familiar Instantáneo', desc: 'Narrativas cálidas para padres sin horas extras en casa.' }
+      ]
+    },
+    gallery: {
+      badge1: 'IA Pedagógica & Narrativa',
+      badge2: 'Protección Facial Automática & GDPR / LFPDPPP',
+      title: 'Galería Inteligente & Privacidad con IA',
+      subtitle: 'Sube fotografías de actividades escolares: la IA redacta la observación pedagógica en lenguaje Montessori y reemplaza automáticamente la imagen por su versión con difuminado facial si algún estudiante no cuenta con consentimiento legal de sus tutores.',
+      liveBadge: 'Galería Segura en Directo',
+      demoBtn: 'Ver demo animado',
+      demoBtnPlaying: 'Reproduciendo demo...',
+      protectionBadge: 'Protección Facial 100%',
+      videoOverlay: {
+        badge: 'Demostración Guiada • Galería & Privacidad IA',
+        title: 'Subida de Foto, Narrativa AMI & Blur Facial Automático',
+        desc: 'Observa cómo la IA procesa una foto de 3 alumnos en el patio: genera la observación pedagógica y difumina automáticamente en círculo el rostro del alumno central sin consentimiento.',
+        playCta: 'Haz clic para reproducir demo interactivo',
+        skipCta: 'O explorar galería libremente →'
+      },
+      dropzone: {
+        title: 'Tomar o Subir Fotografía del Aula',
+        desc: 'Haz clic o arrastra una imagen desde el ambiente Montessori (JPG, PNG, HEIC)',
+        button: 'Seleccionar Fotografía'
+      },
+      uploading: {
+        title: 'Subiendo fotografía de alta resolución...',
+        file: 'IMG_20260829_PatioExterior.jpg • 4.2 MB'
+      },
+      photoBadges: {
+        obs: '#OBS-519 • Patio Exterior',
+        detected: '3 Alumnos Detectados',
+        blurred: 'Difuminado Facial Aplicado (GDPR)',
+        original: 'Foto Original',
+        sync: '100% Sync'
+      },
+      narrative: {
+        header: 'Narrativa Pedagógica Montessori',
+        model: 'Modelo AMI',
+        students: 'Alumnos: Lucas M. (6a) • Mateo V. (6a • Centro) • Sofía R. (6a)',
+        text: '“Observación de grupo en patio exterior: Tres infantes en movimiento libre y coordinación dinámica sobre malla elástica. Demuestran autorregulación motriz, sincronía y alegría espontánea en comunidad.”',
+        placeholder: 'Sube o captura una fotografía para que la IA reconozca el ambiente didáctico y redacte la observación pedagógica en tiempo real...',
+        footer: 'Registro automático en diario escolar AMI'
+      },
+      privacyBar: {
+        lucasTooltip: 'Lucas M. (6a) • Consentimiento Autorizado OK',
+        mateoTooltip: 'Mateo V. (6a • Centro) • Sin Consentimiento de Imagen (Rostro Difuminado)',
+        sofiaTooltip: 'Sofía R. (6a) • Consentimiento Autorizado OK',
+        summary: 'Protección Facial Activa: Mateo V. (centro) no cuenta con consentimiento legal. Rostro difuminado automáticamente antes de publicar (GDPR).',
+        viewOriginal: 'Ver Original',
+        viewBlurred: 'Ver con Blur',
+        safePublication: 'Publicación Segura'
+      },
+      pillars: [
+        { title: 'Difuminado Facial Automático', desc: 'Protección selectiva de menores sin alterar al resto de los alumnos.' },
+        { title: 'Filosofía AMI Integrada', desc: 'Narrativa descriptiva enfocada en movimiento y vida comunitaria.' },
+        { title: 'Portafolio Familiar Seguro', desc: 'Cumplimiento estricto de privacidad antes de cada publicación.' }
+      ]
+    },
+    forms: {
+      badge1: 'Formularios & KYC Inteligente',
+      badge2: 'Validación RENAPO en Vivo',
+      title: 'Gestor de Formularios Pro & Biometría',
+      subtitle: 'Crea formularios con validación oficial de CURP ante RENAPO en segundo plano, biometría KYC para tutores y 3 modos de presentación interactiva.',
+      modes: {
+        smartFields: 'Campos Inteligentes',
+        wizard: 'Modo Wizard',
+        fluid: 'Modo Fluid'
+      },
+      curpTitle: 'Campo Inteligente: CURP Oficial (México)',
+      curpStatus: 'Conexión RENAPO en segundo plano',
+      curpInputLabel: 'Entrada de la Familia:',
+      curpVerifiedLabel: 'Datos Verificados Automáticamente:',
+      kycTitle: 'Validación Biométrica KYC de Tutores Legales',
+      kycStatus: 'Liveness Detectado 99.8%',
+      docLabel: 'Foto de Identificación Oficial (INE / Pasaporte):',
+      selfieLabel: 'Selfie de Prueba de Vida (Anti-Spoofing):',
+      matchLabel: 'Coincidencia Facial Biométrica: 99.4% Verificado',
+      pillars: [
+        { title: 'Validación Oficial', desc: 'Conexión directa con registros gubernamentales.' },
+        { title: 'Cero Fricción para Padres', desc: 'Autocompletado inteligente y carga ágil.' },
+        { title: 'Sincronización Total', desc: 'Respuestas directo al expediente del alumno.' }
+      ]
+    },
+    webbuilder: {
+      badge1: 'Web Builder Institucional',
+      badge2: 'Multiidioma & SSL Incluido',
+      title: 'Constructor Web Modular para tu Escuela',
+      subtitle: 'Crea y actualiza la página oficial de tu colegio con bloques modulares Montessori sin necesidad de diseñadores ni programadores.',
+      tabs: {
+        sections: 'Secciones Modulares',
+        style: 'Paleta & Marca',
+        integrations: 'Integraciones'
+      },
+      themeLabel: 'Tema y Tipografía Institucional Activa:',
+      themes: {
+        terracotta: 'Alloy Orange & Serif Clásica',
+        sage: 'Olive Sage & Minimalista',
+        navy: 'Camel Terra & Orgánico'
+      },
+      integrations: [
+        { title: 'Pipeline de Admisiones Directo', desc: 'Las solicitudes del formulario web ingresan automáticamente al Kanban.' },
+        { title: 'Portal de Familias & Calendario', desc: 'Acceso autenticado y agenda de visitas sincronizada.' }
+      ],
+      pillars: [
+        { title: 'Arrastra & Publica', desc: 'Bloques modulares listos para usar.' },
+        { title: 'Identidad Única', desc: 'Paletas y tipografías a tu medida.' },
+        { title: 'Conexión al Sistema', desc: 'Admisiones directo al expediente.' }
+      ]
+    },
+    finances: {
+      badge1: 'Finanzas Escolares',
+      badge2: 'Conciliación Automática',
+      title: 'Cobranza, Facturación & Conciliación Automática',
+      subtitle: 'Automatiza colegiaturas recurrentes, emite recibos fiscales y concilia pagos bancarios sin perder tiempo en hojas de cálculo.',
+      balanceCard: 'Balance Mensual Recaudado',
+      methodsLabel: 'Métodos de Pago Habilitados:',
+      methods: 'Stripe · Mercado Pago · Transferencia SPEI · Domiciliación',
+      recentTx: 'Últimas Transacciones Conciliadas:',
+      pillars: [
+        { title: 'Cobranza Automatizada', desc: 'Recordatorios amables por correo y portal.' },
+        { title: 'Pasarelas Múltiples', desc: 'Tarjetas, transferencias bancarias y efectivo.' },
+        { title: 'Reportes en Tiempo Real', desc: 'Flujo de caja y proyecciones al instante.' }
+      ]
+    },
+    pipelines: {
+      badge1: 'Gestión Visual de Procesos',
+      badge2: 'Kanban Automatizado',
+      title: 'Pipelines Kanban para Cada Proceso Escolar',
+      subtitle: 'Modela admisiones, reingresos, contrataciones de guías y soporte pedagógico con etapas visuales y transiciones automáticas.',
+      stages: {
+        new: 'Nueva Solicitud',
+        interview: 'Entrevista Familiar',
+        visit: 'Observación en Aula',
+        approved: 'Admitido / Inscrito'
+      },
+      pillars: [
+        { title: 'Etapas Personalizadas', desc: 'Adapta los pasos al flujo único de tu escuela.' },
+        { title: 'Automatizaciones Ágiles', desc: 'Envío de correos y citas al avanzar de etapa.' },
+        { title: 'Historial Completo', desc: 'Trazabilidad de cada familia en su expediente.' }
+      ]
+    },
+    calendar: {
+      badge1: 'Agenda Inteligente',
+      badge2: 'Sincronización Bidireccional',
+      title: 'Calendario & Citas Escolares',
+      subtitle: 'Agenda entrevistas de admisión, citas de retroalimentación y eventos comunitarios sin traslapes ni fricciones.',
+      syncLabel: 'Sincronización con Google Calendar y Apple Calendar en tiempo real.',
+      pillars: [
+        { title: 'Citas sin Traslapes', desc: 'Disponibilidad real de guías y dirección.' },
+        { title: 'Confirmaciones Automáticas', desc: 'Recordatorios por email y portal.' },
+        { title: 'Eventos del Salón', desc: 'Calendario pedagógico compartido con familias.' }
+      ]
+    },
+    family: {
+      badge1: 'Comunidad Escolar',
+      badge2: 'Privacidad Absoluta',
+      title: 'Portal de Familias Respetuoso & Privado',
+      subtitle: 'Comunicación oficial, bitácora pedagógica y calendario sin grupos invasivos de WhatsApp ni sobreexposición de menores.',
+      pillars: [
+        { title: 'Sin Grupos de WhatsApp', desc: 'Canal oficial, sereno y estructurado.' },
+        { title: 'Diario Pedagógico', desc: 'Fotos y narrativas privadas del ambiente.' },
+        { title: 'Firmas Digitales', desc: 'Autorizaciones y documentos en un clic.' }
+      ]
+    },
+    staff: {
+      badge1: 'Equipo Montessori',
+      badge2: 'Seguridad Granular',
+      title: 'Gestión de Guías, Asistentes & Roles',
+      subtitle: 'Asigna permisos específicos por ambiente de trabajo, protege la memoria institucional y facilita la colaboración docente.',
+      pillars: [
+        { title: 'Permisos por Salón', desc: 'Acceso exclusivo a los alumnos asignados.' },
+        { title: 'Memoria Institucional', desc: 'Historial pedagógico preservado año tras año.' },
+        { title: 'Roles Claros', desc: 'Dirección, Guías, Asistentes y Especialistas.' }
+      ]
+    }
+  },
+  en: {
+    tabs: [
+      { id: 'tracking', label: 'Tracking & Records', subtitle: 'Lessons, Trackers & Voice AI' },
+      { id: 'forms', label: 'Forms & Smart KYC', subtitle: 'Official ID & Biometrics' },
+      { id: 'gallery', label: 'Smart Gallery', subtitle: 'AI Narrative & Face Blur' },
+      { id: 'webbuilder', label: 'Institutional Web Builder', subtitle: 'Modular Drag & Drop' },
+      { id: 'finances', label: 'Billing & Tuition', subtitle: 'Stripe · Automated Reconciliation' },
+      { id: 'pipelines', label: 'Kanban Pipelines', subtitle: 'Multi-Stage Admissions' },
+      { id: 'calendar', label: 'Calendar & Bookings', subtitle: 'Google & Apple Sync' },
+      { id: 'family', label: 'Family Portal', subtitle: 'Private without WhatsApp Chats' },
+      { id: 'staff', label: 'Guides & Staff Roles', subtitle: 'Classroom Permissions' },
+    ],
+    tracking: {
+      badge1: 'Real-Time Matrix',
+      badge2: 'Voice AI Dictation',
+      title: 'Progress Tracking, Observations & Voice AI Dictation',
+      subtitle: 'Capture classroom observations naturally in real time using your voice. AI identifies students, maps curriculum lessons, and updates the matrix in seconds.',
+      liveBadge: 'Live Pedagogical Matrix',
+      demoBtn: 'Watch animated demo',
+      demoBtnPlaying: 'Playing demo...',
+      syncBadge: '100% Live Sync',
+      videoOverlay: {
+        badge: 'Guided Demo • Voice Dictation & Matrix',
+        title: 'Live Observation, AI Transcription & Matrix Sync',
+        desc: 'Watch a Montessori guide record a voice note for Elena R. and see how AI structures pedagogical notes while updating the matrix in real time.',
+        playCta: 'Click to play interactive demo',
+        skipCta: 'Or explore matrix freely →'
+      },
+      matrixTitle: "Children's House 3-6 • Language & Practical Life",
+      matrixSubtitle: 'Morning Work Cycle • 24 Children',
+      cols: {
+        student: 'Student',
+        activity: 'Current Activity',
+        area: 'Area',
+        status: 'Pedagogical Status',
+        action: 'Action'
+      },
+      statuses: {
+        mastered: 'Mastered (3rd Period)',
+        in_progress: 'In Progress (2nd Period)',
+        presented: 'Presented (1st Period)'
+      },
+      dictateBtn: 'Dictate',
+      detailsBtn: 'Details',
+      simModal: {
+        badge: 'Voice Dictation & Pedagogical AI Structuring',
+        status: 'RECORDING LIVE',
+        speechText: 'Elena constructed words with the movable alphabet for 30 minutes... phonemes /m/ /a/ /s/ /a/ consolidated with spontaneous self-regulation.',
+        audioDetect: 'Sound Wave Sensor • gpt-5.6-luna Model',
+        cancelBtn: 'Cancel',
+        finishBtn: 'Finish & Structure with AI'
+      },
+      flashToast: "Observation successfully synchronized into Elena R.'s student file.",
+      cellDetail: {
+        publicTitle: 'Family Pedagogical Narrative (Bulletin / Daily Journal):',
+        publicNote: '«Elena showed prolonged concentration in the language area, enthusiastically internalizing phonetic correspondence and word construction.»',
+        privateTitle: 'Internal Guide Log (School Academic Dossier):',
+        privateNote: '«Consolidated phonemes /m/ /a/ /s/ /a/ without spontaneous errors. Ready for blue series sandpaper letters next week.»',
+        badgeSynced: 'Synchronized with Student Dossier & Family Journal'
+      },
+      pillars: [
+        { title: 'Natural Voice Dictation', desc: 'Speak freely and AI structures observations with AMI rigor.' },
+        { title: 'Living Montessori Matrix', desc: 'Visual tracking of lessons, 3 periods, and sensitive periods.' },
+        { title: 'Instant Family Bulletin', desc: 'Heartwarming narratives for parents with zero overtime at home.' }
+      ]
+    },
+    gallery: {
+      badge1: 'Pedagogical AI & Narrative',
+      badge2: 'Automatic Face Protection & GDPR / Privacy',
+      title: 'Smart Gallery & AI Child Privacy',
+      subtitle: 'Upload school activity photos: AI writes Montessori pedagogical narratives and automatically swaps in the face-blurred version for any student lacking legal photo consent.',
+      liveBadge: 'Live Secure Gallery',
+      demoBtn: 'Watch animated demo',
+      demoBtnPlaying: 'Playing demo...',
+      protectionBadge: '100% Face Protection',
+      videoOverlay: {
+        badge: 'Guided Demo • Smart Gallery & AI Privacy',
+        title: 'Photo Upload, AMI Narrative & Automatic Face Blur',
+        desc: 'Watch AI process a photo of 3 children jumping in the courtyard: generates pedagogical observation and automatically applies circular face blur to the center child without consent.',
+        playCta: 'Click to play interactive demo',
+        skipCta: 'Or explore gallery freely →'
+      },
+      dropzone: {
+        title: 'Capture or Upload Classroom Photo',
+        desc: 'Click or drag an image from the Montessori environment (JPG, PNG, HEIC)',
+        button: 'Select Photo'
+      },
+      uploading: {
+        title: 'Uploading high-resolution photograph...',
+        file: 'IMG_20260829_Courtyard.jpg • 4.2 MB'
+      },
+      photoBadges: {
+        obs: '#OBS-519 • Outdoor Courtyard',
+        detected: '3 Students Detected',
+        blurred: 'Facial Blur Applied (GDPR)',
+        original: 'Original Photo',
+        sync: '100% Sync'
+      },
+      narrative: {
+        header: 'Montessori Pedagogical Narrative',
+        model: 'AMI Model',
+        students: 'Students: Lucas M. (6y) • Mateo V. (6y • Center) • Sofia R. (6y)',
+        text: '“Outdoor courtyard group observation: Three children in free movement and dynamic coordination on trampoline net. Demonstrating motor self-regulation, synchrony, and spontaneous joyful community.”',
+        placeholder: 'Upload or capture a photo for AI to recognize the learning environment and write pedagogical observations in real time...',
+        footer: 'Automatic record into AMI school journal'
+      },
+      privacyBar: {
+        lucasTooltip: 'Lucas M. (6y) • Photo Consent Granted OK',
+        mateoTooltip: 'Mateo V. (6y • Center) • No Photo Consent (Face Blurred)',
+        sofiaTooltip: 'Sofia R. (6y) • Photo Consent Granted OK',
+        summary: 'Active Facial Protection: Mateo V. (center) lacks legal photo consent. Face automatically blurred before publication (GDPR).',
+        viewOriginal: 'View Original',
+        viewBlurred: 'View with Blur',
+        safePublication: 'Safe Publication'
+      },
+      pillars: [
+        { title: 'Automatic Facial Blur', desc: 'Selective protection of minors without altering other classmates.' },
+        { title: 'Integrated AMI Philosophy', desc: 'Descriptive narrative focused on movement and community life.' },
+        { title: 'Secure Family Portfolio', desc: 'Strict privacy compliance before every publication.' }
+      ]
+    },
+    forms: {
+      badge1: 'Smart Forms & KYC',
+      badge2: 'Live Government Registry Check',
+      title: 'Pro Form Builder & Biometrics',
+      subtitle: 'Build forms with official ID registry verification in the background, tutor KYC biometrics, and 3 interactive presentation modes.',
+      modes: {
+        smartFields: 'Smart Fields',
+        wizard: 'Wizard Mode',
+        fluid: 'Fluid Mode'
+      },
+      curpTitle: 'Smart Field: Official National ID / Registry',
+      curpStatus: 'Background Registry Connection',
+      curpInputLabel: 'Parent Input:',
+      curpVerifiedLabel: 'Automatically Verified Data:',
+      kycTitle: 'Biometric KYC Validation for Legal Guardians',
+      kycStatus: 'Liveness Detected 99.8%',
+      docLabel: 'Official ID Photo (Passport / National ID):',
+      selfieLabel: 'Liveness Proof Selfie (Anti-Spoofing):',
+      matchLabel: 'Biometric Face Match: 99.4% Verified',
+      pillars: [
+        { title: 'Official Validation', desc: 'Direct connection with government identity databases.' },
+        { title: 'Zero Friction for Parents', desc: 'Smart autofill and instant validation.' },
+        { title: 'Complete Synchronization', desc: 'Submissions sync straight into student dossiers.' }
+      ]
+    },
+    webbuilder: {
+      badge1: 'Institutional Web Builder',
+      badge2: 'Multi-language & SSL Included',
+      title: 'Modular Website Builder for Your School',
+      subtitle: 'Create and update your school official website with Montessori modular blocks without designers or developers.',
+      tabs: {
+        sections: 'Modular Sections',
+        style: 'Palette & Branding',
+        integrations: 'Integrations'
+      },
+      themeLabel: 'Active Institutional Theme & Typography:',
+      themes: {
+        terracotta: 'Alloy Orange & Classic Serif',
+        sage: 'Olive Sage & Minimalist',
+        navy: 'Camel Terra & Organic'
+      },
+      integrations: [
+        { title: 'Direct Admissions Pipeline', desc: 'Website form inquiries automatically enter the Kanban pipeline.' },
+        { title: 'Family Portal & Calendar', desc: 'Authenticated access and synchronized school tour booking.' }
+      ],
+      pillars: [
+        { title: 'Drag & Publish', desc: 'Ready-to-use modular blocks.' },
+        { title: 'Unique Identity', desc: 'Tailored palettes and typography.' },
+        { title: 'System-Connected', desc: 'Inquiries go straight into student files.' }
+      ]
+    },
+    finances: {
+      badge1: 'School Finances',
+      badge2: 'Automated Reconciliation',
+      title: 'Tuition Billing, Invoicing & Reconciliation',
+      subtitle: 'Automate recurring tuition fees, generate tax receipts, and reconcile bank transfers without spreadsheet headaches.',
+      balanceCard: 'Monthly Collected Balance',
+      methodsLabel: 'Enabled Payment Gateways:',
+      methods: 'Stripe · Direct Bank Transfer · Automated Debit',
+      recentTx: 'Recent Reconciled Transactions:',
+      pillars: [
+        { title: 'Automated Invoicing', desc: 'Gentle email and portal reminders.' },
+        { title: 'Multiple Gateways', desc: 'Credit cards, bank transfers, and cash receipts.' },
+        { title: 'Real-Time Analytics', desc: 'Instant cash flow and enrollment projections.' }
+      ]
+    },
+    pipelines: {
+      badge1: 'Visual Process Management',
+      badge2: 'Automated Kanban',
+      title: 'Kanban Pipelines for Every School Workflow',
+      subtitle: 'Model admissions, re-enrollment, guide hiring, and student support with visual stages and automated transitions.',
+      stages: {
+        new: 'New Application',
+        interview: 'Family Interview',
+        visit: 'Classroom Observation',
+        approved: 'Admitted / Enrolled'
+      },
+      pillars: [
+        { title: 'Custom Stages', desc: 'Tailor each step to your school unique workflow.' },
+        { title: 'Agile Automations', desc: 'Auto-send emails and calendar links on stage move.' },
+        { title: 'Full Traceability', desc: 'Complete history in each family dossier.' }
+      ]
+    },
+    calendar: {
+      badge1: 'Smart Scheduling',
+      badge2: 'Two-Way Synchronization',
+      title: 'School Calendar & Visit Bookings',
+      subtitle: 'Schedule admission interviews, parent-teacher conferences, and school events with zero double-bookings.',
+      syncLabel: 'Live bidirectional sync with Google Calendar and Apple Calendar.',
+      pillars: [
+        { title: 'No Conflict Booking', desc: 'Real availability of guides and head of school.' },
+        { title: 'Automated Reminders', desc: 'Email and portal notifications.' },
+        { title: 'Classroom Events', desc: 'Pedagogical calendar shared with parents.' }
+      ]
+    },
+    family: {
+      badge1: 'School Community',
+      badge2: 'Absolute Privacy',
+      title: 'Respectful & Private Family Portal',
+      subtitle: 'Official announcements, pedagogical journals, and calendar without noisy WhatsApp group chats or child overexposure.',
+      pillars: [
+        { title: 'No WhatsApp Groups', desc: 'Calm, official, and structured channel.' },
+        { title: 'Pedagogical Journal', desc: 'Private classroom photos and AMI narratives.' },
+        { title: 'Digital Signatures', desc: 'Consent forms and authorizations in one click.' }
+      ]
+    },
+    staff: {
+      badge1: 'Montessori Team',
+      badge2: 'Granular Permissions',
+      title: 'Guides, Assistants & Role Management',
+      subtitle: 'Assign environment-specific permissions, preserve institutional memory, and foster educator collaboration.',
+      pillars: [
+        { title: 'Classroom Permissions', desc: 'Access limited strictly to assigned students.' },
+        { title: 'Institutional Memory', desc: 'Pedagogical records preserved year after year.' },
+        { title: 'Clear Roles', desc: 'Head of School, Lead Guides, Assistants, and Specialists.' }
+      ]
+    }
+  },
+  pt: {
+    tabs: [
+      { id: 'tracking', label: 'Registro & Acompanhamento', subtitle: 'Lições, Rastreadores & Ditado IA' },
+      { id: 'forms', label: 'Formulários & KYC', subtitle: 'Validação Oficial & Biometria' },
+      { id: 'gallery', label: 'Galeria Inteligente', subtitle: 'IA Narrativa & Desfoque Facial' },
+      { id: 'webbuilder', label: 'Criador de Sites Escolar', subtitle: 'Arrastar & Soltar Modular' },
+      { id: 'finances', label: 'Cobrança & Mensalidades', subtitle: 'Stripe · Mercado Pago · PIX' },
+      { id: 'pipelines', label: 'Pipelines Kanban', subtitle: 'Admissões por Etapas' },
+      { id: 'calendar', label: 'Calendário & Agendamentos', subtitle: 'Google & Apple Sync' },
+      { id: 'family', label: 'Portal das Famílias', subtitle: 'Privado sem WhatsApp' },
+      { id: 'staff', label: 'Guias & Funções de Equipe', subtitle: 'Permissões por Ambiente' },
+    ],
+    tracking: {
+      badge1: 'Matriz em Tempo Real',
+      badge2: 'Ditado por Voz com IA',
+      title: 'Registro, Acompanhamento Pedagógico & Ditado por Voz',
+      subtitle: 'Registre observações de sala de aula instantaneamente com sua própria voz. A IA identifica o aluno, mapeia lições do currículo e atualiza a matriz.',
+      liveBadge: 'Matriz Pedagógica ao Vivo',
+      demoBtn: 'Ver demo animada',
+      demoBtnPlaying: 'Reproduzindo demo...',
+      syncBadge: '100% Sync ao Vivo',
+      videoOverlay: {
+        badge: 'Demonstração Guiada • Ditado por Voz & Matriz',
+        title: 'Observação ao Vivo, Transcrição IA & Registro na Matriz',
+        desc: 'Veja como uma guia grava uma nota de voz sobre Elena R. e a IA estrutura a observação pedagógica atualizando a matriz curricular em tempo real.',
+        playCta: 'Clique para reproduzir demo interativa',
+        skipCta: 'Ou explorar matriz livremente →'
+      },
+      matrixTitle: 'Casa das Crianças 3-6 • Linguagem & Vida Prática',
+      matrixSubtitle: 'Ciclo de Trabalho Matutino • 24 Crianças',
+      cols: {
+        student: 'Aluno',
+        activity: 'Atividade Atual',
+        area: 'Área',
+        status: 'Status Pedagógico',
+        action: 'Ação'
+      },
+      statuses: {
+        mastered: 'Dominado (3º Período)',
+        in_progress: 'Em Progresso (2º Período)',
+        presented: 'Apresentado (1º Período)'
+      },
+      dictateBtn: 'Ditar',
+      detailsBtn: 'Detalhes',
+      simModal: {
+        badge: 'Ditado por Voz & Estruturação Pedagógica com IA',
+        status: 'GRAVANDO AO VIVO',
+        speechText: 'Elena montou palavras com o alfabeto móvel durante 30 minutos... fonemas /m/ /a/ /s/ /a/ consolidados e autorregulação espontânea.',
+        audioDetect: 'Sensor de Onda Sonora • Modelo gpt-5.6-luna',
+        cancelBtn: 'Cancelar',
+        finishBtn: 'Finalizar & Estruturar com IA'
+      },
+      flashToast: 'Observação sincronizada com sucesso no prontuário de Elena R.',
+      cellDetail: {
+        publicTitle: 'Narrativa Pedagógica Familiar (Boletim / Diário):',
+        publicNote: '«Elena demonstrou um período de concentração prolongada na área de linguagem, internalizando com entusiasmo a correspondência fonética.»',
+        privateTitle: 'Registro Interno da Guia (Prontuário Escolar):',
+        privateNote: '«Consolidou fonemas /m/ /a/ /s/ /a/ sem erro espontâneo. Pronta para lixas série azul na próxima semana.»',
+        badgeSynced: 'Sincronizado com Prontuário & Diário Familiar'
+      },
+      pillars: [
+        { title: 'Ditado Natural por Voz', desc: 'Fale livremente e a IA estrutura a observação com rigor AMI.' },
+        { title: 'Matriz Montessori Viva', desc: 'Acompanhamento visual de lições, 3 tempos e períodos sensíveis.' },
+        { title: 'Boletim Familiar Instantâneo', desc: 'Narrativas acolhedoras para os pais sem horas extras.' }
+      ]
+    },
+    gallery: {
+      badge1: 'IA Pedagógica & Narrativa',
+      badge2: 'Proteção Facial Automática & LGPD / Privacidade',
+      title: 'Galeria Inteligente & Privacidade com IA',
+      subtitle: 'Envie fotografias das atividades escolares: a IA redige a observação pedagógica em linguagem Montessori e substitui automaticamente pela versão com desfoque facial caso algum aluno não tenha consentimento assinado.',
+      liveBadge: 'Galeria Segura ao Vivo',
+      demoBtn: 'Ver demo animada',
+      demoBtnPlaying: 'Reproduzindo demo...',
+      protectionBadge: 'Proteção Facial 100%',
+      videoOverlay: {
+        badge: 'Demonstração Guiada • Galeria & Privacidade IA',
+        title: 'Upload de Foto, Narrativa AMI & Desfoque Facial Automático',
+        desc: 'Veja como a IA processa uma foto de 3 crianças no pátio: gera a observação pedagógica e desfoca automaticamente em círculo o rosto da criança central sem consentimento.',
+        playCta: 'Clique para reproduzir demo interativa',
+        skipCta: 'Ou explorar galeria livremente →'
+      },
+      dropzone: {
+        title: 'Tirar ou Enviar Fotografia da Sala',
+        desc: 'Clique ou arraste uma imagem do ambiente Montessori (JPG, PNG, HEIC)',
+        button: 'Selecionar Fotografia'
+      },
+      uploading: {
+        title: 'Enviando fotografia de alta resolução...',
+        file: 'IMG_20260829_Patio.jpg • 4.2 MB'
+      },
+      photoBadges: {
+        obs: '#OBS-519 • Pátio Externo',
+        detected: '3 Alunos Detectados',
+        blurred: 'Desfoque Facial Aplicado (LGPD)',
+        original: 'Foto Original',
+        sync: '100% Sync'
+      },
+      narrative: {
+        header: 'Narrativa Pedagógica Montessori',
+        model: 'Modelo AMI',
+        students: 'Alunos: Lucas M. (6a) • Mateo V. (6a • Centro) • Sofia R. (6a)',
+        text: '“Observação de grupo no pátio externo: Três crianças em movimento livre e coordenação dinâmica na cama elástica. Demonstram autorregulação motora, sincronia e alegria espontânea em comunidade.”',
+        placeholder: 'Envie ou capture uma foto para a IA reconhecer o ambiente didático e redigir a observação pedagógica em tempo real...',
+        footer: 'Registro automático no diário escolar AMI'
+      },
+      privacyBar: {
+        lucasTooltip: 'Lucas M. (6a) • Consentimento Autorizado OK',
+        mateoTooltip: 'Mateo V. (6a • Centro) • Sem Consentimento de Imagem (Rosto Desfocado)',
+        sofiaTooltip: 'Sofia R. (6a) • Consentimento Autorizado OK',
+        summary: 'Proteção Facial Ativa: Mateo V. (centro) não possui consentimento legal. Rosto desfocado automaticamente antes de publicar (LGPD).',
+        viewOriginal: 'Ver Original',
+        viewBlurred: 'Ver com Desfoque',
+        safePublication: 'Publicação Segura'
+      },
+      pillars: [
+        { title: 'Desfoque Facial Automático', desc: 'Proteção seletiva de menores sem alterar o restante dos alunos.' },
+        { title: 'Filosofia AMI Integrada', desc: 'Narrativa descritiva focada em movimento e vida comunitária.' },
+        { title: 'Portfólio Familiar Seguro', desc: 'Cumprimento estrito de privacidade antes de cada publicação.' }
+      ]
+    },
+    forms: {
+      badge1: 'Formulários & KYC Inteligente',
+      badge2: 'Validação Oficial em Tempo Real',
+      title: 'Gestor de Formulários Pro & Biometria',
+      subtitle: 'Crie formulários com validação oficial de CPF / Registro em segundo plano, biometria KYC para responsáveis e 3 modos de apresentação interativa.',
+      modes: {
+        smartFields: 'Campos Inteligentes',
+        wizard: 'Modo Wizard',
+        fluid: 'Modo Fluido'
+      },
+      curpTitle: 'Campo Inteligente: Registro Oficial / CPF',
+      curpStatus: 'Conexão com Registro Oficial',
+      curpInputLabel: 'Entrada da Família:',
+      curpVerifiedLabel: 'Dados Verificados Automaticamente:',
+      kycTitle: 'Validação Biométrica KYC de Responsáveis Legais',
+      kycStatus: 'Liveness Detectado 99.8%',
+      docLabel: 'Foto de Documento Oficial (RG / Passaporte):',
+      selfieLabel: 'Selfie de Prova de Vida (Anti-Spoofing):',
+      matchLabel: 'Correspondência Facial Biométrica: 99.4% Verificado',
+      pillars: [
+        { title: 'Validação Oficial', desc: 'Conexão direta com bases governamentais.' },
+        { title: 'Zero Fricção para Pais', desc: 'Preenchimento inteligente e rápido.' },
+        { title: 'Sincronização Total', desc: 'Respostas direto no prontuário do aluno.' }
+      ]
+    },
+    webbuilder: {
+      badge1: 'Criador de Sites Escolar',
+      badge2: 'Multi-idioma & SSL Incluído',
+      title: 'Construtor Web Modular para sua Escola',
+      subtitle: 'Crie e atualize a página oficial da sua escola com blocos modulares Montessori sem precisar de designers ou programadores.',
+      tabs: {
+        sections: 'Seções Modulares',
+        style: 'Paleta & Marca',
+        integrations: 'Integrações'
+      },
+      themeLabel: 'Tema e Tipografia Institucional Ativa:',
+      themes: {
+        terracotta: 'Alloy Orange & Serif Clássica',
+        sage: 'Olive Sage & Minimalista',
+        navy: 'Camel Terra & Orgânico'
+      },
+      integrations: [
+        { title: 'Pipeline de Admissões Direto', desc: 'Inscrições do site entram automaticamente no Kanban.' },
+        { title: 'Portal das Famílias & Calendário', desc: 'Acesso autenticado e agenda sincronizada.' }
+      ],
+      pillars: [
+        { title: 'Arraste & Publique', desc: 'Blocos modulares prontos para uso.' },
+        { title: 'Identidade Única', desc: 'Paletas e tipografias sob medida.' },
+        { title: 'Conectado ao Sistema', desc: 'Admissões direto no prontuário.' }
+      ]
+    },
+    finances: {
+      badge1: 'Finanças Escolares',
+      badge2: 'Conciliação Automática',
+      title: 'Cobrança, Mensalidades & Conciliação Automática',
+      subtitle: 'Automatize mensalidades recorrentes, emita recibos e concilie pagamentos bancários sem planilhas.',
+      balanceCard: 'Saldo Mensal Arrecadado',
+      methodsLabel: 'Métodos de Pagamento Habilitados:',
+      methods: 'Stripe · Mercado Pago · PIX · Débito em Conta',
+      recentTx: 'Últimas Transações Conciliadas:',
+      pillars: [
+        { title: 'Cobrança Automatizada', desc: 'Lembretes amigáveis por e-mail e portal.' },
+        { title: 'Múltiplos Meios', desc: 'Cartões, transferências PIX e boleto.' },
+        { title: 'Relatórios em Tempo Real', desc: 'Fluxo de caixa e projeções instantâneas.' }
+      ]
+    },
+    pipelines: {
+      badge1: 'Gestão Visual de Processos',
+      badge2: 'Kanban Automatizado',
+      title: 'Pipelines Kanban para Cada Processo Escolar',
+      subtitle: 'Modele admissões, rematrículas, contratações e suporte com etapas visuais e automações.',
+      stages: {
+        new: 'Nova Inscrição',
+        interview: 'Entrevista Familiar',
+        visit: 'Observação em Sala',
+        approved: 'Admitido / Matriculado'
+      },
+      pillars: [
+        { title: 'Etapas Personalizadas', desc: 'Adapte os passos ao fluxo da sua escola.' },
+        { title: 'Automações Ágeis', desc: 'Envio de e-mails e agendamentos ao avançar de etapa.' },
+        { title: 'Histórico Completo', desc: 'Rastreabilidade de cada família.' }
+      ]
+    },
+    calendar: {
+      badge1: 'Agenda Inteligente',
+      badge2: 'Sincronização Bidirecional',
+      title: 'Calendário & Agendamentos Escolares',
+      subtitle: 'Agende entrevistas, reuniões de feedback e eventos da comunidade sem conflitos de horário.',
+      syncLabel: 'Sincronização bidirecional com Google Calendar e Apple Calendar.',
+      pillars: [
+        { title: 'Agendamento sem Conflitos', desc: 'Disponibilidade real de guias e direção.' },
+        { title: 'Lembretes Automáticos', desc: 'Notificações por e-mail e portal.' },
+        { title: 'Eventos da Sala', desc: 'Calendário pedagógico compartilhado.' }
+      ]
+    },
+    family: {
+      badge1: 'Comunidade Escolar',
+      badge2: 'Privacidade Absoluta',
+      title: 'Portal das Famílias Respeitoso & Privado',
+      subtitle: 'Comunicação oficial, diário pedagógico e calendário sem grupos invasivos de WhatsApp.',
+      pillars: [
+        { title: 'Sem Grupos de WhatsApp', desc: 'Canal oficial, sereno e estruturado.' },
+        { title: 'Diário Pedagógico', desc: 'Fotos e narrativas privadas do ambiente.' },
+        { title: 'Assinaturas Digitais', desc: 'Autorizações e documentos em um clique.' }
+      ]
+    },
+    staff: {
+      badge1: 'Equipe Montessori',
+      badge2: 'Segurança Granular',
+      title: 'Gestão de Guias, Assistentes & Funções',
+      subtitle: 'Atribua permissões específicas por ambiente de trabalho e proteja a memória institucional.',
+      pillars: [
+        { title: 'Permissões por Sala', desc: 'Acesso restrito aos alunos atribuídos.' },
+        { title: 'Memória Institucional', desc: 'Histórico pedagógico preservado ano a ano.' },
+        { title: 'Funções Claras', desc: 'Direção, Guias, Assistentes e Especialistas.' }
+      ]
+    }
+  },
+  it: {
+    tabs: [
+      { id: 'tracking', label: 'Registro & Monitoraggio', subtitle: 'Lezioni, Tracker & Dettato IA' },
+      { id: 'forms', label: 'Moduli & KYC', subtitle: 'Verifica Ufficiale & Biometria' },
+      { id: 'gallery', label: 'Galleria Intelligente', subtitle: 'IA Narrativa & Sfocatura Viso' },
+      { id: 'webbuilder', label: 'Web Builder Istituzionale', subtitle: 'Drag & Drop Modulare' },
+      { id: 'finances', label: 'Fatturazione & Rette', subtitle: 'Stripe · Riconciliazione Automatica' },
+      { id: 'pipelines', label: 'Pipeline Kanban', subtitle: 'Ammissioni a Fasi' },
+      { id: 'calendar', label: 'Calendario & Appuntamenti', subtitle: 'Google & Apple Sync' },
+      { id: 'family', label: 'Portale Famiglie', subtitle: 'Privato senza WhatsApp' },
+      { id: 'staff', label: 'Guide & Ruoli di Squadra', subtitle: 'Permessi per Ambiente' },
+    ],
+    tracking: {
+      badge1: 'Matrice in Tempo Reale',
+      badge2: 'Dettato Vocale IA',
+      title: 'Registro, Monitoraggio Pedagogico & Dettato Vocale',
+      subtitle: 'Registra le osservazioni in tempo reale con la tua voce. L\'IA identifica lo studente, collega la lezione del curriculum e aggiorna la matrice.',
+      liveBadge: 'Matrice Pedagogica dal Vivo',
+      demoBtn: 'Guarda demo animata',
+      demoBtnPlaying: 'Riproduzione demo...',
+      syncBadge: '100% Sync dal Vivo',
+      videoOverlay: {
+        badge: 'Demo Guidata • Dettato Vocale & Matrice',
+        title: 'Osservazione dal Vivo, Trascrizione IA & Sincronizzazione Matrice',
+        desc: 'Guarda una guida registrare una nota vocale per Elena R. e come l\'IA struttura l\'osservazione aggiornando la matrice in tempo reale.',
+        playCta: 'Clicca per riprodurre la demo interattiva',
+        skipCta: 'O esplora la matrice liberamente →'
+      },
+      matrixTitle: 'Casa dei Bambini 3-6 • Linguaggio & Vita Pratica',
+      matrixSubtitle: 'Ciclo di Lavoro Mattutino • 24 Bambini',
+      cols: {
+        student: 'Studente',
+        activity: 'Attività Attuale',
+        area: 'Area',
+        status: 'Stato Pedagogico',
+        action: 'Azione'
+      },
+      statuses: {
+        mastered: 'Padroneggiato (3° Tempo)',
+        in_progress: 'In Corso (2° Tempo)',
+        presented: 'Presentato (1° Tempo)'
+      },
+      dictateBtn: 'Dettare',
+      detailsBtn: 'Dettagli',
+      simModal: {
+        badge: 'Dettato Vocale & Strutturazione Pedagogica IA',
+        status: 'REGISTRAZIONE IN DIRETTA',
+        speechText: 'Elena ha composto parole con l\'alfabeto mobile per 30 minuti... fonemi /m/ /a/ /s/ /a/ consolidati e autoregolazione spontanea.',
+        audioDetect: 'Sensore Onde Sonore • Modello gpt-5.6-luna',
+        cancelBtn: 'Annulla',
+        finishBtn: 'Concludi & Struttura con IA'
+      },
+      flashToast: 'Osservazione sincronizzata con successo nel fascicolo di Elena R.',
+      cellDetail: {
+        publicTitle: 'Narrativa Pedagogica Familiare (Bollettino / Diario):',
+        publicNote: '«Elena ha mostrato un periodo di concentrazione prolungata nell\'area del linguaggio, interiorizzando con entusiasmo la corrispondenza fonetica.»',
+        privateTitle: 'Diario Interno della Guida (Fascicolo Scolastico):',
+        privateNote: '«Consolidati fonemi /m/ /a/ /s/ /a/ senza errori spontanei. Pronta per lettere smerigliate serie blu la prossima settimana.»',
+        badgeSynced: 'Sincronizzato con Fascicolo & Diario Familiare'
+      },
+      pillars: [
+        { title: 'Dettato Vocale Naturale', desc: 'Parla liberamente e l\'IA struttura l\'osservazione con rigore AMI.' },
+        { title: 'Matrice Montessori Viva', desc: 'Monitoraggio visivo di lezioni, 3 tempi e periodi sensitivi.' },
+        { title: 'Bollettino Familiare Istantaneo', desc: 'Narrative calorose per i genitori senza straordinari a casa.' }
+      ]
+    },
+    gallery: {
+      badge1: 'IA Pedagogica & Narrativa',
+      badge2: 'Protezione Facciale Automatica & GDPR / Privacy',
+      title: 'Galleria Intelligente & Privacy con IA',
+      subtitle: 'Carica fotografie delle attività scolastiche: l\'IA redige l\'osservazione pedagogica in linguaggio Montessori e sostituisce automaticamente con la versione sfocata per qualsiasi allievo sprovvisto di consenso.',
+      liveBadge: 'Galleria Protetta dal Vivo',
+      demoBtn: 'Guarda demo animata',
+      demoBtnPlaying: 'Riproduzione demo...',
+      protectionBadge: 'Protezione Facciale 100%',
+      videoOverlay: {
+        badge: 'Demo Guidata • Galleria & Privacy IA',
+        title: 'Caricamento Foto, Narrativa AMI & Sfocatura Facciale Automatica',
+        desc: 'Guarda come l\'IA elabora una foto di 3 bambini nel cortile: genera l\'osservazione pedagogica e sfoca automaticamente il volto del bambino centrale senza consenso.',
+        playCta: 'Clicca per riprodurre la demo interattiva',
+        skipCta: 'O esplora la galleria liberamente →'
+      },
+      dropzone: {
+        title: 'Scatta o Carica Fotografia della Classe',
+        desc: 'Fai clic o trascina un\'immagine dall\'ambiente Montessori (JPG, PNG, HEIC)',
+        button: 'Seleziona Fotografia'
+      },
+      uploading: {
+        title: 'Caricamento fotografia ad alta risoluzione...',
+        file: 'IMG_20260829_Cortile.jpg • 4.2 MB'
+      },
+      photoBadges: {
+        obs: '#OBS-519 • Cortile Esterno',
+        detected: '3 Alunni Rilevati',
+        blurred: 'Sfocatura Facciale Applicata (GDPR)',
+        original: 'Foto Originale',
+        sync: '100% Sync'
+      },
+      narrative: {
+        header: 'Narrativa Pedagogica Montessori',
+        model: 'Modello AMI',
+        students: 'Alunni: Lucas M. (6a) • Mateo V. (6a • Centro) • Sofia R. (6a)',
+        text: '“Osservazione di gruppo nel cortile esterno: Tre bambini in movimento libero e coordinazione dinamica sul trampolino elastico. Dimostrano autoregolazione motoria, sincronia e gioia spontanea in comunità.”',
+        placeholder: 'Carica o scatta una foto per consentire all\'IA di riconoscere l\'ambiente didattico e scrivere l\'osservazione in tempo reale...',
+        footer: 'Registrazione automatica nel diario scolastico AMI'
+      },
+      privacyBar: {
+        lucasTooltip: 'Lucas M. (6a) • Consenso Autorizzato OK',
+        mateoTooltip: 'Mateo V. (6a • Centro) • Nessun Consenso Foto (Viso Sfocato)',
+        sofiaTooltip: 'Sofia R. (6a) • Consenso Autorizzato OK',
+        summary: 'Protezione del Viso Attiva: Mateo V. (centro) è sprovvisto di consenso legale. Viso sfocato automaticamente prima della pubblicazione (GDPR).',
+        viewOriginal: 'Visualizza Originale',
+        viewBlurred: 'Visualizza con Blur',
+        safePublication: 'Pubblicazione Sicura'
+      },
+      pillars: [
+        { title: 'Sfocatura Facciale Automatica', desc: 'Protezione selettiva dei minori senza alterare il resto dei compagni.' },
+        { title: 'Filosofia AMI Integrata', desc: 'Narrativa descrittiva focalizzata sul movimento e la comunità.' },
+        { title: 'Portfolio Familiare Sicuro', desc: 'Rigorosa conformità alla privacy prima di ogni pubblicazione.' }
+      ]
+    },
+    forms: {
+      badge1: 'Moduli & KYC Intelligente',
+      badge2: 'Verifica Ufficiale dal Vivo',
+      title: 'Gestore Moduli Pro & Biometria',
+      subtitle: 'Crea moduli con verifica ufficiale dei documenti in background, biometria KYC per tutori e 3 modalità di presentazione interattiva.',
+      modes: {
+        smartFields: 'Campi Intelligenti',
+        wizard: 'Modalità Wizard',
+        fluid: 'Modalità Fluida'
+      },
+      curpTitle: 'Campo Intelligente: Documento di Identità Ufficiale',
+      curpStatus: 'Connessione Ufficiale in Background',
+      curpInputLabel: 'Dati Inseriti dai Genitori:',
+      curpVerifiedLabel: 'Dati Verificati Automaticamente:',
+      kycTitle: 'Validazione Biometrica KYC dei Tutori Legali',
+      kycStatus: 'Liveness Rilevato 99.8%',
+      docLabel: 'Foto del Documento d\'Identità (Passaporto / Carta):',
+      selfieLabel: 'Selfie di Prova di Vita (Anti-Spoofing):',
+      matchLabel: 'Corrispondenza Biometrica del Viso: 99.4% Verificato',
+      pillars: [
+        { title: 'Validazione Ufficiale', desc: 'Collegamento diretto con banche dati di identità.' },
+        { title: 'Zero Attrito per i Genitori', desc: 'Compilazione intelligente e immediata.' },
+        { title: 'Sincronizzazione Completa', desc: 'Risposte direttamente nel fascicolo dell\'allievo.' }
+      ]
+    },
+    webbuilder: {
+      badge1: 'Web Builder Istituzionale',
+      badge2: 'Multilingua & SSL Incluso',
+      title: 'Costruttore Web Modulare per la tua Scuola',
+      subtitle: 'Crea e aggiorna il sito ufficiale della tua scuola con blocchi modulari Montessori senza grafici o programmatori.',
+      tabs: {
+        sections: 'Sezioni Modulari',
+        style: 'Tavolozza & Brand',
+        integrations: 'Integrazioni'
+      },
+      themeLabel: 'Tema e Tipografia Istituzionale Attiva:',
+      themes: {
+        terracotta: 'Alloy Orange & Serif Classica',
+        sage: 'Olive Sage & Minimalista',
+        navy: 'Camel Terra & Organico'
+      },
+      integrations: [
+        { title: 'Pipeline Ammissioni Diretta', desc: 'Le richieste dal sito entrano automaticamente nel Kanban.' },
+        { title: 'Portale Famiglie & Calendario', desc: 'Accesso autenticato e agenda visite sincronizzata.' }
+      ],
+      pillars: [
+        { title: 'Trascina & Pubblica', desc: 'Blocchi modulari pronti all\'uso.' },
+        { title: 'Identità Unica', desc: 'Tavolozze e caratteri su misura.' },
+        { title: 'Connesso al Sistema', desc: 'Ammissioni direttamente nel fascicolo.' }
+      ]
+    },
+    finances: {
+      badge1: 'Finanze Scolastiche',
+      badge2: 'Riconciliazione Automatica',
+      title: 'Fatturazione Rette & Riconciliazione Bancaria',
+      subtitle: 'Automatizza le rette ricorrenti, emetti ricevute fiscali e riconcilia bonifici bancari senza fogli di calcolo.',
+      balanceCard: 'Saldo Mensile Incassato',
+      methodsLabel: 'Metodi di Pagamento Abilitati:',
+      methods: 'Stripe · Bonifico Bancario · Addebito Diretto',
+      recentTx: 'Ultime Transazioni Riconciliate:',
+      pillars: [
+        { title: 'Fatturazione Automatica', desc: 'Solleciti discreti via email e portale.' },
+        { title: 'Metodi Multipli', desc: 'Carte di credito, bonifici e contanti.' },
+        { title: 'Report in Tempo Reale', desc: 'Flusso di cassa e proiezioni istantanee.' }
+      ]
+    },
+    pipelines: {
+      badge1: 'Gestione Visiva dei Processi',
+      badge2: 'Kanban Automatizzato',
+      title: 'Pipeline Kanban per Ogni Processo Scolastico',
+      subtitle: 'Modella ammissioni, reiscrizioni, assunzioni guide e supporto pedagogico con fasi visive e automazioni.',
+      stages: {
+        new: 'Nuova Richiesta',
+        interview: 'Colloquio Familiare',
+        visit: 'Osservazione in Classe',
+        approved: 'Ammesso / Iscritto'
+      },
+      pillars: [
+        { title: 'Fasi Personalizzate', desc: 'Adatta ogni passaggio al flusso della tua scuola.' },
+        { title: 'Automazioni Agili', desc: 'Invio automatico di email e inviti al cambio di fase.' },
+        { title: 'Tracciabilità Completa', desc: 'Cronologia dettagliata nel fascicolo.' }
+      ]
+    },
+    calendar: {
+      badge1: 'Agenda Intelligente',
+      badge2: 'Sincronizzazione Bidirezionale',
+      title: 'Calendario & Prenotazione Visite',
+      subtitle: 'Pianifica colloqui di ammissione, riunioni con i genitori ed eventi comunitari senza sovrapposizioni.',
+      syncLabel: 'Sincronizzazione in tempo reale con Google Calendar e Apple Calendar.',
+      pillars: [
+        { title: 'Zero Conflitti', desc: 'Disponibilità effettiva di guide e direzione.' },
+        { title: 'Promemoria Automatici', desc: 'Notifiche via email e portale.' },
+        { title: 'Eventi della Classe', desc: 'Calendario pedagogico condiviso con le famiglie.' }
+      ]
+    },
+    family: {
+      badge1: 'Comunità Scolastica',
+      badge2: 'Privacy Assoluta',
+      title: 'Portale Famiglie Rispettoso & Privato',
+      subtitle: 'Comunicazioni ufficiali, diario pedagogico e calendario senza chat di gruppo invasive su WhatsApp.',
+      pillars: [
+        { title: 'Senza Gruppi WhatsApp', desc: 'Canal official, sereno e strutturato.' },
+        { title: 'Diario Pedagogico', desc: 'Foto e narrazioni private dell\'ambiente.' },
+        { title: 'Firme Digitali', desc: 'Consensi e autorizzazioni con un clic.' }
+      ]
+    },
+    staff: {
+      badge1: 'Team Montessori',
+      badge2: 'Sicurezza Granulare',
+      title: 'Gestione Guide, Assistenti & Ruoli',
+      subtitle: 'Assegna permessi specifici per ambiente di lavoro e preserva la memoria istituzionale della scuola.',
+      pillars: [
+        { title: 'Permessi per Classe', desc: 'Accesso limitato esclusivamente agli allievi assegnati.' },
+        { title: 'Memoria Istituzionale', desc: 'Archivio pedagogico conservato anno dopo anno.' },
+        { title: 'Ruoli Trasparenti', desc: 'Direzione, Guide, Assistenti e Specialisti.' }
+      ]
+    }
+  },
+  fr: {
+    tabs: [
+      { id: 'tracking', label: 'Suivi & Registres', subtitle: 'Leçons, Suivi & Dictée IA' },
+      { id: 'forms', label: 'Formulaires & KYC', subtitle: 'Vérification Officielle & Biométrie' },
+      { id: 'gallery', label: 'Galerie Intelligente', subtitle: 'IA Narrative & Flou Facial' },
+      { id: 'webbuilder', label: 'Créateur de Site Web', subtitle: 'Glisser-Déposer Modulaire' },
+      { id: 'finances', label: 'Facturation & Frais', subtitle: 'Stripe · Rapprochement Bancaire' },
+      { id: 'pipelines', label: 'Pipelines Kanban', subtitle: 'Admissions par Étapes' },
+      { id: 'calendar', label: 'Calendrier & Rendez-vous', subtitle: 'Google & Apple Sync' },
+      { id: 'family', label: 'Portail Familles', subtitle: 'Privé sans Groupes WhatsApp' },
+      { id: 'staff', label: 'Éducateurs & Rôles', subtitle: 'Permissions par Ambiance' },
+    ],
+    tracking: {
+      badge1: 'Matrice en Temps Réel',
+      badge2: 'Dictée Vocale IA',
+      title: 'Suivi Pédagogique, Observations & Dictée Vocale',
+      subtitle: 'Enregistrez les observations de classe à la voix. L\'IA identifie l\'élève, associe la leçon Montessori et met à jour la matrice en quelques secondes.',
+      liveBadge: 'Matrice Pédagogique en Direct',
+      demoBtn: 'Voir la démo animée',
+      demoBtnPlaying: 'Lecture de la démo...',
+      syncBadge: '100% Sync en Direct',
+      videoOverlay: {
+        badge: 'Démo Guidée • Dictée Vocale & Matrice',
+        title: 'Observation en Direct, Transcription IA & Registre Matrice',
+        desc: 'Observez une éducatrice enregistrer une note vocale pour Elena R. et comment l\'IA structure l\'observation en mettant à jour la matrice en temps réel.',
+        playCta: 'Cliquez pour lancer la démo interactive',
+        skipCta: 'Ou explorer la matrice librement →'
+      },
+      matrixTitle: 'Maison des Enfants 3-6 • Langage & Vie Pratique',
+      matrixSubtitle: 'Cycle de Travail du Matin • 24 Enfants',
+      cols: {
+        student: 'Élève',
+        activity: 'Activité Actuelle',
+        area: 'Domaine',
+        status: 'Statut Pédagogique',
+        action: 'Action'
+      },
+      statuses: {
+        mastered: 'Maîtrisé (3e Temps)',
+        in_progress: 'En Cours (2e Temps)',
+        presented: 'Présenté (1er Temps)'
+      },
+      dictateBtn: 'Dicter',
+      detailsBtn: 'Détails',
+      simModal: {
+        badge: 'Dictée Vocale & Structuration Pédagogique IA',
+        status: 'ENREGISTREMENT EN DIRECT',
+        speechText: 'Elena a composé des mots avec l\'alphabet mobile pendant 30 minutes... phonèmes /m/ /a/ /s/ /a/ consolidés et autorégulation spontanée.',
+        audioDetect: 'Capteur d\'Ondes Sonores • Modèle gpt-5.6-luna',
+        cancelBtn: 'Annuler',
+        finishBtn: 'Finaliser & Structurer avec l\'IA'
+      },
+      flashToast: 'Observation synchronisée avec succès dans le dossier d\'Elena R.',
+      cellDetail: {
+        publicTitle: 'Récit Pédagogique Familial (Bulletin / Journal) :',
+        publicNote: '«Elena a fait preuve d\'une concentration prolongée dans le domaine du langage, s\'appropriant avec enthousiasme la correspondance phonétique.»',
+        privateTitle: 'Journal Interne de l\'Éducatrice (Dossier Scolaire) :',
+        privateNote: '«Phonèmes /m/ /a/ /s/ /a/ consolidés sans erreur spontanée. Prête pour les lettres rugueuses série bleue la semaine prochaine.»',
+        badgeSynced: 'Synchronisé avec le Dossier & le Journal Familial'
+      },
+      pillars: [
+        { title: 'Dictée Vocale Naturelle', desc: 'Parlez librement et l\'IA structure l\'observation selon les standards AMI.' },
+        { title: 'Matrice Montessori Vivante', desc: 'Suivi visuel des leçons, des 3 temps et des périodes sensibles.' },
+        { title: 'Bulletin Familial Instantané', desc: 'Récits chaleureux pour les parents sans heures supplémentaires.' }
+      ]
+    },
+    gallery: {
+      badge1: 'IA Pédagogique & Récit',
+      badge2: 'Protection Faciale Automatique & RGPD / Vie Privée',
+      title: 'Galerie Intelligente & Confidentialité IA',
+      subtitle: 'Téléchargez les photos d\'activités de l\'école : l\'IA rédige le récit d\'observation Montessori et applique automatiquement un flou facial pour tout enfant sans consentement.',
+      liveBadge: 'Galerie Sécurisée en Direct',
+      demoBtn: 'Voir la démo animée',
+      demoBtnPlaying: 'Lecture de la démo...',
+      protectionBadge: 'Protection Faciale 100%',
+      videoOverlay: {
+        badge: 'Démo Guidée • Galerie & Confidentialité IA',
+        title: 'Import Photo, Récit AMI & Flou Facial Automatique',
+        desc: 'Observez comment l\'IA traite une photo de 3 enfants dans la cour : elle rédige le récit d\'observation et floute automatiquement le visage de l\'enfant central sans consentement.',
+        playCta: 'Cliquez pour lancer la démo interactive',
+        skipCta: 'Ou explorer la galerie librement →'
+      },
+      dropzone: {
+        title: 'Prendre ou Importer une Photo de la Classe',
+        desc: 'Cliquez ou glissez une image depuis l\'ambiance Montessori (JPG, PNG, HEIC)',
+        button: 'Sélectionner une Photo'
+      },
+      uploading: {
+        title: 'Téléchargement de la photographie haute résolution...',
+        file: 'IMG_20260829_Cour.jpg • 4.2 MB'
+      },
+      photoBadges: {
+        obs: '#OBS-519 • Cour Extérieure',
+        detected: '3 Élèves Détectés',
+        blurred: 'Flou Facial Appliqué (RGPD)',
+        original: 'Photo Originale',
+        sync: '100% Sync'
+      },
+      narrative: {
+        header: 'Récit Pédagogique Montessori',
+        model: 'Modèle AMI',
+        students: 'Élèves : Lucas M. (6a) • Mateo V. (6a • Centre) • Sofia R. (6a)',
+        text: '“Observation de groupe dans la cour extérieure : Trois enfants en mouvement libre et coordination dynamique sur trampoline. Faisant preuve d\'autorégulation motrice, de synchronie et de joie spontanée en communauté.”',
+        placeholder: 'Importez ou prenez une photo pour que l\'IA reconnaisse l\'ambiance et rédige l\'observation pédagogique en temps réel...',
+        footer: 'Enregistrement automatique dans le journal scolaire AMI'
+      },
+      privacyBar: {
+        lucasTooltip: 'Lucas M. (6a) • Consentement Autorisé OK',
+        mateoTooltip: 'Mateo V. (6a • Centre) • Sans Consentement Photo (Visage Flouté)',
+        sofiaTooltip: 'Sofia R. (6a) • Consentement Autorisé OK',
+        summary: 'Protection Faciale Active : Mateo V. (centre) n\'a pas de consentement légal. Visage flouté automatiquement avant publication (RGPD).',
+        viewOriginal: 'Voir l\'Originale',
+        viewBlurred: 'Voir avec Flou',
+        safePublication: 'Publication Sécurisée'
+      },
+      pillars: [
+        { title: 'Flou Facial Automatique', desc: 'Protection sélective des mineurs sans altérer les autres camarades.' },
+        { title: 'Philosophie AMI Intégrée', desc: 'Récit descriptif axé sur le mouvement et la vie communautaire.' },
+        { title: 'Portfolio Familial Sécurisé', desc: 'Respect strict de la vie privée avant chaque publication.' }
+      ]
+    },
+    forms: {
+      badge1: 'Formulaires & KYC Intelligent',
+      badge2: 'Vérification Officielle en Direct',
+      title: 'Gestionnaire de Formulaires Pro & Biométrie',
+      subtitle: 'Créez des formulaires avec vérification officielle des pièces d\'identité en arrière-plan, biométrie KYC pour tuteurs et 3 modes de présentation.',
+      modes: {
+        smartFields: 'Champs Intelligents',
+        wizard: 'Mode Assistant',
+        fluid: 'Mode Fluide'
+      },
+      curpTitle: 'Champ Intelligent : Identifiant Officiel / Pièce d\'Identité',
+      curpStatus: 'Vérification d\'Identité en Arrière-Plan',
+      curpInputLabel: 'Saisie des Parents :',
+      curpVerifiedLabel: 'Données Vérifiées Automatiquement :',
+      kycTitle: 'Validation Biométrique KYC des Tuteurs Légaux',
+      kycStatus: 'Liveness Détecté 99.8%',
+      docLabel: 'Photo de Pièce d\'Identité (Passeport / CNI) :',
+      selfieLabel: 'Selfie de Preuve de Vie (Anti-Usurpation) :',
+      matchLabel: 'Correspondance Biométrique Faciale : 99.4% Vérifié',
+      pillars: [
+        { title: 'Validation Officielle', desc: 'Connexion directe avec les registres d\'identité.' },
+        { title: 'Zéro Friction pour les Parents', desc: 'Remplissage intelligent et instantané.' },
+        { title: 'Synchronisation Totale', desc: 'Réponses intégrées au dossier de l\'élève.' }
+      ]
+    },
+    webbuilder: {
+      badge1: 'Créateur de Site Web Scolaire',
+      badge2: 'Multilingue & SSL Inclus',
+      title: 'Constructeur Web Modulaire pour votre École',
+      subtitle: 'Créez et actualisez le site officiel de votre école avec des blocs modulaires Montessori sans designers ni développeurs.',
+      tabs: {
+        sections: 'Sections Modulaires',
+        style: 'Palette & Image de Marque',
+        integrations: 'Intégrations'
+      },
+      themeLabel: 'Thème et Typographie Institutionnelle Active :',
+      themes: {
+        terracotta: 'Alloy Orange & Sérif Classique',
+        sage: 'Olive Sage & Minimaliste',
+        navy: 'Camel Terra & Organique'
+      },
+      integrations: [
+        { title: 'Pipeline d\'Admissions Direct', desc: 'Les demandes du site web entrent automatiquement dans le Kanban.' },
+        { title: 'Portail Familles & Calendrier', desc: 'Accès authentifié et prise de rendez-vous synchronisée.' }
+      ],
+      pillars: [
+        { title: 'Glissez & Publiez', desc: 'Blocs modulaires prêts à l\'emploi.' },
+        { title: 'Identité Unique', desc: 'Palettes et typographies sur mesure.' },
+        { title: 'Connecté au Système', desc: 'Admissions directement vers le dossier élève.' }
+      ]
+    },
+    finances: {
+      badge1: 'Finances Scolaires',
+      badge2: 'Rapprochement Automatisé',
+      title: 'Facturation des Frais & Rapprochement Bancaire',
+      subtitle: 'Automatisez les frais de scolarité récurrents, émettez des reçus fiscaux et rapprochez les virements sans tableurs.',
+      balanceCard: 'Solde Mensuel Collecté',
+      methodsLabel: 'Moyens de Paiement Activés :',
+      methods: 'Stripe · Virement Bancaire · Prélèvement SEPA',
+      recentTx: 'Dernières Transactions Rapprochées :',
+      pillars: [
+        { title: 'Facturation Automatisée', desc: 'Rappels bienveillants par email et portail.' },
+        { title: 'Moyens Multiples', desc: 'Cartes bancaires, virements et prélèvements.' },
+        { title: 'Rapports en Temps Réel', desc: 'Flux de trésorerie et projections instantanées.' }
+      ]
+    },
+    pipelines: {
+      badge1: 'Gestion Visuelle des Processus',
+      badge2: 'Kanban Automatisé',
+      title: 'Pipelines Kanban pour Chaque Processus Scolaire',
+      subtitle: 'Modélisez admissions, réinscriptions, recrutement d\'éducateurs et soutien avec des étapes visuelles.',
+      stages: {
+        new: 'Nouvelle Candidature',
+        interview: 'Entretien Familial',
+        visit: 'Observation en Classe',
+        approved: 'Admis / Inscrit'
+      },
+      pillars: [
+        { title: 'Étapes Personnalisées', desc: 'Adaptez les étapes au flux unique de votre école.' },
+        { title: 'Automatisations Agiles', desc: 'Envoi d\'emails et de rendez-vous lors des transitions.' },
+        { title: 'Traçabilité Complète', desc: 'Historique préservé dans chaque dossier.' }
+      ]
+    },
+    calendar: {
+      badge1: 'Agenda Intelligent',
+      badge2: 'Synchronisation Bidirectionnelle',
+      title: 'Calendrier & Prise de Rendez-vous',
+      subtitle: 'Planifiez les entretiens d\'admission, réunions pédagogiques et événements communautaires sans chevauchement.',
+      syncLabel: 'Synchronisation bidirectionnelle avec Google Calendar et Apple Calendar.',
+      pillars: [
+        { title: 'Zéro Conflit d\'Horaire', desc: 'Disponibilité réelle des éducateurs et de la direction.' },
+        { title: 'Rappels Automatisés', desc: 'Notifications par email et portail.' },
+        { title: 'Événements de la Classe', desc: 'Calendrier pédagogique partagé avec les parents.' }
+      ]
+    },
+    family: {
+      badge1: 'Communauté Scolaire',
+      badge2: 'Confidentialité Absolue',
+      title: 'Portail des Familles Respectueux & Privé',
+      subtitle: 'Communication officielle, journal pédagogique et calendrier sans groupes WhatsApp envahissants.',
+      pillars: [
+        { title: 'Sans Groupes WhatsApp', desc: 'Canal officiel, serein et structuré.' },
+        { title: 'Journal Pédagogique', desc: 'Photos et récits privés de l\'ambiance.' },
+        { title: 'Signatures Électroniques', desc: 'Autorisations et documents en un clic.' }
+      ]
+    },
+    staff: {
+      badge1: 'Équipe Montessori',
+      badge2: 'Sécurité Granulaire',
+      title: 'Gestion des Éducateurs, Assistants & Rôles',
+      subtitle: 'Attribuez des permissions par ambiance et préservez la mémoire institutionnelle de l\'école.',
+      pillars: [
+        { title: 'Permissions par Classe', desc: 'Accès strictement limité aux élèves assignés.' },
+        { title: 'Mémoire Institutionnelle', desc: 'Historique pédagogique conservé d\'année en année.' },
+        { title: 'Rôles Clairs', desc: 'Direction, Éducateurs, Assistants et Spécialistes.' }
+      ]
+    }
+  }
+};
+
 export const MontessoriNexusLanding: React.FC = () => {
   // Theme & Language State (English default)
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -1850,14 +3060,13 @@ export const MontessoriNexusLanding: React.FC = () => {
   const [compactLangMenuOpen, setCompactLangMenuOpen] = useState(false);
   const langMenuRef = useRef<HTMLDivElement>(null);
   const compactLangMenuRef = useRef<HTMLDivElement>(null);
-  const currencyDropdownRef = useRef<HTMLDivElement>(null);
 
   // Interactive Previews State
   const [heroMockupTab, setHeroMockupTab] = useState<'live' | 'areas' | 'family'>('live');
   const [mockObservationSuccess, setMockObservationSuccess] = useState<boolean>(false);
   const [mockupBooting, setMockupBooting] = useState<boolean>(true);
   const [aiConsentMode, setAiConsentMode] = useState<boolean>(false);
-  const [aiNarrativeStep, setAiNarrativeStep] = useState<'raw' | 'montessori'>('montessori');
+  const [aiNarrativeStep, setAiNarrativeStep] = useState<'voice' | 'structured' | 'matrix'>('voice');
   const [activeBuilderTheme, setActiveBuilderTheme] = useState<'terracotta' | 'sage' | 'navy'>('terracotta');
   const [builderActiveTab, setBuilderActiveTab] = useState<'sections' | 'style' | 'integrations'>('sections');
   const [builderSections, setBuilderSections] = useState([
@@ -1875,8 +3084,191 @@ export const MontessoriNexusLanding: React.FC = () => {
   };
 
   // Master Modules Tabs State & Ref
-  const [activeModuleTab, setActiveModuleTab] = useState<string>('forms');
+  const [activeModuleTab, setActiveModuleTab] = useState<string>('tracking');
+  const [aiCarouselIndex, setAiCarouselIndex] = useState(0);
+  const aiCarouselRef = useRef<HTMLDivElement>(null);
+  const [trackingModuleSubView, setTrackingModuleSubView] = useState<'matrix' | 'voice_sim' | 'ai_wizard'>('matrix');
+  const [trackingActiveCategory, setTrackingActiveCategory] = useState<'lessons' | 'trackers'>('lessons');
+  const [trackingSelectedCell, setTrackingSelectedCell] = useState<{
+    student: string;
+    studentAge: string;
+    activity: string;
+    area: string;
+    status: string;
+    statusColor: string;
+    publicNote: string;
+    privateNote: string;
+    photoUrl?: string;
+  }>({
+    student: 'Elena R.',
+    studentAge: '5a 1m',
+    activity: 'Alfabeto Móvil',
+    area: 'Lenguaje',
+    status: 'Dominado (3er Tiempo)',
+    statusColor: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+    publicNote: '«Elena demostró un periodo de concentración prolongada en el área de lenguaje, interiorizando con entusiasmo la correspondencia fonética y la construcción de palabras.»',
+    privateNote: '«Consolidó fonemas /m/ /a/ /s/ /a/ sin error espontáneo. Lista para letras de lija serie azul la próxima semana.»',
+    photoUrl: '/images/montessori_child_privacy_demo.jpg'
+  });
+
+  // Tracking Module Video-Feel Simulation State
+  const [trackingShowVideoOverlay, setTrackingShowVideoOverlay] = useState<boolean>(true);
+  const [trackingDemoPlaying, setTrackingDemoPlaying] = useState<boolean>(false);
+  const [trackingDemoStep, setTrackingDemoStep] = useState<'idle' | 'cursor_to_btn' | 'recording_typing' | 'cursor_to_check' | 'registered_success' | 'done'>('idle');
+  const [trackingSimCursor, setTrackingSimCursor] = useState<{ xPercent: number; yPercent: number; isClicking: boolean }>({ xPercent: 50, yPercent: 50, isClicking: false });
+  const [trackingLiveTypedText, setTrackingLiveTypedText] = useState<string>('');
+  const [trackingSimRecordingSec, setTrackingSimRecordingSec] = useState<number>(0);
+  const [trackingJustRegisteredFlash, setTrackingJustRegisteredFlash] = useState<boolean>(false);
+  const demoTimeoutsRef = useRef<any[]>([]);
+
+  const startTrackingVideoDemo = () => {
+    demoTimeoutsRef.current.forEach(t => clearTimeout(t));
+    demoTimeoutsRef.current = [];
+
+    setTrackingShowVideoOverlay(false);
+    setTrackingDemoPlaying(true);
+    setTrackingModuleSubView('matrix');
+    setTrackingLiveTypedText('');
+    setTrackingSimRecordingSec(0);
+    setTrackingJustRegisteredFlash(false);
+    setTrackingDemoStep('cursor_to_btn');
+    setTrackingSimCursor({ xPercent: 50, yPercent: 50, isClicking: false });
+
+    // Step 1: Cursor smoothly moves to Elena's "Dictar" button in the matrix (~58% x, ~42% y)
+    const t1 = setTimeout(() => {
+      setTrackingSimCursor({ xPercent: 58, yPercent: 42, isClicking: false });
+    }, 100);
+
+    // Step 2: Cursor clicks the button
+    const t2 = setTimeout(() => {
+      setTrackingSimCursor({ xPercent: 58, yPercent: 42, isClicking: true });
+    }, 1200);
+
+    // Step 3: Opens live voice recorder modal and begins typing & audio waveform
+    const t3 = setTimeout(() => {
+      setTrackingSimCursor({ xPercent: 58, yPercent: 42, isClicking: false });
+      setTrackingModuleSubView('voice_sim');
+      setTrackingDemoStep('recording_typing');
+
+      const currentMod = MODULES_SHOWCASE_I18N[lang] || MODULES_SHOWCASE_I18N.es;
+      const fullText = currentMod.tracking.simModal.speechText;
+      let charIdx = 0;
+      const typeInterval = setInterval(() => {
+        charIdx += 3;
+        if (charIdx <= fullText.length) {
+          setTrackingLiveTypedText(fullText.slice(0, charIdx));
+        } else {
+          setTrackingLiveTypedText(fullText);
+          clearInterval(typeInterval);
+        }
+      }, 40);
+
+      const secInterval = setInterval(() => {
+        setTrackingSimRecordingSec(prev => prev + 1);
+      }, 600);
+
+      demoTimeoutsRef.current.push(typeInterval);
+      demoTimeoutsRef.current.push(secInterval);
+    }, 1600);
+
+    // Step 4: Cursor moves towards the green "Finalizar & Estructurar" button (~56% x, ~84% y)
+    const t4 = setTimeout(() => {
+      setTrackingDemoStep('cursor_to_check');
+      setTrackingSimCursor({ xPercent: 56, yPercent: 84, isClicking: false });
+    }, 4600);
+
+    // Step 5: Cursor clicks the Check button
+    const t5 = setTimeout(() => {
+      setTrackingSimCursor({ xPercent: 56, yPercent: 84, isClicking: true });
+    }, 5400);
+
+    // Step 6: Registration & Flash in Matrix
+    const t6 = setTimeout(() => {
+      setTrackingSimCursor({ xPercent: 56, yPercent: 84, isClicking: false });
+      setTrackingDemoStep('registered_success');
+      setTrackingModuleSubView('matrix');
+      setTrackingJustRegisteredFlash(true);
+      setTrackingSelectedCell({
+        student: 'Elena R.',
+        studentAge: '5a 1m',
+        activity: lang === 'en' ? 'Movable Alphabet' : lang === 'pt' ? 'Alfabeto Móvel' : lang === 'it' ? 'Alfabeto Mobile' : lang === 'fr' ? 'Alphabet Mobile' : 'Alfabeto Móvil',
+        area: lang === 'en' ? 'Language' : lang === 'pt' ? 'Linguagem' : lang === 'it' ? 'Linguaggio' : lang === 'fr' ? 'Langage' : 'Lenguaje',
+        status: currentMod.tracking.statuses.mastered,
+        statusColor: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+        publicNote: currentMod.tracking.cellDetail.publicNote,
+        privateNote: currentMod.tracking.cellDetail.privateNote,
+        photoUrl: '/images/montessori_child_privacy_demo.jpg'
+      });
+    }, 6000);
+
+    // Step 7: Done - full interactive control returned to user
+    const t7 = setTimeout(() => {
+      setTrackingDemoPlaying(false);
+      setTrackingDemoStep('done');
+    }, 7400);
+
+    demoTimeoutsRef.current.push(t1, t2, t3, t4, t5, t6, t7);
+  };
+
+  const skipTrackingDemo = () => {
+    demoTimeoutsRef.current.forEach(t => clearTimeout(t));
+    demoTimeoutsRef.current = [];
+    setTrackingShowVideoOverlay(false);
+    setTrackingDemoPlaying(false);
+    setTrackingDemoStep('done');
+    setTrackingModuleSubView('matrix');
+  };
+
+  // Auto-reset video simulations whenever the user switches away and returns
+  useEffect(() => {
+    demoTimeoutsRef.current.forEach(t => clearTimeout(t));
+    demoTimeoutsRef.current = [];
+    galleryDemoTimeoutsRef.current.forEach(t => clearTimeout(t));
+    galleryDemoTimeoutsRef.current = [];
+
+    if (activeModuleTab === 'tracking' || activeModuleTab === 'observation') {
+      setTrackingShowVideoOverlay(true);
+      setTrackingDemoPlaying(false);
+      setTrackingDemoStep('idle');
+      setTrackingModuleSubView('matrix');
+      setTrackingLiveTypedText('');
+      setTrackingSimRecordingSec(0);
+      setTrackingJustRegisteredFlash(false);
+      setTrackingSimCursor({ xPercent: 50, yPercent: 50, isClicking: false });
+    } else if (activeModuleTab === 'gallery') {
+      setGalleryShowVideoOverlay(true);
+      setGalleryDemoPlaying(false);
+      setGalleryDemoStep('idle');
+      setGalleryUploadProgress(0);
+      setGalleryLiveTypedNarrative('');
+      setGalleryFaceBlurred(false);
+      setGalleryLegalConsentApproved(true);
+      setGalleryJustSavedFlash(false);
+      setGallerySelectedChild('mateo');
+      setGallerySimCursor({ xPercent: 50, yPercent: 50, isClicking: false });
+    } else {
+      setTrackingDemoPlaying(false);
+      setTrackingShowVideoOverlay(true);
+      setGalleryDemoPlaying(false);
+      setGalleryShowVideoOverlay(true);
+    }
+
+    return () => {
+      demoTimeoutsRef.current.forEach(t => clearTimeout(t));
+      galleryDemoTimeoutsRef.current.forEach(t => clearTimeout(t));
+    };
+  }, [activeModuleTab]);
   const moduleTabsRef = useRef<HTMLDivElement>(null);
+
+    const scrollAiCarousel = (direction: 'left' | 'right') => {
+    if (aiCarouselRef.current) {
+      const scrollAmount = aiCarouselRef.current.clientWidth * (window.innerWidth < 640 ? 0.9 : window.innerWidth < 1024 ? 0.5 : 0.33);
+      aiCarouselRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
 
   const scrollModuleTabs = (direction: 'left' | 'right') => {
     if (moduleTabsRef.current) {
@@ -1893,16 +3285,120 @@ export const MontessoriNexusLanding: React.FC = () => {
 
   // Smart Gallery Simulator State (Auto Montessori AI Narrative + Face Blur Guardrails based on parental consent)
   const [galleryConsentEnabled, setGalleryConsentEnabled] = useState<boolean>(false);
-  const [gallerySelectedChild, setGallerySelectedChild] = useState<'santiago' | 'elena' | 'mateo'>('santiago');
+  const [gallerySelectedChild, setGallerySelectedChild] = useState<'santiago' | 'elena' | 'mateo'>('mateo');
+  const [galleryShowVideoOverlay, setGalleryShowVideoOverlay] = useState<boolean>(true);
+  const [galleryDemoPlaying, setGalleryDemoPlaying] = useState<boolean>(false);
+  const [galleryDemoStep, setGalleryDemoStep] = useState<'idle' | 'cursor_to_upload' | 'uploading' | 'ai_scanning' | 'checking_consent' | 'applying_blur' | 'cursor_to_save' | 'registered_success' | 'done'>('idle');
+  const [gallerySimCursor, setGallerySimCursor] = useState<{ xPercent: number; yPercent: number; isClicking: boolean }>({ xPercent: 50, yPercent: 50, isClicking: false });
+  const [galleryUploadProgress, setGalleryUploadProgress] = useState<number>(0);
+  const [galleryLiveTypedNarrative, setGalleryLiveTypedNarrative] = useState<string>('');
+  const [galleryFaceBlurred, setGalleryFaceBlurred] = useState<boolean>(false);
+  const [galleryLegalConsentApproved, setGalleryLegalConsentApproved] = useState<boolean>(true);
+  const [galleryJustSavedFlash, setGalleryJustSavedFlash] = useState<boolean>(false);
+  const galleryDemoTimeoutsRef = useRef<any[]>([]);
 
-  // Calculator Inputs State
-  const [selectedCurrencyCode, setSelectedCurrencyCode] = useState<string>('USD');
-  const [currencyDropdownOpen, setCurrencyDropdownOpen] = useState<boolean>(false);
-  const [avgTuition, setAvgTuition] = useState<number>(450);
-  const [calculatorStudents, setCalculatorStudents] = useState<number>(85);
+  const startGalleryVideoDemo = () => {
+    galleryDemoTimeoutsRef.current.forEach(t => clearTimeout(t));
+    galleryDemoTimeoutsRef.current = [];
 
-  const [activeCycleStep, setActiveCycleStep] = useState<number>(0);
-  const [activeArea, setActiveArea] = useState<'practica' | 'sensorial' | 'lenguaje' | 'mate' | 'cosmica'>('sensorial');
+    setGalleryShowVideoOverlay(false);
+    setGalleryDemoPlaying(true);
+    setGalleryDemoStep('cursor_to_upload');
+    setGalleryUploadProgress(0);
+    setGalleryLiveTypedNarrative('');
+    setGalleryFaceBlurred(false);
+    setGalleryLegalConsentApproved(true);
+    setGalleryJustSavedFlash(false);
+    setGallerySimCursor({ xPercent: 42, yPercent: 18, isClicking: false });
+
+    // Step 1: Cursor smoothly moves directly onto 'Seleccionar Fotografia' button (x: 50%, y: 38%)
+    const t1 = setTimeout(() => {
+      setGallerySimCursor({ xPercent: 50, yPercent: 62, isClicking: false });
+    }, 100);
+
+    // Step 2: Cursor clicks 'Seleccionar Fotografia' button
+    const t2 = setTimeout(() => {
+      setGallerySimCursor({ xPercent: 50, yPercent: 62, isClicking: true });
+    }, 1100);
+
+    // Step 3: Dashed box transforms into upload progress bar (0% -> 100%)
+    const t3 = setTimeout(() => {
+      setGallerySimCursor({ xPercent: 50, yPercent: 62, isClicking: false });
+      setGalleryDemoStep('uploading');
+
+      let prog = 0;
+      const progInterval = setInterval(() => {
+        prog += 25;
+        if (prog <= 100) {
+          setGalleryUploadProgress(prog);
+        } else {
+          clearInterval(progInterval);
+        }
+      }, 70);
+      galleryDemoTimeoutsRef.current.push(progInterval);
+    }, 1500);
+
+    // Step 4: Progress reaches 100% -> Full width photo reveals -> AI scanning & full width caption starts
+    const t4 = setTimeout(() => {
+      setGalleryDemoStep('ai_scanning');
+      const currentMod = MODULES_SHOWCASE_I18N[lang] || MODULES_SHOWCASE_I18N.es;
+      const fullNarrative = currentMod.gallery.narrative.text;
+      let charIdx = 0;
+      const typeInterval = setInterval(() => {
+        charIdx += 3;
+        if (charIdx <= fullNarrative.length) {
+          setGalleryLiveTypedNarrative(fullNarrative.slice(0, charIdx));
+        } else {
+          setGalleryLiveTypedNarrative(fullNarrative);
+          clearInterval(typeInterval);
+        }
+      }, 25);
+      galleryDemoTimeoutsRef.current.push(typeInterval);
+    }, 2500);
+
+    // Step 5: Biometric check completes -> switches image to blurred version & reveals bottom avatars
+    const t5 = setTimeout(() => {
+      setGalleryDemoStep('applying_blur');
+      setGalleryFaceBlurred(true);
+      setGalleryLegalConsentApproved(false);
+      setGallerySimCursor({ xPercent: 12, yPercent: 92, isClicking: false });
+    }, 4800);
+
+    // Step 6: Cursor moves to save/publish confirmation button (x: 88%, y: 92%)
+    const t6 = setTimeout(() => {
+      setGalleryDemoStep('cursor_to_save');
+      setGallerySimCursor({ xPercent: 88, yPercent: 92, isClicking: false });
+    }, 6000);
+
+    // Step 7: Cursor clicks save/publish
+    const t7 = setTimeout(() => {
+      setGallerySimCursor({ xPercent: 88, yPercent: 92, isClicking: true });
+    }, 6800);
+
+    // Step 8: Registration flash & success feedback
+    const t8 = setTimeout(() => {
+      setGallerySimCursor({ xPercent: 88, yPercent: 92, isClicking: false });
+      setGalleryDemoStep('registered_success');
+      setGalleryJustSavedFlash(true);
+    }, 7300);
+
+    // Step 9: Done - return 100% interactive control to user
+    const t9 = setTimeout(() => {
+      setGalleryDemoPlaying(false);
+      setGalleryDemoStep('done');
+    }, 8400);
+
+    galleryDemoTimeoutsRef.current.push(t1, t2, t3, t4, t5, t6, t7, t8, t9);
+  };
+
+  const skipGalleryDemo = () => {
+    galleryDemoTimeoutsRef.current.forEach(t => clearTimeout(t));
+    galleryDemoTimeoutsRef.current = [];
+    setGalleryShowVideoOverlay(false);
+    setGalleryDemoPlaying(false);
+    setGalleryDemoStep('done');
+  };
+
   const [openFaqIndices, setOpenFaqIndices] = useState<number[]>([0]);
 
   const toggleFaq = (idx: number) => {
@@ -1982,6 +3478,7 @@ export const MontessoriNexusLanding: React.FC = () => {
   };
 
   const t = translations[lang] || translations.en;
+  const modI18n = MODULES_SHOWCASE_I18N[lang] || MODULES_SHOWCASE_I18N.es;
 
   const SEO_BY_LANG: Record<Language, {
     title: string;
@@ -2175,9 +3672,6 @@ export const MontessoriNexusLanding: React.FC = () => {
       if (compactLangMenuRef.current && !compactLangMenuRef.current.contains(e.target as Node)) {
         setCompactLangMenuOpen(false);
       }
-      if (currencyDropdownRef.current && !currencyDropdownRef.current.contains(e.target as Node)) {
-        setCurrencyDropdownOpen(false);
-      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -2214,19 +3708,6 @@ export const MontessoriNexusLanding: React.FC = () => {
   const toggleTheme = () => {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   };
-
-  const selectedCurrency = useMemo(() => {
-    return CURRENCIES.find((c) => c.code === selectedCurrencyCode) || CURRENCIES[0];
-  }, [selectedCurrencyCode]);
-
-  // Dynamic calculations for the Impact Calculator (Realistic & transparent)
-  const calculatedSavings = useMemo(() => {
-    const annualBilling = calculatorStudents * avgTuition * 10; // 10 school months
-    const delinquentRecovery = Math.round(annualBilling * 0.045);
-    const hoursSaved = Math.round(calculatorStudents * 1.8);
-    const paperSaved = calculatorStudents * 65;
-    return { annualBilling, delinquentRecovery, hoursSaved, paperSaved };
-  }, [calculatorStudents, avgTuition]);
 
   // =========================================================================
   // MODULAR PRICING REAL-TIME CALCULATION
@@ -2340,14 +3821,14 @@ export const MontessoriNexusLanding: React.FC = () => {
 
           {/* Navigation Links (Desktop) */}
           <nav className={`hidden lg:flex items-center gap-6 text-sm font-semibold ${isDark ? 'text-slate-300' : 'text-stone-600'}`}>
-            <a href="#pedagogia" className={`transition-colors ${isDark ? 'hover:text-white' : 'hover:text-[#162218]'}`}>
-              {t.nav.pedagogy}
-            </a>
             <a href="#modulos" className={`transition-colors ${isDark ? 'hover:text-white' : 'hover:text-[#162218]'}`}>
               {t.nav.modules}
             </a>
-            <a href="#ciclo" className={`transition-colors ${isDark ? 'hover:text-white' : 'hover:text-[#162218]'}`}>
-              {t.nav.cycle}
+            <a href="#ia-etica" className={`transition-colors ${isDark ? 'hover:text-white' : 'hover:text-[#162218]'}`}>
+              {t.nav.aiSuite}
+            </a>
+            <a href="/blog" className={`transition-colors ${isDark ? 'hover:text-white' : 'hover:text-[#162218]'}`}>
+              {t.nav.blog || 'Blog'}
             </a>
             <a href="#precios" className={`transition-colors ${isDark ? 'hover:text-white' : 'hover:text-[#162218]'}`}>
               {t.nav.pricing}
@@ -2497,13 +3978,6 @@ export const MontessoriNexusLanding: React.FC = () => {
                 {/* Nav Links */}
                 <nav className="flex flex-col space-y-1 font-serif font-bold text-base">
                   <a
-                    href="#pedagogia"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="py-2.5 px-3 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-                  >
-                    {t.nav.pedagogy}
-                  </a>
-                  <a
                     href="#modulos"
                     onClick={() => setMobileMenuOpen(false)}
                     className="py-2.5 px-3 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
@@ -2511,11 +3985,18 @@ export const MontessoriNexusLanding: React.FC = () => {
                     {t.nav.modules}
                   </a>
                   <a
-                    href="#ciclo"
+                    href="#ia-etica"
                     onClick={() => setMobileMenuOpen(false)}
                     className="py-2.5 px-3 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
                   >
-                    {t.nav.cycle}
+                    {t.nav.aiSuite}
+                  </a>
+                  <a
+                    href="/blog"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="py-2.5 px-3 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                  >
+                    {t.nav.blog || 'Blog'}
                   </a>
                   <a
                     href="#precios"
@@ -2619,25 +4100,33 @@ export const MontessoriNexusLanding: React.FC = () => {
             className="fixed top-4 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none"
           >
             <div className="pointer-events-auto flex items-center justify-between gap-3 sm:gap-6 px-4 sm:px-6 py-2.5 rounded-full bg-[#162218]/95 backdrop-blur-xl text-white border border-white/15 shadow-2xl shadow-black/40 max-w-4xl w-full">
-              {/* Only Icon Logo */}
+              {/* Logo + Stacked Brand Name */}
               <a
                 href="/"
-                className="w-9 h-9 flex items-center justify-center hover:scale-105 transition-transform shrink-0"
+                className="flex items-center gap-3.5 hover:scale-[1.02] transition-transform shrink-0"
                 title="MontessoriNexus"
               >
-                <MontessoriNexusLogo size={36} />
+                <MontessoriNexusLogo size={32} />
+                <div className="flex flex-col text-left space-y-0.5">
+                  <span className="text-[13px] sm:text-sm font-serif font-bold text-white tracking-tight leading-none">
+                    Montessori
+                  </span>
+                  <span className="text-[10.5px] sm:text-[11px] font-serif font-bold text-[#FFA05C] tracking-wider leading-none">
+                    Nexus
+                  </span>
+                </div>
               </a>
 
               {/* Compact Menu */}
               <nav className="hidden md:flex items-center gap-6 text-xs font-semibold text-slate-300">
-                <a href="#pedagogia" className="hover:text-[#C4661F] transition-colors">
-                  {t.nav.pedagogy}
-                </a>
                 <a href="#modulos" className="hover:text-[#C4661F] transition-colors">
                   {t.nav.modules}
                 </a>
-                <a href="#ciclo" className="hover:text-[#C4661F] transition-colors">
-                  {t.nav.cycle}
+                <a href="#ia-etica" className="hover:text-[#C4661F] transition-colors">
+                  {t.nav.aiSuite}
+                </a>
+                <a href="/blog" className="hover:text-[#C4661F] transition-colors">
+                  {t.nav.blog || 'Blog'}
                 </a>
                 <a href="#precios" className="hover:text-[#C4661F] transition-colors">
                   {t.nav.pricing}
@@ -3166,7 +4655,7 @@ export const MontessoriNexusLanding: React.FC = () => {
                                 <div className="flex justify-between text-xs font-medium text-stone-500 dark:text-slate-400">
                                   <span>08:30 (Inicio)</span>
                                   <span className="text-amber-500 font-bold">09:45 (Falsa Fatiga)</span>
-                                  <span className="text-[#C4661F] font-bold">10:15 (Gran Trabajo ★)</span>
+                                  <span className="text-[#C4661F] font-bold">10:15 (Gran Trabajo)</span>
                                   <span>11:30 (Cierre)</span>
                                 </div>
 
@@ -3279,304 +4768,242 @@ export const MontessoriNexusLanding: React.FC = () => {
       {/* ========================================================================= */}
       {/* 5. DEDICATED ETHICAL AI SUITE SECTION */}
       {/* ========================================================================= */}
-      <section id="ia-etica" className="py-24 bg-[#0c140d] text-white border-y border-slate-800 relative overflow-hidden">
+      {/* ========================================================================= */}
+      {/* 5. COMPACT ETHICAL AI SUITE CAROUSEL (3 in Desktop, 1 in Mobile) */}
+      {/* ========================================================================= */}
+      <section id="ia-etica" className="py-16 sm:py-20 bg-[#0c140d] text-white border-y border-slate-800 relative overflow-hidden">
         {/* Glow ambient background */}
-        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[800px] h-[350px] bg-[#C4661F]/10 blur-[130px] rounded-full pointer-events-none" />
+        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[250px] bg-[#C4661F]/10 blur-[100px] rounded-full pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
-            <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#C4661F] bg-[#C4661F]/15 px-4 py-1 rounded-full border border-[#C4661F]/30">
-              <Sparkles className="w-3.5 h-3.5 text-[#C4661F]" />
-              {t.aiSuite.badge}
-            </span>
-            <h2 className="text-3xl sm:text-5xl font-serif font-bold text-white tracking-tight">
-              {t.aiSuite.title}
-            </h2>
-            <p className="text-base sm:text-lg leading-relaxed text-slate-300">
-              {t.aiSuite.subtitle}
-            </p>
+          {/* Header & Controls Bar */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8 sm:mb-12">
+            <div className="max-w-2xl space-y-2.5 text-left">
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#C4661F] bg-[#C4661F]/15 px-3.5 py-1 rounded-full border border-[#C4661F]/30">
+                <Sparkles className="w-3.5 h-3.5 text-[#C4661F]" />
+                {t.aiSuite.badge}
+              </span>
+              <h2 className="text-2xl sm:text-4xl font-serif font-bold text-white tracking-tight">
+                {t.aiSuite.title}
+              </h2>
+              <p className="text-xs sm:text-sm leading-relaxed text-slate-300">
+                {t.aiSuite.subtitle}
+              </p>
+            </div>
+
+            {/* Navigation Arrows */}
+            <div className="flex items-center gap-2 self-start md:self-end shrink-0">
+              <button
+                type="button"
+                onClick={() => scrollAiCarousel('left')}
+                aria-label="Anterior elemento de IA"
+                className="w-9 h-9 rounded-full flex items-center justify-center border border-slate-700 bg-slate-900/80 text-slate-300 hover:text-white hover:bg-[#C4661F] hover:border-[#C4661F] transition-all cursor-pointer shadow-sm"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollAiCarousel('right')}
+                aria-label="Siguiente elemento de IA"
+                className="w-9 h-9 rounded-full flex items-center justify-center border border-slate-700 bg-slate-900/80 text-slate-300 hover:text-white hover:bg-[#C4661F] hover:border-[#C4661F] transition-all cursor-pointer shadow-sm"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 text-left">
-            {/* Interactive Feature 1: Consent-Aware Face Privacy & Watermarking */}
-            <div className="p-7 sm:p-9 rounded-3xl bg-[#152117] border border-slate-700/80 shadow-2xl flex flex-col justify-between space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between gap-4 flex-wrap">
-                  <div className="w-12 h-12 rounded-2xl bg-[#C4661F]/20 text-[#C4661F] flex items-center justify-center font-bold shadow-inner">
-                    <ShieldCheck className="w-6 h-6" />
+          {/* CAROUSEL TRACK: 1 Card in Mobile, 2 in Tablet, 3 in Desktop */}
+          <div
+            ref={aiCarouselRef}
+            className="flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory pb-4 text-left"
+          >
+            {/* Card 1: Consent-Aware Face Privacy & Watermarking */}
+            <div className="w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] shrink-0 snap-start rounded-2xl sm:rounded-3xl bg-[#152117] border border-slate-700/80 p-5 sm:p-6 shadow-xl flex flex-col justify-between space-y-4 hover:border-[#C4661F]/50 transition-all">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="w-10 h-10 rounded-xl bg-[#C4661F]/20 text-[#C4661F] flex items-center justify-center font-bold">
+                    <ShieldCheck className="w-5 h-5" />
                   </div>
-                  <span className="text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                     {t.aiSuite.cards[0].tag}
                   </span>
                 </div>
 
-                <h3 className="text-2xl font-serif font-bold text-white">
+                <h3 className="text-base sm:text-lg font-serif font-bold text-white leading-snug">
                   {t.aiSuite.cards[0].title}
                 </h3>
-                <p className="text-xs sm:text-sm leading-relaxed text-slate-300">
+                <p className="text-xs text-slate-300 leading-relaxed line-clamp-4">
                   {t.aiSuite.cards[0].desc}
                 </p>
               </div>
 
-              {/* LIVE SIMULATOR DEMO */}
-              <div className="p-4 rounded-2xl bg-[#081009] border border-slate-800 space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 border-b border-slate-800 pb-3">
-                  <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5 shrink-0">
-                    <Eye className="w-3.5 h-3.5 text-[#C4661F]" />
-                    {lang === 'en' ? 'Interactive Privacy Simulator:' : lang === 'es' ? 'Simulador de Privacidad en Vivo:' : lang === 'pt' ? 'Simulador de Privacidade em Tempo Real:' : 'Simulateur de Confidentialité en Direct :'}
+              {/* Compact Visual Preview */}
+              <div className="space-y-2 pt-2 border-t border-slate-800">
+                <div className="p-2.5 rounded-xl bg-[#081009] border border-slate-800 flex items-center justify-between text-xs">
+                  <span className="text-[11px] font-mono text-slate-300 flex items-center gap-1.5">
+                    <EyeOff className="w-3.5 h-3.5 text-amber-400" />
+                    Difuminado Circular GDPR
                   </span>
-
-                  {/* Interactive Tab */}
-                  <div className="w-full sm:w-auto p-1 rounded-2xl bg-slate-900 border border-slate-800">
-                    <div className="grid grid-cols-2 gap-1 w-full sm:w-auto">
-                      <button
-                        type="button"
-                        onClick={() => setAiConsentMode(true)}
-                        className={`px-3 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-bold transition-all duration-200 cursor-pointer flex items-center justify-center ${aiConsentMode
-                            ? 'bg-emerald-500 text-slate-950 shadow-md font-black ring-1 ring-emerald-400/50'
-                            : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                          }`}
-                      >
-                        {lang === 'en' ? 'GRANTED' : lang === 'es' ? 'OTORGADO' : lang === 'pt' ? 'AUTORIZADO' : 'ACCORDÉ'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setAiConsentMode(false)}
-                        className={`px-3 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-bold transition-all duration-200 cursor-pointer flex items-center justify-center ${!aiConsentMode
-                            ? 'bg-rose-500 text-white shadow-md font-black ring-1 ring-rose-400/50'
-                            : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                          }`}
-                      >
-                        {lang === 'en' ? 'RESTRICTED' : lang === 'es' ? 'NO OTORGADO' : lang === 'pt' ? 'RESTRITO' : 'REFUSÉ'}
-                      </button>
-                    </div>
-                  </div>
+                  <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                    Auto-Protegido
+                  </span>
                 </div>
-
-                {/* Simulated child work card with real photo */}
-                <div className="relative rounded-2xl overflow-hidden bg-slate-900 border border-slate-800 p-4 sm:p-5 flex flex-col sm:flex-row items-center gap-5">
-                  {/* Photo container with localized circular face blur */}
-                  <div className="relative w-32 h-32 sm:w-36 sm:h-36 rounded-2xl overflow-hidden shrink-0 border border-slate-700 shadow-xl bg-slate-950">
-                    <img
-                      src="/images/montessori_child_privacy_demo.jpg"
-                      alt="Montessori child working with cylinder block material"
-                      className="w-full h-full object-cover object-center"
-                    />
-                    {/* Transparent Circular Face Blur Lens (only covers child face, leaves hands and material crisp) */}
-                    <div
-                      className={`absolute top-[24%] left-[34%] w-[33%] h-[34%] rounded-full backdrop-blur-xl bg-black/15 pointer-events-none transition-opacity duration-300 ${!aiConsentMode ? 'opacity-100' : 'opacity-0'
-                        }`}
-                    />
-                  </div>
-
-                  {/* Child information and explanation */}
-                  <div className="space-y-2 flex-1 text-left w-full">
-                    <div className="flex items-center justify-between flex-wrap gap-1">
-                      <span className="text-sm font-bold text-white">Sofía V. (3 años 8 meses)</span>
-                      <span className="text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
-                        Sensorial: Bloque de Cilindros
-                      </span>
-                    </div>
-
-                    <p className="text-xs text-slate-300 leading-relaxed">
-                      {!aiConsentMode
-                        ? (lang === 'en'
-                          ? '🔒 Facial recognition auto-applies precision blur to the child’s face before publishing or exporting, protecting student privacy by law when parental consent is not granted.'
-                          : lang === 'es'
-                            ? '🔒 El algoritmo detecta el rostro del niño y aplica difuminado gaussiano automático en el diario escolar cuando los tutores no han autorizado difusión pública.'
-                            : lang === 'pt'
-                              ? '🔒 O sistema aplica desfoque automático no rosto da criança para proteger a privacidade caso os pais não tenham dado consentimento.'
-                              : '🔒 Détection et floutage automatique du visage de l’enfant si le consentement parental n’a pas été accordé.')
-                        : (lang === 'en'
-                          ? '✓ Guardian consent verified in system. High-resolution observation photos are securely available to authorized family members in their private portal.'
-                          : lang === 'es'
-                            ? '✓ Consentimiento verificado en el expediente familiar. La fotografía nítida se comparte de manera segura únicamente con los padres autorizados.'
-                            : lang === 'pt'
-                              ? '✓ Consentimento ativo. Foto nítida e segura disponível exclusivamente no portal da família.'
-                              : '✓ Consentement validé. La photo nette est partagée en toute sécurité sur le portail familial privé.')}
-                    </p>
-
-                    <div className="flex items-center gap-2 pt-1">
-                      <span className="text-[10px] font-mono text-slate-400">
-                        {lang === 'en' ? 'Material in hands:' : lang === 'es' ? 'Material en manos:' : lang === 'pt' ? 'Material em mãos:' : 'Matériel :'}
-                      </span>
-                      <span className="text-[10px] font-semibold text-emerald-400">
-                        {lang === 'en' ? 'Cylinder Block #1 (Preserved)' : lang === 'es' ? 'Bloque de Cilindros #1 (Visible para la guía)' : lang === 'pt' ? 'Bloco de Cilindros (Visível)' : 'Bloc de Cylindres (Visible)'}
-                      </span>
-                    </div>
-                  </div>
+                <div className="p-2.5 rounded-xl border border-slate-700/80 text-[11px] font-semibold flex items-center gap-2 bg-[#081009] text-emerald-300">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span className="truncate">{t.aiSuite.cards[0].highlight}</span>
                 </div>
-              </div>
-
-              <div className="p-3.5 rounded-2xl border border-slate-700/80 text-xs font-semibold flex items-center gap-2 bg-[#081009] text-emerald-400">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>{t.aiSuite.cards[0].highlight}</span>
               </div>
             </div>
 
-            {/* Interactive Feature 2: Montessori Narrative Assistant */}
-            <div className="p-7 sm:p-9 rounded-3xl bg-[#152117] border border-slate-700/80 shadow-2xl flex flex-col justify-between space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between gap-4 flex-wrap">
-                  <div className="w-12 h-12 rounded-2xl bg-[#C4661F]/20 text-[#C4661F] flex items-center justify-center font-bold shadow-inner">
-                    <Brain className="w-6 h-6" />
+            {/* Card 2: Voice Dictation & Real-Time AI Structuring */}
+            <div className="w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] shrink-0 snap-start rounded-2xl sm:rounded-3xl bg-[#152117] border border-slate-700/80 p-5 sm:p-6 shadow-xl flex flex-col justify-between space-y-4 hover:border-[#C4661F]/50 transition-all">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="w-10 h-10 rounded-xl bg-[#C4661F]/20 text-[#C4661F] flex items-center justify-center font-bold">
+                    <Mic className="w-5 h-5" />
                   </div>
-                  <span className="text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-[#C4661F]/20 text-[#C4661F] border border-[#C4661F]/30">
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
                     {t.aiSuite.cards[1].tag}
                   </span>
                 </div>
 
-                <h3 className="text-2xl font-serif font-bold text-white">
-                  {t.aiSuite.cards[1].title}
+                <h3 className="text-base sm:text-lg font-serif font-bold text-white leading-snug">
+                  {lang === 'en' ? 'Voice Dictation & Real-Time Matrix Sync' : lang === 'es' ? 'Dictado por Voz & Sincronización en Matriz' : lang === 'pt' ? 'Ditado por Voz & Sincronização na Matriz' : 'Dictée Vocale & Synchronisation Matrice'}
                 </h3>
-                <p className="text-xs sm:text-sm leading-relaxed text-slate-300">
+                <p className="text-xs text-slate-300 leading-relaxed line-clamp-4">
                   {t.aiSuite.cards[1].desc}
                 </p>
               </div>
 
-              {/* LIVE SIMULATOR DEMO */}
-              <div className="p-4 rounded-2xl bg-[#081009] border border-slate-800 space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 border-b border-slate-800 pb-3">
-                  <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5 shrink-0">
+              {/* Compact Visual Preview */}
+              <div className="space-y-2 pt-2 border-t border-slate-800">
+                <div className="p-2.5 rounded-xl bg-[#081009] border border-slate-800 flex items-center justify-between text-xs">
+                  <span className="text-[11px] font-mono text-slate-300 flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-[#C4661F]" />
-                    {lang === 'en' ? 'Voice & Tone Transformation:' : lang === 'es' ? 'Transformación de Voz y Tono:' : lang === 'pt' ? 'Transformação de Voz e Tom:' : 'Transformation Pédagogique :'}
+                    3 Tiempos de Séguin
                   </span>
-                  <div className="w-full sm:w-auto p-1 rounded-2xl bg-slate-900 border border-slate-800">
-                    <div className="grid grid-cols-2 gap-1 w-full sm:w-auto">
-                      <button
-                        type="button"
-                        onClick={() => setAiNarrativeStep('raw')}
-                        className={`px-3 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-bold transition-all duration-200 cursor-pointer flex items-center justify-center ${aiNarrativeStep === 'raw'
-                            ? 'bg-[#C4661F] text-white shadow-md ring-1 ring-[#C4661F]/50'
-                            : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                          }`}
-                      >
-                        {lang === 'en' ? 'Raw Note' : lang === 'es' ? 'Nota Rápida' : lang === 'pt' ? 'Nota Rápida' : 'Note Brute'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setAiNarrativeStep('montessori')}
-                        className={`px-3 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-bold transition-all duration-200 cursor-pointer flex items-center justify-center ${aiNarrativeStep === 'montessori'
-                            ? 'bg-[#C4661F] text-white shadow-md ring-1 ring-[#C4661F]/50'
-                            : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                          }`}
-                      >
-                        {lang === 'en' ? 'Montessori AI' : lang === 'es' ? 'Narrativa IA' : lang === 'pt' ? 'Narrativa IA' : 'Rapport IA'}
-                      </button>
-                    </div>
-                  </div>
+                  <span className="text-[10px] font-mono font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                    Voz a Matriz
+                  </span>
                 </div>
-
-                <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-xs">
-                  {aiNarrativeStep === 'raw' ? (
-                    <div className="space-y-1 font-mono text-slate-400">
-                      <span className="text-[10px] text-amber-400 font-bold block uppercase">{lang === 'en' ? 'Guide’s dictation:' : lang === 'es' ? 'Dictado rápido de la guía:' : lang === 'pt' ? 'Ditado da guia:' : 'Dictée de l’éducatrice :'}</span>
-                      <p className="italic text-slate-300">
-                        {lang === 'en'
-                          ? '"Elena built words with movable alphabet. 30 mins concentrated, sounded phonemes clearly."'
-                          : lang === 'es'
-                            ? '"Elena armó masa y sol con el alfabeto móvil. 30 min concentrada, fonemas claros."'
-                            : lang === 'pt'
-                              ? '"Elena formou masa e sol com alfabeto móvel. 30 min concentrada."'
-                              : '"Elena a composé masa avec l’alphabet mobile. 30 min de concentration."'}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-1">
-                      <span className="text-[10px] text-[#C4661F] font-bold block uppercase flex items-center gap-1">
-                        <Sparkles className="w-3 h-3 text-[#C4661F]" />
-                        {lang === 'en' ? 'Polished Narrative for Parents:' : lang === 'es' ? 'Narrativa Montessori para la Familia:' : lang === 'pt' ? 'Narrativa para a Família:' : 'Rapport pour la Famille :'}
-                      </span>
-                      <p className="text-slate-200 leading-relaxed text-[11px]">
-                        {lang === 'en'
-                          ? '"Elena displayed sustained intrinsic concentration during language work, successfully associating auditory phonemes with wooden movable typography with deep enthusiasm."'
-                          : lang === 'es'
-                            ? '"Elena demostró un periodo de concentración prolongada en el área de lenguaje, interiorizando con entusiasmo la correspondencia fonética y la construcción de palabras."'
-                            : lang === 'pt'
-                              ? '"Elena demonstrou grande concentração na área de linguagem, associando fonemas com entusiasmo."'
-                              : '"Elena a fait preuve d’une belle concentration dans l’aire du langage, explorant avec joie la composition phonétique."'}
-                      </p>
-                    </div>
-                  )}
+                <div className="p-2.5 rounded-xl border border-slate-700/80 text-[11px] font-semibold flex items-center gap-2 bg-[#081009] text-amber-300">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#C4661F] shrink-0" />
+                  <span className="truncate">{t.aiSuite.cards[1].highlight}</span>
                 </div>
-              </div>
-
-              <div className="p-3.5 rounded-2xl border border-slate-700/80 text-xs font-semibold flex items-center gap-2 bg-[#081009] text-amber-300">
-                <CheckCircle2 className="w-4 h-4 text-[#C4661F] shrink-0" />
-                <span>{t.aiSuite.cards[1].highlight}</span>
               </div>
             </div>
 
-            {/* Feature 3: Pedagogical SWOT */}
-            <div className="p-7 sm:p-9 rounded-3xl bg-[#152117] border border-slate-700/80 shadow-2xl flex flex-col justify-between space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between gap-4 flex-wrap">
-                  <div className="w-12 h-12 rounded-2xl bg-[#C4661F]/20 text-[#C4661F] flex items-center justify-center font-bold shadow-inner">
-                    <Sparkle className="w-6 h-6" />
+            {/* Card 3: Pedagogical SWOT Matrix & Presentation Suggestions */}
+            <div className="w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] shrink-0 snap-start rounded-2xl sm:rounded-3xl bg-[#152117] border border-slate-700/80 p-5 sm:p-6 shadow-xl flex flex-col justify-between space-y-4 hover:border-[#C4661F]/50 transition-all">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="w-10 h-10 rounded-xl bg-[#C4661F]/20 text-[#C4661F] flex items-center justify-center font-bold">
+                    <Brain className="w-5 h-5" />
                   </div>
-                  <span className="text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
                     {t.aiSuite.cards[2].tag}
                   </span>
                 </div>
 
-                <h3 className="text-2xl font-serif font-bold text-white">
+                <h3 className="text-base sm:text-lg font-serif font-bold text-white leading-snug">
                   {t.aiSuite.cards[2].title}
                 </h3>
-                <p className="text-xs sm:text-sm leading-relaxed text-slate-300">
+                <p className="text-xs text-slate-300 leading-relaxed line-clamp-4">
                   {t.aiSuite.cards[2].desc}
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 p-3.5 rounded-2xl bg-[#081009] border border-slate-800 text-[11px]">
-                <div className="p-2 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
-                  <span className="text-[10px] font-bold text-emerald-400 uppercase">Fortalezas:</span>
-                  <p className="text-slate-300">Autonomía en ciclo matutino (42m de flujo).</p>
+              {/* Compact Visual Preview */}
+              <div className="space-y-2 pt-2 border-t border-slate-800">
+                <div className="p-2.5 rounded-xl bg-[#081009] border border-slate-800 flex items-center justify-between text-xs">
+                  <span className="text-[11px] font-mono text-slate-300 flex items-center gap-1.5">
+                    <Compass className="w-3.5 h-3.5 text-cyan-400" />
+                    Currículo AMI
+                  </span>
+                  <span className="text-[10px] font-mono font-bold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-md border border-cyan-500/20">
+                    Diagnóstico
+                  </span>
                 </div>
-                <div className="p-2 rounded-xl bg-slate-900 border border-slate-800 space-y-0.5">
-                  <span className="text-[10px] font-bold text-amber-400 uppercase">Próximo Material:</span>
-                  <p className="text-slate-300">Gabinete Geométrico (Bandeja 1).</p>
+                <div className="p-2.5 rounded-xl border border-slate-700/80 text-[11px] font-semibold flex items-center gap-2 bg-[#081009] text-cyan-300">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                  <span className="truncate">{t.aiSuite.cards[2].highlight}</span>
                 </div>
-              </div>
-
-              <div className="p-3.5 rounded-2xl border border-slate-700/80 text-xs font-semibold flex items-center gap-2 bg-[#081009] text-cyan-300">
-                <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
-                <span>{t.aiSuite.cards[2].highlight}</span>
               </div>
             </div>
 
-            {/* Feature 4: Sensitive Periods */}
-            <div className="p-7 sm:p-9 rounded-3xl bg-[#152117] border border-slate-700/80 shadow-2xl flex flex-col justify-between space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between gap-4 flex-wrap">
-                  <div className="w-12 h-12 rounded-2xl bg-[#C4661F]/20 text-[#C4661F] flex items-center justify-center font-bold shadow-inner">
-                    <Workflow className="w-6 h-6" />
+            {/* Card 4: Sensitive Periods & Transition Milestones */}
+            <div className="w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] shrink-0 snap-start rounded-2xl sm:rounded-3xl bg-[#152117] border border-slate-700/80 p-5 sm:p-6 shadow-xl flex flex-col justify-between space-y-4 hover:border-[#C4661F]/50 transition-all">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="w-10 h-10 rounded-xl bg-[#C4661F]/20 text-[#C4661F] flex items-center justify-center font-bold">
+                    <Workflow className="w-5 h-5" />
                   </div>
-                  <span className="text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-violet-500/20 text-violet-400 border border-violet-500/30">
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-violet-500/20 text-violet-400 border border-violet-500/30">
                     {t.aiSuite.cards[3].tag}
                   </span>
                 </div>
 
-                <h3 className="text-2xl font-serif font-bold text-white">
+                <h3 className="text-base sm:text-lg font-serif font-bold text-white leading-snug">
                   {t.aiSuite.cards[3].title}
                 </h3>
-                <p className="text-xs sm:text-sm leading-relaxed text-slate-300">
+                <p className="text-xs text-slate-300 leading-relaxed line-clamp-4">
                   {t.aiSuite.cards[3].desc}
                 </p>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-[#081009] border border-slate-800 space-y-2">
-                <div className="flex justify-between items-center text-xs">
-                  <span className="font-bold text-slate-300">Periodo Sensible: Orden & Pequeños Objetos</span>
-                  <span className="text-[10px] font-mono text-violet-400 font-bold">Ventana Activa</span>
+              {/* Compact Visual Preview */}
+              <div className="space-y-2 pt-2 border-t border-slate-800">
+                <div className="p-2.5 rounded-xl bg-[#081009] border border-slate-800 flex items-center justify-between text-xs">
+                  <span className="text-[11px] font-mono text-slate-300 flex items-center gap-1.5">
+                    <Activity className="w-3.5 h-3.5 text-violet-400" />
+                    Hitos de Madurez
+                  </span>
+                  <span className="text-[10px] font-mono font-bold text-violet-400 bg-violet-500/10 px-2 py-0.5 rounded-md border border-violet-500/20">
+                    Ventana Activa
+                  </span>
                 </div>
-                <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
-                  <div className="w-3/4 h-full bg-gradient-to-r from-violet-500 to-[#C4661F] rounded-full" />
+                <div className="p-2.5 rounded-xl border border-slate-700/80 text-[11px] font-semibold flex items-center gap-2 bg-[#081009] text-violet-300">
+                  <CheckCircle2 className="w-4 h-4 text-violet-400 shrink-0" />
+                  <span className="truncate">{t.aiSuite.cards[3].highlight}</span>
                 </div>
               </div>
+            </div>
 
-              <div className="p-3.5 rounded-2xl border border-slate-700/80 text-xs font-semibold flex items-center gap-2 bg-[#081009] text-violet-300">
-                <CheckCircle2 className="w-4 h-4 text-violet-400 shrink-0" />
-                <span>{t.aiSuite.cards[3].highlight}</span>
+            {/* Card 5: BYOK Self-Custody API Keys */}
+            <div className="w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] shrink-0 snap-start rounded-2xl sm:rounded-3xl bg-[#152117] border border-slate-700/80 p-5 sm:p-6 shadow-xl flex flex-col justify-between space-y-4 hover:border-[#C4661F]/50 transition-all">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="w-10 h-10 rounded-xl bg-[#C4661F]/20 text-[#C4661F] flex items-center justify-center font-bold">
+                    <Lock className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                    {lang === 'en' ? 'Self-Custody BYOK' : lang === 'es' ? 'Claves Propias BYOK' : lang === 'pt' ? 'Chaves Próprias BYOK' : 'Clés Privées BYOK'}
+                  </span>
+                </div>
+
+                <h3 className="text-base sm:text-lg font-serif font-bold text-white leading-snug">
+                  {lang === 'en' ? 'Direct API Key Custody & Zero Markups' : lang === 'es' ? 'Custodia de Claves Propias & Cero Margen' : lang === 'pt' ? 'Custódia de Chaves Próprias & Sem Sobretaxas' : 'Contrôle des Clés API & Zéro Marge'}
+                </h3>
+                <p className="text-xs text-slate-300 leading-relaxed line-clamp-4">
+                  {lang === 'en' ? 'Connect your OpenAI (GPT-4o), Anthropic (Claude 3.5), or Google Gemini key directly with AES-256 encryption. Pay direct provider token prices without hidden markups.' : lang === 'es' ? 'Conecta tu clave de OpenAI (GPT-4o), Anthropic (Claude 3.5) o Google Gemini con cifrado AES-256. Paga tarifas directas de proveedor sin recargos por inferencia.' : lang === 'pt' ? 'Conecte sua chave da OpenAI (GPT-4o), Anthropic (Claude 3.5) ou Google Gemini com criptografia AES-256 direta sem margens ocultas.' : 'Connectez votre clé OpenAI, Claude ou Gemini avec chiffrement AES-256 sans surcoût.'}
+                </p>
+              </div>
+
+              {/* Compact Visual Preview */}
+              <div className="space-y-2 pt-2 border-t border-slate-800">
+                <div className="p-2.5 rounded-xl bg-[#081009] border border-slate-800 flex items-center justify-between text-xs">
+                  <span className="text-[11px] font-mono text-slate-300 flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-rose-400" />
+                    Cifrado AES-256
+                  </span>
+                  <span className="text-[10px] font-mono font-bold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-md border border-rose-500/20">
+                    OpenAI · Claude · Gemini
+                  </span>
+                </div>
+                <div className="p-2.5 rounded-xl border border-slate-700/80 text-[11px] font-semibold flex items-center gap-2 bg-[#081009] text-rose-300">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                  <span className="truncate">{lang === 'en' ? 'Complete data independence' : lang === 'es' ? 'Independencia total de tus datos' : lang === 'pt' ? 'Independência total de dados' : 'Indépendance totale des données'}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -3621,19 +5048,10 @@ export const MontessoriNexusLanding: React.FC = () => {
               className="px-7 sm:px-9 overflow-x-auto no-scrollbar scroll-smooth"
             >
               <div className="flex items-center gap-2 min-w-max pb-2">
-                {[
-                  { id: 'forms', label: 'Formularios & KYC', icon: FileSpreadsheet },
-                  { id: 'gallery', label: 'Galería Inteligente', icon: Sparkles },
-                  { id: 'webbuilder', label: 'Web Builder', icon: Globe },
-                  { id: 'finances', label: 'Cobranza & Facturación', icon: CreditCard },
-                  { id: 'pipelines', label: 'Pipelines Kanban', icon: Workflow },
-                  { id: 'calendar', label: 'Calendario & Citas', icon: Calendar },
-                  { id: 'family', label: 'Portal de Familias', icon: Users },
-                  { id: 'observation', label: 'Observación 3 Tiempos', icon: Compass },
-                  { id: 'staff', label: 'Guías & Roles', icon: Layers },
-                ].map((tab) => {
-                  const Icon = tab.icon;
-                  const isSelected = activeModuleTab === tab.id;
+                {modI18n.tabs.map((tab: any) => {
+                  const iconMap: Record<string, any> = { tracking: Compass, forms: FileSpreadsheet, gallery: Sparkles, webbuilder: Globe, finances: CreditCard, pipelines: Workflow, calendar: Calendar, family: Users, staff: Layers };
+                  const Icon = iconMap[tab.id] || tab.icon || Compass;
+                  const isSelected = activeModuleTab === tab.id || (tab.id === 'tracking' && activeModuleTab === 'observation');
                   return (
                     <button
                       key={tab.id}
@@ -3672,19 +5090,10 @@ export const MontessoriNexusLanding: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             {/* DESKTOP ONLY: Vertical Modules Sidebar (Left 4 Columns) */}
             <div className="hidden lg:flex lg:col-span-4 flex-col gap-2.5 sticky top-28">
-              {[
-                { id: 'forms', label: 'Formularios & KYC', subtitle: 'RENAPO & Biometría', icon: FileSpreadsheet },
-                { id: 'gallery', label: 'Galería Inteligente', subtitle: 'IA Narrativa & Blur Facial', icon: Sparkles },
-                { id: 'webbuilder', label: 'Web Builder Institucional', subtitle: 'Drag & Drop Modular', icon: Globe },
-                { id: 'finances', label: 'Cobranza & Facturación', subtitle: 'Stripe · Mercado Pago · SPEI', icon: CreditCard },
-                { id: 'pipelines', label: 'Pipelines Kanban', subtitle: 'Admisiones por Etapas', icon: Workflow },
-                { id: 'calendar', label: 'Calendario & Citas', subtitle: 'Google & Apple Sync', icon: Calendar },
-                { id: 'family', label: 'Portal de Familias', subtitle: 'Privado sin WhatsApp', icon: Users },
-                { id: 'observation', label: 'Observación 3 Tiempos', subtitle: 'Currículo AMI / AMS', icon: Compass },
-                { id: 'staff', label: 'Guías & Roles de Equipo', subtitle: 'Permisos por Ambiente', icon: Layers },
-              ].map((tab) => {
-                const Icon = tab.icon;
-                const isSelected = activeModuleTab === tab.id;
+              {modI18n.tabs.map((tab: any) => {
+                const iconMap: Record<string, any> = { tracking: Compass, forms: FileSpreadsheet, gallery: Sparkles, webbuilder: Globe, finances: CreditCard, pipelines: Workflow, calendar: Calendar, family: Users, staff: Layers };
+                const Icon = iconMap[tab.id] || Compass;
+                const isSelected = activeModuleTab === tab.id || (tab.id === 'tracking' && activeModuleTab === 'observation');
                 return (
                   <button
                     key={tab.id}
@@ -3736,23 +5145,23 @@ export const MontessoriNexusLanding: React.FC = () => {
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-[11px] font-bold uppercase tracking-wider text-[#C4661F] bg-[#C4661F]/10 px-3 py-1 rounded-full border border-[#C4661F]/20 flex items-center gap-1.5">
                           <FileSpreadsheet className="w-3.5 h-3.5" />
-                          Formularios & KYC Inteligente
+                          {modI18n.forms.badge1}
                         </span>
                         <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 flex items-center gap-1">
                           <CheckCircle2 className="w-3.5 h-3.5" />
-                          Validación RENAPO en Vivo
+                          {modI18n.forms.badge2}
                         </span>
                       </div>
                       <h3 className={`text-2xl sm:text-3xl font-serif font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>
-                        Gestor de Formularios Pro & Biometría
+                        {modI18n.forms.title}
                       </h3>
                       <p className={`text-sm leading-relaxed max-w-2xl ${isDark ? 'text-slate-300' : 'text-stone-600'}`}>
-                        Crea formularios con validación oficial de CURP ante RENAPO en segundo plano, biometría KYC para tutores y 3 modos de presentación interactiva.
+                        {modI18n.forms.subtitle}
                       </p>
                     </div>
 
                     {/* Full-Width Interactive Form Simulator */}
-                    <div className={`p-4 sm:p-5 rounded-2xl border space-y-4 ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200 shadow-sm'
+                    <div className={`p-4 sm:p-5 rounded-2xl border space-y-4 transition-all duration-500 ${galleryJustSavedFlash ? 'ring-2 ring-emerald-500/90 shadow-[0_0_30px_rgba(16,185,129,0.3)] border-emerald-500/60 ' : ''}${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200 shadow-sm'
                       }`}>
                       {/* Mode Selector Tabs */}
                       <div className={`p-1 rounded-xl border grid grid-cols-3 gap-1 text-xs font-bold ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-stone-200/70 border-stone-300'
@@ -3765,7 +5174,7 @@ export const MontessoriNexusLanding: React.FC = () => {
                               : 'text-stone-600 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white'
                             }`}
                         >
-                          ⚡ Campos Inteligentes
+                          Campos Inteligentes
                         </button>
                         <button
                           type="button"
@@ -3775,7 +5184,7 @@ export const MontessoriNexusLanding: React.FC = () => {
                               : 'text-stone-600 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white'
                             }`}
                         >
-                          📋 Modo Wizard
+                          Modo Wizard
                         </button>
                         <button
                           type="button"
@@ -3785,7 +5194,7 @@ export const MontessoriNexusLanding: React.FC = () => {
                               : 'text-stone-600 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white'
                             }`}
                         >
-                          💬 Modo Fluid
+                          Modo Fluid
                         </button>
                       </div>
 
@@ -3798,24 +5207,24 @@ export const MontessoriNexusLanding: React.FC = () => {
                             <div className="flex items-center justify-between gap-2 flex-wrap text-xs">
                               <span className="font-bold flex items-center gap-1.5 text-stone-900 dark:text-white">
                                 <Fingerprint className="w-4 h-4 text-[#C4661F]" />
-                                Campo Inteligente: CURP Oficial (México)
+                                {modI18n.forms.curpTitle}
                               </span>
                               <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                Conexión RENAPO en segundo plano
+                                {modI18n.forms.curpStatus}
                               </span>
                             </div>
 
                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                               <div className={`p-2.5 rounded-xl border font-mono flex-1 ${isDark ? 'bg-slate-900/80 border-slate-800 text-slate-200' : 'bg-stone-50 border-stone-200 text-stone-800'
                                 }`}>
-                                <span className="text-[10px] text-stone-400 block font-sans font-semibold">Entrada de la Familia:</span>
+                                <span className="text-[10px] text-stone-400 block font-sans font-semibold">{modI18n.forms.curpInputLabel}</span>
                                 <span className="font-bold text-sm tracking-wider">MOSS180512HDFRRN04</span>
                               </div>
                               <div className={`p-2.5 rounded-xl border flex-1 flex items-center justify-between ${isDark ? 'bg-emerald-950/30 border-emerald-900/60 text-emerald-300' : 'bg-emerald-50 border-emerald-200 text-emerald-800'
                                 }`}>
                                 <div>
-                                  <span className="text-[10px] block font-semibold text-emerald-600 dark:text-emerald-400">Datos Verificados Automáticamente:</span>
+                                  <span className="text-[10px] block font-semibold text-emerald-600 dark:text-emerald-400">{modI18n.forms.curpVerifiedLabel}</span>
                                   <span className="font-bold text-xs">Santiago Morales Suárez • 12/05/2018</span>
                                 </div>
                                 <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 ml-2" />
@@ -3864,7 +5273,9 @@ export const MontessoriNexusLanding: React.FC = () => {
                           }`}>
                           <div className="flex items-center justify-between text-xs font-bold gap-2">
                             <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-                              <span className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center text-[10px]">✓</span>
+                              <span className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                                <Check className="w-3 h-3 text-emerald-400" />
+                              </span>
                               <span>1. Aspirante</span>
                             </div>
                             <div className="h-0.5 flex-1 bg-[#C4661F]" />
@@ -3912,24 +5323,24 @@ export const MontessoriNexusLanding: React.FC = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                       <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
                         }`}>
-                        <span className="font-bold text-stone-900 dark:text-white block">🏛️ Consulta RENAPO</span>
+                        <span className="font-bold text-stone-900 dark:text-white block">Consulta RENAPO</span>
                         <span className="text-[11px] text-stone-500 dark:text-slate-400">Autorrellenado sin errores de captura.</span>
                       </div>
                       <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
                         }`}>
-                        <span className="font-bold text-stone-900 dark:text-white block">🛡️ Biometría KYC</span>
+                        <span className="font-bold text-stone-900 dark:text-white block">Biometría KYC</span>
                         <span className="text-[11px] text-stone-500 dark:text-slate-400">Prueba de vida y cotejo de INE.</span>
                       </div>
                       <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
                         }`}>
-                        <span className="font-bold text-stone-900 dark:text-white block">⚡ Sincronización Total</span>
+                        <span className="font-bold text-stone-900 dark:text-white block">Sincronización Total</span>
                         <span className="text-[11px] text-stone-500 dark:text-slate-400">Directo al expediente del alumno.</span>
                       </div>
                     </div>
                   </motion.div>
                 )}
 
-                {/* TAB 2: GALERÍA INTELIGENTE */}
+                                                                                                                {/* TAB 2: GALERÍA INTELIGENTE CON SIMULADOR VIDEO-FEEL */}
                 {activeModuleTab === 'gallery' && (
                   <motion.div
                     key="gallery"
@@ -3944,139 +5355,446 @@ export const MontessoriNexusLanding: React.FC = () => {
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-[11px] font-bold uppercase tracking-wider text-[#C4661F] bg-[#C4661F]/10 px-3 py-1 rounded-full border border-[#C4661F]/20 flex items-center gap-1.5">
                           <Sparkles className="w-3.5 h-3.5" />
-                          IA Pedagógica & Narrativa
+                          {modI18n.gallery.badge1}
                         </span>
                         <span className="text-[11px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 bg-purple-500/10 px-3 py-1 rounded-full border border-purple-500/20 flex items-center gap-1">
-                          <Camera className="w-3.5 h-3.5" />
-                          Reconocimiento de Materiales AMI
+                          <ShieldAlert className="w-3.5 h-3.5" />
+                          {modI18n.gallery.badge2}
                         </span>
                       </div>
                       <h3 className={`text-2xl sm:text-3xl font-serif font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>
-                        Galería Inteligente & Observaciones
+                        {modI18n.gallery.title}
                       </h3>
                       <p className={`text-sm leading-relaxed max-w-2xl ${isDark ? 'text-slate-300' : 'text-stone-600'}`}>
-                        Solo sube la foto del aula: la IA reconoce el material didáctico y redacta la observación pedagógica describiendo la actividad, concentración y emocionalidad del niño.
+                        {modI18n.gallery.subtitle}
                       </p>
                     </div>
 
-                    {/* Full-Width Interactive Gallery Showcase */}
-                    <div className={`p-4 sm:p-5 rounded-2xl border space-y-4 ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200 shadow-sm'
-                      }`}>
-                      {/* Child Selection: 2 Clean Full-Width Buttons */}
-                      <div className="grid grid-cols-2 gap-2 w-full">
-                        {[
-                          { id: 'santiago', name: 'Santiago (Torre Rosa • Sensorial)' },
-                          { id: 'elena', name: 'Elena (Decanomio • Matemáticas)' },
-                        ].map((child) => (
-                          <button
-                            key={child.id}
-                            type="button"
-                            onClick={() => setGallerySelectedChild(child.id as any)}
-                            className={`py-2 px-2.5 rounded-xl text-xs font-medium transition-all cursor-pointer border text-center truncate ${gallerySelectedChild === child.id
-                                ? 'bg-[#C4661F] text-white border-[#C4661F] font-bold shadow-xs'
-                                : isDark ? 'bg-slate-900/80 text-slate-300 border-slate-800 hover:bg-slate-800' : 'bg-white text-stone-700 border-stone-200 hover:bg-stone-100 shadow-3xs'
-                              }`}
-                          >
-                            {child.name}
-                          </button>
-                        ))}
+                    {/* Clean Header Bar & Video Demo Trigger */}
+                    <div className="flex items-center justify-between gap-2 flex-wrap border-b border-stone-200 dark:border-slate-800 pb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-stone-800 dark:text-slate-200 flex items-center gap-1.5 bg-stone-100 dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-stone-200 dark:border-slate-800">
+                          <Camera className="w-3.5 h-3.5 text-[#C4661F]" />
+                          <span>{modI18n.gallery.liveBadge}</span>
+                        </span>
                       </div>
 
-                      {/* Photo & Pedagogical Analysis Grid */}
-                      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-stretch">
-                        {/* Photo Thumbnail */}
-                        <div className="md:col-span-5 relative rounded-xl overflow-hidden border border-stone-200 dark:border-slate-800 bg-stone-900 min-h-[190px] flex items-center justify-center">
-                          <div className={`absolute inset-0 bg-gradient-to-br ${gallerySelectedChild === 'santiago'
-                              ? 'from-amber-950/60 via-stone-900 to-emerald-950/80'
-                              : gallerySelectedChild === 'elena'
-                                ? 'from-blue-950/60 via-stone-900 to-indigo-950/80'
-                                : 'from-orange-950/60 via-stone-900 to-rose-950/80'
-                            } flex items-center justify-center p-4 text-center`}>
-                            <div className="space-y-1.5">
-                              <Camera className="w-8 h-8 text-[#C4661F] mx-auto opacity-75" />
-                              <div className="text-xs font-medium text-stone-300">
-                                Foto del Ambiente Montessori
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={startGalleryVideoDemo}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer border transition-all shadow-xs ${
+                            galleryDemoPlaying
+                              ? 'bg-[#C4661F] text-white border-[#C4661F] animate-pulse'
+                              : 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30'
+                          }`}
+                          title="Ver demostración guiada de galería y blur"
+                        >
+                          {galleryDemoPlaying ? (
+                            <RotateCcw className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Play className="w-3.5 h-3.5 fill-current text-[#C4661F]" />
+                          )}
+                          <span>{galleryDemoPlaying ? modI18n.gallery.demoBtnPlaying : modI18n.gallery.demoBtn}</span>
+                        </button>
+
+                        <span className="text-[11px] font-mono text-purple-600 dark:text-purple-400 bg-purple-500/10 px-2.5 py-1 rounded-full border border-purple-500/20 font-semibold flex items-center gap-1">
+                          <ShieldCheck className="w-3 h-3" />
+                          {modI18n.gallery.protectionBadge}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* MAIN INTERACTIVE CONTAINER WITH VIDEO OVERLAY & SIMULATED CURSOR */}
+                    <div className="relative rounded-2xl overflow-hidden min-h-[400px]">
+                      {/* SIMULATED MOUSE CURSOR */}
+                      {galleryDemoPlaying && (
+                        <motion.div
+                          animate={{
+                            left: `${gallerySimCursor.xPercent}%`,
+                            top: `${gallerySimCursor.yPercent}%`,
+                            scale: gallerySimCursor.isClicking ? 0.8 : 1
+                          }}
+                          transition={{
+                            duration: 0.85,
+                            ease: [0.16, 1, 0.3, 1]
+                          }}
+                          className="absolute z-50 pointer-events-none -ml-3 -mt-3 drop-shadow-2xl"
+                          style={{ position: 'absolute' }}
+                        >
+                          <div className="relative flex items-center justify-center">
+                            <div className="w-7 h-7 rounded-full bg-[#C4661F] text-white flex items-center justify-center shadow-2xl ring-2 ring-white/90 ring-offset-1">
+                              <MousePointer className="w-4 h-4 fill-white text-[#C4661F]" />
+                            </div>
+                            {gallerySimCursor.isClicking && (
+                              <span className="absolute -inset-2 rounded-full border-2 border-[#C4661F] animate-ping opacity-90" />
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+
+                      {/* VIDEO-FEEL TRANSLUCENT OVERLAY WITH BIG PLAY BUTTON */}
+                      <AnimatePresence>
+                        {galleryShowVideoOverlay && !galleryDemoPlaying && (
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.25 }}
+                            className="absolute inset-0 z-40 bg-black/55 backdrop-blur-[3px] flex flex-col items-center justify-center p-6 text-center text-white"
+                          >
+                            <div className="max-w-md space-y-4">
+                              <span className="px-3 py-1 rounded-full bg-white/10 border border-white/20 text-xs font-semibold text-amber-300 inline-flex items-center gap-1.5">
+                                <Sparkles className="w-3.5 h-3.5" />
+                                {modI18n.gallery.videoOverlay.badge}
+                              </span>
+
+                              <h4 className="text-xl sm:text-2xl font-bold font-serif text-white leading-tight">
+                                {modI18n.gallery.videoOverlay.title}
+                              </h4>
+
+                              <p className="text-xs sm:text-sm text-stone-300 leading-relaxed">
+                                {modI18n.gallery.videoOverlay.desc}
+                              </p>
+
+                              {/* Large Pulsing Play Button */}
+                              <div className="pt-2 flex flex-col items-center gap-3">
+                                <button
+                                  type="button"
+                                  onClick={startGalleryVideoDemo}
+                                  className="group relative flex items-center justify-center cursor-pointer transition-transform hover:scale-105"
+                                  aria-label="Reproducir video demostración"
+                                >
+                                  <div className="absolute -inset-4 rounded-full bg-[#C4661F]/40 blur-lg group-hover:bg-[#C4661F]/60 animate-pulse transition-all" />
+                                  <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#C4661F] text-white flex items-center justify-center shadow-2xl ring-4 ring-white/30 group-hover:ring-white/50 transition-all">
+                                    <Play className="w-8 h-8 sm:w-10 sm:h-10 fill-white translate-x-0.5" />
+                                  </div>
+                                </button>
+                                <span className="text-xs font-mono tracking-wide text-stone-300">
+                                  {modI18n.gallery.videoOverlay.playCta}
+                                </span>
+                              </div>
+
+                              <div className="pt-1">
+                                <button
+                                  type="button"
+                                  onClick={skipGalleryDemo}
+                                  className="text-xs text-stone-400 hover:text-white underline transition-colors cursor-pointer"
+                                >
+                                  {modI18n.gallery.videoOverlay.skipCta}
+                                </button>
                               </div>
                             </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      {/* WORKSPACE: GALLERY SIMULATOR */}
+                      <div className={`p-4 sm:p-5 rounded-2xl border space-y-4 transition-all duration-500 ${
+                        galleryJustSavedFlash
+                          ? 'ring-2 ring-emerald-500/90 shadow-[0_0_30px_rgba(16,185,129,0.3)] border-emerald-500/60 '
+                          : ''
+                      }${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200 shadow-sm'}`}>
+                        {/* Success Registration Toast Banner */}
+                        <AnimatePresence>
+                          {galleryJustSavedFlash && (
+                            <motion.div
+                              initial={{ opacity: 0, y: -8 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0 }}
+                              className="p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center justify-between gap-2"
+                            >
+                              <div className="flex items-center gap-2">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                                <span>Fotografía procesada: 1 rostro central difuminado automáticamente con protección legal.</span>
+                              </div>
+                              <span className="text-[10px] font-mono bg-emerald-500/20 px-2 py-0.5 rounded shrink-0">100% GDPR OK</span>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+
+                        {/* Action Header & Upload Bar */}
+                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 dark:border-slate-800 pb-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-stone-800 dark:text-slate-200 flex items-center gap-1.5">
+                              <Users className="w-4 h-4 text-[#C4661F]" />
+                              <span>Actividad en Patio: Malla Elástica / Movimiento Libre</span>
+                            </span>
                           </div>
 
-                          {/* Badges on Photo */}
-                          <div className="absolute top-2.5 left-2.5">
-                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-md text-white border border-white/20 flex items-center gap-1">
-                              <Camera className="w-3 h-3 text-[#C4661F]" />
-                              #OBS-402
-                            </span>
-                          </div>
-
-                          <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between flex-wrap gap-1.5">
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-950/90 backdrop-blur-md text-emerald-200 border border-emerald-500/60 flex items-center gap-1">
-                              <Check className="w-3 h-3 text-emerald-400 shrink-0" />
-                              Analizado en 1.2s
-                            </span>
-                            <span className="text-[10px] font-mono text-stone-300 bg-black/60 px-2 py-0.5 rounded">
-                              {gallerySelectedChild === 'santiago' ? 'Casa de Niños' : gallerySelectedChild === 'elena' ? 'Taller 1' : 'Comunidad Infantil'}
-                            </span>
+                          {/* Quick Reset / Re-upload Button */}
+                          <div className="flex items-center gap-2">
+                            {galleryDemoStep !== 'idle' && galleryDemoStep !== 'cursor_to_upload' && galleryDemoStep !== 'uploading' && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (galleryDemoPlaying) skipGalleryDemo();
+                                  setGalleryDemoStep('idle');
+                                  setGalleryFaceBlurred(false);
+                                  setGalleryLiveTypedNarrative('');
+                                }}
+                                className="px-3 py-1 rounded-xl bg-stone-100 dark:bg-slate-900 hover:bg-stone-200 dark:hover:bg-slate-800 border border-stone-300 dark:border-slate-700 text-stone-700 dark:text-slate-300 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                              >
+                                <Upload className="w-3.5 h-3.5 text-[#C4661F]" />
+                                <span>Subir otra foto</span>
+                              </button>
+                            )}
                           </div>
                         </div>
 
-                        {/* Pedagogical Narrative Result */}
-                        <div className="md:col-span-7 flex flex-col justify-between p-4 rounded-xl border space-y-3 bg-white dark:bg-[#162218] border-stone-200 dark:border-slate-700 shadow-3xs">
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between flex-wrap gap-1.5">
-                              <span className="text-[11px] font-bold uppercase tracking-wider text-[#C4661F] flex items-center gap-1.5">
-                                <Sparkles className="w-3.5 h-3.5" />
-                                Narrativa Pedagógica Montessori
-                              </span>
-                              <span className="text-[10px] font-mono text-stone-400 dark:text-slate-400 bg-stone-100 dark:bg-slate-800 px-2 py-0.5 rounded">
-                                Modelo AMI
-                              </span>
+                        {/* 1. FULL WIDTH PHOTO / DROPZONE CANVAS */}
+                        <div className="w-full">
+                          {galleryDemoStep === 'idle' || galleryDemoStep === 'cursor_to_upload' ? (
+                            /* State 1: Dashed Upload / Capture Dropzone */
+                            <div
+                              onClick={() => {
+                                if (galleryDemoPlaying) skipGalleryDemo();
+                                startGalleryVideoDemo();
+                              }}
+                              className="w-full relative rounded-2xl border-2 border-dashed border-stone-300 dark:border-slate-700 hover:border-[#C4661F] dark:hover:border-[#C4661F] bg-stone-50/70 dark:bg-slate-900/60 p-8 sm:p-12 aspect-[16/9] sm:aspect-[21/9] flex flex-col items-center justify-center text-center cursor-pointer transition-all hover:bg-stone-100/70 dark:hover:bg-slate-800/70 group shadow-xs"
+                            >
+                              <div className="w-14 h-14 rounded-2xl bg-[#C4661F]/10 dark:bg-[#C4661F]/20 border border-[#C4661F]/30 text-[#C4661F] flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-xs">
+                                <Camera className="w-7 h-7" />
+                              </div>
+                              <h4 className="text-sm sm:text-base font-bold text-stone-900 dark:text-white mb-1">
+                                {modI18n.gallery.dropzone.title}
+                              </h4>
+                              <p className="text-xs text-stone-500 dark:text-slate-400 max-w-sm mb-3.5">
+                                {modI18n.gallery.dropzone.desc}
+                              </p>
+                              <div className={`px-4 py-1.5 rounded-xl bg-[#C4661F] hover:bg-[#b05a1a] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-transform duration-150 ${galleryDemoStep === 'cursor_to_upload' && gallerySimCursor.isClicking ? 'scale-90 shadow-inner ring-2 ring-white/60' : ''}`}>
+                                <Upload className="w-3.5 h-3.5" />
+                                <span>{modI18n.gallery.dropzone.button}</span>
+                              </div>
                             </div>
+                          ) : galleryDemoStep === 'uploading' ? (
+                            /* State 2: Upload Progress Card */
+                            <div className="w-full relative rounded-2xl border border-stone-200 dark:border-slate-800 bg-stone-950 p-8 sm:p-12 aspect-[16/9] sm:aspect-[21/9] flex flex-col items-center justify-center text-center text-white shadow-md animate-in fade-in duration-200">
+                              <div className="w-12 h-12 rounded-full bg-[#C4661F]/20 border border-[#C4661F]/40 text-[#C4661F] flex items-center justify-center mb-3">
+                                <RotateCcw className="w-6 h-6 animate-spin" />
+                              </div>
+                              <h4 className="text-sm font-bold font-mono tracking-wide text-amber-300 mb-1">
+                                {modI18n.gallery.uploading.title} {galleryUploadProgress}%
+                              </h4>
+                              <p className="text-xs text-stone-400 font-mono mb-4">
+                                {modI18n.gallery.uploading.file}
+                              </p>
+                              <div className="w-full max-w-xs bg-stone-800 rounded-full h-2.5 overflow-hidden p-0.5 border border-stone-700">
+                                <div
+                                  style={{ width: `${galleryUploadProgress}%` }}
+                                  className="bg-gradient-to-r from-[#C4661F] to-emerald-400 h-full rounded-full transition-all duration-150"
+                                />
+                              </div>
+                            </div>
+                          ) : (
+                            /* State 3: Full Width Photo Viewport */
+                            <div className="w-full relative rounded-2xl overflow-hidden border border-stone-200 dark:border-slate-800 bg-stone-900 shadow-md aspect-[16/9] sm:aspect-[21/9] flex items-center justify-center animate-in fade-in duration-300">
+                              <img
+                                src={galleryFaceBlurred ? "/images/gallery/students_trampoline_courtyard_blurred.jpg" : "/images/gallery/students_trampoline_courtyard.jpg"}
+                                alt="Estudiantes en malla elástica en el patio"
+                                className="w-full h-full object-cover filter brightness-95 contrast-105 transition-all duration-700"
+                              />
 
-                            <p className="text-xs sm:text-sm italic font-serif leading-relaxed text-stone-700 dark:text-slate-200 border-l-2 border-[#C4661F] pl-3 py-1">
-                              {gallerySelectedChild === 'santiago' && (
-                                '“Santiago (4a 2m) experimenta profunda concentración con la Torre Rosa. Gradúa los 10 cubos con serenidad y persevera en el control de error sin intervención del adulto.”'
-                              )}
-                              {gallerySelectedChild === 'elena' && (
-                                '“Elena (5a 8m) explora con gran curiosidad la geometría de los decanomios, compartiendo deducciones espaciales con gracia y cortesía.”'
-                              )}
-                              {gallerySelectedChild === 'mateo' && (
-                                '“Mateo (2a 10m) ejercita su coordinación motriz fina abotonando el Marco de Vestir con serenidad y orden espontáneo.”'
-                              )}
-                            </p>
-                          </div>
+                              {/* Gradient for badge readability (desktop only) */}
+                              <div className="hidden sm:block absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/40 pointer-events-none" />
 
-                          <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-stone-100 dark:border-slate-800 text-[11px]">
-                            <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium">
-                              ✓ Registrado en Bitácora
-                            </span>
-                            <span className="px-2.5 py-1 rounded-lg bg-[#C4661F]/10 text-[#C4661F] font-medium">
-                              ✓ Portafolio Familiar Actualizado
-                            </span>
-                          </div>
+                              {/* AI Scanning Laser Line */}
+                              {galleryDemoStep === 'ai_scanning' && (
+                                <motion.div
+                                  initial={{ top: '0%' }}
+                                  animate={{ top: ['0%', '100%', '0%'] }}
+                                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                                  className="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_15px_#22d3ee] z-20"
+                                />
+                              )}
+
+                              {/* Top Photo Badges (Hidden on mobile) */}
+                              <div className="hidden sm:flex absolute top-3 left-3 right-3 items-center justify-between z-20">
+                                <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-lg bg-black/75 backdrop-blur-md text-white border border-white/20 flex items-center gap-1.5">
+                                  <Camera className="w-3 h-3 text-[#C4661F]" />
+                                  {modI18n.gallery.photoBadges.obs}
+                                </span>
+
+                                <span className="text-[10px] font-mono font-bold px-2 py-1 rounded-lg bg-purple-500/20 text-purple-200 border border-purple-400/30 backdrop-blur-md">
+                                  {modI18n.gallery.photoBadges.detected}
+                                </span>
+                              </div>
+
+                              {/* Status in Photo (Hidden on mobile) */}
+                              <div className="hidden sm:flex absolute bottom-3 left-3 right-3 items-center justify-between flex-wrap gap-2 z-20">
+                                {galleryFaceBlurred ? (
+                                  <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-amber-950/90 backdrop-blur-md text-amber-200 border border-amber-500/60 flex items-center gap-1.5">
+                                    <ShieldAlert className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                    {modI18n.gallery.photoBadges.blurred}
+                                  </span>
+                                ) : (
+                                  <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-emerald-950/90 backdrop-blur-md text-emerald-200 border border-emerald-500/60 flex items-center gap-1.5">
+                                    <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                    {modI18n.gallery.photoBadges.original}
+                                  </span>
+                                )}
+
+                                <span className="text-[10px] font-mono text-stone-300 bg-black/70 px-2 py-1 rounded-md border border-white/10">
+                                  100% Sync
+                                </span>
+                              </div>
+                            </div>
+                          )}
                         </div>
+
+                        {/* 2. FULL WIDTH MONTESSORI NARRATIVE CAPTION (DIRECTLY BELOW PHOTO) */}
+                        <AnimatePresence>
+                          {(galleryLiveTypedNarrative || (galleryDemoStep !== 'idle' && galleryDemoStep !== 'cursor_to_upload' && galleryDemoStep !== 'uploading')) && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 8 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -8 }}
+                              className="w-full p-4 sm:p-5 rounded-2xl border space-y-2.5 bg-white dark:bg-[#162218] border-stone-200 dark:border-slate-800 shadow-xs"
+                            >
+                              <div className="flex items-center justify-between flex-wrap gap-2 border-b border-stone-100 dark:border-slate-800/80 pb-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#C4661F] flex items-center gap-1.5">
+                                    <Sparkles className="w-3.5 h-3.5" />
+                                    {modI18n.gallery.narrative.header}
+                                  </span>
+                                  <span className="text-[10px] font-mono text-stone-500 dark:text-slate-400 bg-stone-100 dark:bg-slate-800 px-2 py-0.5 rounded-md font-semibold">
+                                    {modI18n.gallery.narrative.model}
+                                  </span>
+                                </div>
+                                <div className="text-[11px] text-stone-600 dark:text-slate-400">
+                                  {modI18n.gallery.narrative.students}
+                                </div>
+                              </div>
+
+                              <div className="p-3.5 rounded-xl bg-stone-50/80 dark:bg-slate-900/80 border border-stone-200/80 dark:border-slate-800/80">
+                                <p className="text-xs sm:text-sm italic font-serif leading-relaxed text-stone-800 dark:text-slate-200 border-l-2 border-[#C4661F] pl-3 py-1">
+                                  {galleryLiveTypedNarrative ? (
+                                    <>
+                                      <span>{galleryLiveTypedNarrative}</span>
+                                      <span className="inline-block w-1.5 h-3.5 bg-[#C4661F] ml-1 animate-pulse align-middle" />
+                                    </>
+                                  ) : (
+                                    modI18n.gallery.narrative.text
+                                  )}
+                                </p>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+
+                        {/* 3. FULL WIDTH PRIVACY & STUDENT PROTECTION BAR */}
+                        <AnimatePresence>
+                          {(galleryFaceBlurred || galleryDemoStep === 'applying_blur' || galleryDemoStep === 'cursor_to_save' || galleryDemoStep === 'registered_success' || galleryDemoStep === 'done') && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: 10 }}
+                              className="w-full p-3.5 rounded-xl border bg-stone-100 dark:bg-slate-900/90 border-stone-200 dark:border-slate-800 flex items-center justify-between gap-4 flex-wrap shadow-xs"
+                            >
+                              {/* Left: 3 Small Circular Avatars with Tooltips (no inline labels) */}
+                              <div className="flex items-center gap-2">
+                                <span className="text-[11px] font-bold text-stone-500 dark:text-slate-400 uppercase mr-1 hidden sm:inline">{lang === "en" ? "Students:" : lang === "pt" ? "Alunos:" : lang === "it" ? "Alunni:" : lang === "fr" ? "Élèves :" : "Alumnos:"}</span>
+                                <div className="flex items-center gap-1.5">
+                                  {/* Avatar 1: Lucas M. */}
+                                  <div className="relative group" title={modI18n.gallery.privacyBar.lucasTooltip}>
+                                    <img
+                                      src="/images/gallery/avatar_lucas.jpg"
+                                      alt="Lucas M."
+                                      className="w-8 h-8 rounded-full object-cover border-2 border-emerald-500 shadow-xs cursor-pointer hover:scale-110 transition-transform"
+                                    />
+                                    <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[7px]">
+                                      <Check className="w-2 h-2 stroke-[3]" />
+                                    </span>
+                                  </div>
+
+                                  {/* Avatar 2: Mateo V. (Center - Warning Border & Blurred Avatar) */}
+                                  <div className="relative group" title={modI18n.gallery.privacyBar.mateoTooltip}>
+                                    <img
+                                      src="/images/gallery/avatar_mateo_blurred.jpg"
+                                      alt="Mateo V."
+                                      className="w-8 h-8 rounded-full object-cover border-2 border-amber-500 ring-2 ring-amber-400/40 shadow-sm cursor-pointer hover:scale-110 transition-transform"
+                                    />
+                                    <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-amber-500 text-black flex items-center justify-center text-[7px] font-bold">
+                                      <EyeOff className="w-2 h-2 text-black stroke-[3]" />
+                                    </span>
+                                  </div>
+
+                                  {/* Avatar 3: Sofia R. */}
+                                  <div className="relative group" title={modI18n.gallery.privacyBar.sofiaTooltip}>
+                                    <img
+                                      src="/images/gallery/avatar_sofia.jpg"
+                                      alt="Sofía R."
+                                      className="w-8 h-8 rounded-full object-cover border-2 border-emerald-500 shadow-xs cursor-pointer hover:scale-110 transition-transform"
+                                    />
+                                    <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[7px]">
+                                      <Check className="w-2 h-2 stroke-[3]" />
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Center: Concise Protection Summary */}
+                              <div className="flex items-center gap-2 text-xs text-amber-800 dark:text-amber-300 flex-1 min-w-[240px]">
+                                <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0" />
+                                <span className="leading-snug">
+                                  {modI18n.gallery.privacyBar.summary}
+                                </span>
+                              </div>
+
+                              {/* Right: Actions */}
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (galleryDemoPlaying) skipGalleryDemo();
+                                    setGalleryFaceBlurred(prev => !prev);
+                                  }}
+                                  className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 hover:bg-stone-100 dark:hover:bg-slate-700 border border-stone-300 dark:border-slate-600 text-stone-800 dark:text-slate-200 font-medium text-xs flex items-center gap-1.5 cursor-pointer"
+                                >
+                                  <Eye className="w-3.5 h-3.5 text-[#C4661F]" />
+                                  <span>{galleryFaceBlurred ? modI18n.gallery.privacyBar.viewOriginal : modI18n.gallery.privacyBar.viewBlurred}</span>
+                                </button>
+
+                                <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold text-xs flex items-center gap-1">
+                                  <Check className="w-3 h-3" />
+                                  {modI18n.gallery.privacyBar.safePublication}
+                                </span>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     </div>
 
                     {/* Bottom Value Pillars */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
-                        }`}>
-                        <span className="font-bold text-stone-900 dark:text-white block">✨ Redacción Automática</span>
-                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Describe el desarrollo sin notas numéricas.</span>
+                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'}`}>
+                        <span className="font-bold text-stone-900 dark:text-white block">{modI18n.gallery.pillars[0].title}</span>
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400">{modI18n.gallery.pillars[0].desc}</span>
                       </div>
-                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
-                        }`}>
-                        <span className="font-bold text-stone-900 dark:text-white block">🌿 Filosofía AMI Integrada</span>
-                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Enfocado en concentración y autonomía.</span>
+                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'}`}>
+                        <span className="font-bold text-stone-900 dark:text-white block">{modI18n.gallery.pillars[1].title}</span>
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400">{modI18n.gallery.pillars[1].desc}</span>
                       </div>
-                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
-                        }`}>
-                        <span className="font-bold text-stone-900 dark:text-white block">📁 Portafolio Familiar</span>
-                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Las familias reciben reportes de valor real.</span>
+                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'}`}>
+                        <span className="font-bold text-stone-900 dark:text-white block">{modI18n.gallery.pillars[2].title}</span>
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400">{modI18n.gallery.pillars[2].desc}</span>
                       </div>
                     </div>
                   </motion.div>
                 )}
+
+                
+
+                
+
+                
+
+                
+
+                
+
+                
 
                 {/* TAB 3: WEB BUILDER INSTITUCIONAL */}
                 {activeModuleTab === 'webbuilder' && (
@@ -4097,14 +5815,14 @@ export const MontessoriNexusLanding: React.FC = () => {
                         </span>
                         <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 flex items-center gap-1">
                           <CheckCircle2 className="w-3.5 h-3.5" />
-                          Multiidioma & SSL Incluido
+                          {modI18n.webbuilder.badge2}
                         </span>
                       </div>
                       <h3 className={`text-2xl sm:text-3xl font-serif font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>
-                        Constructor Web Modular para tu Escuela
+                        {modI18n.webbuilder.title}
                       </h3>
                       <p className={`text-sm leading-relaxed max-w-2xl ${isDark ? 'text-slate-300' : 'text-stone-600'}`}>
-                        Crea y actualiza la página oficial de tu colegio con bloques modulares Montessori sin necesidad de diseñadores ni programadores.
+                        {modI18n.webbuilder.subtitle}
                       </p>
                     </div>
 
@@ -4122,7 +5840,7 @@ export const MontessoriNexusLanding: React.FC = () => {
                               : 'text-stone-600 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white'
                             }`}
                         >
-                          🧱 Secciones Modulares
+                          Secciones Modulares
                         </button>
                         <button
                           type="button"
@@ -4132,7 +5850,7 @@ export const MontessoriNexusLanding: React.FC = () => {
                               : 'text-stone-600 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white'
                             }`}
                         >
-                          🎨 Paleta & Marca
+                          Paleta & Marca
                         </button>
                         <button
                           type="button"
@@ -4142,7 +5860,7 @@ export const MontessoriNexusLanding: React.FC = () => {
                               : 'text-stone-600 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white'
                             }`}
                         >
-                          🔗 Integraciones
+                          Integraciones
                         </button>
                       </div>
 
@@ -4183,7 +5901,7 @@ export const MontessoriNexusLanding: React.FC = () => {
                         <div className={`p-4 rounded-xl border space-y-3 ${isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200'
                           }`}>
                           <div className="flex justify-between items-center text-xs">
-                            <span className="font-bold text-stone-900 dark:text-white">Tema y Tipografía Institucional Activa:</span>
+                            <span className="font-bold text-stone-900 dark:text-white">{modI18n.webbuilder.themeLabel}</span>
                             <span className="text-[11px] font-bold text-[#C4661F] uppercase">{activeBuilderTheme}</span>
                           </div>
                           <div className="flex flex-wrap items-center gap-2.5">
@@ -4250,18 +5968,18 @@ export const MontessoriNexusLanding: React.FC = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                       <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
                         }`}>
-                        <span className="font-bold text-stone-900 dark:text-white block">🧱 Arrastra & Publica</span>
-                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Bloques modulares listos para usar.</span>
+                        <span className="font-bold text-stone-900 dark:text-white block">{modI18n.webbuilder.pillars[0].title}</span>
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400">{modI18n.webbuilder.pillars[0].desc}</span>
                       </div>
                       <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
                         }`}>
-                        <span className="font-bold text-stone-900 dark:text-white block">🎨 Identidad Única</span>
-                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Paletas y tipografías a tu medida.</span>
+                        <span className="font-bold text-stone-900 dark:text-white block">{modI18n.webbuilder.pillars[1].title}</span>
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400">{modI18n.webbuilder.pillars[1].desc}</span>
                       </div>
                       <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
                         }`}>
-                        <span className="font-bold text-stone-900 dark:text-white block">🔗 Conexión al Sistema</span>
-                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Admisiones directo al expediente.</span>
+                        <span className="font-bold text-stone-900 dark:text-white block">{modI18n.webbuilder.pillars[2].title}</span>
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400">{modI18n.webbuilder.pillars[2].desc}</span>
                       </div>
                     </div>
                   </motion.div>
@@ -4339,17 +6057,17 @@ export const MontessoriNexusLanding: React.FC = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                       <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
                         }`}>
-                        <span className="font-bold text-stone-900 dark:text-white block">💳 Cargo Recurrente</span>
+                        <span className="font-bold text-stone-900 dark:text-white block">Cargo Recurrente</span>
                         <span className="text-[11px] text-stone-500 dark:text-slate-400">Tarjetas, SPEI y pasarelas globales.</span>
                       </div>
                       <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
                         }`}>
-                        <span className="font-bold text-stone-900 dark:text-white block">💬 Mensajes Cordiales</span>
+                        <span className="font-bold text-stone-900 dark:text-white block">Mensajes Cordiales</span>
                         <span className="text-[11px] text-stone-500 dark:text-slate-400">Vía WhatsApp con enlace de pago.</span>
                       </div>
                       <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
                         }`}>
-                        <span className="font-bold text-stone-900 dark:text-white block">📊 Facturación Instantánea</span>
+                        <span className="font-bold text-stone-900 dark:text-white block">Facturación Instantánea</span>
                         <span className="text-[11px] text-stone-500 dark:text-slate-400">Comprobantes y conciliación al día.</span>
                       </div>
                     </div>
@@ -4370,7 +6088,7 @@ export const MontessoriNexusLanding: React.FC = () => {
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-[11px] font-bold uppercase tracking-wider text-[#C4661F] bg-[#C4661F]/10 px-3 py-1 rounded-full border border-[#C4661F]/20 flex items-center gap-1.5">
-                          <GitPullRequest className="w-3.5 h-3.5" />
+                          <Workflow className="w-3.5 h-3.5" />
                           Pipelines & Kanban
                         </span>
                         <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 flex items-center gap-1">
@@ -4466,17 +6184,17 @@ export const MontessoriNexusLanding: React.FC = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                       <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
                         }`}>
-                        <span className="font-bold text-stone-900 dark:text-white block">📋 Control Visual</span>
+                        <span className="font-bold text-stone-900 dark:text-white block">Control Visual</span>
                         <span className="text-[11px] text-stone-500 dark:text-slate-400">Seguimiento etapa por etapa.</span>
                       </div>
                       <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
                         }`}>
-                        <span className="font-bold text-stone-900 dark:text-white block">⚡ Disparadores</span>
+                        <span className="font-bold text-stone-900 dark:text-white block">Disparadores</span>
                         <span className="text-[11px] text-stone-500 dark:text-slate-400">Contratos y fichas automáticas.</span>
                       </div>
                       <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
                         }`}>
-                        <span className="font-bold text-stone-900 dark:text-white block">🎒 Múltiples Flujos</span>
+                        <span className="font-bold text-stone-900 dark:text-white block">Múltiples Flujos</span>
                         <span className="text-[11px] text-stone-500 dark:text-slate-400">Admisiones, personal o psicopedagógico.</span>
                       </div>
                     </div>
@@ -4542,17 +6260,17 @@ export const MontessoriNexusLanding: React.FC = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                       <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
                         }`}>
-                        <span className="font-bold text-stone-900 dark:text-white block">📅 Sin Empalmes</span>
+                        <span className="font-bold text-stone-900 dark:text-white block">Sin Empalmes</span>
                         <span className="text-[11px] text-stone-500 dark:text-slate-400">Disponibilidad real por ambiente.</span>
                       </div>
                       <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
                         }`}>
-                        <span className="font-bold text-stone-900 dark:text-white block">🔔 Recordatorio WhatsApp</span>
+                        <span className="font-bold text-stone-900 dark:text-white block">Recordatorio WhatsApp</span>
                         <span className="text-[11px] text-stone-500 dark:text-slate-400">85% menos inasistencias.</span>
                       </div>
                       <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
                         }`}>
-                        <span className="font-bold text-stone-900 dark:text-white block">📲 Sincronización Móvil</span>
+                        <span className="font-bold text-stone-900 dark:text-white block">Sincronización Móvil</span>
                         <span className="text-[11px] text-stone-500 dark:text-slate-400">Google Calendar y Apple iCal.</span>
                       </div>
                     </div>
@@ -4617,27 +6335,27 @@ export const MontessoriNexusLanding: React.FC = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                       <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
                         }`}>
-                        <span className="font-bold text-stone-900 dark:text-white block">🔒 Privacidad Total</span>
+                        <span className="font-bold text-stone-900 dark:text-white block">Privacidad Total</span>
                         <span className="text-[11px] text-stone-500 dark:text-slate-400">Sin teléfonos expuestos en grupos.</span>
                       </div>
                       <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
                         }`}>
-                        <span className="font-bold text-stone-900 dark:text-white block">✍️ Firmas Móviles</span>
+                        <span className="font-bold text-stone-900 dark:text-white block">Firmas Móviles</span>
                         <span className="text-[11px] text-stone-500 dark:text-slate-400">Autorizaciones válidas con valor legal.</span>
                       </div>
                       <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
                         }`}>
-                        <span className="font-bold text-stone-900 dark:text-white block">📢 Boletines Oficiales</span>
+                        <span className="font-bold text-stone-900 dark:text-white block">Boletines Oficiales</span>
                         <span className="text-[11px] text-stone-500 dark:text-slate-400">Con acuse de lectura para el colegio.</span>
                       </div>
                     </div>
                   </motion.div>
                 )}
 
-                {/* TAB 8: OBSERVACIÓN & 3 TIEMPOS */}
-                {activeModuleTab === 'observation' && (
+                {/* TAB: REGISTRO & SEGUIMIENTO / LECCIONES Y TRACKERS */}
+                {(activeModuleTab === 'tracking' || activeModuleTab === 'observation') && (
                   <motion.div
-                    key="observation"
+                    key="tracking"
                     initial={{ opacity: 0, y: 14 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -14 }}
@@ -4649,61 +6367,630 @@ export const MontessoriNexusLanding: React.FC = () => {
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-[11px] font-bold uppercase tracking-wider text-[#C4661F] bg-[#C4661F]/10 px-3 py-1 rounded-full border border-[#C4661F]/20 flex items-center gap-1.5">
                           <Compass className="w-3.5 h-3.5" />
-                          Observación 3 Tiempos
+                          {lang === 'en' ? 'Tracking & Observation' : lang === 'es' ? 'Registro & Seguimiento' : lang === 'pt' ? 'Registro & Acompanhamento' : 'Suivi & Observation'}
                         </span>
                         <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 flex items-center gap-1">
+                          <Mic className="w-3.5 h-3.5" />
+                          {lang === 'en' ? 'Voice Dictation & AI' : lang === 'es' ? 'Dictado por Voz & IA' : lang === 'pt' ? 'Ditado por Voz & IA' : 'Dictée Vocale & IA'}
+                        </span>
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/20 flex items-center gap-1">
                           <CheckCircle2 className="w-3.5 h-3.5" />
-                          Currículo AMI / AMS
+                          {lang === 'en' ? '3-Period Séguin' : lang === 'es' ? '3 Tiempos de Séguin' : lang === 'pt' ? '3 Tempos de Séguin' : '3 Temps de Séguin'}
                         </span>
                       </div>
                       <h3 className={`text-2xl sm:text-3xl font-serif font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>
-                        Lección de Tres Tiempos & Registro Cualitativo
+                        {lang === 'en'
+                          ? 'Real-Time Pedagogical Matrix • Lessons & Trackers'
+                          : lang === 'es'
+                            ? 'Matriz Pedagógica en Tiempo Real • Lecciones & Trackers'
+                            : lang === 'pt'
+                              ? 'Matriz Pedagógica em Tempo Real • Lições & Hábitos'
+                              : 'Matrice Pédagogique en Temps Réel • Leçons & Habitudes'}
                       </h3>
                       <p className={`text-sm leading-relaxed max-w-2xl ${isDark ? 'text-slate-300' : 'text-stone-600'}`}>
-                        Registra la presentación, reconocimiento y dominio de cada material sin interferir en la concentración espontánea del niño.
+                        {lang === 'en'
+                          ? 'Capture classroom observations, presentation milestones, and daily habits seamlessly. Features contextual 1-click in-cell dictation, batch AI structuring (gpt-5.6-luna), and strict date synchronization.'
+                          : lang === 'es'
+                            ? 'Registra observaciones de aula, lecciones curriculares y hábitos diarios de forma natural. Incluye dictado contextual celda por celda, estructuración por lotes con IA y sincronización estricta por fecha.'
+                            : lang === 'pt'
+                              ? 'Registre observações de sala de aula, lições curriculares e hábitos diários. Inclui ditado contextual célula por célula, estruturação por IA em lote e sincronização rigorosa por data.'
+                              : 'Enregistrez les observations de classe, les leçons et les habitudes quotidiennes. Inclut la dictée contextuelle en cellule, la structuration IA par lots et la synchronisation stricte par date.'}
                       </p>
                     </div>
 
-                    {/* Full-Width Interactive Observation Simulator */}
-                    <div className={`p-4 sm:p-5 rounded-2xl border space-y-3 ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200 shadow-sm'
-                      }`}>
-                      <div className="flex items-center justify-between text-xs pb-2 border-b border-stone-200 dark:border-slate-800">
-                        <span className="font-bold text-stone-900 dark:text-white">Registro de Material • Casa de Niños 1</span>
-                        <span className="text-[#C4661F] font-bold text-[10px]">Área Sensorial</span>
+                    {/* Clean Header Bar & Video Demo Trigger */}
+                    <div className="flex items-center justify-between gap-2 flex-wrap border-b border-stone-200 dark:border-slate-800 pb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-stone-800 dark:text-slate-200 flex items-center gap-1.5 bg-stone-100 dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-stone-200 dark:border-slate-800">
+                          <FileSpreadsheet className="w-3.5 h-3.5 text-[#C4661F]" />
+                          <span>{lang === 'en' ? 'Live Pedagogical Matrix' : lang === 'es' ? 'Matriz Pedagógica en Directo' : lang === 'pt' ? 'Matriz Pedagógica em Direto' : 'Matrice Pédagogique'}</span>
+                        </span>
                       </div>
-                      <div className={`p-4 rounded-xl border space-y-2.5 ${isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-200 shadow-3xs'
-                        }`}>
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-xs sm:text-sm text-stone-900 dark:text-white">Torre Rosa • Santiago Morales (4a 2m)</span>
-                          <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500 font-bold">
-                            3er Tiempo: Dominio
-                          </span>
-                        </div>
-                        <div className="w-full bg-stone-200 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
-                          <div className="bg-emerald-500 h-full w-[90%] rounded-full" />
-                        </div>
-                        <p className="text-xs text-stone-500 dark:text-slate-400 leading-relaxed pt-1">
-                          Demostró discriminación visual tridimensional perfecta y retorno espontáneo al estante sin requerir intervención del adulto.
-                        </p>
+
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={startTrackingVideoDemo}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer border transition-all shadow-xs ${
+                            trackingDemoPlaying
+                              ? 'bg-[#C4661F] text-white border-[#C4661F] animate-pulse'
+                              : 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30'
+                          }`}
+                          title="Ver demostración interactiva guiada"
+                        >
+                          {trackingDemoPlaying ? (
+                            <RotateCcw className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Play className="w-3.5 h-3.5 fill-current text-[#C4661F]" />
+                          )}
+                          <span>{trackingDemoPlaying ? modI18n.tracking.demoBtnPlaying : modI18n.tracking.demoBtn}</span>
+                        </button>
+
+                        <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20 font-semibold flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          29 Ago 2026 • 100% Sync
+                        </span>
                       </div>
+                    </div>
+{/* MAIN INTERACTIVE CONTAINER WITH VIDEO OVERLAY & SIMULATED CURSOR */}
+                    <div className="relative rounded-2xl overflow-hidden min-h-[380px]">
+                      {/* SIMULATED MOUSE CURSOR */}
+                      {trackingDemoPlaying && (
+                        <motion.div
+                          animate={{
+                            left: `${trackingSimCursor.xPercent}%`,
+                            top: `${trackingSimCursor.yPercent}%`,
+                            scale: trackingSimCursor.isClicking ? 0.8 : 1
+                          }}
+                          transition={{
+                            type: 'spring',
+                            damping: 24,
+                            stiffness: 160,
+                            mass: 0.5
+                          }}
+                          className="pointer-events-none absolute z-50 -translate-x-1/2 -translate-y-1/2"
+                        >
+                          <div className="relative flex items-center justify-center">
+                            <div className={`w-8 h-8 rounded-full bg-[#C4661F]/35 border-2 border-[#C4661F] backdrop-blur-xs flex items-center justify-center shadow-xl transition-transform duration-150 ${
+                              trackingSimCursor.isClicking ? 'scale-75 bg-[#C4661F]/80' : 'animate-pulse'
+                            }`}>
+                              <div className="w-2.5 h-2.5 rounded-full bg-white shadow-sm" />
+                            </div>
+                            {trackingSimCursor.isClicking && (
+                              <span className="absolute w-12 h-12 rounded-full border-2 border-[#C4661F] animate-ping" />
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+
+                      {/* VIDEO OVERLAY (TRANSLUCENT BACKDROP WITH PLAY BUTTON IN CENTER) */}
+                      {trackingShowVideoOverlay && (
+                        <div className="absolute inset-0 z-40 bg-black/45 backdrop-blur-[3px] rounded-2xl flex flex-col items-center justify-center text-center p-6 space-y-4 animate-in fade-in duration-300">
+                          <button
+                            type="button"
+                            onClick={startTrackingVideoDemo}
+                            className="group relative flex items-center justify-center cursor-pointer transition-transform duration-300 hover:scale-110 active:scale-95"
+                          >
+                            <div className="absolute -inset-4 rounded-full bg-gradient-to-r from-[#C4661F]/50 to-amber-500/50 blur-xl animate-pulse" />
+                            <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#C4661F] text-white flex items-center justify-center shadow-2xl ring-8 ring-white/20 group-hover:bg-[#b05a1a]">
+                              <Play className="w-7 h-7 sm:w-9 sm:h-9 fill-current ml-1" />
+                            </div>
+                          </button>
+
+                          <div className="space-y-1 max-w-md">
+                            <span className="text-xs font-bold uppercase tracking-wider text-amber-400 bg-black/60 px-3 py-1 rounded-full border border-amber-500/30 inline-block">
+                              Demostración Guiada
+                            </span>
+                            <h4 className="text-lg sm:text-xl font-bold font-serif text-white">
+                              Ver Dictado por Voz & Sincronización en Acción
+                            </h4>
+                            <p className="text-xs text-gray-200">
+                              Haz clic para reproducir el recorrido simulado: captura de voz, ondas sonoras y registro automático en la matriz pedagógica.
+                            </p>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={skipTrackingDemo}
+                            className="text-xs text-stone-300 hover:text-white underline underline-offset-4 cursor-pointer pt-1 transition-colors font-medium"
+                          >
+                            O explorar la matriz libremente →
+                          </button>
+                        </div>
+                      )}
+
+                      {/* REGISTRATION SUCCESS FLASH BANNER */}
+                      <AnimatePresence>
+                        {trackingJustRegisteredFlash && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="mb-3 p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-600 dark:text-emerald-300 text-xs font-bold flex items-center justify-between gap-2 shadow-md"
+                          >
+                            <div className="flex items-center gap-2">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                              <span>¡Observación estructurada con IA y registrada en la matriz para Elena R.!</span>
+                            </div>
+                            <span className="text-[10px] font-mono text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded shrink-0">
+                              Sync 100%
+                            </span>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      {/* SUB-VIEW 1: INTERACTIVE PEDAGOGICAL MATRIX */}
+                      {trackingModuleSubView === 'matrix' && (
+                        <div className="space-y-4 animate-in fade-in duration-300">
+                          {/* Matrix Filter & Mode Bar */}
+                          <div className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 flex-wrap text-xs ${
+                            isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
+                          }`}>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-stone-900 dark:text-white flex items-center gap-1.5">
+                                <Calendar className="w-3.5 h-3.5 text-[#C4661F]" />
+                                {lang === 'en' ? 'Selected Date:' : lang === 'es' ? 'Fecha Seleccionada:' : lang === 'pt' ? 'Data:' : 'Date :'}
+                              </span>
+                              <span className="font-mono font-bold text-[#C4661F] bg-[#C4661F]/10 px-2.5 py-0.5 rounded-lg border border-[#C4661F]/20">
+                                29 Ago 2026
+                              </span>
+                              <span className="text-[10px] text-stone-400 dark:text-slate-400">
+                                (Casa de Niños 1 • 3-6 años)
+                              </span>
+                            </div>
+
+                            {/* Mini AMI Legend */}
+                            <div className="hidden sm:flex items-center gap-3 text-[11px] text-stone-500 dark:text-slate-400 font-medium">
+                              <span className="flex items-center gap-1">
+                                <Eye className="w-3.5 h-3.5 text-cyan-500" />
+                                1er Tiempo
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3.5 h-3.5 text-amber-500" />
+                                2do Tiempo
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                                3er Tiempo
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 p-1 rounded-xl border border-stone-200 dark:border-slate-800">
+                              <button
+                                type="button"
+                                onClick={() => setTrackingActiveCategory('lessons')}
+                                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                                  trackingActiveCategory === 'lessons'
+                                    ? 'bg-[#C4661F] text-white shadow-2xs'
+                                    : 'text-stone-500 hover:text-stone-900 dark:text-slate-400 dark:hover:text-white'
+                                }`}
+                              >
+                                {lang === 'en' ? 'AMI Lessons' : lang === 'es' ? 'Lecciones AMI' : lang === 'pt' ? 'Lições AMI' : 'Leçons AMI'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setTrackingActiveCategory('trackers')}
+                                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                                  trackingActiveCategory === 'trackers'
+                                    ? 'bg-[#C4661F] text-white shadow-2xs'
+                                    : 'text-stone-500 hover:text-stone-900 dark:text-slate-400 dark:hover:text-white'
+                                }`}
+                              >
+                                {lang === 'en' ? 'Habits & Trackers' : lang === 'es' ? 'Hábitos & Trackers' : lang === 'pt' ? 'Hábitos & Rotinas' : 'Habitudes'}
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Interactive Matrix Table */}
+                          <div className={`rounded-2xl border overflow-x-auto ${
+                            isDark ? 'bg-[#0a120b] border-slate-800' : 'bg-white border-stone-200 shadow-sm'
+                          }`}>
+                            <table className="w-full text-left text-xs border-collapse min-w-[620px]">
+                              <thead>
+                                <tr className={`border-b ${isDark ? 'bg-slate-900/80 border-slate-800 text-slate-300' : 'bg-stone-100/80 border-stone-200 text-stone-700'}`}>
+                                  <th className="p-3 font-bold">{lang === 'en' ? 'Student' : lang === 'es' ? 'Estudiante' : lang === 'pt' ? 'Aluno' : 'Élève'}</th>
+                                  <th className="p-3 font-bold text-center">
+                                    <div className="flex flex-col items-center">
+                                      <span>{lang === 'en' ? 'Pink Tower' : lang === 'fr' ? 'Tour Rose' : 'Torre Rosa'}</span>
+                                      <span className="text-[9px] font-normal text-slate-400">{lang === 'en' ? '(Sensorial)' : lang === 'it' ? '(Sensoriale)' : lang === 'fr' ? '(Sensoriel)' : '(Sensorial)'}</span>
+                                    </div>
+                                  </th>
+                                  <th className="p-3 font-bold text-center">
+                                    <div className="flex flex-col items-center">
+                                      <span>{lang === 'en' ? 'Movable Alphabet' : lang === 'pt' ? 'Alfabeto Móvel' : lang === 'it' ? 'Alfabeto Mobile' : lang === 'fr' ? 'Alphabet Mobile' : 'Alfabeto Móvil'}</span>
+                                      <span className="text-[9px] font-normal text-slate-400">{lang === 'en' ? '(Language)' : lang === 'pt' ? '(Linguagem)' : lang === 'it' ? '(Linguaggio)' : lang === 'fr' ? '(Langage)' : '(Lenguaje)'}</span>
+                                    </div>
+                                  </th>
+                                  <th className="p-3 font-bold text-center">
+                                    <div className="flex flex-col items-center">
+                                      <span>{lang === 'en' ? 'Knobbed Cylinders' : lang === 'pt' ? 'Cilindros c/ Botão' : lang === 'it' ? 'Cilindri con Pomolo' : lang === 'fr' ? 'Cylindres à Bouton' : 'Cilindros c/Botón'}</span>
+                                      <span className="text-[9px] font-normal text-slate-400">{lang === 'en' ? '(Sensorial)' : lang === 'it' ? '(Sensoriale)' : lang === 'fr' ? '(Sensoriel)' : '(Sensorial)'}</span>
+                                    </div>
+                                  </th>
+                                  <th className="p-3 font-bold text-center">
+                                    <div className="flex flex-col items-center">
+                                      <span>{lang === 'en' ? 'Table Washing' : lang === 'pt' ? 'Lavar a Mesa' : lang === 'it' ? 'Lavaggio Tavolo' : lang === 'fr' ? 'Lavage de Table' : 'Cuidado de Mesa'}</span>
+                                      <span className="text-[9px] font-normal text-slate-400">{lang === 'en' ? '(Practical Life)' : lang === 'it' ? '(Vita Pratica)' : lang === 'fr' ? '(Vie Pratique)' : '(Vida Práctica)'}</span>
+                                    </div>
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-stone-200 dark:divide-slate-800/80 font-medium">
+                                {/* Row 1: Elena R. */}
+                                <tr className={`transition-colors ${
+                                  trackingJustRegisteredFlash
+                                    ? 'bg-emerald-500/15 dark:bg-emerald-500/20'
+                                    : trackingSelectedCell?.student === 'Elena R.'
+                                      ? 'bg-[#C4661F]/5 dark:bg-[#C4661F]/10'
+                                      : 'hover:bg-stone-50 dark:hover:bg-slate-900/40'
+                                }`}>
+                                  <td className="p-3 whitespace-nowrap">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 font-bold flex items-center justify-center text-[10px]">
+                                        E
+                                      </div>
+                                      <span className="font-bold text-stone-900 dark:text-white">Elena R. (5a 1m)</span>
+                                    </div>
+                                  </td>
+                                  <td className="p-2 text-center">
+                                    <div className="flex items-center justify-center" title="Dominado (3er Tiempo)">
+                                      <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shadow-3xs">
+                                        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="p-2 text-center">
+                                    <div className="flex items-center justify-center">
+                                      <button
+                                        type="button"
+                                        onClick={() => setTrackingSelectedCell({
+                                          student: 'Elena R.',
+                                          studentAge: '5a 1m',
+                                          activity: 'Alfabeto Móvil',
+                                          area: 'Lenguaje',
+                                          status: 'Dominado (3er Tiempo)',
+                                          statusColor: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+                                          publicNote: '«Elena demostró un periodo de concentración prolongada en el área de lenguaje, interiorizando con entusiasmo la correspondencia fonética y la construcción de palabras.»',
+                                          privateNote: '«Consolidó fonemas /m/ /a/ /s/ /a/ sin error espontáneo. Lista para letras de lija serie azul la próxima semana.»',
+                                          photoUrl: '/images/montessori_child_privacy_demo.jpg'
+                                        })}
+                                        className={`w-16 h-8 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs ${
+                                          trackingJustRegisteredFlash
+                                            ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/50 ring-2 ring-emerald-500/50'
+                                            : 'bg-[#C4661F]/15 hover:bg-[#C4661F]/25 text-[#C4661F] border border-[#C4661F]/40 ring-1 ring-[#C4661F]/50'
+                                        }`}
+                                        title="Dominado (3er Tiempo) • Dictado por voz disponible"
+                                      >
+                                        <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                                        <Mic className="w-3 h-3 text-[#C4661F] shrink-0" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                  <td className="p-2 text-center">
+                                    <div className="flex items-center justify-center" title="Dominado (3er Tiempo)">
+                                      <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shadow-3xs">
+                                        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="p-2 text-center">
+                                    <div className="flex items-center justify-center" title="Hábito Cumplido">
+                                      <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shadow-3xs">
+                                        <Check className="w-4 h-4 text-emerald-500 stroke-[2.5]" />
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+
+                                {/* Row 2: Santiago M. */}
+                                <tr className={`transition-colors ${trackingSelectedCell?.student === 'Santiago M.' ? 'bg-[#C4661F]/5 dark:bg-[#C4661F]/10' : 'hover:bg-stone-50 dark:hover:bg-slate-900/40'}`}>
+                                  <td className="p-3 whitespace-nowrap">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center text-[10px]">
+                                        S
+                                      </div>
+                                      <span className="font-bold text-stone-900 dark:text-white">Santiago M. (4a 2m)</span>
+                                    </div>
+                                  </td>
+                                  <td className="p-2 text-center">
+                                    <div className="flex items-center justify-center">
+                                      <button
+                                        type="button"
+                                        onClick={() => setTrackingSelectedCell({
+                                          student: 'Santiago M.',
+                                          studentAge: '4a 2m',
+                                          activity: 'Torre Rosa',
+                                          area: 'Sensorial',
+                                          status: 'Dominado (3er Tiempo)',
+                                          statusColor: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+                                          publicNote: '«Santiago completó los 10 cubos de la Torre Rosa por gradación tridimensional con autorregulación espontánea.»',
+                                          privateNote: '«Excelente control del error visual en el séptimo cubo. No requirió intervención del adulto.»',
+                                          photoUrl: '/images/montessori_child_privacy_demo.jpg'
+                                        })}
+                                        className="w-16 h-8 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center justify-center gap-1.5 cursor-pointer shadow-3xs transition-colors"
+                                        title="Dominado (3er Tiempo) • Dictado por voz disponible"
+                                      >
+                                        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                        <Mic className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                  <td className="p-2 text-center">
+                                    <div className="flex items-center justify-center" title="Practicando (2do Tiempo)">
+                                      <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shadow-3xs">
+                                        <Clock className="w-4 h-4 text-amber-500" />
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="p-2 text-center">
+                                    <div className="flex items-center justify-center" title="Dominado (3er Tiempo)">
+                                      <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shadow-3xs">
+                                        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="p-2 text-center">
+                                    <div className="flex items-center justify-center" title="Hábito Cumplido">
+                                      <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shadow-3xs">
+                                        <Check className="w-4 h-4 text-emerald-500 stroke-[2.5]" />
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+
+                                {/* Row 3: Mateo V. */}
+                                <tr className={`transition-colors ${trackingSelectedCell?.student === 'Mateo V.' ? 'bg-[#C4661F]/5 dark:bg-[#C4661F]/10' : 'hover:bg-stone-50 dark:hover:bg-slate-900/40'}`}>
+                                  <td className="p-3 whitespace-nowrap">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-6 h-6 rounded-full bg-cyan-500/20 text-cyan-400 font-bold flex items-center justify-center text-[10px]">
+                                        M
+                                      </div>
+                                      <span className="font-bold text-stone-900 dark:text-white">Mateo V. (3a 8m)</span>
+                                    </div>
+                                  </td>
+                                  <td className="p-2 text-center">
+                                    <div className="flex items-center justify-center" title="Presentado (1er Tiempo)">
+                                      <div className="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shadow-3xs">
+                                        <Eye className="w-4 h-4 text-cyan-500" />
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="p-2 text-center">
+                                    <div className="flex items-center justify-center" title="No iniciado">
+                                      <div className="w-8 h-8 rounded-xl bg-stone-100 dark:bg-slate-900 border border-stone-200 dark:border-slate-800 flex items-center justify-center">
+                                        <Minus className="w-3.5 h-3.5 text-stone-400 dark:text-slate-600" />
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="p-2 text-center">
+                                    <div className="flex items-center justify-center" title="Practicando (2do Tiempo)">
+                                      <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shadow-3xs">
+                                        <Clock className="w-4 h-4 text-amber-500" />
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="p-2 text-center">
+                                    <div className="flex items-center justify-center" title="En progreso">
+                                      <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shadow-3xs">
+                                        <Clock className="w-4 h-4 text-amber-500" />
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+
+                          {/* Selected Cell Live Detail & 1-Click Dictation Card */}
+                          {trackingSelectedCell && (
+                            <div className={`p-4 rounded-2xl border space-y-3 ${
+                              isDark ? 'bg-[#0f1811] border-slate-700' : 'bg-[#FAF8F5] border-stone-200 shadow-sm'
+                            }`}>
+                              <div className="flex items-center justify-between gap-2 flex-wrap border-b border-stone-200 dark:border-slate-800 pb-2.5">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold text-sm text-stone-900 dark:text-white">
+                                    {trackingSelectedCell.student} ({trackingSelectedCell.studentAge})
+                                  </span>
+                                  <span className="text-[11px] text-stone-400">•</span>
+                                  <span className="text-xs font-semibold text-[#C4661F]">
+                                    {trackingSelectedCell.activity} ({trackingSelectedCell.area})
+                                  </span>
+                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${trackingSelectedCell.statusColor}`}>
+                                    {trackingSelectedCell.status}
+                                  </span>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={() => setTrackingModuleSubView('voice_sim')}
+                                  className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-sm transition-all hover:scale-105 active:scale-95"
+                                >
+                                  <Mic className="w-3.5 h-3.5" />
+                                  <span>{lang === 'en' ? 'Dictate Note in Cell' : lang === 'es' ? 'Dictar Nota en Celda' : lang === 'pt' ? 'Ditar nesta Célula' : 'Dicter dans la Cellule'}</span>
+                                </button>
+                              </div>
+
+                              {/* Dual Notes Display: Public vs Confidential */}
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                                <div className={`p-3 rounded-xl border space-y-1.5 ${
+                                  isDark ? 'bg-emerald-950/20 border-emerald-500/20' : 'bg-emerald-50/70 border-emerald-200'
+                                }`}>
+                                  <span className="font-bold text-emerald-600 dark:text-emerald-400 text-[11px] uppercase flex items-center gap-1.5">
+                                    <Users className="w-3.5 h-3.5" />
+                                    {lang === 'en' ? 'Public Family Note (Parent Portal):' : lang === 'es' ? 'Nota Pública para Familias (Portal de Padres):' : lang === 'pt' ? 'Nota Pública para a Família:' : 'Note Publique Famille :'}
+                                  </span>
+                                  <p className="text-stone-700 dark:text-slate-300 leading-relaxed text-[11px]">
+                                    {trackingSelectedCell.publicNote}
+                                  </p>
+                                </div>
+
+                                <div className={`p-3 rounded-xl border space-y-1.5 ${
+                                  isDark ? 'bg-purple-950/20 border-purple-500/20' : 'bg-purple-50/70 border-purple-200'
+                                }`}>
+                                  <span className="font-bold text-purple-600 dark:text-purple-400 text-[11px] uppercase flex items-center gap-1.5">
+                                    <Lock className="w-3.5 h-3.5" />
+                                    {lang === 'en' ? 'Confidential Guide Note (Internal):' : lang === 'es' ? 'Nota Interna Confidencial (Guías & Dirección):' : lang === 'pt' ? 'Nota Interna Confidencial (Guias):' : 'Note Interne Confidentielle :'}
+                                  </span>
+                                  <p className="text-stone-700 dark:text-slate-300 leading-relaxed text-[11px]">
+                                    {trackingSelectedCell.privateNote}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* SUB-VIEW 2: LIVE VOICE RECORDER SIMULATOR */}
+                      {trackingModuleSubView === 'voice_sim' && (
+                        <div className="p-6 rounded-2xl bg-gradient-to-b from-gray-950 via-black to-gray-950 text-white space-y-5 shadow-2xl border border-slate-800 animate-in fade-in duration-300">
+                          {/* Status Bar */}
+                          <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-3">
+                            <div className="flex items-center gap-2.5">
+                              <span className="flex h-3 w-3 relative">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
+                              </span>
+                              <span className="font-mono font-bold text-red-400 text-xs tracking-wider">
+                                {lang === 'en' ? 'LIVE VOICE DICTATION' : lang === 'es' ? 'GRABANDO EN VIVO' : lang === 'pt' ? 'GRAVANDO AO VIVO' : 'ENREGISTREMENT'}
+                              </span>
+                              <span className="font-mono text-gray-300 font-bold text-sm">
+                                00:{trackingSimRecordingSec ? trackingSimRecordingSec.toString().padStart(2, '0') : '18'}
+                              </span>
+                            </div>
+
+                            <span className="px-3 py-1 rounded-full bg-white/10 border border-white/15 text-[11px] text-gray-300 font-semibold flex items-center gap-1.5">
+                              <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                              <span>Elena R. • Alfabeto Móvil</span>
+                            </span>
+                          </div>
+
+                          {/* Center Mic & Waveform Equalizer */}
+                          <div className="flex flex-col items-center justify-center space-y-4 py-2 text-center">
+                            <div className="relative flex items-center justify-center">
+                              <div className="absolute -inset-6 rounded-full bg-gradient-to-r from-purple-600/30 via-pink-600/30 to-indigo-600/30 blur-xl animate-pulse" />
+                              <div className="relative w-16 h-16 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-white shadow-2xl ring-4 ring-white/20">
+                                <Mic className="w-8 h-8 animate-bounce" />
+                              </div>
+                            </div>
+
+                            <div className="space-y-1">
+                              <h4 className="text-base sm:text-lg font-bold font-display text-white">
+                                {lang === 'en' ? 'Listening to your observation...' : lang === 'es' ? 'Escuchando tu observación pedagógica...' : lang === 'pt' ? 'Ouvindo sua observação...' : 'Écoute de l’observation...'}
+                              </h4>
+                              <p className="text-xs text-gray-400 max-w-md mx-auto">
+                                {lang === 'en'
+                                  ? 'Speak naturally. Real-time transcription captures lessons, concentration milestones, and evidence.'
+                                  : lang === 'es'
+                                    ? 'Habla con naturalidad. La IA transcribe en directo, detecta el alumno y clasifica los 3 Tiempos de Séguin.'
+                                    : lang === 'pt'
+                                      ? 'Fale com naturalidade. A IA transcreve em tempo real e classifica os 3 tempos.'
+                                      : 'Parlez naturellement. L’IA transcrit en direct et structure l’observation.'}
+                              </p>
+                            </div>
+
+                            {/* Dynamic Audio Equalizer Bars */}
+                            <div className="w-full bg-white/5 border border-white/10 p-3 rounded-2xl flex items-center justify-center gap-1.5 h-14">
+                              {[30, 60, 90, 45, 80, 100, 70, 40, 85, 95, 60, 35, 75, 90, 50, 65, 85, 40].map((h, i) => (
+                                <div
+                                  key={i}
+                                  style={{ height: `${h}%` }}
+                                  className="w-1.5 rounded-full bg-gradient-to-t from-pink-500 via-purple-500 to-indigo-500 animate-pulse"
+                                />
+                              ))}
+                            </div>
+
+                            {/* Real-time Transcription Stream */}
+                            <div className="w-full p-3.5 rounded-xl bg-black/60 border border-white/10 text-left space-y-1">
+                              <span className="text-[10px] font-mono text-gray-400 uppercase tracking-wider block flex items-center gap-1">
+                                <Volume2 className="w-3.5 h-3.5 text-purple-400" />
+                                {lang === 'en' ? 'Live Stream:' : lang === 'es' ? 'Transcripción en Vivo:' : lang === 'pt' ? 'Transcrição:' : 'Transcription :'}
+                              </span>
+                              <p className="text-xs sm:text-sm text-gray-100 font-medium leading-relaxed">
+                                {trackingLiveTypedText ? (
+                                  <>
+                                    <span>«{trackingLiveTypedText}</span>
+                                    <span className="inline-block w-1.5 h-3.5 bg-purple-400 ml-1 animate-pulse align-middle" />
+                                  </>
+                                ) : (
+                                  <>
+                                    «Elena armó palabras con el alfabeto móvil durante 30 minutos concentrada...
+                                    <span className="text-purple-300 italic"> discriminación fonética clara y autorregulación espontánea.»</span>
+                                  </>
+                                )}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Equal Sized Action Buttons */}
+                          <div className="flex items-center justify-center gap-8 pt-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (trackingDemoPlaying) skipTrackingDemo();
+                                setTrackingModuleSubView('matrix');
+                              }}
+                              className="flex flex-col items-center gap-1.5 group cursor-pointer"
+                            >
+                              <div className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-gray-300 group-hover:text-white flex items-center justify-center transition-all shadow-md">
+                                <X className="w-5 h-5" />
+                              </div>
+                              <span className="text-xs text-gray-400 group-hover:text-gray-200">{lang === 'en' ? 'Cancel' : lang === 'es' ? 'Cancelar' : lang === 'pt' ? 'Cancelar' : 'Annuler'}</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (trackingDemoPlaying) skipTrackingDemo();
+                                setTrackingJustRegisteredFlash(true);
+                                setTrackingModuleSubView('matrix');
+                                setTrackingSelectedCell({
+                                  student: 'Elena R.',
+                                  studentAge: '5a 1m',
+                                  activity: 'Alfabeto Móvil',
+                                  area: 'Lenguaje',
+                                  status: 'Dominado (3er Tiempo)',
+                                  statusColor: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+                                  publicNote: '«Elena demostró un periodo de concentración prolongada en el área de lenguaje, interiorizando con entusiasmo la correspondencia fonética y la construcción de palabras.»',
+                                  privateNote: '«Consolidó fonemas /m/ /a/ /s/ /a/ sin error espontáneo. Lista para letras de lija serie azul la próxima semana.»',
+                                  photoUrl: '/images/montessori_child_privacy_demo.jpg'
+                                });
+                              }}
+                              className={`flex flex-col items-center gap-1.5 group cursor-pointer transition-transform ${
+                                trackingDemoStep === 'cursor_to_check' ? 'scale-110' : ''
+                              }`}
+                            >
+                              <div className={`w-12 h-12 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white flex items-center justify-center transition-all hover:scale-105 shadow-xl shadow-emerald-500/40 ring-4 ring-white/20 ${
+                                trackingDemoStep === 'cursor_to_check' ? 'ring-emerald-400 scale-105' : ''
+                              }`}>
+                                <Check className="w-5 h-5 stroke-[3]" />
+                              </div>
+                              <span className="text-xs font-bold text-emerald-400 group-hover:text-emerald-300">{lang === 'en' ? 'Structure with AI' : lang === 'es' ? 'Estructurar con IA' : lang === 'pt' ? 'Estruturar' : 'Valider'}</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      
                     </div>
 
                     {/* Bottom Value Pillars */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
-                        }`}>
-                        <span className="font-bold text-stone-900 dark:text-white block">⏳ 3 Tiempos AMI</span>
-                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Presentación, Reconocimiento, Dominio.</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-1">
+                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'}`}>
+                        <span className="font-bold text-stone-900 dark:text-white block">Minutos a Segundos</span>
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Captura natural por voz en el aula.</span>
                       </div>
-                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
-                        }`}>
-                        <span className="font-bold text-stone-900 dark:text-white block">📈 Sin Calificaciones</span>
-                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Evaluación puramente formativa.</span>
+                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'}`}>
+                        <span className="font-bold text-stone-900 dark:text-white block">Cero Fricción</span>
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Dictado directo celda por celda.</span>
                       </div>
-                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
-                        }`}>
-                        <span className="font-bold text-stone-900 dark:text-white block">📁 Bitácora Histórica</span>
-                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Trazabilidad de todo el ciclo escolar.</span>
+                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'}`}>
+                        <span className="font-bold text-stone-900 dark:text-white block">100% Sync de Fecha</span>
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Sin desfases horarios UTC/Local.</span>
+                      </div>
+                      <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'}`}>
+                        <span className="font-bold text-stone-900 dark:text-white block">Doble Registro</span>
+                        <span className="text-[11px] text-stone-500 dark:text-slate-400">Nota familiar y nota técnica interna.</span>
                       </div>
                     </div>
                   </motion.div>
@@ -4774,17 +7061,17 @@ export const MontessoriNexusLanding: React.FC = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                       <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
                         }`}>
-                        <span className="font-bold text-stone-900 dark:text-white block">🔑 Aislamiento por Aula</span>
+                        <span className="font-bold text-stone-900 dark:text-white block">Aislamiento por Aula</span>
                         <span className="text-[11px] text-stone-500 dark:text-slate-400">Solo ven a sus propios alumnos.</span>
                       </div>
                       <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
                         }`}>
-                        <span className="font-bold text-stone-900 dark:text-white block">📚 Memoria Viva</span>
+                        <span className="font-bold text-stone-900 dark:text-white block">Memoria Viva</span>
                         <span className="text-[11px] text-stone-500 dark:text-slate-400">El historial se queda en la escuela.</span>
                       </div>
                       <div className={`p-3 rounded-xl border text-xs ${isDark ? 'bg-[#0f1811] border-slate-800' : 'bg-[#FAF8F5] border-stone-200'
                         }`}>
-                        <span className="font-bold text-stone-900 dark:text-white block">🤝 Relevos Transparentes</span>
+                        <span className="font-bold text-stone-900 dark:text-white block">Relevos Transparentes</span>
                         <span className="text-[11px] text-stone-500 dark:text-slate-400">Continuidad pedagógica garantizada.</span>
                       </div>
                     </div>
@@ -4796,438 +7083,9 @@ export const MontessoriNexusLanding: React.FC = () => {
         </div>
       </section>
 
-      {/* ========================================================================= */}
-      {/* 7. MONTESSORI 5 AREAS CURRICULUM SELECTOR */}
-      {/* ========================================================================= */}
-      <section id="pedagogia" className={`py-20 sm:py-28 border-b ${isDark ? 'bg-[#111b12] border-slate-800' : 'bg-[#F9EBC7] border-stone-200'}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-14">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#C4661F] bg-[#C4661F]/10 px-3.5 py-1 rounded-full border border-[#C4661F]/20">
-              {t.areas.badge}
-            </span>
-            <h2 className={`text-3xl sm:text-5xl font-serif font-bold mt-4 mb-3 ${isDark ? 'text-white' : 'text-[#162218]'}`}>
-              {t.areas.title}
-            </h2>
-            <p className={`text-base sm:text-lg ${isDark ? 'text-slate-300' : 'text-stone-600'}`}>
-              {t.areas.subtitle}
-            </p>
-          </div>
 
-          {/* Area Selector Tabs */}
-          <div className="flex sm:flex-wrap items-center sm:justify-center gap-2 sm:gap-3 overflow-x-auto no-scrollbar py-2 px-4 sm:px-0 mb-10 max-w-full -mx-4 sm:mx-0 scroll-smooth">
-            {Object.entries(t.areas.tabs).map(([key, label]) => {
-              const getAreaIcon = (areaKey: string) => {
-                switch (areaKey) {
-                  case 'practica': return <Sparkles className="w-4 h-4 mr-1.5 shrink-0" />;
-                  case 'sensorial': return <Layers className="w-4 h-4 mr-1.5 shrink-0" />;
-                  case 'lenguaje': return <FileText className="w-4 h-4 mr-1.5 shrink-0" />;
-                  case 'mate': return <Calculator className="w-4 h-4 mr-1.5 shrink-0" />;
-                  case 'cosmica': return <Globe className="w-4 h-4 mr-1.5 shrink-0" />;
-                  default: return <Sparkles className="w-4 h-4 mr-1.5 shrink-0" />;
-                }
-              };
-              const isActive = activeArea === key;
-              return (
-                <button
-                  key={key}
-                  onClick={() => setActiveArea(key as any)}
-                  className={`px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer border flex items-center justify-center text-center shrink-0 whitespace-nowrap select-none ${isActive
-                      ? 'bg-[#C4661F] text-white border-[#C4661F] shadow-lg shadow-[#C4661F]/25 ring-2 ring-[#C4661F]/20'
-                      : isDark
-                        ? 'bg-slate-800/90 text-slate-300 border-slate-700/80 hover:bg-slate-700 hover:text-white'
-                        : 'bg-white text-stone-700 border-stone-300 hover:bg-stone-50 hover:border-stone-400 shadow-2xs'
-                    }`}
-                >
-                  {getAreaIcon(key)}
-                  <span>{label}</span>
-                </button>
-              );
-            })}
-          </div>
 
-          {/* Area Card */}
-          <div className={`rounded-3xl p-6 sm:p-10 border shadow-sm max-w-4xl mx-auto text-left space-y-6 ${isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-300'
-            }`}>
-            {activeArea === 'practica' && (
-              <div className="space-y-4">
-                <div className={`flex items-center justify-between pb-3 border-b ${isDark ? 'border-slate-800' : 'border-stone-200'}`}>
-                  <h3 className={`text-2xl font-serif font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>{t.areas.practicaTitle}</h3>
-                  <span className="text-xs font-bold text-[#C4661F] bg-[#C4661F]/10 px-3 py-1 rounded-full">
-                    {t.areas.practicaBadge}
-                  </span>
-                </div>
-                <p className={`text-sm leading-relaxed ${isDark ? 'text-slate-300' : 'text-stone-600'}`}>
-                  {t.areas.practicaDesc}
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                  <div className={`p-4 rounded-xl border text-xs space-y-1 ${isDark ? 'bg-[#0e1710] border-slate-700' : 'bg-[#FEFAE0] border-stone-200'}`}>
-                    <span className={`font-bold block ${isDark ? 'text-white' : 'text-[#162218]'}`}>{t.areas.practicaC1T}</span>
-                    <p className={isDark ? 'text-slate-400' : 'text-stone-500'}>{t.areas.practicaC1D}</p>
-                  </div>
-                  <div className={`p-4 rounded-xl border text-xs space-y-1 ${isDark ? 'bg-[#0e1710] border-slate-700' : 'bg-[#FEFAE0] border-stone-200'}`}>
-                    <span className={`font-bold block ${isDark ? 'text-white' : 'text-[#162218]'}`}>{t.areas.practicaC2T}</span>
-                    <p className={isDark ? 'text-slate-400' : 'text-stone-500'}>{t.areas.practicaC2D}</p>
-                  </div>
-                </div>
-              </div>
-            )}
 
-            {activeArea === 'sensorial' && (
-              <div className="space-y-4">
-                <div className={`flex items-center justify-between pb-3 border-b ${isDark ? 'border-slate-800' : 'border-stone-200'}`}>
-                  <h3 className={`text-2xl font-serif font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>{t.areas.sensorialTitle}</h3>
-                  <span className="text-xs font-bold text-[#C4661F] bg-[#C4661F]/10 px-3 py-1 rounded-full">
-                    {t.areas.sensorialBadge}
-                  </span>
-                </div>
-                <p className={`text-sm leading-relaxed ${isDark ? 'text-slate-300' : 'text-stone-600'}`}>
-                  {t.areas.sensorialDesc}
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                  <div className={`p-4 rounded-xl border text-xs space-y-1 ${isDark ? 'bg-[#0e1710] border-slate-700' : 'bg-[#FEFAE0] border-stone-200'}`}>
-                    <span className={`font-bold block ${isDark ? 'text-white' : 'text-[#162218]'}`}>{t.areas.sensorialC1T}</span>
-                    <p className={isDark ? 'text-slate-400' : 'text-stone-500'}>{t.areas.sensorialC1D}</p>
-                  </div>
-                  <div className={`p-4 rounded-xl border text-xs space-y-1 ${isDark ? 'bg-[#0e1710] border-slate-700' : 'bg-[#FEFAE0] border-stone-200'}`}>
-                    <span className={`font-bold block ${isDark ? 'text-white' : 'text-[#162218]'}`}>{t.areas.sensorialC2T}</span>
-                    <p className={isDark ? 'text-slate-400' : 'text-stone-500'}>{t.areas.sensorialC2D}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeArea === 'lenguaje' && (
-              <div className="space-y-4">
-                <div className={`flex items-center justify-between pb-3 border-b ${isDark ? 'border-slate-800' : 'border-stone-200'}`}>
-                  <h3 className={`text-2xl font-serif font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>{t.areas.lenguajeTitle}</h3>
-                  <span className="text-xs font-bold text-[#C4661F] bg-[#C4661F]/10 px-3 py-1 rounded-full">
-                    {t.areas.lenguajeBadge}
-                  </span>
-                </div>
-                <p className={`text-sm leading-relaxed ${isDark ? 'text-slate-300' : 'text-stone-600'}`}>
-                  {t.areas.lenguajeDesc}
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                  <div className={`p-4 rounded-xl border text-xs space-y-1 ${isDark ? 'bg-[#0e1710] border-slate-700' : 'bg-[#FEFAE0] border-stone-200'}`}>
-                    <span className={`font-bold block ${isDark ? 'text-white' : 'text-[#162218]'}`}>{t.areas.lenguajeC1T}</span>
-                    <p className={isDark ? 'text-slate-400' : 'text-stone-500'}>{t.areas.lenguajeC1D}</p>
-                  </div>
-                  <div className={`p-4 rounded-xl border text-xs space-y-1 ${isDark ? 'bg-[#0e1710] border-slate-700' : 'bg-[#FEFAE0] border-stone-200'}`}>
-                    <span className={`font-bold block ${isDark ? 'text-white' : 'text-[#162218]'}`}>{t.areas.lenguajeC2T}</span>
-                    <p className={isDark ? 'text-slate-400' : 'text-stone-500'}>{t.areas.lenguajeC2D}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeArea === 'mate' && (
-              <div className="space-y-4">
-                <div className={`flex items-center justify-between pb-3 border-b ${isDark ? 'border-slate-800' : 'border-stone-200'}`}>
-                  <h3 className={`text-2xl font-serif font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>{t.areas.mateTitle}</h3>
-                  <span className="text-xs font-bold text-[#C4661F] bg-[#C4661F]/10 px-3 py-1 rounded-full">
-                    {t.areas.mateBadge}
-                  </span>
-                </div>
-                <p className={`text-sm leading-relaxed ${isDark ? 'text-slate-300' : 'text-stone-600'}`}>
-                  {t.areas.mateDesc}
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                  <div className={`p-4 rounded-xl border text-xs space-y-1 ${isDark ? 'bg-[#0e1710] border-slate-700' : 'bg-[#FEFAE0] border-stone-200'}`}>
-                    <span className={`font-bold block ${isDark ? 'text-white' : 'text-[#162218]'}`}>{t.areas.mateC1T}</span>
-                    <p className={isDark ? 'text-slate-400' : 'text-stone-500'}>{t.areas.mateC1D}</p>
-                  </div>
-                  <div className={`p-4 rounded-xl border text-xs space-y-1 ${isDark ? 'bg-[#0e1710] border-slate-700' : 'bg-[#FEFAE0] border-stone-200'}`}>
-                    <span className={`font-bold block ${isDark ? 'text-white' : 'text-[#162218]'}`}>{t.areas.mateC2T}</span>
-                    <p className={isDark ? 'text-slate-400' : 'text-stone-500'}>{t.areas.mateC2D}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeArea === 'cosmica' && (
-              <div className="space-y-4">
-                <div className={`flex items-center justify-between pb-3 border-b ${isDark ? 'border-slate-800' : 'border-stone-200'}`}>
-                  <h3 className={`text-2xl font-serif font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>{t.areas.cosmicaTitle}</h3>
-                  <span className="text-xs font-bold text-[#C4661F] bg-[#C4661F]/10 px-3 py-1 rounded-full">
-                    {t.areas.cosmicaBadge}
-                  </span>
-                </div>
-                <p className={`text-sm leading-relaxed ${isDark ? 'text-slate-300' : 'text-stone-600'}`}>
-                  {t.areas.cosmicaDesc}
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                  <div className={`p-4 rounded-xl border text-xs space-y-1 ${isDark ? 'bg-[#0e1710] border-slate-700' : 'bg-[#FEFAE0] border-stone-200'}`}>
-                    <span className={`font-bold block ${isDark ? 'text-white' : 'text-[#162218]'}`}>{t.areas.cosmicaC1T}</span>
-                    <p className={isDark ? 'text-slate-400' : 'text-stone-500'}>{t.areas.cosmicaC1D}</p>
-                  </div>
-                  <div className={`p-4 rounded-xl border text-xs space-y-1 ${isDark ? 'bg-[#0e1710] border-slate-700' : 'bg-[#FEFAE0] border-stone-200'}`}>
-                    <span className={`font-bold block ${isDark ? 'text-white' : 'text-[#162218]'}`}>{t.areas.cosmicaC2T}</span>
-                    <p className={isDark ? 'text-slate-400' : 'text-stone-500'}>{t.areas.cosmicaC2D}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* 8. 3-HOUR WORK CYCLE */}
-      {/* ========================================================================= */}
-      <section id="ciclo" className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <div className="max-w-3xl mx-auto mb-16">
-          <span className="text-xs font-bold uppercase tracking-wider text-[#C4661F] bg-[#C4661F]/10 px-3.5 py-1 rounded-full border border-[#C4661F]/20">
-            {t.cycle.badge}
-          </span>
-          <h2 className={`text-3xl sm:text-5xl font-serif font-bold mt-4 mb-3 ${isDark ? 'text-white' : 'text-[#162218]'}`}>
-            {t.cycle.title}
-          </h2>
-          <p className={`text-base sm:text-lg ${isDark ? 'text-slate-300' : 'text-stone-600'}`}>
-            {t.cycle.subtitle}
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-          {t.cycle.steps.map((item, idx) => (
-            <div
-              key={idx}
-              onClick={() => setActiveCycleStep(idx)}
-              className={`p-8 rounded-3xl border-2 transition-all cursor-pointer ${activeCycleStep === idx
-                  ? 'bg-[#C4661F]/10 border-[#C4661F] shadow-lg scale-[1.02]'
-                  : isDark
-                    ? 'bg-[#162218]/60 border-slate-800 hover:bg-[#162218]'
-                    : 'bg-[#F9EBC7]/60 border-stone-300/80 hover:bg-white'
-                }`}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-3xl font-serif font-bold text-[#C4661F]">{item.step}</span>
-                <span className={`text-xs font-mono font-bold px-2.5 py-1 rounded-md border ${isDark ? 'bg-slate-800 text-slate-300 border-slate-700' : 'bg-stone-100 text-stone-600 border-stone-200'
-                  }`}>
-                  {item.time}
-                </span>
-              </div>
-              <h4 className={`text-xl font-serif font-bold mb-2 ${isDark ? 'text-white' : 'text-[#162218]'}`}>{item.title}</h4>
-              <p className={`text-xs leading-relaxed mb-4 ${isDark ? 'text-slate-300' : 'text-stone-600'}`}>{item.desc}</p>
-              <div className={`p-3 rounded-xl border text-xs font-medium flex items-start gap-2 ${isDark ? 'bg-[#0e1710] border-[#C4661F]/30 text-slate-200' : 'bg-[#C4661F]/10 border-[#C4661F]/25 text-[#162218]'
-                }`}>
-                <Sparkles className="w-4 h-4 text-[#C4661F] shrink-0 mt-0.5" />
-                <span><strong>Nexus:</strong> {item.software}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* 9. IMPACT CALCULATOR (REAL FINANCIAL & TIME SAVINGS) */}
-      {/* ========================================================================= */}
-      <section id="calculadora" className={`py-24 border-y ${isDark ? 'bg-[#111b12] border-slate-800' : 'bg-[#F9EBC7] border-stone-200'}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-14 space-y-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#C4661F] bg-[#C4661F]/10 px-3.5 py-1 rounded-full border border-[#C4661F]/20">
-              {t.calculator.badge}
-            </span>
-            <h3 className={`text-3xl sm:text-5xl font-serif font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>
-              {t.calculator.title}
-            </h3>
-            <p className={`text-sm sm:text-base ${isDark ? 'text-slate-300' : 'text-stone-600'}`}>
-              {t.calculator.subtitle}
-            </p>
-          </div>
-
-          <div className={`p-8 sm:p-12 rounded-3xl border shadow-xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center ${isDark ? 'bg-[#162218] border-slate-700' : 'bg-white border-stone-300'
-            }`}>
-            {/* Left Column: Input Form (Currency, Avg Tuition, Student count) */}
-            <div className="lg:col-span-6 space-y-5 text-left">
-              {/* Input 1: Custom Currency Selector */}
-              <div className="space-y-1.5">
-                <label className={`text-xs font-bold block ${isDark ? 'text-slate-200' : 'text-stone-700'}`}>
-                  {t.calculator.currencyLabel}
-                </label>
-                <div ref={currencyDropdownRef} className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setCurrencyDropdownOpen(!currencyDropdownOpen)}
-                    aria-haspopup="listbox"
-                    aria-expanded={currencyDropdownOpen}
-                    className={`w-full px-4 py-3 rounded-2xl text-sm font-bold border cursor-pointer transition-all flex items-center justify-between ${currencyDropdownOpen
-                        ? 'border-[#C4661F] ring-2 ring-[#C4661F]/20 bg-white dark:bg-[#0e1710] text-stone-900 dark:text-white'
-                        : isDark
-                          ? 'bg-[#0e1710] text-white border-slate-700 hover:border-slate-600'
-                          : 'bg-[#FEFAE0] text-stone-900 border-stone-300 hover:border-stone-400'
-                      }`}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                      <span className="font-mono text-xs px-2.5 py-0.5 rounded-lg bg-[#C4661F]/15 text-[#C4661F] font-black shrink-0">
-                        {selectedCurrency.code} ({selectedCurrency.symbol})
-                      </span>
-                      <span className="truncate text-xs sm:text-sm font-medium">
-                        {selectedCurrency.label}
-                      </span>
-                    </div>
-                    <ChevronDown
-                      className={`w-4 h-4 text-stone-400 shrink-0 transition-transform duration-200 ${currencyDropdownOpen ? 'rotate-180 text-[#C4661F]' : ''
-                        }`}
-                    />
-                  </button>
-
-                  <AnimatePresence>
-                    {currencyDropdownOpen && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 6, scale: 0.98 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 6, scale: 0.98 }}
-                        transition={{ duration: 0.15 }}
-                        className={`absolute left-0 right-0 mt-2 max-h-60 overflow-y-auto rounded-2xl shadow-2xl border p-1.5 z-50 ${isDark
-                            ? 'bg-[#162218] border-slate-700 text-white shadow-black/60'
-                            : 'bg-white border-stone-200 text-stone-900 shadow-stone-300/50'
-                          }`}
-                      >
-                        {CURRENCIES.map((curr) => {
-                          const isSelected = curr.code === selectedCurrencyCode;
-                          return (
-                            <button
-                              key={curr.code}
-                              type="button"
-                              onClick={() => {
-                                setSelectedCurrencyCode(curr.code);
-                                setAvgTuition(curr.defaultTuition);
-                                setCurrencyDropdownOpen(false);
-                              }}
-                              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-colors cursor-pointer text-left ${isSelected
-                                  ? 'bg-[#C4661F]/15 text-[#C4661F]'
-                                  : isDark
-                                    ? 'hover:bg-slate-800 text-slate-200'
-                                    : 'hover:bg-stone-100 text-stone-700'
-                                }`}
-                            >
-                              <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                                <span
-                                  className={`font-mono text-xs px-2 py-0.5 rounded-md font-black shrink-0 ${isSelected
-                                      ? 'bg-[#C4661F] text-white'
-                                      : 'bg-stone-200/70 dark:bg-slate-800 text-stone-700 dark:text-slate-300'
-                                    }`}
-                                >
-                                  {curr.code} ({curr.symbol})
-                                </span>
-                                <span className="truncate">{curr.label}</span>
-                              </div>
-                              {isSelected && (
-                                <Check className="w-4 h-4 text-[#C4661F] shrink-0 ml-2" />
-                              )}
-                            </button>
-                          );
-                        })}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </div>
-
-              {/* Input 2: Average Monthly Tuition Input */}
-              <div className="space-y-1.5">
-                <label className={`text-xs font-bold block ${isDark ? 'text-slate-200' : 'text-stone-700'}`}>
-                  {t.calculator.tuitionLabel}
-                </label>
-                <div className="relative flex items-center">
-                  <span className={`absolute left-4 text-sm font-mono font-bold ${isDark ? 'text-slate-400' : 'text-stone-500'}`}>
-                    {selectedCurrency.symbol}
-                  </span>
-                  <input
-                    type="number"
-                    min={1}
-                    value={avgTuition}
-                    onChange={(e) => setAvgTuition(Math.max(0, Number(e.target.value)))}
-                    className={`w-full pl-10 pr-16 py-3 rounded-2xl text-base font-mono font-bold border transition-colors ${isDark
-                        ? 'bg-[#0e1710] text-white border-slate-700 focus:border-[#C4661F]'
-                        : 'bg-[#FEFAE0] text-stone-900 border-stone-300 focus:border-[#C4661F]'
-                      }`}
-                  />
-                  <span className="absolute right-4 text-xs font-mono font-bold text-stone-400">
-                    {selectedCurrency.code}
-                  </span>
-                </div>
-              </div>
-
-              {/* Input 3: Students Slider */}
-              <div className="space-y-2 pt-1">
-                <div className={`flex justify-between items-center text-xs font-bold ${isDark ? 'text-white' : 'text-[#162218]'}`}>
-                  <span>{t.calculator.studentsLabel}</span>
-                  <span className="text-lg font-serif font-black text-[#C4661F] bg-[#C4661F]/10 px-3 py-1 rounded-xl">
-                    {calculatorStudents} {t.calculator.students}
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min={15}
-                  max={600}
-                  step={5}
-                  value={calculatorStudents}
-                  onChange={(e) => setCalculatorStudents(Number(e.target.value))}
-                  className="w-full accent-[#C4661F] cursor-pointer h-2.5 bg-stone-200 dark:bg-slate-800 rounded-lg"
-                />
-                <div className="flex justify-between text-[11px] text-stone-400 font-mono">
-                  <span>15</span>
-                  <span>300</span>
-                  <span>600+</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column: Calculated Results */}
-            <div className="lg:col-span-6 space-y-3.5 text-left">
-              {/* Metric 1: Financial Recovery */}
-              <div className={`p-5 rounded-2xl border flex items-center gap-4 ${isDark ? 'bg-[#0e1710] border-slate-700' : 'bg-[#FEFAE0] border-stone-200'}`}>
-                <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center font-bold shrink-0">
-                  <TrendingUp className="w-6 h-6" />
-                </div>
-                <div>
-                  <span className="text-xs font-bold text-stone-400 block">{t.calculator.moraSaved}</span>
-                  <div className="text-2xl sm:text-3xl font-serif font-black text-emerald-500">
-                    {selectedCurrency.symbol}{calculatedSavings.delinquentRecovery.toLocaleString()} {selectedCurrency.code} <span className="text-xs font-sans font-bold text-stone-400">/ año</span>
-                  </div>
-                  <p className="text-[11px] text-stone-400 mt-0.5">{t.calculator.moraDesc}</p>
-                </div>
-              </div>
-
-              {/* Metric 2: Office Hours Saved */}
-              <div className={`p-5 rounded-2xl border flex items-center gap-4 ${isDark ? 'bg-[#0e1710] border-slate-700' : 'bg-[#FEFAE0] border-stone-200'}`}>
-                <div className="w-12 h-12 rounded-2xl bg-amber-500/15 text-amber-500 flex items-center justify-center font-bold shrink-0">
-                  <Clock className="w-6 h-6" />
-                </div>
-                <div>
-                  <span className="text-xs font-bold text-stone-400 block">{t.calculator.hSaved}</span>
-                  <div className={`text-2xl sm:text-3xl font-serif font-black ${isDark ? 'text-white' : 'text-[#162218]'}`}>
-                    {calculatedSavings.hoursSaved} hrs <span className="text-xs font-sans font-bold text-stone-400">/ año</span>
-                  </div>
-                  <p className="text-[11px] text-stone-400 mt-0.5">{t.calculator.hDesc}</p>
-                </div>
-              </div>
-
-              {/* Metric 3: Paper Saved */}
-              <div className={`p-5 rounded-2xl border flex items-center gap-4 ${isDark ? 'bg-[#0e1710] border-slate-700' : 'bg-[#FEFAE0] border-stone-200'}`}>
-                <div className="w-12 h-12 rounded-2xl bg-[#C4661F]/15 text-[#C4661F] flex items-center justify-center font-bold shrink-0">
-                  <FileText className="w-6 h-6" />
-                </div>
-                <div>
-                  <span className="text-xs font-bold text-stone-400 block">{t.calculator.paperSaved}</span>
-                  <div className={`text-2xl sm:text-3xl font-serif font-black ${isDark ? 'text-white' : 'text-[#162218]'}`}>
-                    {calculatedSavings.paperSaved.toLocaleString()} hojas <span className="text-xs font-sans font-bold text-stone-400">/ año</span>
-                  </div>
-                  <p className="text-[11px] text-stone-400 mt-0.5">{t.calculator.paperDesc}</p>
-                </div>
-              </div>
-
-              <Button
-                onClick={() => setDemoModalOpen(true)}
-                className="w-full bg-[#C4661F] hover:bg-[#783D19] text-white font-bold py-4 sm:py-5 px-4 rounded-2xl shadow-lg transition-transform hover:scale-[1.01] cursor-pointer text-sm text-center leading-snug"
-              >
-                {t.calculator.cta}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* ========================================================================= */}
       {/* 10. MODULAR PRICING CUSTOMIZER (BUILD YOUR OWN PACKAGE) */}
@@ -6014,9 +7872,6 @@ export const MontessoriNexusLanding: React.FC = () => {
       {/* ========================================================================= */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center">
         <div className="p-8 sm:p-16 rounded-3xl bg-[#162218] text-white border-2 border-[#C4661F]/30 shadow-xl space-y-6">
-          <span className="w-12 h-12 rounded-2xl bg-[#C4661F]/20 text-[#C4661F] flex items-center justify-center mx-auto">
-            <Compass className="w-6 h-6 text-[#C4661F]" />
-          </span>
           <h2 className="text-3xl sm:text-5xl font-serif font-bold text-white tracking-tight">
             {t.finalCta.title}
           </h2>
@@ -6054,16 +7909,16 @@ export const MontessoriNexusLanding: React.FC = () => {
 
           <div className="space-y-2">
             <h4 className="font-serif font-bold text-white text-sm mb-2">{t.footer.modulesHeader}</h4>
-            <p><a href="#ia-etica" className="hover:text-[#C4661F]">{t.nav.aiSuite}</a></p>
-            <p><a href="#pedagogia" className="hover:text-[#C4661F]">{t.nav.pedagogy}</a></p>
             <p><a href="#modulos" className="hover:text-[#C4661F]">{t.nav.modules}</a></p>
-            <p><a href="#ciclo" className="hover:text-[#C4661F]">{t.nav.cycle}</a></p>
+            <p><a href="#ia-etica" className="hover:text-[#C4661F]">{t.nav.aiSuite}</a></p>
+            <p><a href="/blog" className="hover:text-[#C4661F]">{t.nav.blog || 'Blog'}</a></p>
+            <p><a href="#precios" className="hover:text-[#C4661F]">{t.nav.pricing}</a></p>
+            <p><a href="#faq" className="hover:text-[#C4661F]">{t.nav.faq}</a></p>
           </div>
 
           <div className="space-y-2">
             <h4 className="font-serif font-bold text-white text-sm mb-2">{t.footer.schoolsHeader}</h4>
             <p><a href="/admin" className="hover:text-[#C4661F]">{t.nav.login}</a></p>
-            <p><a href="/colegio/ceiba" className="hover:text-[#C4661F]">Demo Colegio Ceiba</a></p>
             <p><a href="#precios" className="hover:text-[#C4661F]">{t.nav.pricing}</a></p>
             <p><a href="#faq" className="hover:text-[#C4661F]">{t.nav.faq}</a></p>
           </div>

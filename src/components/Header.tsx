@@ -159,6 +159,8 @@ export function Header({ forceScrolled = false }: HeaderProps) {
       customItems.push({ label: 'Aplicativos', href: '/aplicativos' });
     }
 
+    customItems.push({ label: 'Blog', href: '/blog' });
+
     const hasContact = customItems.some(i => i.href.includes('contact') || i.label.toLowerCase().includes('contacto'));
     if (!hasContact) {
       customItems.push({ label: 'Contacto', href: '/#sec_contact' });

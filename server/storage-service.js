@@ -77,16 +77,19 @@ export function isPublicStorageMedia(relativePath) {
     return false;
   }
 
-  // Explicit public web folders (Web Builder, Public Gallery, Stickers, Brand, Theme assets)
+  // Explicit public web folders (Web Builder, Public Gallery, Feed, Stickers, Brand, Theme assets, Blog)
   return (
+    cleanPath.startsWith('public/') ||
     cleanPath.includes('/public/') ||
     cleanPath.includes('/gallery/') || 
+    cleanPath.includes('/feed/') ||
     cleanPath.includes('/stickers/') || 
     cleanPath.includes('/hero') || 
     cleanPath.includes('/brand/') ||
     cleanPath.includes('/logo') ||
     cleanPath.includes('/pillars/') ||
-    cleanPath.includes('/web-builder/')
+    cleanPath.includes('/web-builder/') ||
+    cleanPath.includes('/blog/')
   );
 }
 
@@ -133,18 +136,42 @@ export function extractStorageRelativePath(urlOrPath) {
     } catch {}
   }
 
-  // 2. RESTful URL: http://moots.localhost:8080/api/storage/schools/... or /api/storage/schools/...
+  // 2. RESTful URL: http://.../api/storage/schools/... or /api/storage/public/...
   const storageIndex = raw.indexOf('/api/storage/');
   if (storageIndex !== -1) {
     const after = raw.substring(storageIndex + '/api/storage/'.length).split('?')[0];
     let clean = path.normalize(after).replace(/^(\.\.[\/\\])+/, '').replace(/\\/g, '/').replace(/^\/+/, '');
-    if (!clean.startsWith('schools/')) {
+    if (!clean.startsWith('schools/') && !clean.startsWith('public/')) {
       clean = `schools/${clean}`;
     }
     return clean;
   }
 
-  if (raw.startsWith('schools/')) {
+  // 3. Direct S3 / MinIO / full CDN URLs containing /schools/... or /public/...
+  const schoolsIndex = raw.indexOf('schools/');
+  if (schoolsIndex !== -1) {
+    const afterSchools = raw.substring(schoolsIndex).split('?')[0];
+    return path.normalize(afterSchools).replace(/^(\.\.[\/\\])+/, '').replace(/\\/g, '/').replace(/^\/+/, '');
+  }
+
+  const publicIndex = raw.indexOf('public/');
+  if (publicIndex !== -1) {
+    const afterPublic = raw.substring(publicIndex).split('?')[0];
+    return path.normalize(afterPublic).replace(/^(\.\.[\/\\])+/, '').replace(/\\/g, '/').replace(/^\/+/, '');
+  }
+
+  // 4. Legacy /feed/:schoolId/:filename path
+  if (raw.startsWith('/feed/') || raw.startsWith('feed/')) {
+    const relativePart = raw.replace(/^\/?feed\//, '').split('?')[0];
+    const parts = relativePart.split('/');
+    if (parts.length >= 2) {
+      const schoolId = parts[0];
+      const filename = parts.slice(1).join('/');
+      return `schools/${schoolId}/feed/${filename}`;
+    }
+  }
+
+  if (raw.startsWith('schools/') || raw.startsWith('public/')) {
     return path.normalize(raw).replace(/^(\.\.[\/\\])+/, '').replace(/\\/g, '/').replace(/^\/+/, '');
   }
 

@@ -1568,6 +1568,41 @@ export const PublicFormPage: React.FC = () => {
     loadForm();
   }, [id, isAuthenticated, user?.email, verifiedEmail]);
 
+  useEffect(() => {
+    if (formItem?.title) {
+      const schoolName = formItem.school?.name || 'Comunidad Montessori';
+      const pageTitle = `${formItem.title} | ${schoolName}`;
+      document.title = pageTitle;
+
+      const setMeta = (attr: string, key: string, content: string) => {
+        let el = document.querySelector(`meta[${attr}="${key}"]`);
+        if (!el) {
+          el = document.createElement('meta');
+          el.setAttribute(attr, key);
+          document.head.appendChild(el);
+        }
+        el.setAttribute('content', content);
+      };
+
+      const rawDesc = formItem.description ? String(formItem.description).replace(/<[^>]*>?/gm, '').trim() : '';
+      const desc = rawDesc 
+        ? (rawDesc.length > 200 ? rawDesc.slice(0, 197) + '...' : rawDesc)
+        : `Formulario oficial de ${schoolName}. Completa tu información de forma segura en línea a través de Montessori Nexus.`;
+      const ogImg = `/api/og/forms/${formItem.id}.png`;
+
+      setMeta('name', 'description', desc);
+      setMeta('property', 'og:title', pageTitle);
+      setMeta('property', 'og:description', desc);
+      setMeta('property', 'og:image', ogImg);
+      setMeta('property', 'og:type', 'website');
+      setMeta('property', 'og:site_name', `${schoolName} • Montessori Nexus`);
+      setMeta('name', 'twitter:card', 'summary_large_image');
+      setMeta('name', 'twitter:title', pageTitle);
+      setMeta('name', 'twitter:description', desc);
+      setMeta('name', 'twitter:image', ogImg);
+    }
+  }, [formItem]);
+
   // Browser History & Navigation Synchronization (Back / Forward button support)
   useEffect(() => {
     // Initial replaceState to establish base entry
@@ -4768,7 +4803,7 @@ export const PublicFormPage: React.FC = () => {
                       isDark ? 'bg-amber-950/40 border-amber-800 text-amber-300' : 'bg-amber-50 border-amber-200/70 text-amber-800'
                     }`}>
                       {validationCheck.warnings.map((w, idx) => (
-                        <span key={idx}>⚠️ {w}</span>
+                        <span key={idx}>{w}</span>
                       ))}
                     </div>
                   )}
@@ -6798,7 +6833,7 @@ export const PublicFormPage: React.FC = () => {
             <div className={`absolute bottom-16 left-8 right-8 border-b-2 border-dashed pointer-events-none flex items-center justify-between px-2 text-xs font-mono select-none ${
               isDark ? 'border-slate-800 text-slate-600' : 'border-slate-300 text-slate-400'
             }`}>
-              <span>✕ Línea de Firma</span>
+              <span>Línea de Firma</span>
               <span>{schoolName || 'Ceiba Roots'}</span>
             </div>
 

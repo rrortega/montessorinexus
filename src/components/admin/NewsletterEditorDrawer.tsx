@@ -39,6 +39,7 @@ import {
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { RichTextEditor } from './RichTextEditor';
+import { VoiceNoteTextarea } from '@/components/ui/VoiceNoteTextarea';
 import {
   NewsletterItem,
   NewsletterBlockItem,
@@ -895,24 +896,26 @@ export const NewsletterEditorDrawer: React.FC<NewsletterEditorDrawerProps> = ({
                               );
                             })}
                           </div>
-                          <textarea
+                          <VoiceNoteTextarea
                             rows={3}
                             value={block.content || ''}
-                            onChange={e => updateBlock(block.id, { content: e.target.value })}
+                            onChange={val => updateBlock(block.id, { content: val })}
                             placeholder="Texto del cuadro destacado..."
-                            className="w-full p-3 rounded-xl border border-forest/20 text-xs text-forest focus:outline-none focus:ring-2 focus:ring-forest leading-relaxed"
+                            context="newsletter"
+                            className="space-y-1"
                           />
                         </div>
                       )}
 
                       {block.type === 'quote' && (
                         <div className="space-y-2">
-                          <textarea
+                          <VoiceNoteTextarea
                             rows={2}
                             value={block.content || ''}
-                            onChange={e => updateBlock(block.id, { content: e.target.value })}
+                            onChange={val => updateBlock(block.id, { content: val })}
                             placeholder="Cita textual o reflexión..."
-                            className="w-full p-2.5 rounded-xl border border-forest/20 text-xs italic text-forest focus:outline-none focus:ring-2 focus:ring-forest"
+                            context="newsletter"
+                            className="space-y-1"
                           />
                           <input
                             type="text"

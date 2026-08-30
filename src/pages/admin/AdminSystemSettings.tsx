@@ -42,7 +42,10 @@ import {
   Server,
   BarChart3,
   ArrowUpRight,
-  Lock
+  Lock,
+  Zap,
+  Shield,
+  Coins
 } from 'lucide-react';
 import { useSiteSettings } from '@/context/SettingsContext';
 import {
@@ -89,9 +92,9 @@ const AI_PRESETS: AiPreset[] = [
   {
     name: 'OpenAI',
     baseUrl: 'https://api.openai.com/v1',
-    defaultVision: 'gpt-4o-mini',
-    defaultText: 'gpt-4o-mini',
-    defaultImage: 'dall-e-3'
+    defaultVision: 'gpt-5.6-luna',
+    defaultText: 'gpt-5.6-luna',
+    defaultImage: 'gpt-image-2'
   },
   {
     name: 'Google Gemini',
@@ -142,11 +145,10 @@ const renderPricingBadge = (pricing: ModelPricingEntry | null, isSelected: boole
     return (
       <span
         title="Modelo personalizado o tarifa no catalogada en la tabla oficial"
-        className={`px-1.5 py-0.5 rounded text-[9.5px] font-sans shrink-0 flex items-center gap-1 ${
-          isSelected
+        className={`px-1.5 py-0.5 rounded text-[9.5px] font-sans shrink-0 flex items-center gap-1 ${isSelected
             ? 'bg-white/20 text-white border border-white/30'
             : 'bg-slate-100/90 text-slate-500 border border-slate-200'
-        }`}
+          }`}
       >
         <span className="opacity-75 text-[9px] font-semibold">?</span>
         <span className="opacity-30">·</span>
@@ -164,11 +166,10 @@ const renderPricingBadge = (pricing: ModelPricingEntry | null, isSelected: boole
     return (
       <span
         title={`Coste oficial por imagen generada: ${formattedPrice} (${pricing.provider})`}
-        className={`px-1.5 py-0.5 rounded text-[9.5px] font-sans font-semibold shrink-0 ${
-          isSelected
+        className={`px-1.5 py-0.5 rounded text-[9.5px] font-sans font-semibold shrink-0 ${isSelected
             ? 'bg-white/20 text-white border border-white/30'
             : 'bg-purple-50 text-purple-700 border border-purple-200/60'
-        }`}
+          }`}
       >
         {formattedPrice}
       </span>
@@ -181,11 +182,10 @@ const renderPricingBadge = (pricing: ModelPricingEntry | null, isSelected: boole
   return (
     <span
       title={`Ventana: ${pricing.contextLabel || '128K'} | Coste oficial por 1M tokens: Entrada ${inFormatted} / Salida ${outFormatted} (${pricing.provider})`}
-      className={`px-1.5 py-0.5 rounded text-[9.5px] font-sans shrink-0 flex items-center gap-1 ${
-        isSelected
+      className={`px-1.5 py-0.5 rounded text-[9.5px] font-sans shrink-0 flex items-center gap-1 ${isSelected
           ? 'bg-white/20 text-white border border-white/30'
           : 'bg-slate-100/90 text-slate-600 border border-slate-200'
-      }`}
+        }`}
     >
       <span className="opacity-75 text-[9px] font-semibold">{pricing.contextLabel || '128K'}</span>
       <span className="opacity-30">·</span>
@@ -295,11 +295,10 @@ const SearchableProviderSelect: React.FC<SearchableProviderSelectProps> = ({
             if (!isOpen) updatePosition();
             setIsOpen(!isOpen);
           }}
-          className={`w-full px-3 py-2.5 bg-white border rounded-xl text-xs flex items-center justify-between gap-2 text-left transition-all cursor-pointer shadow-2xs ${
-            isOpen
+          className={`w-full px-3 py-2.5 bg-white border rounded-xl text-xs flex items-center justify-between gap-2 text-left transition-all cursor-pointer shadow-2xs ${isOpen
               ? 'border-forest ring-2 ring-forest/20'
               : 'border-forest/20 hover:border-forest/40'
-          }`}
+            }`}
         >
           <div className="flex items-center gap-2 truncate min-w-0">
             <div className="p-1.5 rounded-lg bg-forest/5 text-forest shrink-0">
@@ -370,11 +369,10 @@ const SearchableProviderSelect: React.FC<SearchableProviderSelectProps> = ({
                       setIsOpen(false);
                       setSearch('');
                     }}
-                    className={`w-full px-3 py-2 rounded-xl text-left flex items-center justify-between gap-2 transition-colors cursor-pointer ${
-                      isSelected
+                    className={`w-full px-3 py-2 rounded-xl text-left flex items-center justify-between gap-2 transition-colors cursor-pointer ${isSelected
                         ? 'bg-forest text-white'
                         : 'hover:bg-forest/5 text-slate-700'
-                    }`}
+                      }`}
                   >
                     <div className="min-w-0">
                       <p className={`font-bold ${isSelected ? 'text-white' : 'text-forest'}`}>
@@ -398,11 +396,10 @@ const SearchableProviderSelect: React.FC<SearchableProviderSelectProps> = ({
                     setIsOpen(false);
                     setSearch('');
                   }}
-                  className={`w-full px-3 py-2 rounded-xl text-left flex items-center justify-between gap-2 transition-colors cursor-pointer ${
-                    isCustom
+                  className={`w-full px-3 py-2 rounded-xl text-left flex items-center justify-between gap-2 transition-colors cursor-pointer ${isCustom
                       ? 'bg-forest text-white'
                       : 'hover:bg-forest/5 text-slate-700 bg-slate-50/50'
-                  }`}
+                    }`}
                 >
                   <div className="min-w-0">
                     <p className={`font-bold ${isCustom ? 'text-white' : 'text-forest'}`}>
@@ -554,11 +551,10 @@ const SearchableModelSelect: React.FC<SearchableModelSelectProps> = ({
             if (!isOpen) updatePosition();
             setIsOpen(!isOpen);
           }}
-          className={`w-full px-3 py-2 bg-white border rounded-xl text-xs font-mono flex items-center justify-between gap-2 text-left transition-all cursor-pointer shadow-2xs ${
-            isOpen
+          className={`w-full px-3 py-2 bg-white border rounded-xl text-xs font-mono flex items-center justify-between gap-2 text-left transition-all cursor-pointer shadow-2xs ${isOpen
               ? 'border-forest ring-2 ring-forest/20'
               : 'border-forest/20 hover:border-forest/40'
-          }`}
+            }`}
         >
           <div className="flex items-center gap-1.5 truncate min-w-0 flex-wrap sm:flex-nowrap">
             <span className="font-semibold text-forest truncate block">
@@ -636,19 +632,17 @@ const SearchableModelSelect: React.FC<SearchableModelSelectProps> = ({
                     key={m}
                     type="button"
                     onClick={() => handleSelect(m)}
-                    className={`group w-full px-3 py-2.5 rounded-xl text-left flex flex-col gap-1.5 transition-all duration-150 cursor-pointer ${
-                      isSelected
+                    className={`group w-full px-3 py-2.5 rounded-xl text-left flex flex-col gap-1.5 transition-all duration-150 cursor-pointer ${isSelected
                         ? 'bg-forest text-white shadow-xs border border-forest'
                         : 'border border-transparent bg-slate-50/40 hover:bg-emerald-50/90 hover:border-emerald-200/80 hover:shadow-xs text-slate-800'
-                    }`}
+                      }`}
                   >
                     {/* Top Line: Model name + Capability Badges + Selection Check */}
                     <div className="flex items-center justify-between gap-2 w-full">
                       <div className="flex items-center gap-1.5 truncate min-w-0">
                         <span
-                          className={`font-mono font-bold text-xs truncate transition-colors ${
-                            isSelected ? 'text-white' : 'text-forest group-hover:text-emerald-950'
-                          }`}
+                          className={`font-mono font-bold text-xs truncate transition-colors ${isSelected ? 'text-white' : 'text-forest group-hover:text-emerald-950'
+                            }`}
                         >
                           {m}
                         </span>
@@ -659,11 +653,10 @@ const SearchableModelSelect: React.FC<SearchableModelSelectProps> = ({
 
                     {/* Bottom Line: Context Window & Cost Breakdown */}
                     <div
-                      className={`flex items-center justify-between gap-2 text-[10.5px] font-sans pt-1 border-t transition-colors ${
-                        isSelected
+                      className={`flex items-center justify-between gap-2 text-[10.5px] font-sans pt-1 border-t transition-colors ${isSelected
                           ? 'border-white/15 text-emerald-100'
                           : 'border-slate-200/60 group-hover:border-emerald-200/60 text-muted-foreground group-hover:text-emerald-900/80'
-                      }`}
+                        }`}
                     >
                       {pricing ? (
                         pricing.type === 'tokens' ? (
@@ -671,11 +664,10 @@ const SearchableModelSelect: React.FC<SearchableModelSelectProps> = ({
                             <div className="flex items-center gap-1 shrink-0">
                               <span className="opacity-75">Ventana:</span>
                               <span
-                                className={`font-bold px-1.5 py-0.2 rounded text-[9.5px] transition-colors ${
-                                  isSelected
+                                className={`font-bold px-1.5 py-0.2 rounded text-[9.5px] transition-colors ${isSelected
                                     ? 'bg-white/20 text-white'
                                     : 'bg-slate-200/60 group-hover:bg-emerald-100/80 text-slate-700 group-hover:text-emerald-900 font-mono'
-                                }`}
+                                  }`}
                               >
                                 {pricing.contextLabel || '128K'}
                               </span>
@@ -709,11 +701,10 @@ const SearchableModelSelect: React.FC<SearchableModelSelectProps> = ({
                           <div className="flex items-center gap-1 shrink-0">
                             <span className="opacity-75">Ventana:</span>
                             <span
-                              className={`font-bold px-1.5 py-0.2 rounded text-[9.5px] transition-colors ${
-                                isSelected
+                              className={`font-bold px-1.5 py-0.2 rounded text-[9.5px] transition-colors ${isSelected
                                   ? 'bg-white/20 text-white'
                                   : 'bg-slate-200/60 group-hover:bg-emerald-100/80 text-slate-600 group-hover:text-emerald-900 font-mono'
-                              }`}
+                                }`}
                             >
                               ?
                             </span>
@@ -769,7 +760,8 @@ export const AdminSystemSettings: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const schoolEmailSender = `${cleanSchoolEmailSenderSlug(formData.schoolName || activeMembership?.school?.name || activeMembership?.school?.slug)}@montessorinexus.com`;
+  const schoolName = formData.schoolName || activeMembership?.school?.name || settings.schoolName || 'Ceiba';
+  const schoolEmailSender = `${cleanSchoolEmailSenderSlug(schoolName || activeMembership?.school?.slug)}@montessorinexus.com`;
 
   // AI Provider & Dynamic Models State
   const [fetchingModels, setFetchingModels] = useState(false);
@@ -816,10 +808,23 @@ export const AdminSystemSettings: React.FC = () => {
   const activeTab = (searchParams.get('tab') as SystemTab) || 'ai';
 
   useEffect(() => {
-    if (activeTab === 'storage') {
+    if (activeTab === 'storage' || activeTab === 'ai') {
       loadUsage();
     }
   }, [activeTab, loadUsage]);
+
+  // AI Usage & Allocation Derived Values ($10 USD = 1M Tokens included per month / 2M Tokens in 3-Month Free Trial)
+  const isAiFreeTrial = usageStats?.ai?.isFreeTrial ?? false;
+  const aiPlanUsd = usageStats?.ai?.monthlyPlanUsd || (formData.monthlyPrice ? Number(formData.monthlyPrice) : 25);
+  const aiTokensPer10 = usageStats?.ai?.tokensPer10Usd || Number(import.meta.env.VITE_AI_TOKENS_PER_10_USD || 1000000);
+  const aiIncludedLimit = usageStats?.ai?.includedLimit || (isAiFreeTrial ? 2000000 : Math.floor(aiPlanUsd / 10) * aiTokensPer10);
+  const aiIncludedMillions = Math.round(aiIncludedLimit / 1000000) || 2;
+  const aiTokensUsed = usageStats?.ai?.used || 0;
+  const aiTokensRemaining = usageStats?.ai?.remaining !== undefined ? usageStats.ai.remaining : Math.max(0, aiIncludedLimit - aiTokensUsed);
+  const aiUsagePercent = usageStats?.ai?.percentage !== undefined ? usageStats.ai.percentage : Math.min(100, Math.round((aiTokensUsed / Math.max(1, aiIncludedLimit)) * 100));
+  const aiRemainingPercent = Math.min(100, Math.max(0, Math.round((aiTokensRemaining / Math.max(1, aiIncludedLimit)) * 100)));
+  const isAiCriticallyLow = aiTokensRemaining <= 2000;
+  const isAiLow = aiTokensRemaining <= 50000 && !isAiCriticallyLow;
 
   // Horizontal Tabs Scroll Navigation State
   const tabsContainerRef = useRef<HTMLDivElement>(null);
@@ -1137,11 +1142,10 @@ export const AdminSystemSettings: React.FC = () => {
           type="button"
           onClick={() => scrollTabs('left')}
           disabled={!canScrollLeft}
-          className={`shrink-0 mr-1 p-2 rounded-xl border transition-all z-10 cursor-pointer ${
-            canScrollLeft
+          className={`shrink-0 mr-1 p-2 rounded-xl border transition-all z-10 cursor-pointer ${canScrollLeft
               ? 'bg-white hover:bg-forest/5 text-forest border-forest/20 shadow-xs opacity-100 hover:scale-105 active:scale-95'
               : 'bg-slate-50 text-slate-300 border-slate-200/60 opacity-40 cursor-not-allowed'
-          }`}
+            }`}
           title="Desplazar pestañas hacia la izquierda"
           aria-label="Desplazar a la izquierda"
         >
@@ -1156,24 +1160,22 @@ export const AdminSystemSettings: React.FC = () => {
           <button
             type="button"
             onClick={() => handleTabChange('ai')}
-            className={`px-3 sm:px-4 py-2.5 text-xs font-bold rounded-none sm:rounded-t-2xl transition-all border-b-2 flex items-center gap-1.5 sm:gap-2 whitespace-nowrap cursor-pointer ${
-              activeTab === 'ai'
+            className={`px-3 sm:px-4 py-2.5 text-xs font-bold rounded-none sm:rounded-t-2xl transition-all border-b-2 flex items-center gap-1.5 sm:gap-2 whitespace-nowrap cursor-pointer ${activeTab === 'ai'
                 ? 'border-forest text-forest bg-transparent font-bold'
                 : 'border-transparent text-muted-foreground hover:text-forest'
-            }`}
+              }`}
           >
             <Bot className="w-4 h-4" />
-            <span>Inteligencia Artificial (OpenAI & OCR)</span>
+            <span>Inteligencia Artificial</span>
           </button>
 
           <button
             type="button"
             onClick={() => handleTabChange('email')}
-            className={`px-3 sm:px-4 py-2.5 text-xs font-bold rounded-none sm:rounded-t-2xl transition-all border-b-2 flex items-center gap-1.5 sm:gap-2 whitespace-nowrap cursor-pointer ${
-              activeTab === 'email'
+            className={`px-3 sm:px-4 py-2.5 text-xs font-bold rounded-none sm:rounded-t-2xl transition-all border-b-2 flex items-center gap-1.5 sm:gap-2 whitespace-nowrap cursor-pointer ${activeTab === 'email'
                 ? 'border-forest text-forest bg-transparent font-bold'
                 : 'border-transparent text-muted-foreground hover:text-forest'
-            }`}
+              }`}
           >
             <Mail className="w-4 h-4" />
             <span>Envío de Emails</span>
@@ -1182,11 +1184,10 @@ export const AdminSystemSettings: React.FC = () => {
           <button
             type="button"
             onClick={() => handleTabChange('storage')}
-            className={`px-3 sm:px-4 py-2.5 text-xs font-bold rounded-none sm:rounded-t-2xl transition-all border-b-2 flex items-center gap-1.5 sm:gap-2 whitespace-nowrap cursor-pointer ${
-              activeTab === 'storage'
+            className={`px-3 sm:px-4 py-2.5 text-xs font-bold rounded-none sm:rounded-t-2xl transition-all border-b-2 flex items-center gap-1.5 sm:gap-2 whitespace-nowrap cursor-pointer ${activeTab === 'storage'
                 ? 'border-forest text-forest bg-transparent font-bold'
                 : 'border-transparent text-muted-foreground hover:text-forest'
-            }`}
+              }`}
           >
             <HardDrive className="w-4 h-4" />
             <span>Almacenamiento</span>
@@ -1195,11 +1196,10 @@ export const AdminSystemSettings: React.FC = () => {
           <button
             type="button"
             onClick={() => handleTabChange('webhooks')}
-            className={`px-3 sm:px-4 py-2.5 text-xs font-bold rounded-none sm:rounded-t-2xl transition-all border-b-2 flex items-center gap-1.5 sm:gap-2 whitespace-nowrap cursor-pointer ${
-              activeTab === 'webhooks'
+            className={`px-3 sm:px-4 py-2.5 text-xs font-bold rounded-none sm:rounded-t-2xl transition-all border-b-2 flex items-center gap-1.5 sm:gap-2 whitespace-nowrap cursor-pointer ${activeTab === 'webhooks'
                 ? 'border-forest text-forest bg-transparent font-bold'
                 : 'border-transparent text-muted-foreground hover:text-forest'
-            }`}
+              }`}
           >
             <Webhook className="w-4 h-4" />
             <span>Webhooks & Integraciones</span>
@@ -1211,11 +1211,10 @@ export const AdminSystemSettings: React.FC = () => {
           type="button"
           onClick={() => scrollTabs('right')}
           disabled={!canScrollRight}
-          className={`shrink-0 ml-1 p-2 rounded-xl border transition-all z-10 cursor-pointer ${
-            canScrollRight
+          className={`shrink-0 ml-1 p-2 rounded-xl border transition-all z-10 cursor-pointer ${canScrollRight
               ? 'bg-white hover:bg-forest/5 text-forest border-forest/20 shadow-xs opacity-100 hover:scale-105 active:scale-95'
               : 'bg-slate-50 text-slate-300 border-slate-200/60 opacity-40 cursor-not-allowed'
-          }`}
+            }`}
           title="Desplazar pestañas hacia la derecha"
           aria-label="Desplazar a la derecha"
         >
@@ -1230,284 +1229,698 @@ export const AdminSystemSettings: React.FC = () => {
         {/* ========================================================================= */}
         {activeTab === 'ai' && (
           <div className="space-y-6 animate-in fade-in duration-200">
-            {/* AI Provider & API Credentials Card */}
+            {/* CARD 1: ESTRATEGIA Y MODALIDAD DE INTELIGENCIA ARTIFICIAL */}
             <div className="bg-white rounded-2xl border border-forest/15 shadow-xs">
               <div className="p-4 sm:p-5 border-b border-forest/10 bg-forest/[0.02] rounded-t-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5">
                   <div className="p-2 rounded-xl bg-forest text-white">
-                    <Key className="w-4 h-4" />
+                    <BrainCircuit className="w-4 h-4" />
                   </div>
                   <div>
                     <h3 className="font-bold text-sm text-forest font-heading">
-                      Proveedor de Inteligencia Artificial (OpenAI Compatible)
+                      Modalidad y Asignación de Inteligencia Artificial
                     </h3>
                     <p className="text-xs text-muted-foreground">
-                      Conecta cualquier proveedor compatible con la API estándar de OpenAI (OpenAI, Google Gemini, DeepSeek, Groq, OpenRouter u Ollama local).
+                      Elige entre utilizar los tokens incluidos en tu plan de suscripción mensual o conectar tu propio proveedor LLM con respaldo inteligente.
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 self-start sm:self-center">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Multimodal & OCR Ready</span>
+                  <Coins className="w-3.5 h-3.5" />
+                  <span>{aiIncludedMillions}M Tokens incluidos / mes</span>
                 </div>
               </div>
 
               <div className="p-5 sm:p-6 space-y-6">
-                {/* Provider Selector */}
-                <div className="space-y-2">
-                  <label className="block text-xs font-bold text-forest">
-                    Proveedor de Inteligencia Artificial:
-                  </label>
-                  <SearchableProviderSelect
-                    selectedPresetName={
-                      (AI_PRESETS.find(p => p.baseUrl === (formData.ai_base_url || formData.openai_base_url || '').trim())?.name) || 'custom'
-                    }
-                    onSelectPreset={(preset) => handleApplyPreset(preset)}
-                    onSelectCustom={() => {
-                      setFormData((prev) => ({
-                        ...prev,
-                        ai_base_url: '',
-                        openai_base_url: '',
-                        ai_model_vision: '',
-                        openai_model: '',
-                        ai_model_text: '',
-                        ai_model_image: ''
-                      }));
-                    }}
-                    presets={AI_PRESETS}
-                  />
-                  {((formData.ai_base_url || formData.openai_base_url || '').trim() === '' ||
-                    !AI_PRESETS.some(p => p.baseUrl === (formData.ai_base_url || formData.openai_base_url || '').trim())) && (
-                    <div className="space-y-1.5 mt-2">
-                      <label className="block text-xs font-bold text-forest">
-                        Compatibilidad:
-                      </label>
-                      <select
-                        className="w-full p-2.5 border border-forest/20 rounded-xl bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-forest/20 focus:border-forest"
-                        value={
-                          (formData.ai_base_url || formData.openai_base_url || '').includes('anthropic') ? 'Anthropic' : 'OpenAI'
-                        }
-                        onChange={(e) => {
-                          const compat = e.target.value;
-                          const url = compat === 'Anthropic' ? 'https://api.anthropic.com/v1' : 'https://api.openai.com/v1';
-                          handleInputChange('ai_base_url', url);
-                          handleInputChange('openai_base_url', url);
-                        }}
-                      >
-                        <option value="OpenAI">OpenAI</option>
-                        <option value="Anthropic">Anthropic</option>
-                      </select>
-                    </div>
-                  )}
-                </div>
-
-                {/* Endpoint URL & API Key Inputs */}
+                {/* 2 Options Cards Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Base URL Endpoint */}
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-forest">
-                      Endpoint Base URL (API Compatible) <span className="text-rose-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="url"
-                        placeholder="https://api.openai.com/v1"
-                        value={formData.ai_base_url || formData.openai_base_url || 'https://api.openai.com/v1'}
-                        onChange={(e) => {
-                          handleInputChange('ai_base_url', e.target.value);
-                          handleInputChange('openai_base_url', e.target.value);
-                        }}
-                        className="w-full pl-3 pr-8 py-2.5 bg-slate-50 border border-forest/20 rounded-xl text-xs font-mono focus:outline-none focus:ring-2 focus:ring-forest/20 focus:border-forest"
-                      />
-                      <Globe className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                    </div>
-                    <p className="text-[11px] text-muted-foreground">
-                      Por defecto: <code className="text-forest font-mono">https://api.openai.com/v1</code>
-                    </p>
-                  </div>
+                  {/* Option 1: Tokens Incluidos en el Plan */}
+                  <div
+                    onClick={() => handleInputChange('ai_provider_mode', 'platform')}
+                    className={`p-5 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between space-y-4 relative ${(formData.ai_provider_mode || 'platform') === 'platform'
+                        ? 'border-forest bg-forest/[0.03] shadow-sm ring-2 ring-forest/10'
+                        : 'border-slate-200 hover:border-forest/40 bg-white'
+                      }`}
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                          <Sparkles className="w-3 h-3" /> Incluido en tu Membresía
+                        </span>
+                        <input
+                          type="radio"
+                          name="ai_provider_mode"
+                          checked={(formData.ai_provider_mode || 'platform') === 'platform'}
+                          onChange={() => handleInputChange('ai_provider_mode', 'platform')}
+                          className="w-4 h-4 text-forest focus:ring-forest"
+                        />
+                      </div>
 
-                  {/* API Key */}
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-forest">
-                      API Key de Acceso <span className="text-rose-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showApiKey ? 'text' : 'password'}
-                        placeholder="sk-proj-... / AIzaSy... / dsk-..."
-                        value={formData.ai_api_key || formData.openai_api_key || ''}
-                        onChange={(e) => {
-                          handleInputChange('ai_api_key', e.target.value);
-                          handleInputChange('openai_api_key', e.target.value);
-                        }}
-                        className="w-full pl-3 pr-24 py-2.5 bg-slate-50 border border-forest/20 rounded-xl text-xs font-mono focus:outline-none focus:ring-2 focus:ring-forest/20 focus:border-forest"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowApiKey(!showApiKey)}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-forest p-1 rounded-lg hover:bg-slate-200/60 transition-colors cursor-pointer"
-                        title={showApiKey ? 'Ocultar clave' : 'Mostrar clave'}
-                      >
-                        {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                    <p className="text-[11px] text-muted-foreground">
-                      Clave de autenticación del proveedor (Bearer Token).
-                    </p>
-                  </div>
-                </div>
+                      <div>
+                        <h4 className="font-bold text-sm text-forest font-heading">
+                          Tokens Incluidos de la Plataforma (Gestionado)
+                        </h4>
+                        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                          Utiliza la infraestructura oficial de IA de MontessoriNexus con <strong>{aiIncludedMillions} Millones de tokens mensuales</strong> incluidos en tu membresía.
+                        </p>
+                      </div>
 
-                {/* Conditional UI: Connect & Load Models vs Model Selectors */}
-                {!modelsLoaded ? (
-                  /* Not Connected State Card */
-                  <div className="p-6 sm:p-8 rounded-2xl bg-forest/[0.03] border-2 border-dashed border-forest/20 flex flex-col items-center justify-center text-center gap-3.5 animate-in fade-in duration-200">
-                    <div className="p-3.5 rounded-2xl bg-forest/10 text-forest shadow-xs">
-                      <BrainCircuit className="w-6 h-6 text-forest" />
+                      {/* Quantity Display Box */}
+                      <div className="p-3 bg-white rounded-xl border border-forest/10 flex items-center justify-between text-xs">
+                        <span className="text-slate-700 font-medium">Cuota mensual incluida:</span>
+                        <span className="font-bold text-emerald-700">{aiIncludedMillions}M tokens ({aiIncludedLimit.toLocaleString()})</span>
+                      </div>
                     </div>
-                    <div className="max-w-md space-y-1.5">
-                      <h4 className="font-bold text-sm text-forest font-heading">
-                        Conectar y Cargar Modelos del Proveedor
-                      </h4>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Verifica las credenciales en tiempo real y descarga la lista de modelos disponibles en este proveedor para habilitar los selectores de visión OCR, chat e imágenes.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleFetchModels}
-                      disabled={fetchingModels}
-                      className="mt-2 px-6 py-2.5 bg-forest text-white hover:bg-forest/90 font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition-all disabled:opacity-50 cursor-pointer hover:scale-105 active:scale-95"
-                    >
-                      <RefreshCw className={`w-4 h-4 text-white ${fetchingModels ? 'animate-spin' : ''}`} />
-                      <span>{fetchingModels ? 'Verificando y Conectando...' : 'Conectar y Cargar Modelos'}</span>
-                    </button>
-                  </div>
-                ) : (
-                  /* Connected State: Status Header + 3 Model Columns */
-                  <div className="space-y-4 animate-in fade-in duration-200">
-                    {/* Connected Status Header */}
-                    <div className="p-4 rounded-xl bg-forest/[0.04] border border-forest/15 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="space-y-0.5">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-forest flex items-center gap-1.5">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                            <span>Proveedor Conectado con Éxito</span>
-                          </span>
-                          <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-bold">
-                            {availableModels.length > 0 ? `${availableModels.length} modelos detectados` : 'Configuración activa'}
-                          </span>
-                        </div>
-                        <span className="text-[11px] text-muted-foreground block">
-                          Selecciona los modelos que se utilizarán para visión, chat e imágenes entre los ofrecidos por el proveedor.
+
+                    {/* Credit Remaining Progress Meter */}
+                    <div className="space-y-2.5 pt-2.5 border-t border-forest/10">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-semibold text-slate-700 flex items-center gap-1.5">
+                          <span>Crédito restante:</span>
+                          {isAiCriticallyLow && (
+                            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200 animate-pulse">
+                              Crítico (≤ 2,000 tokens)
+                            </span>
+                          )}
+                        </span>
+                        <span className={`font-bold ${isAiCriticallyLow ? 'text-rose-600' : isAiLow ? 'text-amber-600' : 'text-forest'}`}>
+                          {aiTokensRemaining.toLocaleString()} / {aiIncludedLimit.toLocaleString()} tokens ({aiRemainingPercent}%)
                         </span>
                       </div>
 
+                      {/* Remaining Credit Bar */}
+                      <div className="w-full h-3 rounded-full bg-slate-100 p-0.5 border border-slate-200/60 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 shadow-2xs ${isAiCriticallyLow
+                              ? 'bg-gradient-to-r from-rose-500 to-red-600 animate-pulse'
+                              : isAiLow
+                                ? 'bg-gradient-to-r from-amber-500 to-amber-600'
+                                : 'bg-gradient-to-r from-emerald-500 to-forest'
+                            }`}
+                          style={{ width: `${Math.min(100, Math.max(isAiCriticallyLow ? 4 : 0, aiRemainingPercent))}%` }}
+                        />
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[11px] text-muted-foreground">
+                        <span>Consumidos este ciclo: <strong className="text-slate-700 font-semibold">{aiTokensUsed.toLocaleString()} tokens</strong></span>
+                        <span className="font-medium text-slate-600">
+                          {usageStats?.ai?.renewalDescription || (isAiFreeTrial ? 'Se renueva el día 1 de cada mes (no acumulativo)' : 'Se renueva junto con tu suscripción (no acumulativo)')}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Option 2: Proveedor Propio (BYOK) */}
+                  <div
+                    onClick={() => handleInputChange('ai_provider_mode', 'custom')}
+                    className={`p-5 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between space-y-4 relative ${formData.ai_provider_mode === 'custom'
+                        ? 'border-forest bg-forest/[0.03] shadow-sm ring-2 ring-forest/10'
+                        : 'border-slate-200 hover:border-forest/40 bg-white'
+                      }`}
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                          <Zap className="w-3 h-3" /> Tokens Ilimitados
+                        </span>
+                        <input
+                          type="radio"
+                          name="ai_provider_mode"
+                          checked={formData.ai_provider_mode === 'custom'}
+                          onChange={() => handleInputChange('ai_provider_mode', 'custom')}
+                          className="w-4 h-4 text-forest focus:ring-forest"
+                        />
+                      </div>
+
+                      <div>
+                        <h4 className="font-bold text-sm text-forest font-heading">
+                          Proveedor Propio (Bring Your Own Key - BYOK)
+                        </h4>
+                        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                          Conecta tus propias claves de API de OpenAI, Google Gemini, Anthropic, DeepSeek, Groq u Ollama para consumo directo e ilimitado.
+                        </p>
+                      </div>
+
+                      {/* Smart Fallback Banner */}
+                      <div className="p-3.5 bg-indigo-50/80 border border-indigo-200/80 rounded-xl space-y-1.5 text-xs text-indigo-950">
+                        <div className="flex items-center gap-1.5 font-bold text-indigo-900">
+                          <ShieldCheck className="w-4 h-4 text-indigo-600 shrink-0" />
+                          <span>Respaldo Automático Activado</span>
+                        </div>
+                        <p className="text-[11px] text-indigo-800 leading-relaxed">
+                          Si tu API key personal llega a fallar (cuota 429 agotada, clave vencida o caída temporal), el sistema conmutará automáticamente a los <strong>{aiIncludedMillions}M de tokens incluidos</strong> en tu membresía para garantizar que el muro, bitácoras y OCR nunca se detengan.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-forest/10 text-xs text-muted-foreground">
+                      <span>Estado: </span>
+                      <strong className={formData.ai_api_key || formData.openai_api_key ? 'text-emerald-700 font-bold' : 'text-amber-700 font-bold'}>
+                        {formData.ai_api_key || formData.openai_api_key ? 'Clave configurada' : 'Sin clave (usa respaldo del plan)'}
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* CARD 2: CONFIGURACIÓN DEL PROVEEDOR PROPIO (VISIBLE SI MODO ES CUSTOM) */}
+            {formData.ai_provider_mode === 'custom' && (
+              <div className="bg-white rounded-2xl border border-forest/15 shadow-xs animate-in fade-in duration-200">
+                <div className="p-4 sm:p-5 border-b border-forest/10 bg-forest/[0.02] rounded-t-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-xl bg-forest text-white">
+                      <Key className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm text-forest font-heading">
+                        Credenciales del Proveedor Propio (OpenAI Compatible)
+                      </h3>
+                      <p className="text-xs text-muted-foreground">
+                        Configura el endpoint y las claves de tu cuenta personal de OpenAI, Google Gemini, DeepSeek, Groq u OpenRouter.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 self-start sm:self-center">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Multimodal & OCR Ready</span>
+                  </div>
+                </div>
+
+                <div className="p-5 sm:p-6 space-y-6">
+                  {/* Provider Selector */}
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-forest">
+                      Proveedor de Inteligencia Artificial:
+                    </label>
+                    <SearchableProviderSelect
+                      selectedPresetName={
+                        (AI_PRESETS.find(p => p.baseUrl === (formData.ai_base_url || formData.openai_base_url || '').trim())?.name) || 'custom'
+                      }
+                      onSelectPreset={(preset) => handleApplyPreset(preset)}
+                      onSelectCustom={() => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          ai_base_url: '',
+                          openai_base_url: '',
+                          ai_model_vision: '',
+                          openai_model: '',
+                          ai_model_text: '',
+                          ai_model_image: ''
+                        }));
+                      }}
+                      presets={AI_PRESETS}
+                    />
+                    {((formData.ai_base_url || formData.openai_base_url || '').trim() === '' ||
+                      !AI_PRESETS.some(p => p.baseUrl === (formData.ai_base_url || formData.openai_base_url || '').trim())) && (
+                        <div className="space-y-1.5 mt-2">
+                          <label className="block text-xs font-bold text-forest">
+                            Compatibilidad:
+                          </label>
+                          <select
+                            className="w-full p-2.5 border border-forest/20 rounded-xl bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-forest/20 focus:border-forest"
+                            value={
+                              (formData.ai_base_url || formData.openai_base_url || '').includes('anthropic') ? 'Anthropic' : 'OpenAI'
+                            }
+                            onChange={(e) => {
+                              const compat = e.target.value;
+                              const url = compat === 'Anthropic' ? 'https://api.anthropic.com/v1' : 'https://api.openai.com/v1';
+                              handleInputChange('ai_base_url', url);
+                              handleInputChange('openai_base_url', url);
+                            }}
+                          >
+                            <option value="OpenAI">OpenAI</option>
+                            <option value="Anthropic">Anthropic</option>
+                          </select>
+                        </div>
+                      )}
+                  </div>
+
+                  {/* Endpoint URL & API Key Inputs */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Base URL Endpoint */}
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold text-forest">
+                        Endpoint Base URL (API Compatible) <span className="text-rose-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="url"
+                          placeholder="https://api.openai.com/v1"
+                          value={formData.ai_base_url || formData.openai_base_url || 'https://api.openai.com/v1'}
+                          onChange={(e) => {
+                            handleInputChange('ai_base_url', e.target.value);
+                            handleInputChange('openai_base_url', e.target.value);
+                          }}
+                          className="w-full pl-3 pr-8 py-2.5 bg-slate-50 border border-forest/20 rounded-xl text-xs font-mono focus:outline-none focus:ring-2 focus:ring-forest/20 focus:border-forest"
+                        />
+                        <Globe className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">
+                        Por defecto: <code className="text-forest font-mono">https://api.openai.com/v1</code>
+                      </p>
+                    </div>
+
+                    {/* API Key */}
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold text-forest">
+                        API Key de Acceso <span className="text-rose-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showApiKey ? 'text' : 'password'}
+                          placeholder="sk-proj-... / AIzaSy... / dsk-..."
+                          value={formData.ai_api_key || formData.openai_api_key || ''}
+                          onChange={(e) => {
+                            handleInputChange('ai_api_key', e.target.value);
+                            handleInputChange('openai_api_key', e.target.value);
+                          }}
+                          className="w-full pl-3 pr-24 py-2.5 bg-slate-50 border border-forest/20 rounded-xl text-xs font-mono focus:outline-none focus:ring-2 focus:ring-forest/20 focus:border-forest"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowApiKey(!showApiKey)}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-forest p-1 rounded-lg hover:bg-slate-200/60 transition-colors cursor-pointer"
+                          title={showApiKey ? 'Ocultar clave' : 'Mostrar clave'}
+                        >
+                          {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">
+                        Clave de autenticación del proveedor (Bearer Token).
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Conditional UI: Connect & Load Models vs Model Selectors */}
+                  {!modelsLoaded ? (
+                    /* Not Connected State Card */
+                    <div className="p-6 sm:p-8 rounded-2xl bg-forest/[0.03] border-2 border-dashed border-forest/20 flex flex-col items-center justify-center text-center gap-3.5 animate-in fade-in duration-200">
+                      <div className="p-3.5 rounded-2xl bg-forest/10 text-forest shadow-xs">
+                        <BrainCircuit className="w-6 h-6 text-forest" />
+                      </div>
+                      <div className="max-w-md space-y-1.5">
+                        <h4 className="font-bold text-sm text-forest font-heading">
+                          Conectar y Cargar Modelos del Proveedor
+                        </h4>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          Verifica las credenciales en tiempo real y descarga la lista de modelos disponibles en este proveedor para habilitar los selectores de visión OCR, chat e imágenes.
+                        </p>
+                      </div>
                       <button
                         type="button"
                         onClick={handleFetchModels}
                         disabled={fetchingModels}
-                        className="px-3.5 py-1.5 bg-white text-forest hover:bg-forest/5 border border-forest/25 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-2xs transition-all disabled:opacity-50 cursor-pointer self-start sm:self-center shrink-0 hover:scale-102 active:scale-98"
-                        title="Volver a sincronizar modelos del endpoint"
+                        className="mt-2 px-6 py-2.5 bg-forest text-white hover:bg-forest/90 font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition-all disabled:opacity-50 cursor-pointer hover:scale-105 active:scale-95"
                       >
-                        <RefreshCw className={`w-3.5 h-3.5 text-forest ${fetchingModels ? 'animate-spin' : ''}`} />
-                        <span>{fetchingModels ? 'Sincronizando...' : 'Recargar Modelos'}</span>
+                        <RefreshCw className={`w-4 h-4 text-white ${fetchingModels ? 'animate-spin' : ''}`} />
+                        <span>{fetchingModels ? 'Verificando y Conectando...' : 'Conectar y Cargar Modelos'}</span>
                       </button>
                     </div>
-
-                    {/* 3 Model Searchable Combobox Selectors */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
-                      {/* 1. Vision / OCR Model */}
-                      <div className="space-y-1.5 p-4 rounded-xl border border-forest/15 bg-slate-50/60 flex flex-col justify-between">
-                        <div>
-                          <div className="flex items-center gap-1.5 text-forest font-bold text-xs pb-1 border-b border-forest/10">
-                            <ScanEye className="w-4 h-4 text-emerald-600" />
-                            <span>Modelo de Visión / OCR</span>
+                  ) : (
+                    /* Connected State: Status Header + 3 Model Columns */
+                    <div className="space-y-4 animate-in fade-in duration-200">
+                      {/* Connected Status Header */}
+                      <div className="p-4 rounded-xl bg-forest/[0.04] border border-forest/15 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-forest flex items-center gap-1.5">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                              <span>Proveedor Conectado con Éxito</span>
+                            </span>
+                            <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-bold">
+                              {availableModels.length > 0 ? `${availableModels.length} modelos detectados` : 'Configuración activa'}
+                            </span>
                           </div>
-                          <label className="block text-[11px] text-muted-foreground mt-1 mb-2">
-                            Para escaneo de identificaciones (INE/Pasaporte) y cotejo facial.
-                          </label>
+                          <span className="text-[11px] text-muted-foreground block">
+                            Selecciona los modelos que se utilizarán para visión, chat e imágenes entre los ofrecidos por el proveedor.
+                          </span>
                         </div>
-                        <SearchableModelSelect
-                          value={formData.ai_model_vision || formData.openai_model || 'gpt-4o-mini'}
-                          onChange={(val) => {
-                            handleInputChange('ai_model_vision', val);
-                            handleInputChange('openai_model', val);
-                          }}
-                          models={availableModels}
-                          placeholder="Seleccionar modelo de visión..."
-                          modelType="vision"
-                          fallbackPresets={[
-                            'gpt-4o-mini',
-                            'gpt-4o',
-                            'gemini-2.0-flash',
-                            'gemini-1.5-flash',
-                            'gemini-1.5-pro',
-                            'llama-3.2-11b-vision-preview',
-                            'llava'
-                          ]}
-                        />
+
+                        <button
+                          type="button"
+                          onClick={handleFetchModels}
+                          disabled={fetchingModels}
+                          className="px-3.5 py-1.5 bg-white text-forest hover:bg-forest/5 border border-forest/25 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-2xs transition-all disabled:opacity-50 cursor-pointer self-start sm:self-center shrink-0 hover:scale-102 active:scale-98"
+                          title="Volver a sincronizar modelos del endpoint"
+                        >
+                          <RefreshCw className={`w-3.5 h-3.5 text-forest ${fetchingModels ? 'animate-spin' : ''}`} />
+                          <span>{fetchingModels ? 'Sincronizando...' : 'Recargar Modelos'}</span>
+                        </button>
                       </div>
 
-                      {/* 2. Text / Chat Generation Model */}
-                      <div className="space-y-1.5 p-4 rounded-xl border border-forest/15 bg-slate-50/60 flex flex-col justify-between">
-                        <div>
-                          <div className="flex items-center gap-1.5 text-forest font-bold text-xs pb-1 border-b border-forest/10">
-                            <MessageSquare className="w-4 h-4 text-blue-600" />
-                            <span>Modelo de Generación de Texto</span>
+                      {/* 3 Model Searchable Combobox Selectors */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+                        {/* 1. Vision / OCR Model */}
+                        <div className="space-y-1.5 p-4 rounded-xl border border-forest/15 bg-slate-50/60 flex flex-col justify-between">
+                          <div>
+                            <div className="flex items-center gap-1.5 text-forest font-bold text-xs pb-1 border-b border-forest/10">
+                              <ScanEye className="w-4 h-4 text-emerald-600" />
+                              <span>Modelo de Visión / OCR</span>
+                            </div>
+                            <label className="block text-[11px] text-muted-foreground mt-1 mb-2">
+                              Para escaneo de identificaciones (INE/Pasaporte) y cotejo facial.
+                            </label>
                           </div>
-                          <label className="block text-[11px] text-muted-foreground mt-1 mb-2">
-                            Para respuestas automáticas, análisis y asistentes conversacionales.
-                          </label>
+                          <SearchableModelSelect
+                            value={formData.ai_model_vision || formData.openai_model || 'gpt-5.6-luna'}
+                            onChange={(val) => {
+                              handleInputChange('ai_model_vision', val);
+                              handleInputChange('openai_model', val);
+                            }}
+                            models={availableModels}
+                            placeholder="Seleccionar modelo de visión..."
+                            modelType="vision"
+                            fallbackPresets={[
+                              'gpt-5.6-luna',
+                              'gpt-4o',
+                              'gemini-2.0-flash',
+                              'gemini-1.5-flash',
+                              'gemini-1.5-pro',
+                              'llama-3.2-11b-vision-preview',
+                              'llava'
+                            ]}
+                          />
                         </div>
-                        <SearchableModelSelect
-                          value={formData.ai_model_text || 'gpt-4o-mini'}
-                          onChange={(val) => handleInputChange('ai_model_text', val)}
-                          models={availableModels}
-                          placeholder="Seleccionar modelo de texto..."
-                          modelType="text"
-                          fallbackPresets={[
-                            'gpt-4o-mini',
-                            'gpt-4o',
-                            'gemini-2.0-flash',
-                            'deepseek-chat',
-                            'deepseek-reasoner',
-                            'llama-3.3-70b-versatile',
-                            'o1-mini',
-                            'o3-mini'
-                          ]}
-                        />
-                      </div>
 
-                      {/* 3. Image Generation Model */}
-                      <div className="space-y-1.5 p-4 rounded-xl border border-forest/15 bg-slate-50/60 flex flex-col justify-between">
-                        <div>
-                          <div className="flex items-center gap-1.5 text-forest font-bold text-xs pb-1 border-b border-forest/10">
-                            <ImageIcon className="w-4 h-4 text-purple-600" />
-                            <span>Modelo de Generación de Imagen</span>
+                        {/* 2. Text / Chat Generation Model */}
+                        <div className="space-y-1.5 p-4 rounded-xl border border-forest/15 bg-slate-50/60 flex flex-col justify-between">
+                          <div>
+                            <div className="flex items-center gap-1.5 text-forest font-bold text-xs pb-1 border-b border-forest/10">
+                              <MessageSquare className="w-4 h-4 text-blue-600" />
+                              <span>Modelo de Generación de Texto</span>
+                            </div>
+                            <label className="block text-[11px] text-muted-foreground mt-1 mb-2">
+                              Para respuestas automáticas, análisis y asistentes conversacionales.
+                            </label>
                           </div>
-                          <label className="block text-[11px] text-muted-foreground mt-1 mb-2">
-                            Para creación o retoque de ilustraciones e imágenes del colegio.
-                          </label>
+                          <SearchableModelSelect
+                            value={formData.ai_model_text || 'gpt-5.6-luna'}
+                            onChange={(val) => handleInputChange('ai_model_text', val)}
+                            models={availableModels}
+                            placeholder="Seleccionar modelo de texto..."
+                            modelType="text"
+                            fallbackPresets={[
+                              'gpt-5.6-luna',
+                              'gpt-4o',
+                              'gemini-2.0-flash',
+                              'deepseek-chat',
+                              'deepseek-reasoner',
+                              'llama-3.3-70b-versatile',
+                              'o1-mini',
+                              'o3-mini'
+                            ]}
+                          />
                         </div>
-                        <SearchableModelSelect
-                          value={formData.ai_model_image || 'dall-e-3'}
-                          onChange={(val) => handleInputChange('ai_model_image', val)}
-                          models={availableModels}
-                          placeholder="Seleccionar modelo de imagen..."
-                          modelType="image"
-                          fallbackPresets={[
-                            'dall-e-3',
-                            'dall-e-2',
-                            'imagen-3.0-generate-002',
-                            'flux-schnell',
-                            'flux-dev',
-                            'stable-diffusion-3.5'
-                          ]}
-                        />
+
+                        {/* 3. Image Generation Model */}
+                        <div className="space-y-1.5 p-4 rounded-xl border border-forest/15 bg-slate-50/60 flex flex-col justify-between">
+                          <div>
+                            <div className="flex items-center gap-1.5 text-forest font-bold text-xs pb-1 border-b border-forest/10">
+                              <ImageIcon className="w-4 h-4 text-purple-600" />
+                              <span>Modelo de Generación de Imagen</span>
+                            </div>
+                            <label className="block text-[11px] text-muted-foreground mt-1 mb-2">
+                              Para creación o retoque de ilustraciones e imágenes del colegio.
+                            </label>
+                          </div>
+                          <SearchableModelSelect
+                            value={formData.ai_model_image || 'gpt-image-2'}
+                            onChange={(val) => handleInputChange('ai_model_image', val)}
+                            models={availableModels}
+                            placeholder="Seleccionar modelo de imagen..."
+                            modelType="image"
+                            fallbackPresets={[
+                              'gpt-image-2',
+                              'imagen-3.0-generate-002',
+                              'flux-schnell',
+                              'flux-dev',
+                              'stable-diffusion-3.5'
+                            ]}
+                          />
+                        </div>
                       </div>
                     </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* CARD 2: MODERACIÓN INTELIGENTE DEL MURO CON IA */}
+            <div className="bg-white rounded-2xl border border-forest/15 shadow-xs">
+              <div className="p-4 sm:p-5 border-b border-forest/10 bg-forest/[0.02] rounded-t-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-forest text-white">
+                    <ShieldCheck className="w-4 h-4" />
                   </div>
-                )}
+                  <div>
+                    <h3 className="font-bold text-sm text-forest font-heading">
+                      Moderación Inteligente del Muro Escolar (Filtro con IA)
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Protege la convivencia comunitaria evaluando publicaciones y comentarios en segundo plano para prevenir lenguaje inapropiado, agresiones o spam.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200 self-start sm:self-center">
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  <span>Convivencia Escolar Segura</span>
+                </div>
+              </div>
+
+              <div className="p-5 sm:p-6 space-y-4">
+                {/* Switch 1: Moderar Padres / Tutores */}
+                <div className="p-4 rounded-2xl bg-forest/[0.03] border border-forest/10 flex items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-xs sm:text-sm text-forest">
+                        Moderar publicaciones y comentarios de Familias / Tutores
+                      </span>
+                      <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">
+                        Recomendado
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Al publicar, la publicación o comentario se pone en revisión instantánea en segundo plano. Si la IA detecta infracciones a las normas de respeto, se marca como inapropiado y queda en pausa visible únicamente para el autor para que pueda corregirlo o eliminarlo.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const current = formData.feed_ai_moderation_tutors === 'true' || formData.feed_ai_moderation_tutors === true || formData.feed_ai_moderation_tutors === undefined;
+                      handleInputChange('feed_ai_moderation_tutors', current ? 'false' : 'true');
+                    }}
+                    className="shrink-0 text-forest hover:opacity-80 transition-opacity cursor-pointer"
+                  >
+                    {(formData.feed_ai_moderation_tutors === 'true' || formData.feed_ai_moderation_tutors === true || formData.feed_ai_moderation_tutors === undefined) ? (
+                      <ToggleRight className="w-9 h-9 text-forest" />
+                    ) : (
+                      <ToggleLeft className="w-9 h-9 text-slate-400" />
+                    )}
+                  </button>
+                </div>
+
+                {/* Switch 2: Moderar Guías y Docentes */}
+                <div className="p-4 rounded-2xl bg-forest/[0.03] border border-forest/10 flex items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <span className="font-bold text-xs sm:text-sm text-forest">
+                      Moderar publicaciones y comentarios de Guías y Docentes
+                    </span>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Aplica los mismos filtros de revisión ética y respeto mutuo a publicaciones y notas creadas por el equipo docente y guías escolares.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const current = formData.feed_ai_moderation_guides === 'true' || formData.feed_ai_moderation_guides === true;
+                      handleInputChange('feed_ai_moderation_guides', current ? 'false' : 'true');
+                    }}
+                    className="shrink-0 text-forest hover:opacity-80 transition-opacity cursor-pointer"
+                  >
+                    {(formData.feed_ai_moderation_guides === 'true' || formData.feed_ai_moderation_guides === true) ? (
+                      <ToggleRight className="w-9 h-9 text-forest" />
+                    ) : (
+                      <ToggleLeft className="w-9 h-9 text-slate-400" />
+                    )}
+                  </button>
+                </div>
+
+                {/* Switch 3: Curado y corrección de ortografía con IA */}
+                <div className="p-4 rounded-2xl bg-forest/[0.03] border border-forest/10 flex items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-xs sm:text-sm text-forest">
+                        Curado de ortografía y gramática en publicaciones y comentarios
+                      </span>
+                      <span className="text-[10px] bg-sky-100 text-sky-800 px-2 py-0.5 rounded-full font-bold">
+                        Nuevo
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Escriba lo que escriba el usuario, la IA corrige automáticamente las faltas de ortografía, tildes y gramática tras validar que el contenido es adecuado para la escuela, preservando fielmente el sentido, las menciones (@) y el tono original del autor.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const current = formData.feed_ai_grammar_curation === 'true' || formData.feed_ai_grammar_curation === true || formData.feed_ai_grammar_curation === undefined;
+                      handleInputChange('feed_ai_grammar_curation', current ? 'false' : 'true');
+                    }}
+                    className="shrink-0 text-forest hover:opacity-80 transition-opacity cursor-pointer"
+                  >
+                    {(formData.feed_ai_grammar_curation === 'true' || formData.feed_ai_grammar_curation === true || formData.feed_ai_grammar_curation === undefined) ? (
+                      <ToggleRight className="w-9 h-9 text-forest" />
+                    ) : (
+                      <ToggleLeft className="w-9 h-9 text-slate-400" />
+                    )}
+                  </button>
+                </div>
+
+                {/* Switch 4: Asistente de redacción, corrección y dictado por voz en eventos, citas y boletines */}
+                <div className="p-4 rounded-2xl bg-forest/[0.03] border border-forest/10 flex items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-xs sm:text-sm text-forest">
+                        Asistente de redacción, corrección ortográfica y dictado por voz en eventos, citas y boletines
+                      </span>
+                      <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">
+                        Productividad
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Habilita herramientas inteligentes de dictado por voz y botones para mejorar automáticamente la ortografía, redacción y estilo en las descripciones de eventos, notas/comentarios de citas escolares, minutas y en la redacción de boletines y comunicados (Newsletters).
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const current = formData.ai_writing_assistant_enabled === 'true' || formData.ai_writing_assistant_enabled === true || formData.ai_writing_assistant_enabled === undefined;
+                      handleInputChange('ai_writing_assistant_enabled', current ? 'false' : 'true');
+                    }}
+                    className="shrink-0 text-forest hover:opacity-80 transition-opacity cursor-pointer"
+                  >
+                    {(formData.ai_writing_assistant_enabled === 'true' || formData.ai_writing_assistant_enabled === true || formData.ai_writing_assistant_enabled === undefined) ? (
+                      <ToggleRight className="w-9 h-9 text-forest" />
+                    ) : (
+                      <ToggleLeft className="w-9 h-9 text-slate-400" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* CARD 3: AGENTE INTERACTIVO DEL COLEGIO EN EL MURO (@AGENTE) */}
+            <div className="bg-white rounded-2xl border border-forest/15 shadow-xs">
+              <div className="p-4 sm:p-5 border-b border-forest/10 bg-forest/[0.02] rounded-t-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-forest text-white">
+                    <Bot className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm text-forest font-heading">
+                      Agente Interactivo de IA del Colegio en el Muro (Estilo Grok / Asistente Social)
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Cualquier miembro de la comunidad puede citar al agente con un <code className="font-mono text-forest font-bold">@{formData.feed_ai_agent_name || (schoolName ? schoolName.split(' ')[0] : 'Ceiba')}</code> en publicaciones o comentarios y la IA responderá de forma oficial y pedagógica en tiempo real.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-full border border-indigo-200 self-start sm:self-center">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Interacción en Vivo</span>
+                </div>
+              </div>
+
+              <div className="p-5 sm:p-6 space-y-6">
+                {/* Master Switch for School AI Agent */}
+                <div className="p-4 rounded-2xl bg-forest/[0.03] border border-forest/10 flex items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <span className="font-bold text-xs sm:text-sm text-forest">
+                      Activar Agente Interactivo de IA en el Muro Escolar
+                    </span>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Permite que familias, guías y administradores interactúen con el asistente pedagógico oficial del colegio mencionándolo con arroba.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const current = formData.feed_ai_agent_enabled === 'true' || formData.feed_ai_agent_enabled === true || formData.feed_ai_agent_enabled === undefined;
+                      handleInputChange('feed_ai_agent_enabled', current ? 'false' : 'true');
+                    }}
+                    className="shrink-0 text-forest hover:opacity-80 transition-opacity cursor-pointer"
+                  >
+                    {(formData.feed_ai_agent_enabled === 'true' || formData.feed_ai_agent_enabled === true || formData.feed_ai_agent_enabled === undefined) ? (
+                      <ToggleRight className="w-9 h-9 text-forest" />
+                    ) : (
+                      <ToggleLeft className="w-9 h-9 text-slate-400" />
+                    )}
+                  </button>
+                </div>
+
+                {/* Configuration Inputs for School AI Agent */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Agent Name */}
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-forest">
+                      Nombre del Agente de IA (Mención con @) <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 font-mono font-bold text-forest text-xs">@</span>
+                      <input
+                        type="text"
+                        placeholder={schoolName ? schoolName.split(' ')[0] : 'Ceiba'}
+                        value={formData.feed_ai_agent_name || ''}
+                        onChange={(e) => {
+                          const cleanVal = e.target.value.replace(/[@\s]/g, '');
+                          handleInputChange('feed_ai_agent_name', cleanVal);
+                        }}
+                        className="w-full pl-7 pr-3 py-2.5 bg-slate-50 border border-forest/20 rounded-xl text-xs font-bold font-mono focus:outline-none focus:ring-2 focus:ring-forest/20 focus:border-forest"
+                      />
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      Por defecto: <code className="text-forest font-mono">@{schoolName ? schoolName.split(' ')[0] : 'Ceiba'}</code>. Los usuarios lo activarán escribiendo <span className="font-mono text-forest">@{formData.feed_ai_agent_name || (schoolName ? schoolName.split(' ')[0] : 'Ceiba')}</span>.
+                    </p>
+                  </div>
+
+                  {/* Agent Official Role Title */}
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-forest">
+                      Título / Rol Oficial del Agente
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Asistente Pedagógico Montessori"
+                      value={formData.feed_ai_agent_role || ''}
+                      onChange={(e) => handleInputChange('feed_ai_agent_role', e.target.value)}
+                      className="w-full px-3 py-2.5 bg-slate-50 border border-forest/20 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-forest/20 focus:border-forest"
+                    />
+                    <p className="text-[11px] text-muted-foreground">
+                      Aparecerá en el distintivo oficial del comentario (ej. <em>Asistente Pedagógico Oficial</em>).
+                    </p>
+                  </div>
+                </div>
+
+                {/* Agent Personality & System Prompt */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-forest">
+                      Instrucciones Personalizadas / Personalidad del Agente
+                    </label>
+                    <span className="text-[11px] text-muted-foreground">Opcional</span>
+                  </div>
+                  <textarea
+                    rows={3}
+                    placeholder="Ejemplo: Eres el asistente oficial de Ceiba Montessori. Responde con calidez humana, empatía, fundamentos pedagógicos Montessori y un tono inspirador y profesional. Si te preguntan por pagos o casos personales, remite cordialmente a secretaría o a la guía."
+                    value={formData.feed_ai_agent_instructions || ''}
+                    onChange={(e) => handleInputChange('feed_ai_agent_instructions', e.target.value)}
+                    className="w-full p-3 bg-slate-50 border border-forest/20 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-forest/20 focus:border-forest leading-relaxed resize-y"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Define directrices de respuesta, tono pedagógico y reglas específicas de tu colegio para las respuestas del agente en el muro.
+                  </p>
+                </div>
               </div>
             </div>
           </div>

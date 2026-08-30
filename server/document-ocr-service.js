@@ -136,7 +136,7 @@ export async function cropSignatureFromDocument({
 export async function getAiConfig(schoolId = null, prisma = null) {
   let apiKey = (process.env.OPENAI_API_KEY || process.env.AI_API_KEY || '').trim();
   let baseUrl = (process.env.OPENAI_BASE_URL || process.env.AI_BASE_URL || 'https://api.openai.com/v1').trim();
-  let visionModel = (process.env.OPENAI_VISION_MODEL || process.env.AI_MODEL_VISION || 'gpt-4o-mini').trim();
+  let visionModel = (process.env.OPENAI_VISION_MODEL || process.env.AI_MODEL_VISION || 'gpt-5.6-luna').trim();
 
   const p = getPrismaInstance(prisma);
   try {
@@ -444,9 +444,9 @@ RULES:
   let cleanBaseUrl = (baseUrl || 'https://api.openai.com/v1').trim().replace(/\/+$/, '');
   cleanBaseUrl = cleanBaseUrl.replace(/\/models$/, '').replace(/\/chat\/completions$/, '');
   const chatUrl = `${cleanBaseUrl}/chat/completions`;
-  const cleanModel = (visionModel || 'gpt-4o-mini').trim().replace(/^models\//, '');
+  const cleanModel = (visionModel || 'gpt-5.6-luna').trim().replace(/^models\//, '');
 
-  const isReasoning = /o[134]|deepseek-reasoner|r1/i.test(cleanModel);
+  const isReasoning = /o[134]|deepseek-reasoner|r1|luna|gpt-5/i.test(cleanModel);
 
   async function sendOcrRequest(useMaxCompletionTokens) {
     const payload = {
@@ -458,7 +458,7 @@ RULES:
       response_format: { type: 'json_object' }
     };
 
-    if (useMaxCompletionTokens) {
+    if (useMaxCompletionTokens || isReasoning) {
       payload.max_completion_tokens = 2000;
     } else {
       payload.max_tokens = 2000;
