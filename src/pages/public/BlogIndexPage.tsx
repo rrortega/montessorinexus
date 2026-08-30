@@ -8,6 +8,8 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { BlogNavbar } from '@/components/blog/BlogNavbar';
 import { BlogFooter } from '@/components/blog/BlogFooter';
+import { CategoryScrollNav } from '@/components/blog/CategoryScrollNav';
+import { useBlogProtection } from '@/hooks/useBlogProtection';
 
 export interface PublicBlogPostItem {
   id: string;
@@ -32,6 +34,8 @@ export interface PublicBlogCategoryItem {
 }
 
 export const BlogIndexPage: React.FC = () => {
+  useBlogProtection();
+
   const { schoolSlug: schoolSlugFromUrl } = useParams<{ schoolSlug?: string }>();
   const { isPlatformRoot, schoolName, schoolLogo, buttonRadius } = useSiteSettings();
   const btnRadiusClass = getButtonRadiusClass(buttonRadius);
@@ -44,6 +48,7 @@ export const BlogIndexPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [activeLocale, setActiveLocale] = useState<string>('es');
   const [loading, setLoading] = useState<boolean>(true);
+  const [rawMarkdown, setRawMarkdown] = useState<string | null>(null);
 
   // Pagination state (18 items per page)
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -57,6 +62,12 @@ export const BlogIndexPage: React.FC = () => {
 
   useEffect(() => {
     const fetchBlogData = async () => {
+      const isMdRequest = typeof window !== 'undefined' && (
+        window.location.pathname.endsWith('.md') || 
+        window.location.pathname.endsWith('/llms.txt') || 
+        window.location.pathname === '/llms.txt'
+      );
+
       setLoading(true);
       try {
         const headers: Record<string, string> = {
@@ -67,6 +78,15 @@ export const BlogIndexPage: React.FC = () => {
           headers['x-is-platform'] = 'true';
         } else if (schoolSlugFromUrl) {
           headers['x-school-slug'] = schoolSlugFromUrl;
+        }
+
+        if (isMdRequest) {
+          const mdRes = await fetch('/api/blog/index.md', { headers });
+          if (mdRes.ok) {
+            const mdText = await mdRes.text();
+            setRawMarkdown(mdText);
+            return;
+          }
         }
 
         const params = new URLSearchParams();
@@ -97,8 +117,8 @@ export const BlogIndexPage: React.FC = () => {
         }
 
         if (catRes.ok) {
-          const cats = await catRes.json();
-          setCategories(cats || []);
+          const cats: PublicBlogCategoryItem[] = await catRes.json();
+          setCategories((cats || []).filter(c => (c.postCount || 0) > 0));
         }
       } catch (err) {
         console.error('Error fetching blog data:', err);
@@ -108,7 +128,41 @@ export const BlogIndexPage: React.FC = () => {
     };
 
     fetchBlogData();
-  }, [isSaaSBlog, schoolSlugFromUrl, selectedCategory, searchQuery, activeLocale, currentPage]);
+  }, [selectedCategory, searchQuery, activeLocale, isSaaSBlog, schoolSlugFromUrl, currentPage]);
+
+  const indexMdUrl = useMemo(() => {
+    if (schoolSlugFromUrl) {
+      return `/colegio/${schoolSlugFromUrl}/blog/index.md`;
+    }
+    if (isSaaSBlog) {
+      return `/index.md`;
+    }
+    return `/blog/index.md`;
+  }, [schoolSlugFromUrl, isSaaSBlog]);
+
+  useEffect(() => {
+    const siteBrand = isSaaSBlog ? 'MontessoriNexus Blog' : schoolName;
+    document.title = `Blog Oficial • ${siteBrand}`;
+
+    let alternateMd = document.querySelector('link[type="text/markdown"]') as HTMLLinkElement;
+    if (!alternateMd) {
+      alternateMd = document.createElement('link');
+      alternateMd.setAttribute('rel', 'alternate');
+      alternateMd.setAttribute('type', 'text/markdown');
+      alternateMd.setAttribute('title', 'Índice de artículos en Markdown para LLMs y Agentes');
+      document.head.appendChild(alternateMd);
+    }
+    const fullMdUrl = `${window.location.origin}${indexMdUrl}`;
+    alternateMd.setAttribute('href', fullMdUrl);
+
+    let llmsMeta = document.querySelector('meta[name="llms-read-url"]') as HTMLMetaElement;
+    if (!llmsMeta) {
+      llmsMeta = document.createElement('meta');
+      llmsMeta.setAttribute('name', 'llms-read-url');
+      document.head.appendChild(llmsMeta);
+    }
+    llmsMeta.setAttribute('content', fullMdUrl);
+  }, [isSaaSBlog, schoolName, indexMdUrl]);
 
   // Featured and regular posts
   const featuredPost = useMemo(() => {
@@ -124,8 +178,19 @@ export const BlogIndexPage: React.FC = () => {
     if (schoolSlugFromUrl) {
       return `/colegio/${schoolSlugFromUrl}/blog/${postSlug}`;
     }
+    if (isSaaSBlog) {
+      return `/${postSlug}`;
+    }
     return `/blog/${postSlug}`;
   };
+
+  if (rawMarkdown) {
+    return (
+      <pre className="font-mono text-xs sm:text-sm p-6 sm:p-10 whitespace-pre-wrap break-words bg-[#121c13] text-[#e0e7e1] min-h-screen selection:bg-[#C4661F]">
+        {rawMarkdown}
+      </pre>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#faf9f5] dark:bg-[#0c140e] text-foreground flex flex-col selection:bg-[#C4661F] selection:text-white">
@@ -152,13 +217,13 @@ export const BlogIndexPage: React.FC = () => {
             <span>Reflexiones, Ciencia & Filosofía Montessori</span>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold font-display tracking-tight text-foreground max-w-3xl mx-auto leading-tight">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold font-display tracking-tight text-stone-900 dark:text-slate-100 max-w-3xl mx-auto leading-tight">
             {isSaaSBlog
               ? 'Conocimiento para transformar la educación del futuro'
               : `Descubre la vida y el aprendizaje en ${schoolName}`}
           </h1>
 
-          <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+          <p className="text-sm sm:text-base text-stone-600 dark:text-stone-300 max-w-2xl mx-auto leading-relaxed">
             {isSaaSBlog
               ? 'Artículos, guías pedagógicas y herramientas para líderes escolares y familias comprometidas con el desarrollo del niño.'
               : 'Lecturas diseñadas por nuestras guías para acompañar el desarrollo natural, la autonomía y la creatividad en cada etapa.'}
@@ -173,7 +238,7 @@ export const BlogIndexPage: React.FC = () => {
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Buscar temas, autonomía, límites, materiales..."
-                className={`w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm bg-white dark:bg-card border border-border shadow-xs rounded-2xl focus:outline-none focus:ring-2 ${
+                className={`w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm bg-white dark:bg-card border border-border shadow-xs rounded-2xl text-stone-900 dark:text-slate-100 placeholder:text-stone-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 ${
                   isSaaSBlog ? 'focus:ring-[#C4661F]' : 'focus:ring-forest'
                 }`}
               />
@@ -184,39 +249,20 @@ export const BlogIndexPage: React.FC = () => {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full space-y-10">
-        {/* Category Pills */}
+        {/* Category Pills with Invisible Scroll & Nav Handlers */}
         {categories.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="flex items-center gap-2 overflow-x-auto pb-2 custom-scrollbar"
+            className="w-full"
           >
-            <button
-              type="button"
-              onClick={() => setSelectedCategory('ALL')}
-              className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all shrink-0 ${
-                selectedCategory === 'ALL'
-                  ? (isSaaSBlog ? 'bg-[#C4661F] text-white shadow-xs' : 'bg-forest text-white shadow-xs')
-                  : 'bg-white dark:bg-card border border-border text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              Todos los temas
-            </button>
-            {categories.map(cat => (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => setSelectedCategory(cat.slug)}
-                className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all shrink-0 ${
-                  selectedCategory === cat.slug
-                    ? (isSaaSBlog ? 'bg-[#C4661F] text-white shadow-xs' : 'bg-forest text-white shadow-xs')
-                    : 'bg-white dark:bg-card border border-border text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {cat.name} {cat.postCount > 0 && `(${cat.postCount})`}
-              </button>
-            ))}
+            <CategoryScrollNav
+              categories={categories}
+              selectedCategory={selectedCategory}
+              onSelectCategory={setSelectedCategory}
+              isSaaSBlog={isSaaSBlog}
+            />
           </motion.div>
         )}
 
@@ -257,10 +303,11 @@ export const BlogIndexPage: React.FC = () => {
                         alt={featuredPost.coverImageAlt || featuredPost.title}
                         loading="eager"
                         decoding="async"
-                        fetchPriority="high"
-                        className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
+                        {...{ fetchpriority: 'high' }}
+                        className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-108 group-hover:rotate-[0.3deg]"
                       />
-                      <div className={`absolute top-4 left-4 ${isSaaSBlog ? 'bg-[#C4661F]' : 'bg-forest'} text-white text-[10px] font-bold tracking-wider uppercase px-3 py-1 rounded-full shadow-md`}>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                      <div className={`absolute top-4 left-4 ${isSaaSBlog ? 'bg-[#C4661F]' : 'bg-forest'} text-white text-[10px] font-bold tracking-wider uppercase px-3 py-1 rounded-full shadow-md z-10`}>
                         ★ Destacado
                       </div>
                     </div>
@@ -282,20 +329,20 @@ export const BlogIndexPage: React.FC = () => {
                         </div>
                       )}
 
-                      <h2 className={`text-xl sm:text-2xl lg:text-3xl font-bold font-display text-foreground leading-snug ${
-                        isSaaSBlog ? 'group-hover:text-[#C4661F]' : 'group-hover:text-forest'
+                      <h2 className={`text-xl sm:text-2xl lg:text-3xl font-bold font-display text-stone-900 dark:text-[#DE7424] leading-snug ${
+                        isSaaSBlog ? 'group-hover:text-[#C4661F] dark:group-hover:text-[#FFA05C]' : 'group-hover:text-forest dark:group-hover:text-emerald-400'
                       } transition-colors`}>
                         <Link to={getPostDetailUrl(featuredPost.slug)}>
                           {featuredPost.title}
                         </Link>
                       </h2>
 
-                      <p className="text-xs sm:text-sm text-muted-foreground line-clamp-3 leading-relaxed">
+                      <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-300 line-clamp-3 leading-relaxed">
                         {featuredPost.excerpt}
                       </p>
                     </div>
 
-                    <div className="pt-4 border-t border-border/80 flex items-center justify-between text-xs text-muted-foreground">
+                    <div className="pt-4 border-t border-border/80 flex items-center justify-between text-xs text-stone-500 dark:text-stone-400">
                       <div className="flex items-center gap-2.5">
                         {featuredPost.author?.avatarUrl ? (
                           <img
@@ -315,12 +362,12 @@ export const BlogIndexPage: React.FC = () => {
                           </div>
                         )}
                         <div className="flex flex-col">
-                          <span className="font-bold text-foreground">{featuredPost.author?.fullName || 'Equipo Montessori'}</span>
-                          <span className="text-[10px] text-muted-foreground">{featuredPost.author?.jobTitle || 'Guía Montessori'}</span>
+                          <span className="font-bold text-stone-900 dark:text-slate-100">{featuredPost.author?.fullName || 'Equipo Montessori'}</span>
+                          <span className="text-[10px] text-stone-500 dark:text-stone-400">{featuredPost.author?.jobTitle || 'Guía Montessori'}</span>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 text-[11px] font-mono">
+                      <div className="flex items-center gap-2 text-[11px] font-mono text-stone-500 dark:text-stone-400">
                         <Clock className="w-3.5 h-3.5" />
                         <span>{featuredPost.readingTimeMinutes} min</span>
                       </div>
@@ -333,9 +380,9 @@ export const BlogIndexPage: React.FC = () => {
             {/* Regular Posts Grid */}
             {regularPosts.length > 0 && (
               <div className="space-y-6">
-                <h3 className="text-base font-bold font-display text-foreground flex items-center gap-2">
+                <h3 className="text-base font-bold font-display text-stone-900 dark:text-slate-100 flex items-center gap-2">
                   <span>Todas las Publicaciones</span>
-                  <span className="text-xs font-normal text-muted-foreground font-mono">({regularPosts.length})</span>
+                  <span className="text-xs font-normal text-stone-500 dark:text-stone-400 font-mono">({regularPosts.length})</span>
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -352,9 +399,10 @@ export const BlogIndexPage: React.FC = () => {
                               alt={post.coverImageAlt || post.title}
                               loading="lazy"
                               decoding="async"
-                              fetchPriority="low"
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              {...{ fetchpriority: 'low' }}
+                              className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110 group-hover:rotate-[0.4deg]"
                             />
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-500 pointer-events-none" />
                           </Link>
                         ) : (
                           <div className={`aspect-video ${isSaaSBlog ? 'bg-[#C4661F]/5 text-[#C4661F]/30' : 'bg-forest/5 text-forest/30'} flex items-center justify-center`}>
@@ -364,32 +412,39 @@ export const BlogIndexPage: React.FC = () => {
 
                         <div className="p-5 space-y-2.5">
                           {post.categories.length > 0 && (
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
-                              isSaaSBlog ? 'text-[#C4661F] bg-[#C4661F]/10' : 'text-forest bg-forest/10'
-                            }`}>
-                              {post.categories[0].name}
-                            </span>
+                            <div className="flex flex-wrap gap-1">
+                              {post.categories.map(c => (
+                                <span
+                                  key={c.id}
+                                  className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                                    isSaaSBlog ? 'text-[#C4661F] bg-[#C4661F]/10' : 'text-forest bg-forest/10'
+                                  }`}
+                                >
+                                  {c.name}
+                                </span>
+                              ))}
+                            </div>
                           )}
 
-                          <h4 className={`text-base font-bold font-display text-foreground line-clamp-2 ${
-                            isSaaSBlog ? 'group-hover:text-[#C4661F]' : 'group-hover:text-forest'
+                          <h4 className={`text-base font-bold font-display text-stone-900 dark:text-[#DE7424] line-clamp-2 ${
+                            isSaaSBlog ? 'group-hover:text-[#C4661F] dark:group-hover:text-[#FFA05C]' : 'group-hover:text-forest dark:group-hover:text-emerald-400'
                           } transition-colors leading-snug`}>
                             <Link to={getPostDetailUrl(post.slug)}>
                               {post.title}
                             </Link>
                           </h4>
 
-                          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                          <p className="text-xs text-stone-600 dark:text-stone-300 line-clamp-2 leading-relaxed">
                             {post.excerpt}
                           </p>
                         </div>
                       </div>
 
-                      <div className="p-5 pt-0 border-t border-border/60 mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
-                        <span className="font-semibold text-foreground">
+                      <div className="p-5 pt-0 border-t border-border/60 mt-2 flex items-center justify-between text-[11px] text-stone-500 dark:text-stone-400">
+                        <span className="font-semibold text-stone-900 dark:text-slate-100">
                           {post.author?.fullName || 'Equipo Montessori'}
                         </span>
-                        <span className="flex items-center gap-1 font-mono">
+                        <span className="flex items-center gap-1 font-mono text-stone-500 dark:text-stone-400">
                           <Clock className="w-3.5 h-3.5" /> {post.readingTimeMinutes} min
                         </span>
                       </div>
@@ -400,8 +455,8 @@ export const BlogIndexPage: React.FC = () => {
                 {/* Pagination Controls (18 items per page) */}
                 {totalPages > 1 && (
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-border/60">
-                    <p className="text-xs text-muted-foreground font-medium">
-                      Mostrando página <span className="font-semibold text-foreground">{currentPage}</span> de <span className="font-semibold text-foreground">{totalPages}</span> ({totalPosts} artículos en total)
+                    <p className="text-xs text-stone-500 dark:text-stone-400 font-medium">
+                      Mostrando página <span className="font-semibold text-stone-900 dark:text-slate-100">{currentPage}</span> de <span className="font-semibold text-stone-900 dark:text-slate-100">{totalPages}</span> ({totalPosts} artículos en total)
                     </p>
 
                     <div className="flex items-center gap-1.5">
@@ -412,7 +467,7 @@ export const BlogIndexPage: React.FC = () => {
                           window.scrollTo({ top: 0, behavior: 'smooth' });
                         }}
                         disabled={currentPage === 1}
-                        className="px-3 py-2 rounded-xl border border-border bg-white dark:bg-card text-xs font-semibold text-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-1 cursor-pointer"
+                        className="px-3 py-2 rounded-xl border border-border bg-white dark:bg-card text-xs font-semibold text-stone-700 dark:text-slate-200 hover:text-stone-900 dark:hover:text-white hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-1 cursor-pointer"
                       >
                         <ChevronLeft className="w-3.5 h-3.5" />
                         <span>Anterior</span>
@@ -432,7 +487,7 @@ export const BlogIndexPage: React.FC = () => {
                               className={`w-8 h-8 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                                 isCurrent
                                   ? (isSaaSBlog ? 'bg-[#C4661F] text-white shadow-xs' : 'bg-forest text-white shadow-xs')
-                                  : 'bg-white dark:bg-card border border-border text-muted-foreground hover:bg-muted hover:text-foreground'
+                                  : 'bg-white dark:bg-card border border-border text-stone-600 dark:text-stone-300 hover:bg-muted hover:text-stone-900 dark:hover:text-white'
                               }`}
                             >
                               {page}
@@ -448,7 +503,7 @@ export const BlogIndexPage: React.FC = () => {
                           window.scrollTo({ top: 0, behavior: 'smooth' });
                         }}
                         disabled={currentPage === totalPages}
-                        className="px-3 py-2 rounded-xl border border-border bg-white dark:bg-card text-xs font-semibold text-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-1 cursor-pointer"
+                        className="px-3 py-2 rounded-xl border border-border bg-white dark:bg-card text-xs font-semibold text-stone-700 dark:text-slate-200 hover:text-stone-900 dark:hover:text-white hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-1 cursor-pointer"
                       >
                         <span>Siguiente</span>
                         <ChevronRight className="w-3.5 h-3.5" />

@@ -79,6 +79,7 @@ import {
 } from '@/components/public/IdentityVerificationWidget';
 import { convertFileToOptimizedDataUrl } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface UserHeaderMenuProps {
   tutorName?: string;
@@ -4154,7 +4155,35 @@ export const AdmissionPortalPage: React.FC = () => {
         ) : welcomeMessageText && !welcomeDismissed ? (
           <div className="bg-white rounded-3xl p-6 sm:p-9 border border-forest/15 shadow-sm space-y-6 animate-in fade-in duration-300">
             <div className="prose prose-stone max-w-none text-forest leading-relaxed prose-headings:font-display prose-headings:text-forest prose-p:text-forest/90 prose-p:leading-relaxed prose-strong:text-forest prose-strong:font-bold prose-ul:list-disc prose-ol:list-decimal prose-li:text-forest/90 prose-a:text-forest prose-a:underline prose-blockquote:border-l-4 prose-blockquote:border-forest/30 prose-blockquote:italic prose-blockquote:text-forest/80">
-              <ReactMarkdown>{welcomeMessageText}</ReactMarkdown>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  table: ({ node, ...props }) => (
+                    <div className="my-6 w-full overflow-hidden rounded-2xl border border-forest/15 bg-white shadow-xs">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse text-sm m-0 min-w-[460px]" {...props} />
+                      </div>
+                    </div>
+                  ),
+                  thead: ({ node, ...props }) => (
+                    <thead className="border-b border-forest/15 bg-forest/10 text-forest text-xs uppercase tracking-wider font-display font-bold" {...props} />
+                  ),
+                  tbody: ({ node, ...props }) => (
+                    <tbody className="divide-y divide-forest/10 bg-forest/[0.02] text-forest/90" {...props} />
+                  ),
+                  tr: ({ node, ...props }) => (
+                    <tr className="transition-colors hover:bg-forest/5 even:bg-forest/[0.04]" {...props} />
+                  ),
+                  th: ({ node, ...props }) => (
+                    <th className="py-3 px-4 font-bold text-xs uppercase tracking-wider align-middle border-b border-forest/15" {...props} />
+                  ),
+                  td: ({ node, ...props }) => (
+                    <td className="py-3 px-4 text-forest/90 align-middle text-sm leading-relaxed" {...props} />
+                  )
+                }}
+              >
+                {welcomeMessageText}
+              </ReactMarkdown>
             </div>
 
             <div className="pt-4 flex items-center justify-end border-t border-forest/10">

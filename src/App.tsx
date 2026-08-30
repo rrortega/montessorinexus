@@ -17,16 +17,19 @@ import { AdmissionPortalPage } from "./pages/public/AdmissionPortalPage";
 import { PublicFormPage } from "./pages/public/PublicFormPage";
 import { BlogIndexPage } from "./pages/public/BlogIndexPage";
 import { BlogPostDetailPage } from "./pages/public/BlogPostDetailPage";
+import { DevToolsNoticePage } from "./pages/public/DevToolsNoticePage";
 import { CTAWidget } from "@/components/CTAWidget";
 import { FeedRealtimeNotificationBalloon } from "@/components/feed/FeedRealtimeNotificationBalloon";
 
 import { SettingsProvider, useSiteSettings, checkIsPlatformRootSync } from "@/context/SettingsContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { ConfirmDialogProvider } from "@/context/ConfirmDialogContext";
+import { useAppProtection } from "@/hooks/useBlogProtection";
 
 const queryClient = new QueryClient();
 
 const DomainRoutes: React.FC = () => {
+  useAppProtection();
   const { isSchoolNotFound, unregisteredHost, isPlatformRoot, loading } = useSiteSettings();
   const location = useLocation();
 
@@ -44,9 +47,8 @@ const DomainRoutes: React.FC = () => {
 
   // SaaS platform landing routes should render immediately without a loading indicator
   const isPlatformLanding =
-    (isPlatformRoot || checkIsPlatformRootSync() || isBlogHost) &&
+    (isPlatformRoot || checkIsPlatformRootSync()) &&
     (location.pathname === '/' ||
-      location.pathname.startsWith('/blog') ||
       location.pathname === '/platform' ||
       location.pathname === '/nexus' ||
       location.pathname === '/privacidad' ||
@@ -56,7 +58,8 @@ const DomainRoutes: React.FC = () => {
       location.pathname === '/terminos' ||
       location.pathname === '/terms' ||
       location.pathname === '/terminos-de-servicio' ||
-      location.pathname === '/terms-of-service');
+      location.pathname === '/terms-of-service') ||
+    (isBlogHost && (location.pathname === '/' || location.pathname.startsWith('/blog')));
 
   // Prevent flash of unstyled colors on school pages until settings & host are resolved
   if (loading && !isAdminRoute && !isPlatformLanding) {
@@ -82,8 +85,18 @@ const DomainRoutes: React.FC = () => {
         ) : (
           <Route path="/" element={isPlatformRoot ? <MontessoriNexusLanding /> : <Index />} />
         )}
-        <Route path="/blog" element={<BlogIndexPage />} />
-        <Route path="/blog/:slug" element={<BlogPostDetailPage />} />
+        {/* /blog only responds on school domains (custom domain or subdomain), never on the platform root */}
+        {isPlatformRoot ? (
+          <>
+            <Route path="/blog" element={<Navigate to="/" replace />} />
+            <Route path="/blog/:slug" element={<Navigate to="/" replace />} />
+          </>
+        ) : (
+          <>
+            <Route path="/blog" element={<BlogIndexPage />} />
+            <Route path="/blog/:slug" element={<BlogPostDetailPage />} />
+          </>
+        )}
         <Route path="/colegio/:schoolSlug/blog" element={<BlogIndexPage />} />
         <Route path="/colegio/:schoolSlug/blog/:slug" element={<BlogPostDetailPage />} />
         <Route path="/school/:schoolSlug/blog" element={<BlogIndexPage />} />
@@ -98,6 +111,8 @@ const DomainRoutes: React.FC = () => {
         <Route path="/terms" element={<TermsOfServicePage />} />
         <Route path="/terminos-de-servicio" element={<TermsOfServicePage />} />
         <Route path="/terms-of-service" element={<TermsOfServicePage />} />
+        <Route path="/seguridad/herramientas-prohibidas" element={<DevToolsNoticePage />} />
+        <Route path="/security/devtools-prohibited" element={<DevToolsNoticePage />} />
         {/* Explicit Demo Path Redirects */}
         <Route path="/demo" element={<Navigate to="/" replace />} />
         <Route path="/demo/*" element={<Navigate to="/" replace />} />

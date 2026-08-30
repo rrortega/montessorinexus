@@ -100,7 +100,7 @@ export const BlogMetaSEO: React.FC<BlogMetaSEOProps> = ({
     setMeta('name', 'twitter:image', absoluteImageUrl);
     setMeta('name', 'twitter:image:alt', title);
 
-    // 5. Canonical Link
+    // 5. Canonical Link & Markdown Alternate Link for LLMs
     let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
     if (!canonical) {
       canonical = document.createElement('link');
@@ -108,6 +108,18 @@ export const BlogMetaSEO: React.FC<BlogMetaSEOProps> = ({
       document.head.appendChild(canonical);
     }
     canonical.setAttribute('href', url);
+
+    const mdUrl = url.endsWith('.md') ? url : `${url}.md`;
+    let alternateMd = document.querySelector('link[type="text/markdown"]') as HTMLLinkElement;
+    if (!alternateMd) {
+      alternateMd = document.createElement('link');
+      alternateMd.setAttribute('rel', 'alternate');
+      alternateMd.setAttribute('type', 'text/markdown');
+      alternateMd.setAttribute('title', 'Versión Markdown para Agentes y LLMs');
+      document.head.appendChild(alternateMd);
+    }
+    alternateMd.setAttribute('href', mdUrl);
+    setMeta('name', 'llms-read-url', mdUrl);
   }, [title, description, url, image, publishedTime, modifiedTime, authorName, schoolName, keywords, isSaaSBlog]);
 
   // JSON-LD Structured Data Schema for Google

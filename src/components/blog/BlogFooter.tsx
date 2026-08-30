@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { MontessoriNexusLogo } from '@/components/MontessoriNexusLogo';
+import { getPlatformHomeUrl } from '@/lib/urls';
 
 interface BlogFooterProps {
   isSaaSBlog?: boolean;
@@ -33,12 +34,12 @@ export const BlogFooter: React.FC<BlogFooterProps> = ({
         <div className="space-y-2">
           <h4 className="font-serif font-bold text-white text-sm mb-2">Plataforma</h4>
           <p>
-            <a href="/#modulos" className="hover:text-[#C4661F] transition-colors">
+            <a href={`${getPlatformHomeUrl()}/#modulos`} className="hover:text-[#C4661F] transition-colors">
               Módulos Pedagógicos
             </a>
           </p>
           <p>
-            <a href="/#ia-etica" className="hover:text-[#C4661F] transition-colors">
+            <a href={`${getPlatformHomeUrl()}/#ia-etica`} className="hover:text-[#C4661F] transition-colors">
               IA Ética Montessori
             </a>
           </p>
@@ -48,7 +49,7 @@ export const BlogFooter: React.FC<BlogFooterProps> = ({
             </Link>
           </p>
           <p>
-            <a href="/#faq" className="hover:text-[#C4661F] transition-colors">
+            <a href={`${getPlatformHomeUrl()}/#faq`} className="hover:text-[#C4661F] transition-colors">
               Preguntas Frecuentes
             </a>
           </p>
@@ -101,7 +102,17 @@ export const BlogFooter: React.FC<BlogFooterProps> = ({
             </a>
           </p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+          <a
+            href="/index.md"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-stone-400 hover:text-stone-200 transition-colors font-mono text-[10.5px]"
+            title="Índice de artículos en Markdown estructurado para Agentes de IA y LLMs"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Agentes de IA (index.md)</span>
+          </a>
           <Link to="/privacidad" className="hover:text-[#C4661F] transition-colors">
             Privacidad
           </Link>

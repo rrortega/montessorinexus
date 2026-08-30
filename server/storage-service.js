@@ -12,6 +12,7 @@ import {
   CreateBucketCommand
 } from '@aws-sdk/client-s3';
 import { ZipArchive } from 'archiver';
+import { isBlogImage, isSaaSBlogRequest, getOrGenerateSignedBlogFile } from './blog-watermark-service.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -853,6 +854,35 @@ export async function streamPrivateAsset({ schoolId, relativePath, req = null, r
   const resolvedLocalPath = fs.existsSync(cachedFilePath) ? cachedFilePath : (fs.existsSync(localFSPath) ? localFSPath : null);
 
   if (resolvedLocalPath) {
+    // Automatic Watermarking EXCLUSIVELY for SaaS Blog (e.g. blog. subdomain)
+    if (isBlogImage(cleanPath) && isSaaSBlogRequest(req, cleanPath)) {
+      try {
+        const signedResult = await getOrGenerateSignedBlogFile({
+          relativePath: cleanPath,
+          sourceFSPath: resolvedLocalPath,
+          config
+        });
+
+        if (signedResult?.filePath && fs.existsSync(signedResult.filePath)) {
+          const signedStat = fs.statSync(signedResult.filePath);
+          const signedEtag = `"${signedStat.size}-${Math.floor(signedStat.mtimeMs)}"`;
+          res.setHeader('ETag', signedEtag);
+          res.setHeader('Content-Type', signedResult.mimeType || 'image/webp');
+          res.setHeader('Content-Length', signedStat.size);
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+
+          if (req?.headers['if-none-match'] === signedEtag) {
+            res.status(304).end();
+            return;
+          }
+
+          return fs.createReadStream(signedResult.filePath).pipe(res);
+        }
+      } catch (watermarkErr) {
+        console.warn('⚠️ [Blog Watermark] Error applying signature, falling back to original:', watermarkErr.message);
+      }
+    }
+
     const stat = fs.statSync(resolvedLocalPath);
     const etag = `"${stat.size}-${Math.floor(stat.mtimeMs)}"`;
     res.setHeader('ETag', etag);
@@ -953,8 +983,30 @@ export async function streamPrivateAsset({ schoolId, relativePath, req = null, r
       const byteArray = await s3Obj.Body.transformToByteArray();
       const buffer = Buffer.from(byteArray);
 
-      // Cache file locally in background for subsequent high-speed hits
+      // Cache raw file locally in background for subsequent high-speed hits
       saveToLocalCache(cleanPath, buffer);
+
+      // Automatic Watermarking EXCLUSIVELY for SaaS Blog (e.g. blog. subdomain)
+      if (isBlogImage(cleanPath) && isSaaSBlogRequest(req, cleanPath)) {
+        try {
+          const signedResult = await getOrGenerateSignedBlogFile({
+            relativePath: cleanPath,
+            sourceBuffer: buffer,
+            config
+          });
+
+          if (signedResult?.buffer) {
+            const signedEtag = `"${signedResult.buffer.length}-${Date.now().toString(36)}"`;
+            res.setHeader('ETag', signedEtag);
+            res.setHeader('Content-Type', signedResult.mimeType || 'image/webp');
+            res.setHeader('Content-Length', signedResult.buffer.length);
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+            return res.end(signedResult.buffer);
+          }
+        } catch (watermarkErr) {
+          console.warn('⚠️ [Blog Watermark S3] Error applying signature, falling back to original:', watermarkErr.message);
+        }
+      }
 
       const etag = `"${buffer.length}-${Date.now().toString(36)}"`;
       res.setHeader('ETag', etag);

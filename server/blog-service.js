@@ -26,6 +26,24 @@ export const calculateReadingTime = (content) => {
 };
 
 /**
+ * Normalizes arrows in Mermaid diagrams from -> or → to ==>
+ * Prevents rich-text / markdown sanitizers from breaking Mermaid syntax.
+ */
+export const sanitizeMermaidDiagramArrows = (content) => {
+  if (!content || typeof content !== 'string') return '';
+
+  return content.replace(/```(?:mermaid)([\s\S]*?)```/gi, (_match, mermaidCode) => {
+    const sanitized = mermaidCode
+      .replace(/→/g, '==>')
+      .replace(/->\|([^|]+)\|/g, '==>|$1|')
+      .replace(/(?<![-=])->(?![->])/g, '==>')
+      .replace(/-->/g, '==>');
+
+    return '```mermaid' + sanitized + '```';
+  });
+};
+
+/**
  * Checks if a school has active entitlement to use the Blog module.
  * Logic: Free for the first 90 days (trial) from school creation, or if subscription/feature is enabled.
  */
@@ -227,6 +245,10 @@ REGLAS OBLIGATORIAS PARA METADATOS Y REDES SOCIALES (SEO & OpenGraph):
 1. "title": Título principal del artículo traducido con fuerza pedagógica.
 2. "excerpt": Resumen cautivador traducido de 2 a 3 oraciones.
 3. "content": Markdown completo 100% traducido al idioma "${targetLocale}".
+   - REGLA CRÍTICA PARA DIAGRAMAS MERMAID (\`\`\`mermaid ... \`\`\`):
+     * Mantén intacta la sintaxis y palabras clave de Mermaid (\`flowchart TD\`, \`flowchart LR\`, \`graph TD\`, \`subgraph\`, \`end\`, \`stateDiagram-v2\`, \`mindmap\`, \`-->\`, \`--- \`, etc.) y los IDs de los nodos.
+     * Traduce ÚNICAMENTE el texto legible dentro de las etiquetas.
+     * TODAS las etiquetas traducidas de nodos deben permanecer estrictamente entre comillas dobles (ej. \`nodeId["Texto traducido (con detalles)"]\`) para no romper la sintaxis por puntuación o caracteres especiales.
 4. "metaTitle": Título SEO y OpenGraph (Facebook/Twitter/LinkedIn) optimizado en "${targetLocale}", atractivo y conciso (máximo 60 caracteres).
 5. "metaDescription": Descripción persuasiva para buscadores SEO y OpenGraph en "${targetLocale}" (entre 120 y 160 caracteres).
 6. "slug": Slug URL amigable en minúsculas y separado por guiones en "${targetLocale}".
@@ -250,10 +272,11 @@ Responde ÚNICAMENTE un objeto JSON válido con esta estructura:
     body: JSON.stringify({
       model: textModel,
       messages: [
-        { role: 'system', content: 'Eres un traductor profesional experto en localización editorial multilingüe, SEO y OpenGraph para educación Montessori. Responde exclusivamente en JSON.' },
+        { role: 'system', content: 'Eres un traductor profesional experto en localización editorial multilingüe, SEO y OpenGraph para educación Montessori. Responde exclusivamente en JSON válido.' },
         { role: 'user', content: prompt }
       ],
       temperature: 0.2,
+      max_tokens: 4096,
       response_format: { type: 'json_object' }
     })
   });
@@ -265,7 +288,57 @@ Responde ÚNICAMENTE un objeto JSON válido con esta estructura:
 
   const data = await response.json();
   const contentStr = data.choices?.[0]?.message?.content || '{}';
-  const parsed = JSON.parse(contentStr);
+  
+  let parsed = {};
+  try {
+    parsed = JSON.parse(contentStr);
+  } catch (err) {
+    // Robust fallback regex extraction if LLM emitted unescaped quotes or malformed JSON
+    const extractStringField = (key) => {
+      const regex = new RegExp(`"${key}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"`, 's');
+      const match = contentStr.match(regex);
+      if (match) {
+        try {
+          return JSON.parse(`"${match[1]}"`);
+        } catch {
+          return match[1];
+        }
+      }
+      return '';
+    };
+
+    let extractedContent = '';
+    const contentStart = contentStr.indexOf('"content"');
+    if (contentStart !== -1) {
+      const firstQuote = contentStr.indexOf('"', contentStart + 9);
+      if (firstQuote !== -1) {
+        const nextFieldMatch = contentStr.slice(firstQuote + 1).search(/"(?:metaTitle|metaDescription|slug|title|excerpt)"\s*:/);
+        if (nextFieldMatch !== -1) {
+          const sliceUntilNext = contentStr.slice(firstQuote + 1, firstQuote + 1 + nextFieldMatch);
+          const lastQuote = sliceUntilNext.lastIndexOf('"');
+          extractedContent = (lastQuote !== -1 ? sliceUntilNext.slice(0, lastQuote) : sliceUntilNext)
+            .replace(/\\n/g, '\n')
+            .replace(/\\"/g, '"')
+            .replace(/\\\\/g, '\\');
+        } else {
+          const lastQuote = contentStr.lastIndexOf('"');
+          extractedContent = (lastQuote > firstQuote ? contentStr.slice(firstQuote + 1, lastQuote) : contentStr.slice(firstQuote + 1))
+            .replace(/\\n/g, '\n')
+            .replace(/\\"/g, '"')
+            .replace(/\\\\/g, '\\');
+        }
+      }
+    }
+
+    parsed = {
+      title: extractStringField('title'),
+      slug: extractStringField('slug'),
+      excerpt: extractStringField('excerpt'),
+      content: extractedContent || content,
+      metaTitle: extractStringField('metaTitle'),
+      metaDescription: extractStringField('metaDescription')
+    };
+  }
 
   return {
     title: parsed.title || title,
@@ -293,7 +366,7 @@ Audiencia objetivo: "${targetAudience}" (ej: familias, educadores, directores es
 Idioma: "${locale}"
 Modo: ${outlineOnly ? 'Estructura / Outline con puntos clave' : 'Artículo completo listo para publicar en formato Markdown enriquecido'}
 
-Escribe un contenido cautivador, fundamentado en el respeto al niño, la autonomía y la filosofía Montessori.
+Escribe un contenido cautivador, fundamentado en el respeto al niño, la autonomía y la filosofía Montessori. Si incluyes diagramas Mermaid (\`\`\`mermaid ... \`\`\`), encierra obligatoriamente todas las etiquetas de nodos entre comillas dobles (ej: \`nodeId["Texto descriptivo (0-3 años)"]\`) e identificadores simples sin espacios para evitar errores de renderizado.
 
 Responde ÚNICAMENTE un objeto JSON con la siguiente estructura exacta:
 {
@@ -485,57 +558,72 @@ export async function cleanupBlogPostMedia(post, schoolId = null, prisma = null)
 }
 
 /**
- * Evaluates article content against existing categories (or requested category)
- * and resolves or creates the most appropriate pedagogical category.
+ * Evaluates article content against existing categories (or requested categories)
+ * and resolves or creates multiple appropriate pedagogical categories (1 to 3).
  */
-export async function resolveOrCreateCategoryForBlog({ title, content, requestedCategory, schoolId = null, prisma }) {
-  if (!prisma) return null;
+export async function resolveOrCreateCategoriesForBlog({ title, content, requestedCategories = [], schoolId = null, prisma }) {
+  if (!prisma) return [];
 
   // 1. Fetch all existing categories for this scope
   const existingCategories = await prisma.blogCategory.findMany({
     where: { schoolId: schoolId || null }
   });
 
-  // 2. If explicit requestedCategory provided, search by slug or name
-  if (requestedCategory) {
-    const targetSlug = slugify(requestedCategory);
-    const found = existingCategories.find(c => c.slug === targetSlug || c.name.toLowerCase() === requestedCategory.toLowerCase());
-    if (found) return found;
+  const resolved = [];
 
-    return await prisma.blogCategory.create({
-      data: {
-        schoolId: schoolId || null,
-        name: requestedCategory.trim(),
-        slug: targetSlug || 'general',
-        description: `Artículos y recursos sobre ${requestedCategory.trim()}`
+  // 2. If explicit requestedCategories array provided, resolve each
+  if (Array.isArray(requestedCategories) && requestedCategories.length > 0) {
+    for (const reqCat of requestedCategories) {
+      if (!reqCat || typeof reqCat !== 'string') continue;
+      const targetSlug = slugify(reqCat);
+      const found = existingCategories.find(c => c.slug === targetSlug || c.name.toLowerCase() === reqCat.trim().toLowerCase());
+      if (found) {
+        if (!resolved.some(r => r.id === found.id)) resolved.push(found);
+      } else {
+        const created = await prisma.blogCategory.create({
+          data: {
+            schoolId: schoolId || null,
+            name: reqCat.trim(),
+            slug: targetSlug || 'general',
+            description: `Artículos y recursos sobre ${reqCat.trim()}`
+          }
+        });
+        existingCategories.push(created);
+        resolved.push(created);
       }
-    });
+    }
+    if (resolved.length > 0) return resolved;
   }
 
-  // 3. Ask AI to classify into existing categories or propose the ideal one
+  // 3. Ask AI to classify into 1-3 relevant categories
   try {
     const { apiKey, baseUrl, textModel } = await getBlogAiConfig(schoolId, prisma);
     if (apiKey) {
       const existingListStr = existingCategories.map(c => `- ID: "${c.id}", Nombre: "${c.name}", Slug: "${c.slug}", Desc: "${c.description || ''}"`).join('\n');
-      
-      const prompt = `Analiza el siguiente artículo educativo y determina cuál es la categoría pedagógica más precisa.
+
+      const prompt = `Analiza el siguiente artículo educativo y determina entre 1 y 3 categorías pedagógicas relevantes (un artículo puede pertenecer a múltiples categorías, ej: "Pedagogía Montessori" + "Neurociencia y Aprendizaje" + "Ambiente Preparado").
 Título: "${title}"
 Contenido (extracto):
-${(content || '').slice(0, 2000)}
+${(content || '').slice(0, 2500)}
 
 Categorías existentes en la base de datos:
 ${existingListStr || '(Ninguna categoría previa)'}
 
 Instrucciones:
-1. Si el artículo encaja claramente en una de las categorías existentes, selecciona su "existingCategoryId".
-2. Si ninguna categoría existente describe adecuadamente la temática (por ejemplo: "Educación Emocional", "Neurociencia y Aprendizaje", "Tecnología y Familia", "Vida Práctica y Autonomía", "Crianza Consciente", "Ambiente Preparado", "Pedagogía Montessori"), propón una categoría nueva con "name", "slug" y "description".
+1. Para cada categoría identificada (1 a 3):
+   - Si encaja en una existente, incluye su "existingCategoryId".
+   - Si es una categoría nueva valiosa, propón "categoryName", "categorySlug" y "categoryDescription".
 
 Responde ÚNICAMENTE en JSON con este formato exacto:
 {
-  "existingCategoryId": "id-de-la-categoria-o-null",
-  "categoryName": "Nombre de la categoría (ej: Neurociencia y Aprendizaje)",
-  "categorySlug": "slug-amigable (ej: neurociencia-y-aprendizaje)",
-  "categoryDescription": "Breve descripción pedagógica de la categoría (1 frase)"
+  "categories": [
+    {
+      "existingCategoryId": "id-de-la-categoria-o-null",
+      "categoryName": "Nombre de la categoría",
+      "categorySlug": "slug-amigable",
+      "categoryDescription": "Breve descripción pedagógica (1 frase)"
+    }
+  ]
 }`;
 
       const response = await fetch(`${baseUrl}/chat/completions`, {
@@ -558,44 +646,341 @@ Responde ÚNICAMENTE en JSON con este formato exacto:
       if (response.ok) {
         const data = await response.json();
         const parsed = JSON.parse(data.choices?.[0]?.message?.content || '{}');
+        const rawCats = Array.isArray(parsed.categories) ? parsed.categories : (parsed.existingCategoryId || parsed.categoryName ? [parsed] : []);
 
-        if (parsed.existingCategoryId && parsed.existingCategoryId !== 'null' && parsed.existingCategoryId !== 'id-de-la-categoria-o-null') {
-          const matched = existingCategories.find(c => c.id === parsed.existingCategoryId);
-          if (matched) return matched;
-        }
-
-        if (parsed.categoryName && parsed.categoryName !== 'null') {
-          const cleanSlug = slugify(parsed.categorySlug || parsed.categoryName);
-          const alreadyExists = existingCategories.find(c => c.slug === cleanSlug);
-          if (alreadyExists) return alreadyExists;
-
-          return await prisma.blogCategory.create({
-            data: {
-              schoolId: schoolId || null,
-              name: parsed.categoryName.trim(),
-              slug: cleanSlug,
-              description: parsed.categoryDescription || `Artículos sobre ${parsed.categoryName.trim()}`
+        for (const item of rawCats) {
+          if (item.existingCategoryId && item.existingCategoryId !== 'null' && item.existingCategoryId !== 'id-de-la-categoria-o-null') {
+            const matched = existingCategories.find(c => c.id === item.existingCategoryId);
+            if (matched && !resolved.some(r => r.id === matched.id)) {
+              resolved.push(matched);
             }
-          });
+          } else if (item.categoryName && item.categoryName !== 'null') {
+            const cleanSlug = slugify(item.categorySlug || item.categoryName);
+            let catObj = existingCategories.find(c => c.slug === cleanSlug);
+            if (!catObj) {
+              catObj = await prisma.blogCategory.create({
+                data: {
+                  schoolId: schoolId || null,
+                  name: item.categoryName.trim(),
+                  slug: cleanSlug,
+                  description: item.categoryDescription || `Artículos sobre ${item.categoryName.trim()}`
+                }
+              });
+              existingCategories.push(catObj);
+            }
+            if (catObj && !resolved.some(r => r.id === catObj.id)) {
+              resolved.push(catObj);
+            }
+          }
         }
       }
     }
   } catch (err) {
-    console.warn('Category AI resolution warning:', err.message);
+    console.warn('Multiple categories AI resolution warning:', err.message);
   }
 
-  // Fallback to default
-  let fallback = existingCategories.find(c => c.slug === 'pedagogia-montessori') || existingCategories[0];
-  if (!fallback) {
-    fallback = await prisma.blogCategory.create({
-      data: {
-        schoolId: schoolId || null,
-        name: 'Pedagogía Montessori',
-        slug: 'pedagogia-montessori',
-        description: 'Fundamentos, ambiente preparado y rol del adulto.'
+  // Fallback if none resolved
+  if (resolved.length === 0) {
+    let fallback = existingCategories.find(c => c.slug === 'pedagogia-montessori') || existingCategories[0];
+    if (!fallback) {
+      fallback = await prisma.blogCategory.create({
+        data: {
+          schoolId: schoolId || null,
+          name: 'Pedagogía Montessori',
+          slug: 'pedagogia-montessori',
+          description: 'Fundamentos, ambiente preparado y rol del adulto.'
+        }
+      });
+    }
+    resolved.push(fallback);
+  }
+
+  return resolved;
+}
+
+/**
+ * Single category resolution for backwards compatibility
+ */
+export async function resolveOrCreateCategoryForBlog({ title, content, requestedCategory, schoolId = null, prisma }) {
+  const cats = await resolveOrCreateCategoriesForBlog({
+    title,
+    content,
+    requestedCategories: requestedCategory ? [requestedCategory] : [],
+    schoolId,
+    prisma
+  });
+  return cats[0] || null;
+}
+
+/**
+ * Detect client language from Accept-Language, query or headers
+ */
+export function resolveClientLocale(req) {
+  const qLang = String(req?.query?.lang || req?.query?.locale || req?.headers?.['x-locale'] || '').toLowerCase().trim();
+  if (['es', 'en', 'fr', 'pt', 'de', 'ru'].includes(qLang)) return qLang;
+
+  const accept = String(req?.headers?.['accept-language'] || '').toLowerCase();
+  if (accept.startsWith('pt')) return 'pt';
+  if (accept.startsWith('fr')) return 'fr';
+  if (accept.startsWith('de')) return 'de';
+  if (accept.startsWith('ru')) return 'ru';
+  if (accept.startsWith('en')) return 'en';
+  if (accept.startsWith('es')) return 'es';
+
+  return 'es';
+}
+
+/**
+ * Check if the incoming request is asking for Markdown or coming from an AI crawler
+ */
+export function isMarkdownOrAiRequest(req) {
+  if (!req) return false;
+  const path = req.path || '';
+  if (path.endsWith('.md') || path.endsWith('/llms.txt') || path === '/llms.txt') return true;
+
+  const accept = String(req.headers?.accept || '').toLowerCase();
+  if (accept.includes('text/markdown') || accept.includes('text/x-markdown')) return true;
+
+  const userAgent = String(req.headers?.['user-agent'] || '').toLowerCase();
+  const aiBots = [
+    'gptbot', 'chatgpt-user', 'claudebot', 'anthropic-ai', 'perplexitybot', 
+    'google-extended', 'amazonbot', 'facebookbot', 'bytespider', 'cohere-ai'
+  ];
+  return aiBots.some(bot => userAgent.includes(bot));
+}
+
+/**
+ * Helper to construct clean URLs for:
+ * 1. SaaS Blog:
+ *    - Index: https://blog.montessorinexus.com (and /index.md)
+ *    - Article: https://blog.montessorinexus.com/:slug (and /:slug.md)
+ * 2. School Blog (each school has its own custom domain or subdomain):
+ *    - e.g. https://ceiba.montessorinexus.com/blog (and /blog/index.md)
+ *    - e.g. https://kapili.com/blog (and /blog/index.md)
+ *    - Article: https://ceiba.montessorinexus.com/blog/:slug (and /blog/:slug.md)
+ *    - Article: https://kapili.com/blog/:slug (and /blog/:slug.md)
+ */
+export function resolveBlogUrls({ school, slug, baseUrl = 'https://montessorinexus.com', isSaaS = true }) {
+  const isLocal = baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1');
+
+  if (isSaaS || !school) {
+    const saasHost = isLocal ? baseUrl : 'https://blog.montessorinexus.com';
+    const blogIndex = saasHost;
+    const blogIndexMd = `${saasHost}/index.md`;
+    const postUrl = slug ? `${saasHost}/${slug}` : saasHost;
+    const postMdUrl = slug ? `${saasHost}/${slug}.md` : blogIndexMd;
+    return { 
+      blogIndex, 
+      blogIndexMd, 
+      postUrl, 
+      postMdUrl, 
+      platformHome: isLocal ? baseUrl : 'https://montessorinexus.com' 
+    };
+  }
+
+  // School domain resolution: check custom_domain first, then subdomain, then school.slug
+  let schoolHost = '';
+  const customDomain = school.siteSettings?.find(s => s.key === 'custom_domain')?.value || school.customDomain;
+  const subdomain = school.siteSettings?.find(s => s.key === 'subdomain')?.value || school.slug;
+
+  if (isLocal) {
+    schoolHost = baseUrl;
+  } else if (customDomain && String(customDomain).trim()) {
+    const cleanDomain = String(customDomain).trim().replace(/^https?:\/\//, '').replace(/\/+$/, '');
+    schoolHost = `https://${cleanDomain}`;
+  } else if (subdomain && String(subdomain).trim()) {
+    schoolHost = `https://${String(subdomain).trim()}.montessorinexus.com`;
+  } else if (school.slug) {
+    schoolHost = `https://${school.slug}.montessorinexus.com`;
+  } else {
+    schoolHost = baseUrl;
+  }
+
+  const blogIndex = `${schoolHost}/blog`;
+  const blogIndexMd = `${schoolHost}/blog/index.md`;
+  const postUrl = slug ? `${schoolHost}/blog/${slug}` : blogIndex;
+  const postMdUrl = slug ? `${schoolHost}/blog/${slug}.md` : blogIndexMd;
+  return { 
+    blogIndex, 
+    blogIndexMd, 
+    postUrl, 
+    postMdUrl, 
+    platformHome: schoolHost 
+  };
+}
+
+/**
+ * Generate localized index.md / llms.txt Markdown for blog index
+ */
+export function generateBlogIndexMarkdown({ school, posts, locale = 'es', baseUrl = 'https://montessorinexus.com', isSaaS = true }) {
+  const brandName = isSaaS ? 'MontessoriNexus' : (school?.name || 'Comunidad Montessori');
+  const { blogIndex, blogIndexMd, platformHome } = resolveBlogUrls({ school, isSaaS, baseUrl });
+
+  const headings = {
+    es: {
+      title: `Blog Oficial • ${brandName}`,
+      desc: 'Publicaciones pedagógicas, reflexiones y novedades sobre el método Montessori y desarrollo infantil.',
+      published: 'Artículos Publicados',
+      readTime: 'min de lectura',
+      readMore: 'Leer artículo',
+      aboutTitle: `Sobre ${brandName}`,
+      aboutText: isSaaS
+        ? 'MontessoriNexus es el ecosistema integral de software para la gestión escolar, bitácora pedagógica y admisiones en colegios Montessori.'
+        : `Comunidad educativa dedicada a la formación integral de niños y jóvenes bajo la auténtica pedagogía Montessori en ${brandName}.`,
+      visitSite: 'Visitar sitio web oficial',
+      ctaText: isSaaS ? 'Solicitar una demostración para tu colegio' : 'Solicitar información o agendar visita guiada'
+    },
+    en: {
+      title: `Official Blog • ${brandName}`,
+      desc: 'Pedagogical insights, articles, and updates on authentic Montessori education and child development.',
+      published: 'Published Articles',
+      readTime: 'min read',
+      readMore: 'Read article',
+      aboutTitle: `About ${brandName}`,
+      aboutText: isSaaS
+        ? 'MontessoriNexus is the all-in-one management, observation log, and admissions software for Montessori schools.'
+        : `Educational community dedicated to authentic Montessori pedagogy fostering independence and concentration at ${brandName}.`,
+      visitSite: 'Visit official website',
+      ctaText: isSaaS ? 'Request a personalized demo for your school' : 'Request information or book a campus tour'
+    },
+    pt: {
+      title: `Blog Oficial • ${brandName}`,
+      desc: 'Artigos pedagógicos, reflexões e novidades sobre o método Montessori e desenvolvimento infantil.',
+      published: 'Artigos Publicados',
+      readTime: 'min de leitura',
+      readMore: 'Ler artigo',
+      aboutTitle: `Sobre ${brandName}`,
+      aboutText: isSaaS
+        ? 'MontessoriNexus é a plataforma completa para gestão, observação pedagógica e matrículas em escolas Montessori.'
+        : `Comunidade educativa dedicada à pedagogia Montessori autêntica em ${brandName}.`,
+      visitSite: 'Visitar site oficial',
+      ctaText: isSaaS ? 'Solicitar demonstração para sua escola' : 'Solicitar informações ou agendar visita guiada'
+    },
+    fr: {
+      title: `Blog Officiel • ${brandName}`,
+      desc: 'Articles pédagogiques et actualités sur la méthode Montessori et le développement de l\'enfant.',
+      published: 'Articles Publiés',
+      readTime: 'min de lecture',
+      readMore: 'Lire l\'article',
+      aboutTitle: `À propos de ${brandName}`,
+      aboutText: isSaaS
+        ? 'MontessoriNexus est le logiciel tout-en-un pour la gestion, le suivi pédagogique et les admissions Montessori.'
+        : `Communauté éducative dédiée à la pédagogie Montessori authentique à ${brandName}.`,
+      visitSite: 'Visiter le site officiel',
+      ctaText: isSaaS ? 'Demander une démo pour votre école' : 'Demander des informations ou réserver une visite'
+    },
+    de: {
+      title: `Offizieller Blog • ${brandName}`,
+      desc: 'Pädagogische Artikel und Einblicke in die Montessori-Pädagogik und kindliche Entwicklung.',
+      published: 'Veröffentlichte Artikel',
+      readTime: 'Min. Lesezeit',
+      readMore: 'Artikel lesen',
+      aboutTitle: `Über ${brandName}`,
+      aboutText: isSaaS
+        ? 'MontessoriNexus ist die All-in-One Software für Schulverwaltung und Montessori-Beobachtungen.'
+        : `Bildungsgemeinschaft für authentische Montessori-Pädagogik bei ${brandName}.`,
+      visitSite: 'Offizielle Website besuchen',
+      ctaText: isSaaS ? 'Demo für Ihre Schule anfordern' : 'Informationen anfordern oder Führung buchen'
+    },
+    ru: {
+      title: `Официальный блог • ${brandName}`,
+      desc: 'Педагогические статьи и новости о методике Монтессори и развитии детей.',
+      published: 'Опубликованные статьи',
+      readTime: 'мин чтения',
+      readMore: 'Читать статью',
+      aboutTitle: `О ${brandName}`,
+      aboutText: isSaaS
+        ? 'MontessoriNexus — комплексная платформа для управления школами Монтессори и наблюдений.'
+        : `Образовательное сообщество аутентичной педагогики Монтессори в ${brandName}.`,
+      visitSite: 'Посетить официальный сайт',
+      ctaText: isSaaS ? 'Запросить демоверсию для вашей школы' : 'Запросить информацию или записаться на экскурсию'
+    }
+  };
+
+  const h = headings[locale] || headings.es;
+
+  let md = `# ${h.title}\n\n`;
+  md += `> ${h.desc}\n\n`;
+  md += `**URL:** [${blogIndex}](${blogIndex})\n\n`;
+  md += `---\n\n`;
+  md += `## ${h.published}\n\n`;
+
+  if (!posts || posts.length === 0) {
+    md += `*No hay artículos disponibles en este momento.*\n\n`;
+  } else {
+    posts.forEach((p, idx) => {
+      const { postUrl, postMdUrl } = resolveBlogUrls({ school, slug: p.slug, isSaaS, baseUrl });
+      const dateStr = p.publishedAt ? new Date(p.publishedAt).toISOString().split('T')[0] : '';
+      const cats = p.categories && p.categories.length > 0 ? p.categories.join(', ') : 'Montessori';
+
+      md += `### ${idx + 1}. [${p.title}](${postMdUrl})\n\n`;
+      if (p.excerpt) {
+        md += `> ${p.excerpt}\n\n`;
       }
+      if (p.coverImage) {
+        md += `![${p.title}](${p.coverImage})\n\n`;
+      }
+      md += `- 🏷️ **Categoría:** ${cats}\n`;
+      md += `- 📅 **Fecha:** ${dateStr} • ⏱️ **Lectura:** ${p.readingTimeMinutes || 3} ${h.readTime} • ✍️ **Autor:** ${p.author?.fullName || 'Equipo Pedagógico'}\n`;
+      md += `- 🤖 **Artículo en Markdown (.md):** [${postMdUrl}](${postMdUrl})\n`;
+      md += `- 🌐 **Versión Web (HTML):** [${postUrl}](${postUrl})\n\n`;
+      md += `---\n\n`;
     });
   }
-  return fallback;
+
+  md += `## 🚀 ${h.aboutTitle}\n\n`;
+  md += `${h.aboutText}\n\n`;
+  md += `- 🌐 **Web:** [${platformHome}](${platformHome})\n`;
+  md += `- 📩 **Acción:** [${h.ctaText}](${isSaaS ? 'https://montessorinexus.com/#contacto' : `${platformHome}#contacto`})\n`;
+
+  return md;
 }
+
+/**
+ * Generate pristine markdown for a single blog post with YAML metadata and conversion footer
+ */
+export function generateBlogPostMarkdown({ post, translation, school, baseUrl = 'https://montessorinexus.com', isSaaS = true }) {
+  const brandName = isSaaS ? 'MontessoriNexus' : (school?.name || 'Comunidad Montessori');
+  const { blogIndex, postUrl, postMdUrl, platformHome } = resolveBlogUrls({ school, slug: translation.slug, isSaaS, baseUrl });
+  const ctaUrl = isSaaS ? 'https://montessorinexus.com/#contacto' : `${platformHome}#contacto`;
+  const dateStr = (post.publishedAt || post.createdAt).toISOString();
+  const authorName = post.customAuthorName || post.author?.fullName || 'Equipo Pedagógico';
+  const cats = post.categories?.map(c => c.category?.name).filter(Boolean).join(', ') || 'Pedagogía Montessori';
+
+  let md = `---
+title: "${(translation.title || '').replace(/"/g, '\\"')}"
+slug: "${translation.slug}"
+description: "${(translation.excerpt || '').replace(/"/g, '\\"')}"
+published_at: "${dateStr}"
+author: "${authorName.replace(/"/g, '\\"')}"
+reading_time: "${post.readingTimeMinutes || 3} min"
+canonical_url: "${postUrl}"
+markdown_url: "${postMdUrl}"
+locale: "${translation.locale || 'es'}"
+category: "${cats}"
+---
+
+# ${translation.title}
+
+> ${translation.excerpt || ''}
+
+${post.coverImage ? `![${post.coverImageAlt || translation.title}](${post.coverImage})\n\n` : ''}
+${translation.content}
+
+---
+
+## 💡 Sobre ${brandName}
+
+${isSaaS
+  ? `**MontessoriNexus** es la plataforma digital de referencia para escuelas Montessori: gestión integral de aula, bitácoras de observación pedagógica estructuradas con IA alineadas a la filosofía de María Montessori y sistema de admisiones.`
+  : `**${brandName}** ofrece educación Montessori auténtica guiada por docentes certificados internacionalmente, con ambientes preparados diseñados para el desarrollo natural del niño.`}
+
+- 🌐 **Sitio Web:** [${platformHome}](${platformHome})
+- 📖 **Explorar más lecturas:** [Blog Principal](${blogIndex})
+- 🚀 **Contacto / Admisiones:** [Solicitar información o demostración](${ctaUrl})
+`;
+
+  return md;
+}
+
 

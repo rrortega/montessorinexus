@@ -336,8 +336,8 @@ export const BlogAdminSection: React.FC<BlogAdminSectionProps> = ({ isPlatformMo
       // 3. Fetch Categories & Tags
       try {
         const [catRes, tagRes] = await Promise.all([
-          fetch('/api/blog/categories', { headers }),
-          fetch('/api/blog/tags', { headers })
+          fetch('/api/blog/categories?includeEmpty=true', { headers }),
+          fetch('/api/blog/tags?includeEmpty=true', { headers })
         ]);
 
         if (catRes.ok) {
@@ -860,9 +860,23 @@ export const BlogAdminSection: React.FC<BlogAdminSectionProps> = ({ isPlatformMo
     toast.success('✨ ¡Contenido generado incrustado en el formulario con éxito!');
   };
 
+  // Helper to normalize Mermaid arrows from -> or → to ==> before sending to server
+  const sanitizeMermaidDiagramArrows = (content: string): string => {
+    if (!content || typeof content !== 'string') return '';
+    return content.replace(/```(?:mermaid)([\s\S]*?)```/gi, (_match, mermaidCode) => {
+      const sanitized = mermaidCode
+        .replace(/→/g, '==>')
+        .replace(/->\|([^|]+)\|/g, '==>|$1|')
+        .replace(/(?<![-=])->(?![->])/g, '==>')
+        .replace(/-->/g, '==>');
+
+      return '```mermaid' + sanitized + '```';
+    });
+  };
+
   // Save Post
   const handleSavePost = async (overridePayload?: any) => {
-    // Normalize translations and ensure clean strings
+    // Normalize translations, sanitize mermaid diagram arrows, and ensure clean strings
     const cleanTranslations = translations
       .filter(t => t && typeof t.locale === 'string' && t.locale.trim())
       .map(t => ({
@@ -870,7 +884,7 @@ export const BlogAdminSection: React.FC<BlogAdminSectionProps> = ({ isPlatformMo
         locale: t.locale.trim(),
         title: (t.title || '').trim(),
         excerpt: t.excerpt || '',
-        content: t.content || '',
+        content: sanitizeMermaidDiagramArrows(t.content || ''),
         slug: (t.slug || t.title || '').trim(),
         metaTitle: t.metaTitle || '',
         metaDescription: t.metaDescription || '',
@@ -1197,6 +1211,17 @@ export const BlogAdminSection: React.FC<BlogAdminSectionProps> = ({ isPlatformMo
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-terracotta/10 text-terracotta">
                               ★ Destacado
                             </span>
+                          )}
+
+                          {/* Post Categories */}
+                          {post.categories && post.categories.length > 0 && (
+                            <div className="flex items-center gap-1 flex-wrap">
+                              {post.categories.map(c => (
+                                <span key={c.id} className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-forest/10 text-forest">
+                                  {c.name}
+                                </span>
+                              ))}
+                            </div>
                           )}
 
                           <div className="flex items-center gap-1">
@@ -1824,6 +1849,9 @@ export const BlogAdminSection: React.FC<BlogAdminSectionProps> = ({ isPlatformMo
                     value={currentTranslation.content}
                     onChange={val => updateCurrentTranslation({ content: val })}
                     placeholder="Escribe tu artículo aquí..."
+                    articleTitle={currentTranslation.title || ''}
+                    isPlatformBlog={isPlatformBlog}
+                    schoolId={currentSchoolId}
                   />
                 </div>
 

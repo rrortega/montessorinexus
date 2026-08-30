@@ -83,6 +83,14 @@ import {
 } from './stripe-service.js';
 import { getExchangeRates, getUsdExchangeRate } from './fx-service.js';
 import { createBlogRouter } from './routes-blog.js';
+import {
+  resolveClientLocale,
+  isMarkdownOrAiRequest,
+  generateBlogIndexMarkdown,
+  generateBlogPostMarkdown,
+  resolveBlogUrls
+} from './blog-service.js';
+import { transformBlogImageUrl } from './blog-watermark-service.js';
 
 let redisClient = null;
 try {
@@ -17876,11 +17884,97 @@ app.use(async (req, res) => {
         }
       }
 
-      // Check if the route is a dynamic blog post route (/blog/:slug, /colegio/:schoolSlug/blog/:slug, /school/:schoolSlug/blog/:slug)
-      const blogPostMatch = req.path.match(/^\/(?:(?:colegio|school)\/([^\/]+)\/)?blog\/([^\/\?#]+)/i);
-      if (blogPostMatch && !req.path.startsWith('/api/') && !req.path.startsWith('/blog/categories') && !req.path.startsWith('/blog/tags')) {
+      // Check if the route is a blog index markdown request (/blog/index.md, /blog.md, /llms.txt, /blog/llms.txt, /colegio/:schoolSlug/blog/index.md, /colegio/:schoolSlug/blog/llms.txt, or root /index.md on blog. subdomain)
+      const hostIsBlogSubdomain = host.startsWith('blog.') || host === 'blog.localhost';
+      const isBlogIndexMd = /^\/(?:(?:colegio|school)\/([^\/]+)\/)?blog\/?(?:index\.md|llms\.txt)?$/i.test(req.path) || 
+                            req.path === '/blog.md' || req.path === '/llms.txt' ||
+                            (hostIsBlogSubdomain && (req.path === '/index.md' || req.path === '/llms.txt' || req.path === '/'));
+      const isPureBlogIndex = /^\/(?:(?:colegio|school)\/([^\/]+)\/)?blog\/?$/i.test(req.path) || (hostIsBlogSubdomain && req.path === '/');
+
+      if ((isBlogIndexMd && (req.path.endsWith('.md') || req.path.endsWith('.txt'))) || (isPureBlogIndex && isMarkdownOrAiRequest(req))) {
+        try {
+          const match = req.path.match(/^\/(?:(?:colegio|school)\/([^\/]+)\/)?blog/i);
+          const schoolSlug = match?.[1] ? decodeURIComponent(match[1]).trim() : null;
+          const locale = resolveClientLocale(req);
+
+          let school = null;
+          let targetSchoolId = null;
+          if (schoolSlug) {
+            school = await prisma.school.findUnique({
+              where: { slug: schoolSlug },
+              include: { siteSettings: true }
+            });
+            targetSchoolId = school?.id || null;
+          }
+
+          const isSaaS = !targetSchoolId;
+
+          const rawPosts = await prisma.blogPost.findMany({
+            where: {
+              schoolId: targetSchoolId,
+              status: 'PUBLISHED'
+            },
+            orderBy: { publishedAt: 'desc' },
+            include: {
+              translations: true,
+              categories: { include: { category: true } },
+              author: { select: { fullName: true, avatarUrl: true } }
+            }
+          });
+
+          const formattedPosts = rawPosts.map(p => {
+            const trans = p.translations.find(t => t.locale === locale) || p.translations[0] || {};
+            return {
+              id: p.id,
+              slug: trans.slug,
+              title: trans.title,
+              excerpt: trans.excerpt,
+              coverImage: transformBlogImageUrl(p.coverImage, isSaaS),
+              readingTimeMinutes: p.readingTimeMinutes,
+              publishedAt: p.publishedAt || p.createdAt,
+              categories: p.categories?.map(c => c.category?.name).filter(Boolean) || [],
+              author: {
+                fullName: p.customAuthorName || p.author?.fullName || 'Equipo Pedagógico',
+                avatarUrl: p.customAuthorAvatar || p.author?.avatarUrl || ''
+              }
+            };
+          });
+
+          const baseUrl = `${protocol}://${host}`;
+          const markdown = generateBlogIndexMarkdown({
+            school,
+            posts: formattedPosts,
+            locale,
+            baseUrl,
+            isSaaS
+          });
+
+          res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+          res.setHeader('Vary', 'Accept-Language, Accept');
+          res.setHeader('Cache-Control', 'public, max-age=300');
+          return res.send(markdown);
+        } catch (idxErr) {
+          console.error('[SPA-BlogIndex-MD] Error serving blog index markdown:', idxErr.message);
+        }
+      }
+
+      // Check if the route is a dynamic blog post route (/blog/:slug, /blog/:slug.md, /colegio/:schoolSlug/blog/:slug, /colegio/:schoolSlug/blog/:slug.md, or /:slug on blog subdomain)
+      let blogPostMatch = req.path.match(/^\/(?:(?:colegio|school)\/([^\/]+)\/)?blog\/([^\/\?#]+)/i);
+      let isBlogSubdomainPost = false;
+
+      if (!blogPostMatch && hostIsBlogSubdomain && !req.path.startsWith('/api/') && req.path !== '/' && req.path !== '/index.html') {
+        const subMatch = req.path.match(/^\/([^\/\?#]+)/i);
+        if (subMatch && !['assets', 'images', 'favicon.ico', 'manifest.json', 'robots.txt', 'sitemap.xml'].includes(subMatch[1])) {
+          blogPostMatch = [req.path, null, subMatch[1]];
+          isBlogSubdomainPost = true;
+        }
+      }
+
+      if (blogPostMatch && !req.path.startsWith('/api/') && !req.path.startsWith('/blog/categories') && !req.path.startsWith('/blog/tags') && !blogPostMatch[2].startsWith('index.md') && !blogPostMatch[2].startsWith('llms.txt')) {
         const schoolSlug = blogPostMatch[1] ? decodeURIComponent(blogPostMatch[1]).trim() : null;
-        const postSlug = decodeURIComponent(blogPostMatch[2].replace(/\/+$/, '')).trim();
+        const rawSlug = decodeURIComponent(blogPostMatch[2].replace(/\/+$/, '')).trim();
+        const wantsMarkdown = rawSlug.endsWith('.md') || isMarkdownOrAiRequest(req);
+        const postSlug = rawSlug.replace(/\.md$/i, '');
 
         try {
           // Find the blog post translation by slug
@@ -17902,8 +17996,9 @@ app.use(async (req, res) => {
               include: {
                 post: {
                   include: {
-                    school: true,
-                    author: { select: { fullName: true } }
+                    school: { include: { siteSettings: true } },
+                    author: { select: { fullName: true } },
+                    categories: { include: { category: true } }
                   }
                 }
               }
@@ -17918,8 +18013,9 @@ app.use(async (req, res) => {
                 include: {
                   post: {
                     include: {
-                      school: true,
-                      author: { select: { fullName: true } }
+                      school: { include: { siteSettings: true } },
+                      author: { select: { fullName: true } },
+                      categories: { include: { category: true } }
                     }
                   }
                 }
@@ -17938,8 +18034,9 @@ app.use(async (req, res) => {
               include: {
                 post: {
                   include: {
-                    school: true,
-                    author: { select: { fullName: true } }
+                    school: { include: { siteSettings: true } },
+                    author: { select: { fullName: true } },
+                    categories: { include: { category: true } }
                   }
                 }
               }
@@ -17957,8 +18054,9 @@ app.use(async (req, res) => {
                 include: {
                   post: {
                     include: {
-                      school: true,
-                      author: { select: { fullName: true } }
+                      school: { include: { siteSettings: true } },
+                      author: { select: { fullName: true } },
+                      categories: { include: { category: true } }
                     }
                   }
                 }
@@ -17975,8 +18073,9 @@ app.use(async (req, res) => {
               include: {
                 post: {
                   include: {
-                    school: true,
-                    author: { select: { fullName: true } }
+                    school: { include: { siteSettings: true } },
+                    author: { select: { fullName: true } },
+                    categories: { include: { category: true } }
                   }
                 }
               }
@@ -17987,7 +18086,35 @@ app.use(async (req, res) => {
             const post = translation.post;
             const school = post.school;
             const schoolName = school?.name || 'MontessoriNexus';
+            const isSaaS = !post.schoolId;
             const siteBrand = school ? `${schoolName} • Blog Montessori` : 'MontessoriNexus • Blog Pedagógico';
+            const baseUrl = `${protocol}://${host}`;
+
+            const { blogIndex, postUrl: postCanonical, postMdUrl, platformHome } = resolveBlogUrls({
+              school,
+              slug: translation.slug,
+              baseUrl,
+              isSaaS
+            });
+
+            // If requested format is markdown, return raw structured markdown directly for AI agents / LLMs
+            if (wantsMarkdown) {
+              const md = generateBlogPostMarkdown({
+                post: {
+                  ...post,
+                  coverImage: transformBlogImageUrl(post.coverImage, isSaaS)
+                },
+                translation,
+                school,
+                baseUrl,
+                isSaaS
+              });
+
+              res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+              res.setHeader('Vary', 'Accept-Language, Accept');
+              res.setHeader('Cache-Control', 'public, max-age=300');
+              return res.send(md);
+            }
             
             const pageTitle = translation.metaTitle || translation.title || 'Artículo Montessori';
             const rawDesc = translation.metaDescription || translation.excerpt || '';
@@ -18030,6 +18157,33 @@ app.use(async (req, res) => {
               .replace(/>/g, '&gt;')
               .replace(/"/g, '&quot;');
 
+            // JSON-LD Structured Data Schema for AI, Google and LLMs
+            const jsonLdSchema = {
+              '@context': 'https://schema.org',
+              '@type': 'BlogPosting',
+              'headline': pageTitle,
+              'description': description,
+              'image': [ogImageUrl],
+              'datePublished': (post.publishedAt || post.createdAt).toISOString(),
+              'dateModified': (post.updatedAt || post.publishedAt || post.createdAt).toISOString(),
+              'author': [{
+                '@type': 'Person',
+                'name': authorName
+              }],
+              'publisher': {
+                '@type': 'Organization',
+                'name': isSaaS ? 'MontessoriNexus' : schoolName,
+                'logo': {
+                  '@type': 'ImageObject',
+                  'url': school?.logoUrl || `${baseUrl}/logo.png`
+                }
+              },
+              'mainEntityOfPage': {
+                '@type': 'WebPage',
+                '@id': postCanonical
+              }
+            };
+
             html = html.replace(/<title>[^<]*<\/title>/i, `<title>${escapeHtmlAttr(pageTitle)} | ${escapeHtmlAttr(siteBrand)}</title>`);
             html = html.replace(/<meta\s+[^>]*name=["']description["'][^>]*\/?>/i, `<meta name="description" content="${escapeHtmlAttr(description)}" />`);
             html = html.replace(/<meta\s+[^>]*property=["']og:title["'][^>]*\/?>/i, `<meta property="og:title" content="${escapeHtmlAttr(pageTitle)}" />`);
@@ -18040,8 +18194,11 @@ app.use(async (req, res) => {
             html = html.replace(/<meta\s+[^>]*name=["']twitter:image["'][^>]*\/?>/i, `<meta name="twitter:image" content="${ogImageUrl}" />`);
 
             const extraMetaTags = `
+    <link rel="canonical" href="${postCanonical}" />
+    <link rel="alternate" type="text/markdown" href="${postMdUrl}" title="Versión Markdown estructurada para LLMs y Agentes de IA" />
+    <meta name="llms-read-url" content="${postMdUrl}" />
     <meta property="og:type" content="article" />
-    <meta property="og:url" content="${canonicalUrl}" />
+    <meta property="og:url" content="${postCanonical}" />
     <meta property="og:image:secure_url" content="${ogImageUrl}" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
@@ -18051,7 +18208,8 @@ app.use(async (req, res) => {
     <meta property="article:published_time" content="${(post.publishedAt || post.createdAt).toISOString()}" />
     <meta property="article:author" content="${escapeHtmlAttr(authorName)}" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="author" content="${escapeHtmlAttr(authorName)}" />`;
+    <meta name="author" content="${escapeHtmlAttr(authorName)}" />
+    <script type="application/ld+json">${JSON.stringify(jsonLdSchema)}</script>`;
 
             if (html.includes('</head>')) {
               html = html.replace('</head>', `${extraMetaTags}\n  </head>`);

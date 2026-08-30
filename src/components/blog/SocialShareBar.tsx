@@ -109,7 +109,7 @@ export const SocialShareBar: React.FC<SocialShareBarProps> = ({
 
   return (
     <div className={`flex flex-wrap items-center gap-2 p-3 sm:p-4 rounded-2xl bg-white dark:bg-card border border-border shadow-xs ${className}`}>
-      <span className="text-xs font-bold text-foreground flex items-center gap-1.5 mr-2 shrink-0">
+      <span className="text-xs font-bold text-stone-900 dark:text-slate-100 flex items-center gap-1.5 mr-2 shrink-0">
         <Share2 className="w-3.5 h-3.5 text-[#C4661F]" />
         <span>Compartir artículo:</span>
       </span>
@@ -157,10 +157,10 @@ export const SocialShareBar: React.FC<SocialShareBarProps> = ({
           className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
             isCopied
               ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800'
-              : 'bg-muted hover:bg-muted/80 text-foreground border-border'
+              : 'bg-muted hover:bg-muted/80 text-stone-700 dark:text-slate-200 border-border'
           }`}
         >
-          {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-muted-foreground" />}
+          {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-stone-500 dark:text-slate-400" />}
           <span>{isCopied ? '¡Copiado!' : 'Copiar'}</span>
         </button>
 

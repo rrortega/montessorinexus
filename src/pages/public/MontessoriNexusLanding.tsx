@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { getSaaSBlogUrl } from '@/lib/urls';
 import { motion, AnimatePresence, useScroll, useTransform, useMotionValue, useSpring, animate } from 'framer-motion';
 import {
   Sparkles,
@@ -3705,6 +3706,16 @@ export const MontessoriNexusLanding: React.FC = () => {
     return () => observer.disconnect();
   }, []);
 
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [mobileMenuOpen]);
+
   const toggleTheme = () => {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   };
@@ -3827,7 +3838,7 @@ export const MontessoriNexusLanding: React.FC = () => {
             <a href="#ia-etica" className={`transition-colors ${isDark ? 'hover:text-white' : 'hover:text-[#162218]'}`}>
               {t.nav.aiSuite}
             </a>
-            <a href="/blog" className={`transition-colors ${isDark ? 'hover:text-white' : 'hover:text-[#162218]'}`}>
+            <a href={getSaaSBlogUrl()} className={`transition-colors ${isDark ? 'hover:text-white' : 'hover:text-[#162218]'}`}>
               {t.nav.blog || 'Blog'}
             </a>
             <a href="#precios" className={`transition-colors ${isDark ? 'hover:text-white' : 'hover:text-[#162218]'}`}>
@@ -3953,7 +3964,7 @@ export const MontessoriNexusLanding: React.FC = () => {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-              className={`fixed top-0 right-0 bottom-0 w-[320px] max-w-[85vw] z-50 lg:hidden shadow-2xl p-6 flex flex-col justify-between overflow-y-auto ${isDark ? 'bg-[#121c13] text-white border-l border-slate-800' : 'bg-[#FEFAE0] text-stone-900 border-l border-stone-200'
+              className={`fixed top-0 right-0 bottom-0 w-[320px] max-w-[85vw] z-50 lg:hidden shadow-2xl p-6 flex flex-col justify-between overflow-y-auto custom-scrollbar ${isDark ? 'bg-[#121c13] text-white border-l border-slate-800' : 'bg-[#FEFAE0] text-stone-900 border-l border-stone-200'
                 }`}
             >
               <div className="space-y-6">
@@ -3992,7 +4003,7 @@ export const MontessoriNexusLanding: React.FC = () => {
                     {t.nav.aiSuite}
                   </a>
                   <a
-                    href="/blog"
+                    href={getSaaSBlogUrl()}
                     onClick={() => setMobileMenuOpen(false)}
                     className="py-2.5 px-3 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
                   >
@@ -4125,7 +4136,7 @@ export const MontessoriNexusLanding: React.FC = () => {
                 <a href="#ia-etica" className="hover:text-[#C4661F] transition-colors">
                   {t.nav.aiSuite}
                 </a>
-                <a href="/blog" className="hover:text-[#C4661F] transition-colors">
+                <a href={getSaaSBlogUrl()} className="hover:text-[#C4661F] transition-colors">
                   {t.nav.blog || 'Blog'}
                 </a>
                 <a href="#precios" className="hover:text-[#C4661F] transition-colors">
@@ -7911,7 +7922,7 @@ export const MontessoriNexusLanding: React.FC = () => {
             <h4 className="font-serif font-bold text-white text-sm mb-2">{t.footer.modulesHeader}</h4>
             <p><a href="#modulos" className="hover:text-[#C4661F]">{t.nav.modules}</a></p>
             <p><a href="#ia-etica" className="hover:text-[#C4661F]">{t.nav.aiSuite}</a></p>
-            <p><a href="/blog" className="hover:text-[#C4661F]">{t.nav.blog || 'Blog'}</a></p>
+            <p><a href={getSaaSBlogUrl()} className="hover:text-[#C4661F]">{t.nav.blog || 'Blog'}</a></p>
             <p><a href="#precios" className="hover:text-[#C4661F]">{t.nav.pricing}</a></p>
             <p><a href="#faq" className="hover:text-[#C4661F]">{t.nav.faq}</a></p>
           </div>

@@ -28,7 +28,8 @@ async function publishBlogFile(filePath, options = {}) {
     translateBlogContentWithAi,
     calculateReadingTime,
     slugify,
-    resolveOrCreateCategoryForBlog
+    sanitizeMermaidDiagramArrows,
+    resolveOrCreateCategoriesForBlog
   } = await import('./blog-service.js');
 
   if (!fs.existsSync(filePath)) {
@@ -38,7 +39,8 @@ async function publishBlogFile(filePath, options = {}) {
   const rawContent = fs.readFileSync(filePath, 'utf8');
   const titleMatch = rawContent.match(/^# (.*)/);
   const title = options.title || (titleMatch ? titleMatch[1].trim() : path.basename(filePath, '.md'));
-  const cleanContent = rawContent.replace(/^# .*\n+/, '').trim();
+  const rawClean = rawContent.replace(/^# .*\n+/, '').trim();
+  const cleanContent = sanitizeMermaidDiagramArrows(rawClean);
 
   const author = await prisma.user.findFirst();
   if (!author) throw new Error('No user found in database');
@@ -50,16 +52,16 @@ async function publishBlogFile(filePath, options = {}) {
   console.log(`\n📝 Publishing Blog Post: "${title}"`);
   console.log(`👤 Author: ${assignedAuthor.name}`);
 
-  // Resolve or create appropriate category with AI
-  console.log(`🏷️ Aligning with appropriate pedagogical category...`);
-  const resolvedCategory = await resolveOrCreateCategoryForBlog({
+  // Resolve or create appropriate categories with AI (1 to 3 categories)
+  console.log(`🏷️ Aligning with appropriate pedagogical categories...`);
+  const resolvedCategories = await resolveOrCreateCategoriesForBlog({
     title,
     content: cleanContent,
-    requestedCategory: options.category || options.categorySlug,
+    requestedCategories: options.categories || (options.category ? [options.category] : []),
     schoolId: null,
     prisma
   });
-  console.log(`✅ Assigned Category: "${resolvedCategory?.name}" (${resolvedCategory?.slug})`);
+  console.log(`✅ Assigned Categories: ${resolvedCategories.map(c => `"${c.name}"`).join(', ')}`);
 
   // 1. Spanish SEO metadata
   console.log(`🤖 Generating Spanish SEO & OpenGraph metadata...`);
@@ -158,9 +160,9 @@ async function publishBlogFile(filePath, options = {}) {
         create: translations
       },
       categories: {
-        create: resolvedCategory ? [
-          { categoryId: resolvedCategory.id }
-        ] : []
+        create: resolvedCategories.length > 0 ? resolvedCategories.map(cat => ({
+          categoryId: cat.id
+        })) : []
       }
     },
     include: {

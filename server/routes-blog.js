@@ -1,7 +1,10 @@
+import fs from 'fs';
+import path from 'path';
 import express from 'express';
 import {
   slugify,
   calculateReadingTime,
+  sanitizeMermaidDiagramArrows,
   checkSchoolBlogEntitlement,
   generateBlogMetadataWithAi,
   translateBlogContentWithAi,
@@ -9,8 +12,24 @@ import {
   generateBlogCoverImage,
   deleteStorageMediaUrl,
   cleanupBlogPostMedia,
-  extractImageUrls
+  extractImageUrls,
+  resolveClientLocale,
+  isMarkdownOrAiRequest,
+  generateBlogIndexMarkdown,
+  generateBlogPostMarkdown
 } from './blog-service.js';
+import {
+  transformBlogImageUrl,
+  transformBlogContentImages,
+  isBlogImage,
+  getOrGenerateSignedBlogFile
+} from './blog-watermark-service.js';
+import {
+  extractStorageRelativePath,
+  getStorageConfigForSchool,
+  getCachedFilePath,
+  streamPrivateAsset
+} from './storage-service.js';
 
 export function createBlogRouter(prisma) {
   const router = express.Router();
@@ -48,6 +67,64 @@ export function createBlogRouter(prisma) {
   // PUBLIC BLOG ENDPOINTS
   // ==========================================
 
+  // GET /api/blog/images/signed - Dedicated Signed Image Pipeline with Watermark & Disk Cache
+  router.get('/blog/images/signed', async (req, res) => {
+    try {
+      const rawUrl = req.query.url || req.query.file || req.query.path;
+      if (!rawUrl) {
+        return res.status(400).json({ error: 'URL de imagen requerida' });
+      }
+
+      const relativePath = extractStorageRelativePath(rawUrl);
+      if (!relativePath) {
+        return res.status(400).json({ error: 'Ruta de archivo inválida' });
+      }
+
+      // Check if it belongs to a specific school (if so, do not watermark with SaaS signature)
+      const clean = relativePath.toLowerCase().replace(/\\/g, '/');
+      const isSchoolSpecific = clean.startsWith('schools/') && !clean.startsWith('schools/platform/');
+
+      const config = await getStorageConfigForSchool(null, prisma);
+      const localFSPath = path.join(config.localRoot, relativePath);
+      const cachedFilePath = getCachedFilePath(relativePath);
+      const resolvedLocalPath = fs.existsSync(cachedFilePath) ? cachedFilePath : (fs.existsSync(localFSPath) ? localFSPath : null);
+
+      if (isSchoolSpecific || !isBlogImage(relativePath)) {
+        // Stream raw asset without watermark
+        return await streamPrivateAsset({ schoolId: null, relativePath, req, res, prisma });
+      }
+
+      // Apply watermark with disk caching
+      const signedResult = await getOrGenerateSignedBlogFile({
+        relativePath,
+        sourceFSPath: resolvedLocalPath,
+        config
+      });
+
+      if (signedResult?.filePath && fs.existsSync(signedResult.filePath)) {
+        const stat = fs.statSync(signedResult.filePath);
+        const etag = `"${stat.size}-${Math.floor(stat.mtimeMs)}"`;
+        res.setHeader('ETag', etag);
+        res.setHeader('Content-Type', signedResult.mimeType || 'image/webp');
+        res.setHeader('Content-Length', stat.size);
+        res.setHeader('Cache-Control', 'public, max-age=3600, must-revalidate');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+
+        if (req.headers['if-none-match'] === etag) {
+          return res.status(304).end();
+        }
+
+        return fs.createReadStream(signedResult.filePath).pipe(res);
+      }
+
+      // Fallback
+      return await streamPrivateAsset({ schoolId: null, relativePath, req, res, prisma });
+    } catch (err) {
+      console.error('Error in /api/blog/images/signed:', err);
+      res.status(500).json({ error: 'Error al procesar la imagen firmada: ' + err.message });
+    }
+  });
+
   // Check School Blog Entitlement
   router.get('/blog/entitlement', async (req, res) => {
     try {
@@ -62,6 +139,74 @@ export function createBlogRouter(prisma) {
     } catch (err) {
       console.error('Error in /api/blog/entitlement:', err);
       res.status(500).json({ error: 'Error checking blog entitlement' });
+    }
+  });
+
+  // Get Blog Index in Markdown (for AI / LLMs / Agents)
+  router.get(['/blog/index.md', '/blog/llms.txt', '/blog.md'], async (req, res) => {
+    try {
+      const targetSchoolId = await resolveTargetSchoolId(req);
+      const locale = resolveClientLocale(req);
+      const isSaaS = !targetSchoolId;
+
+      let school = null;
+      if (targetSchoolId) {
+        school = await prisma.school.findUnique({
+          where: { id: targetSchoolId },
+          include: { siteSettings: true }
+        });
+      }
+
+      const rawPosts = await prisma.blogPost.findMany({
+        where: {
+          schoolId: targetSchoolId,
+          status: 'PUBLISHED'
+        },
+        orderBy: { publishedAt: 'desc' },
+        include: {
+          translations: true,
+          categories: { include: { category: true } },
+          author: { select: { fullName: true, avatarUrl: true } }
+        }
+      });
+
+      const formattedPosts = rawPosts.map(p => {
+        const trans = p.translations.find(t => t.locale === locale) || p.translations[0] || {};
+        return {
+          id: p.id,
+          slug: trans.slug,
+          title: trans.title,
+          excerpt: trans.excerpt,
+          coverImage: transformBlogImageUrl(p.coverImage, isSaaS),
+          readingTimeMinutes: p.readingTimeMinutes,
+          publishedAt: p.publishedAt || p.createdAt,
+          categories: p.categories?.map(c => c.category?.name).filter(Boolean) || [],
+          author: {
+            fullName: p.customAuthorName || p.author?.fullName || 'Equipo Pedagógico',
+            avatarUrl: p.customAuthorAvatar || p.author?.avatarUrl || ''
+          }
+        };
+      });
+
+      const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+      const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3000';
+      const baseUrl = `${protocol}://${host}`;
+
+      const markdown = generateBlogIndexMarkdown({
+        school,
+        posts: formattedPosts,
+        locale,
+        baseUrl,
+        isSaaS
+      });
+
+      res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+      res.setHeader('Vary', 'Accept-Language, Accept');
+      res.setHeader('Cache-Control', 'public, max-age=300');
+      return res.send(markdown);
+    } catch (err) {
+      console.error('Error generating blog index markdown:', err);
+      res.status(500).send('# Error generating blog index markdown');
     }
   });
 
@@ -125,20 +270,8 @@ export function createBlogRouter(prisma) {
           where: whereClause,
           skip,
           take: limit,
-          orderBy: [
-            { isFeatured: 'desc' },
-            { publishedAt: 'desc' },
-            { createdAt: 'desc' }
-          ],
+          orderBy: { publishedAt: 'desc' },
           include: {
-            author: {
-              select: {
-                id: true,
-                fullName: true,
-                avatarUrl: true,
-                jobTitle: true
-              }
-            },
             translations: true,
             categories: {
               include: {
@@ -149,39 +282,41 @@ export function createBlogRouter(prisma) {
               include: {
                 tag: true
               }
+            },
+            author: {
+              select: {
+                id: true,
+                fullName: true,
+                avatarUrl: true,
+                jobTitle: true
+              }
             }
           }
         })
       ]);
 
-      // Normalize post response with active translation
-      const formattedPosts = posts.map(post => {
-        const activeTranslation = post.translations.find(t => t.locale === locale) || post.translations[0] || {};
-        const availableLocales = post.translations.map(t => t.locale);
+      const isSaaS = !targetSchoolId;
 
+      const formattedPosts = posts.map(p => {
+        const trans = p.translations.find(t => t.locale === locale) || p.translations[0] || {};
         return {
-          id: post.id,
-          schoolId: post.schoolId,
-          slug: activeTranslation.slug || '',
-          title: activeTranslation.title || '',
-          excerpt: activeTranslation.excerpt || '',
-          coverImage: post.coverImage,
-          coverImageAlt: post.coverImageAlt,
-          status: post.status,
-          isFeatured: post.isFeatured,
-          readingTimeMinutes: post.readingTimeMinutes,
-          viewsCount: post.viewsCount,
-          publishedAt: post.publishedAt || post.createdAt,
-          createdAt: post.createdAt,
+          id: p.id,
+          slug: trans.slug,
+          title: trans.title,
+          excerpt: trans.excerpt,
+          coverImage: transformBlogImageUrl(p.coverImage, isSaaS),
+          coverImageAlt: p.coverImageAlt,
+          readingTimeMinutes: p.readingTimeMinutes,
+          isFeatured: p.isFeatured,
+          viewsCount: p.viewsCount,
+          publishedAt: p.publishedAt || p.createdAt,
           author: {
-            ...(post.author || {}),
-            fullName: post.customAuthorName || post.author?.fullName || '',
-            avatarUrl: post.customAuthorAvatar || post.author?.avatarUrl || ''
+            ...(p.author || {}),
+            fullName: p.customAuthorName || p.author?.fullName || 'Equipo Pedagógico',
+            avatarUrl: p.customAuthorAvatar || p.author?.avatarUrl || ''
           },
-          locale: activeTranslation.locale || locale,
-          availableLocales,
-          categories: post.categories.map(c => c.category),
-          tags: post.tags.map(t => t.tag)
+          categories: p.categories.map(c => c.category),
+          tags: p.tags.map(t => t.tag)
         };
       });
 
@@ -200,17 +335,20 @@ export function createBlogRouter(prisma) {
     }
   });
 
-  // Get single post by slug
-  router.get('/blog/posts/:slug', async (req, res) => {
+  // Get single post by slug (supports JSON, .md extension and Content-Negotiation for AI)
+  router.get(['/blog/posts/:slug.md', '/blog/posts/:slug'], async (req, res) => {
     try {
-      const { slug } = req.params;
+      const rawSlug = req.params.slug;
+      const wantsMarkdown = req.path.endsWith('.md') || isMarkdownOrAiRequest(req);
+      const cleanSlug = rawSlug.replace(/\.md$/i, '');
+
       const targetSchoolId = await resolveTargetSchoolId(req);
-      const requestedLocale = String(req.query.locale || 'es').toLowerCase();
+      const requestedLocale = resolveClientLocale(req);
 
       // Find translation by slug
-      const translation = await prisma.blogPostTranslation.findFirst({
+      let translation = await prisma.blogPostTranslation.findFirst({
         where: {
-          slug,
+          slug: cleanSlug,
           post: {
             schoolId: targetSchoolId,
             status: 'PUBLISHED'
@@ -245,7 +383,8 @@ export function createBlogRouter(prisma) {
                   name: true,
                   slug: true,
                   logoUrl: true,
-                  primaryColor: true
+                  primaryColor: true,
+                  siteSettings: true
                 }
               }
             }
@@ -254,6 +393,30 @@ export function createBlogRouter(prisma) {
       });
 
       if (!translation) {
+        // Fallback search across any published post with that slug
+        translation = await prisma.blogPostTranslation.findFirst({
+          where: {
+            slug: cleanSlug,
+            post: { status: 'PUBLISHED' }
+          },
+          include: {
+            post: {
+              include: {
+                author: { select: { id: true, fullName: true, avatarUrl: true, jobTitle: true, bio: true } },
+                translations: true,
+                categories: { include: { category: true } },
+                tags: { include: { tag: true } },
+                school: { select: { id: true, name: true, slug: true, logoUrl: true, primaryColor: true, siteSettings: true } }
+              }
+            }
+          }
+        });
+      }
+
+      if (!translation) {
+        if (wantsMarkdown) {
+          return res.status(404).send('# 404 - Artículo no encontrado');
+        }
         return res.status(404).json({ error: 'Artículo no encontrado' });
       }
 
@@ -265,11 +428,35 @@ export function createBlogRouter(prisma) {
         data: { viewsCount: { increment: 1 } }
       }).catch(e => console.warn('Failed to increment post views count', e.message));
 
-      // Fetch related posts from same categories
+      const isSaaS = !post.schoolId;
+      const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+      const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3000';
+      const baseUrl = `${protocol}://${host}`;
+
+      if (wantsMarkdown) {
+        const md = generateBlogPostMarkdown({
+          post: {
+            ...post,
+            coverImage: transformBlogImageUrl(post.coverImage, isSaaS)
+          },
+          translation,
+          school: post.school,
+          baseUrl,
+          isSaaS
+        });
+
+        res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+        res.setHeader('Vary', 'Accept-Language, Accept');
+        res.setHeader('Cache-Control', 'public, max-age=300');
+        return res.send(md);
+      }
+
+      // Fetch related posts (same categories + recent latest published)
       const categoryIds = post.categories.map(c => c.categoryId);
-      let relatedPosts = [];
+
+      let rawRelated = [];
       if (categoryIds.length > 0) {
-        const rawRelated = await prisma.blogPost.findMany({
+        rawRelated = await prisma.blogPost.findMany({
           where: {
             schoolId: targetSchoolId,
             status: 'PUBLISHED',
@@ -280,32 +467,54 @@ export function createBlogRouter(prisma) {
               }
             }
           },
-          take: 3,
+          take: 6,
           orderBy: { publishedAt: 'desc' },
           include: {
             translations: true,
+            categories: { include: { category: true } },
             author: { select: { fullName: true, avatarUrl: true } }
           }
         });
-
-        relatedPosts = rawRelated.map(r => {
-          const trans = r.translations.find(t => t.locale === requestedLocale) || r.translations[0] || {};
-          return {
-            id: r.id,
-            slug: trans.slug,
-            title: trans.title,
-            excerpt: trans.excerpt,
-            coverImage: r.coverImage,
-            readingTimeMinutes: r.readingTimeMinutes,
-            publishedAt: r.publishedAt || r.createdAt,
-            author: {
-              ...(r.author || {}),
-              fullName: r.customAuthorName || r.author?.fullName || '',
-              avatarUrl: r.customAuthorAvatar || r.author?.avatarUrl || ''
-            }
-          };
-        });
       }
+
+      // If less than 6 posts, backfill with the latest published articles
+      if (rawRelated.length < 6) {
+        const existingIds = [post.id, ...rawRelated.map(r => r.id)];
+        const latestRaw = await prisma.blogPost.findMany({
+          where: {
+            schoolId: targetSchoolId,
+            status: 'PUBLISHED',
+            id: { notIn: existingIds }
+          },
+          take: 6 - rawRelated.length,
+          orderBy: { publishedAt: 'desc' },
+          include: {
+            translations: true,
+            categories: { include: { category: true } },
+            author: { select: { fullName: true, avatarUrl: true } }
+          }
+        });
+        rawRelated = [...rawRelated, ...latestRaw];
+      }
+
+      const relatedPosts = rawRelated.map(r => {
+        const trans = r.translations.find(t => t.locale === requestedLocale) || r.translations[0] || {};
+        return {
+          id: r.id,
+          slug: trans.slug,
+          title: trans.title,
+          excerpt: trans.excerpt,
+          coverImage: transformBlogImageUrl(r.coverImage, isSaaS),
+          readingTimeMinutes: r.readingTimeMinutes,
+          publishedAt: r.publishedAt || r.createdAt,
+          categories: r.categories?.map(c => c.category?.name).filter(Boolean) || [],
+          author: {
+            ...(r.author || {}),
+            fullName: r.customAuthorName || r.author?.fullName || '',
+            avatarUrl: r.customAuthorAvatar || r.author?.avatarUrl || ''
+          }
+        };
+      });
 
       res.json({
         id: post.id,
@@ -314,12 +523,12 @@ export function createBlogRouter(prisma) {
         slug: translation.slug,
         title: translation.title,
         excerpt: translation.excerpt,
-        content: translation.content,
+        content: transformBlogContentImages(translation.content, isSaaS),
         metaTitle: translation.metaTitle || translation.title,
         metaDescription: translation.metaDescription || translation.excerpt,
         canonicalUrl: translation.canonicalUrl || '',
         locale: translation.locale,
-        coverImage: post.coverImage,
+        coverImage: transformBlogImageUrl(post.coverImage, isSaaS),
         coverImageAlt: post.coverImageAlt,
         readingTimeMinutes: post.readingTimeMinutes,
         viewsCount: post.viewsCount + 1,
@@ -345,15 +554,33 @@ export function createBlogRouter(prisma) {
     }
   });
 
-  // Get categories
+  // Get categories (public only returns categories with at least 1 published post unless includeEmpty=true)
   router.get('/blog/categories', async (req, res) => {
     try {
       const targetSchoolId = await resolveTargetSchoolId(req);
+      const includeEmpty = req.query.includeEmpty === 'true' || req.query.all === 'true';
+
+      const publishedPostFilter = {
+        post: {
+          status: 'PUBLISHED',
+          publishedAt: { lte: new Date() }
+        }
+      };
+
+      const whereClause = {
+        schoolId: targetSchoolId,
+        ...(includeEmpty ? {} : { posts: { some: publishedPostFilter } })
+      };
+
       const categories = await prisma.blogCategory.findMany({
-        where: { schoolId: targetSchoolId },
+        where: whereClause,
         include: {
           _count: {
-            select: { posts: true }
+            select: {
+              posts: {
+                where: publishedPostFilter
+              }
+            }
           }
         },
         orderBy: { name: 'asc' }
@@ -372,15 +599,33 @@ export function createBlogRouter(prisma) {
     }
   });
 
-  // Get tags
+  // Get tags (public only returns tags with at least 1 published post unless includeEmpty=true)
   router.get('/blog/tags', async (req, res) => {
     try {
       const targetSchoolId = await resolveTargetSchoolId(req);
+      const includeEmpty = req.query.includeEmpty === 'true' || req.query.all === 'true';
+
+      const publishedPostFilter = {
+        post: {
+          status: 'PUBLISHED',
+          publishedAt: { lte: new Date() }
+        }
+      };
+
+      const whereClause = {
+        schoolId: targetSchoolId,
+        ...(includeEmpty ? {} : { posts: { some: publishedPostFilter } })
+      };
+
       const tags = await prisma.blogTag.findMany({
-        where: { schoolId: targetSchoolId },
+        where: whereClause,
         include: {
           _count: {
-            select: { posts: true }
+            select: {
+              posts: {
+                where: publishedPostFilter
+              }
+            }
           }
         },
         orderBy: { name: 'asc' }
@@ -599,7 +844,7 @@ export function createBlogRouter(prisma) {
               slug: slugify(t.slug || t.title),
               title: t.title || 'Sin título',
               excerpt: t.excerpt || '',
-              content: t.content || '',
+              content: sanitizeMermaidDiagramArrows(t.content || ''),
               metaTitle: t.metaTitle || t.title || '',
               metaDescription: t.metaDescription || t.excerpt || '',
               canonicalUrl: t.canonicalUrl || ''
@@ -726,7 +971,7 @@ export function createBlogRouter(prisma) {
                 slug: cleanSlug,
                 title: t.title || 'Sin título',
                 excerpt: t.excerpt || '',
-                content: t.content || '',
+                content: sanitizeMermaidDiagramArrows(t.content || ''),
                 metaTitle: t.metaTitle || t.title || '',
                 metaDescription: t.metaDescription || t.excerpt || '',
                 canonicalUrl: t.canonicalUrl || ''
@@ -735,7 +980,7 @@ export function createBlogRouter(prisma) {
                 slug: cleanSlug,
                 title: t.title || 'Sin título',
                 excerpt: t.excerpt || '',
-                content: t.content || '',
+                content: sanitizeMermaidDiagramArrows(t.content || ''),
                 metaTitle: t.metaTitle || t.title || '',
                 metaDescription: t.metaDescription || t.excerpt || '',
                 canonicalUrl: t.canonicalUrl || ''
