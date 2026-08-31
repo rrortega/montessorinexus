@@ -18,6 +18,7 @@ import { PublicFormPage } from "./pages/public/PublicFormPage";
 import { BlogIndexPage } from "./pages/public/BlogIndexPage";
 import { BlogPostDetailPage } from "./pages/public/BlogPostDetailPage";
 import { DevToolsNoticePage } from "./pages/public/DevToolsNoticePage";
+import { SharedGalleryPage } from "./pages/public/SharedGalleryPage";
 import { CTAWidget } from "@/components/CTAWidget";
 import { FeedRealtimeNotificationBalloon } from "@/components/feed/FeedRealtimeNotificationBalloon";
 
@@ -39,6 +40,13 @@ const DomainRoutes: React.FC = () => {
     location.pathname.startsWith('/admin') ||
     location.pathname.startsWith('/console');
 
+  const isSharedGalleryRoute =
+    location.pathname.startsWith('/gallery/') ||
+    location.pathname.startsWith('/galeria/') ||
+    location.pathname.startsWith('/galeria-compartida') ||
+    location.pathname.startsWith('/shared-gallery') ||
+    location.pathname.startsWith('/g/');
+
   const isBlogHost = typeof window !== 'undefined' && (
     window.location.hostname === 'blog.montessorinexus.com' ||
     window.location.hostname === 'blog.localhost' ||
@@ -59,21 +67,22 @@ const DomainRoutes: React.FC = () => {
       location.pathname === '/terms' ||
       location.pathname === '/terminos-de-servicio' ||
       location.pathname === '/terms-of-service') ||
-    (isBlogHost && (location.pathname === '/' || location.pathname.startsWith('/blog')));
+    (isBlogHost && (location.pathname === '/' || location.pathname.startsWith('/blog'))) ||
+    isSharedGalleryRoute;
 
   // Prevent flash of unstyled colors on school pages until settings & host are resolved
   if (loading && !isAdminRoute && !isPlatformLanding) {
     return <PageLoadingIndicator />;
   }
 
-  if (isSchoolNotFound && !isAdminRoute) {
+  if (isSchoolNotFound && !isAdminRoute && !isSharedGalleryRoute) {
     return <SchoolNotFoundPage attemptedHost={unregisteredHost} />;
   }
 
   return (
     <>
       <FeedRealtimeNotificationBalloon />
-      {!isPlatformRoot && !isBlogHost && <CTAWidget />}
+      {!isPlatformRoot && !isBlogHost && !isSharedGalleryRoute && <CTAWidget />}
       <Routes>
         {isBlogHost ? (
           <>
@@ -144,6 +153,11 @@ const DomainRoutes: React.FC = () => {
         <Route path="/documents" element={<DocumentosPage />} />
         <Route path="/aplicativos" element={<AplicativosPage />} />
         <Route path="/applications" element={<AplicativosPage />} />
+        <Route path="/gallery/:id" element={<SharedGalleryPage />} />
+        <Route path="/galeria/:id" element={<SharedGalleryPage />} />
+        <Route path="/galeria-compartida/:id" element={<SharedGalleryPage />} />
+        <Route path="/shared-gallery/:id" element={<SharedGalleryPage />} />
+        <Route path="/g/:id" element={<SharedGalleryPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </>

@@ -75,7 +75,7 @@ export function getSchoolSubscriptionInfo(school: School | any): SchoolSubscript
     'web-builder': isPaid ? (!!feat.webBuilder || !!feat.website) : (isTrialActive && (feat.webBuilder !== false && feat.website !== false)),
     webBuilder: isPaid ? (!!feat.webBuilder || !!feat.website) : (isTrialActive && (feat.webBuilder !== false && feat.website !== false)),
     gallery: isPaid ? (!!feat.webBuilder || !!feat.website || !!feat.gallery) : (isTrialActive && (feat.gallery !== false)),
-    traffic: isPaid ? (!!feat.webBuilder || !!feat.website || !!feat.traffic) : (isTrialActive && (feat.traffic !== false)),
+    traffic: isPaid ? (!!feat.webBuilder || !!feat.website) : (isTrialActive && (feat.webBuilder !== false && feat.website !== false)),
     forms: isPaid ? !!feat.forms : (isTrialActive && (feat.forms !== false)),
     processes: isPaid ? !!feat.pipelines : (isTrialActive && (feat.pipelines !== false)),
     admissions: isPaid ? (feat.admissions !== false && feat.pipelines !== false) : (isTrialActive && (feat.admissions !== false)),

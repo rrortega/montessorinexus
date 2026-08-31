@@ -46,7 +46,8 @@ import {
 import {
   processGalleryImageFaceConsent,
   scanAllGalleryImagesForConsents,
-  reprocessUnmatchedGalleryImagesForStudent
+  reprocessUnmatchedGalleryImagesForStudent,
+  updateGalleryImageFaces
 } from './face-consent-service.js';
 import { generateFormOgImage, generateProcessOgImage } from './og-image-service.js';
 import { getEmailQueue, getRedisConnectionConfig, isQueueEnabled } from './email-queue.js';
@@ -91,6 +92,7 @@ import {
   resolveBlogUrls
 } from './blog-service.js';
 import { transformBlogImageUrl } from './blog-watermark-service.js';
+import { ensureSchoolUmamiSiteId, getUmamiConfig, cleanSubdomainSlug } from './umami-service.js';
 
 let redisClient = null;
 try {
@@ -729,9 +731,34 @@ app.get('/api/health', (req, res) => {
 });
 
 // Serve static public assets from public/ (gallery, public docs, feed) and dist/ (frontend)
-app.use('/gallery', express.static(galleryDir));
-app.use('/documents', express.static(documentsDir));
-app.use('/feed', express.static(feedDir));
+app.use('/gallery', (req, res, next) => {
+  const filePath = path.join(galleryDir, req.path);
+  try {
+    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+      return res.sendFile(filePath);
+    }
+  } catch {}
+  next();
+});
+app.use('/documents', (req, res, next) => {
+  const filePath = path.join(documentsDir, req.path);
+  try {
+    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+      return res.sendFile(filePath);
+    }
+  } catch {}
+  next();
+});
+app.use('/feed', (req, res, next) => {
+  const filePath = path.join(feedDir, req.path);
+  try {
+    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+      return res.sendFile(filePath);
+    }
+  } catch {}
+  next();
+});
+app.use('/assets', express.static(path.join(rootDir, 'dist', 'assets')));
 app.use(express.static(path.join(rootDir, 'dist')));
 
 // Helper to convert title text into a clean URL-friendly slug
@@ -892,15 +919,32 @@ async function resolveSchool(req, res, next) {
             const parts = hostname.split('.');
             if (parts.length >= 2) {
               const sub = parts[0];
+              const cleanSub = cleanSubdomainSlug(sub);
               const ignoredSubs = ['www', 'api', 'app', 'panel', 'admin', 'console', 'mail', 'staging', 'dev', 'blog'];
               if (!ignoredSubs.includes(sub)) {
-                school = await prisma.school.findUnique({ where: { slug: sub } });
+                // 1. Exact subdomain in siteSetting
+                const subSetting = await prisma.siteSetting.findFirst({
+                  where: {
+                    key: 'subdomain',
+                    value: { in: [sub, cleanSub] }
+                  },
+                  include: { school: true }
+                });
+                if (subSetting?.school) school = subSetting.school;
+
+                // 2. Exact or clean match on school.slug
                 if (!school) {
-                  const subSetting = await prisma.siteSetting.findFirst({
-                    where: { key: 'subdomain', value: sub },
-                    include: { school: true }
+                  school = await prisma.school.findFirst({
+                    where: {
+                      OR: [
+                        { slug: sub },
+                        { slug: cleanSub },
+                        { slug: `${cleanSub}-montessori` },
+                        { slug: `colegio-${cleanSub}` },
+                        { slug: `${cleanSub}-school` }
+                      ]
+                    }
                   });
-                  if (subSetting?.school) school = subSetting.school;
                 }
               }
             }
@@ -966,25 +1010,60 @@ app.get('/api/schools/resolve-host', async (req, res) => {
       include: { school: true }
     });
     if (customSetting?.school) {
-      return res.json({ school: customSetting.school, type: 'custom_domain', matched: hostname });
+      const school = customSetting.school;
+      if (!school.umamiSiteId) {
+        try {
+          const id = await ensureSchoolUmamiSiteId(school, prisma, redisClient, hostname);
+          if (id) school.umamiSiteId = id;
+        } catch (uErr) {
+          console.warn('[RESOLVE-HOST-UMAMI] Error provisioning siteId:', uErr.message);
+        }
+      }
+      return res.json({ school, type: 'custom_domain', matched: hostname });
     }
 
     // 2. Check subdomain
     const parts = hostname.split('.');
     if (parts.length >= 2) {
       const sub = parts[0];
+      const cleanSub = cleanSubdomainSlug(sub);
       const ignoredSubs = ['www', 'api', 'app', 'panel', 'admin', 'console', 'staging', 'dev', 'blog'];
       if (!ignoredSubs.includes(sub)) {
-        let school = await prisma.school.findUnique({ where: { slug: sub } });
+        // 1. Check siteSetting subdomain
+        const subSetting = await prisma.siteSetting.findFirst({
+          where: {
+            key: 'subdomain',
+            value: { in: [sub, cleanSub] }
+          },
+          include: { school: true }
+        });
+        let school = subSetting?.school || null;
+
+        // 2. Check school slug matches
         if (!school) {
-          const subSetting = await prisma.siteSetting.findFirst({
-            where: { key: 'subdomain', value: sub },
-            include: { school: true }
+          school = await prisma.school.findFirst({
+            where: {
+              OR: [
+                { slug: sub },
+                { slug: cleanSub },
+                { slug: `${cleanSub}-montessori` },
+                { slug: `colegio-${cleanSub}` },
+                { slug: `${cleanSub}-school` }
+              ]
+            }
           });
-          if (subSetting?.school) school = subSetting.school;
         }
+
         if (school) {
-          return res.json({ school, type: 'subdomain', matched: sub });
+          if (!school.umamiSiteId) {
+            try {
+              const id = await ensureSchoolUmamiSiteId(school, prisma, redisClient, hostname);
+              if (id) school.umamiSiteId = id;
+            } catch (uErr) {
+              console.warn('[RESOLVE-HOST-UMAMI] Error provisioning siteId:', uErr.message);
+            }
+          }
+          return res.json({ school, type: 'subdomain', matched: sub, cleanSubdomain: cleanSub });
         }
         // Subdomain was explicitly specified but does not exist
         return res.json({ school: null, notFound: true, attemptedHost: hostname, attemptedSubdomain: sub });
@@ -1717,7 +1796,35 @@ app.post('/api/schools', async (req, res) => {
 });
 
 app.get('/api/schools/current', async (req, res) => {
-  res.json(req.school);
+  try {
+    if (req.school && req.school.id && !req.school.umamiSiteId) {
+      const siteId = await ensureSchoolUmamiSiteId(req.school, prisma, redisClient);
+      if (siteId) req.school.umamiSiteId = siteId;
+    }
+    res.json(req.school);
+  } catch (err) {
+    res.json(req.school);
+  }
+});
+
+app.get('/api/schools/current/umami-site', async (req, res) => {
+  try {
+    const school = req.school;
+    if (!school || !school.id) {
+      return res.status(404).json({ error: 'Colegio no encontrado' });
+    }
+    const umamiSiteId = await ensureSchoolUmamiSiteId(school, prisma, redisClient);
+    const { host } = getUmamiConfig();
+    res.json({
+      success: true,
+      schoolId: school.id,
+      umamiSiteId,
+      umamiHost: host
+    });
+  } catch (err) {
+    console.error('Error fetching/creating Umami siteId:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 /**
@@ -1852,7 +1959,15 @@ async function getSchoolStorageStats(schoolId) {
 
 app.get('/api/schools/current/usage', async (req, res) => {
   try {
-    const schoolId = req.school.id;
+    const schoolId = req.headers['x-school-id'] || req.query.schoolId || req.school?.id;
+    if (!schoolId) {
+      return res.json({
+        emails: { isByos: false, smtpHost: '', limit: 500, used: 0, remaining: 500, percentage: 0, startOfMonth: new Date(), endOfMonth: new Date() },
+        storage: { isByos: false, limitGb: 2, limitBytes: 2 * 1024 * 1024 * 1024, usedBytes: 0, usedMb: 0, usedGb: 0, remainingGb: 2, percentage: 0, isFull: false },
+        ai: { providerMode: 'platform', isFreeTrial: false, totalPurchasedTokens: 0, consumedTokens: 0, remainingTokens: 0, monthlyPlanUsd: 0, tokenLimit: 0, percentageUsed: 0, isLimitReached: false, cycleKey: '', startOfCycle: new Date(), endOfCycle: new Date(), renewalDate: new Date(), renewalDay: 1, renewalDescription: '' }
+      });
+    }
+
     const school = await prisma.school.findUnique({
       where: { id: schoolId }
     });
@@ -1896,7 +2011,7 @@ app.get('/api/schools/current/usage', async (req, res) => {
     const storageStats = await getSchoolStorageStats(schoolId);
 
     // 4. AI tokens allocation & usage calculation
-    const aiStats = await getSchoolAiUsageStats(schoolId);
+    const aiStats = await getSchoolAiUsageStats(schoolId, prisma);
 
     res.json({
       emails: {
@@ -7558,6 +7673,748 @@ const DEFAULT_MONTESSORI_CATEGORIES = [
   }
 ];
 
+// ==========================================
+// PHOTO GALLERIES (UNITS / ALBUMS) MANAGEMENT
+// ==========================================
+
+async function migrateGalleryImagesToStorageUrls() {
+  try {
+    const images = await prisma.galleryImage.findMany();
+    for (const img of images) {
+      let needsUpdate = false;
+      let newSrc = img.src;
+      let newBlurredSrc = img.blurredSrc;
+
+      if (img.src && !img.src.startsWith('/api/storage/')) {
+        const filename = path.basename(img.src);
+        newSrc = `/api/storage/schools/${img.schoolId}/public/gallery/${filename}`;
+        needsUpdate = true;
+      }
+
+      if (img.blurredSrc && !img.blurredSrc.startsWith('/api/storage/')) {
+        const filename = path.basename(img.blurredSrc);
+        newBlurredSrc = `/api/storage/schools/${img.schoolId}/public/gallery/${filename}`;
+        needsUpdate = true;
+      }
+
+      if (needsUpdate) {
+        await prisma.galleryImage.update({
+          where: { id: img.id },
+          data: {
+            src: newSrc,
+            blurredSrc: newBlurredSrc
+          }
+        }).catch(() => {});
+      }
+    }
+
+    const galleries = await prisma.gallery.findMany();
+    for (const gal of galleries) {
+      if (gal.coverImage && !gal.coverImage.startsWith('/api/storage/')) {
+        const filename = path.basename(gal.coverImage);
+        const newCover = `/api/storage/schools/${gal.schoolId}/public/gallery/${filename}`;
+        await prisma.gallery.update({
+          where: { id: gal.id },
+          data: { coverImage: newCover }
+        }).catch(() => {});
+      }
+    }
+  } catch (err) {
+    console.warn('[GALLERY MIGRATION ERROR]', err.message);
+  }
+}
+
+async function ensureGallerySchema() {
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "galleries" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "school_id" TEXT NOT NULL,
+        "name" TEXT NOT NULL,
+        "description" TEXT DEFAULT '',
+        "cover_image" TEXT DEFAULT '',
+        "is_default" BOOLEAN NOT NULL DEFAULT false,
+        "show_on_web" BOOLEAN NOT NULL DEFAULT false,
+        "share_scope" VARCHAR(50) DEFAULT 'PRIVATE',
+        "shared_environment_ids" TEXT DEFAULT '[]',
+        "shared_parent_ids" TEXT DEFAULT '[]',
+        "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT "galleries_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "schools"("id") ON DELETE CASCADE ON UPDATE CASCADE
+      );
+    `);
+
+    await prisma.$executeRawUnsafe(`
+      DO $$ BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'galleries' AND column_name = 'share_scope'
+        ) THEN
+          ALTER TABLE "galleries" ADD COLUMN "share_scope" VARCHAR(50) DEFAULT 'PRIVATE';
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'galleries' AND column_name = 'shared_environment_ids'
+        ) THEN
+          ALTER TABLE "galleries" ADD COLUMN "shared_environment_ids" TEXT DEFAULT '[]';
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'galleries' AND column_name = 'shared_parent_ids'
+        ) THEN
+          ALTER TABLE "galleries" ADD COLUMN "shared_parent_ids" TEXT DEFAULT '[]';
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'gallery_images' AND column_name = 'gallery_id'
+        ) THEN
+          ALTER TABLE "gallery_images" ADD COLUMN "gallery_id" TEXT;
+          ALTER TABLE "gallery_images" ADD CONSTRAINT "gallery_images_gallery_id_fkey" 
+            FOREIGN KEY ("gallery_id") REFERENCES "galleries"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+        END IF;
+      END $$;
+    `);
+
+    await migrateGalleryImagesToStorageUrls();
+  } catch (err) {
+    console.warn('[GALLERY SCHEMA] Note on ensuring gallery schema:', err.message);
+  }
+}
+
+async function checkGalleryManagePermission(req) {
+  if (!req.school) return false;
+  const userEmail = req.headers['x-user-email'] || req.query.email;
+  if (!userEmail) return false;
+
+  const user = await prisma.user.findUnique({
+    where: { email: String(userEmail).trim().toLowerCase() },
+    include: {
+      memberships: { where: { schoolId: req.school.id } }
+    }
+  });
+  if (!user) return false;
+
+  if (user.isSuperAdmin || user.role === 'SUPERADMIN' || user.role === 'OWNER') return true;
+  const membership = user.memberships?.[0];
+  if (!membership) return false;
+  if (membership.role === 'OWNER' || membership.role === 'ADMIN') return true;
+
+  let perms = [];
+  try {
+    perms = Array.isArray(membership.permissions)
+      ? membership.permissions
+      : (typeof membership.permissions === 'string' ? JSON.parse(membership.permissions || '[]') : []);
+  } catch {}
+
+  return perms.includes('gallery') || perms.includes('gallery:write');
+}
+
+async function ensureDefaultGallery(schoolId) {
+  try {
+    let defaultGal = await prisma.gallery.findFirst({
+      where: { schoolId, isDefault: true }
+    });
+
+    if (!defaultGal) {
+      defaultGal = await prisma.gallery.create({
+        data: {
+          id: `default_web_${schoolId}`,
+          schoolId,
+          name: 'Galería Web',
+          description: 'Fotografías oficiales publicadas en el sitio web de la escuela',
+          isDefault: true,
+          showOnWeb: true,
+          shareScope: 'ALL_SCHOOL',
+          sharedEnvironmentIds: '[]',
+          sharedParentIds: '[]'
+        }
+      }).catch(async () => {
+        return await prisma.gallery.findFirst({
+          where: { schoolId, isDefault: true }
+        });
+      });
+    }
+
+    if (defaultGal) {
+      // Reassign any orphan images for this school to the default Galería Web
+      await prisma.galleryImage.updateMany({
+        where: {
+          schoolId,
+          galleryId: null
+        },
+        data: {
+          galleryId: defaultGal.id
+        }
+      }).catch(() => {});
+    }
+
+    return defaultGal;
+  } catch (err) {
+    console.error(`[GALLERY INIT] Error ensuring default gallery for school ${schoolId}:`, err);
+    return null;
+  }
+}
+
+app.get('/api/galleries', async (req, res) => {
+  try {
+    await ensureDefaultGallery(req.school.id);
+    const { target } = req.query;
+    const isPublicWeb = target === 'web';
+    const userEmail = req.headers['x-user-email'] || req.query.email;
+
+    const galleries = await prisma.gallery.findMany({
+      where: {
+        schoolId: req.school.id,
+        ...(isPublicWeb ? { isDefault: true } : {})
+      },
+      include: {
+        _count: {
+          select: { images: true }
+        }
+      },
+      orderBy: [
+        { isDefault: 'desc' },
+        { createdAt: 'desc' }
+      ]
+    });
+
+    // Check if requester is a Tutor
+    if (userEmail && (target === 'portal' || !isPublicWeb)) {
+      const user = await prisma.user.findUnique({
+        where: { email: String(userEmail).trim().toLowerCase() },
+        include: {
+          memberships: { where: { schoolId: req.school.id } },
+          studentLinks: {
+            include: { student: true }
+          }
+        }
+      });
+
+      const membership = user?.memberships?.[0];
+      const role = membership?.role || user?.staffRole;
+
+      if (role === 'TUTOR') {
+        const tutorStudents = (user.studentLinks || [])
+          .map(st => st.student)
+          .filter(s => s && s.schoolId === req.school.id);
+
+        const tutorEnvIds = tutorStudents.map(s => s.environmentId).filter(Boolean);
+        const tutorStudentIds = tutorStudents.map(s => s.id);
+        const tutorUserId = user.id;
+
+        const filtered = galleries.filter(gal => {
+          if (gal.isDefault) return true; // Galería Web always accessible
+          if (gal.shareScope === 'ALL_SCHOOL') return true;
+
+          let sharedEnvs = [];
+          try {
+            sharedEnvs = typeof gal.sharedEnvironmentIds === 'string' ? JSON.parse(gal.sharedEnvironmentIds || '[]') : (gal.sharedEnvironmentIds || []);
+          } catch {}
+
+          if (gal.shareScope === 'ENVIRONMENTS') {
+            return sharedEnvs.some(envId => tutorEnvIds.includes(envId));
+          }
+
+          let sharedParents = [];
+          try {
+            sharedParents = typeof gal.sharedParentIds === 'string' ? JSON.parse(gal.sharedParentIds || '[]') : (gal.sharedParentIds || []);
+          } catch {}
+
+          if (gal.shareScope === 'SPECIFIC_PARENTS') {
+            return sharedParents.some(id => id === tutorUserId || tutorStudentIds.includes(id));
+          }
+
+          return false;
+        });
+
+        return res.json(filtered.map(g => ({
+          ...g,
+          imageCount: g._count?.images || 0,
+          _count: undefined
+        })));
+      }
+    }
+
+    const mapped = galleries.map(g => ({
+      ...g,
+      imageCount: g._count?.images || 0,
+      _count: undefined
+    }));
+
+    res.json(mapped);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/galleries/:id', async (req, res) => {
+  try {
+    const gallery = await prisma.gallery.findUnique({
+      where: { id: req.params.id },
+      include: {
+        _count: {
+          select: { images: true }
+        }
+      }
+    });
+    if (!gallery) {
+      return res.status(404).json({ error: 'Galería no encontrada' });
+    }
+    res.json({
+      ...gallery,
+      imageCount: gallery._count?.images || 0
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/galleries/:id/shared-view', async (req, res) => {
+  try {
+    const gallery = await prisma.gallery.findUnique({
+      where: { id: req.params.id },
+      include: {
+        _count: { select: { images: true } }
+      }
+    });
+
+    if (!gallery) {
+      return res.status(404).json({ error: 'Galería no encontrada' });
+    }
+
+    const targetSchoolId = gallery.schoolId || req.school?.id || 'school_ceiba';
+
+    // Get school public info
+    const school = await prisma.school.findUnique({
+      where: { id: targetSchoolId },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        logoUrl: true,
+        primaryColor: true,
+        accentColor: true
+      }
+    });
+
+    const publicSchool = school ? {
+      id: school.id,
+      name: school.name,
+      slug: school.slug,
+      logo: school.logoUrl || '',
+      logoUrl: school.logoUrl || '',
+      primaryColor: school.primaryColor || '#1b3b2b',
+      accentColor: school.accentColor || '#c86d51'
+    } : null;
+
+    // Extract first/cover image to serve as the background blur
+    let coverSrc = gallery.coverImage || '';
+    if (!coverSrc) {
+      const firstImage = await prisma.galleryImage.findFirst({
+        where: { galleryId: gallery.id },
+        orderBy: { createdAt: 'desc' }
+      });
+      coverSrc = firstImage?.src || '';
+    }
+
+    const publicGalleryInfo = {
+      id: gallery.id,
+      name: gallery.name,
+      description: gallery.description,
+      coverImage: coverSrc,
+      imageCount: gallery._count?.images || 0,
+      shareScope: gallery.shareScope,
+      createdAt: gallery.createdAt,
+      school: publicSchool
+    };
+
+    // Check user authentication
+    const userEmail = req.headers['x-user-email'] || req.query.email;
+    if (!userEmail) {
+      return res.json({
+        requiresAuth: true,
+        permitted: false,
+        gallery: publicGalleryInfo,
+        school: publicSchool
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: String(userEmail).trim().toLowerCase() },
+      include: {
+        memberships: true,
+        studentLinks: {
+          include: { student: true }
+        }
+      }
+    });
+
+    if (!user) {
+      return res.json({
+        requiresAuth: true,
+        permitted: false,
+        gallery: publicGalleryInfo,
+        school: publicSchool
+      });
+    }
+
+    const membership = (user?.memberships || []).find(m => m.schoolId === targetSchoolId) || user?.memberships?.[0];
+    const role = membership?.role || user?.staffRole || 'USER';
+
+    // Staff / Admin / Director / SuperAdmin / Owner always have full access
+    const isSuperAdmin = user.isSuperAdmin === true || role === 'SUPERADMIN' || user.staffRole === 'SUPERADMIN';
+    const isStaffOrAdmin = isSuperAdmin || ['ADMIN', 'DIRECTOR', 'SUPERADMIN', 'TEACHER', 'COORDINATOR', 'STAFF', 'COMMUNICATION', 'OWNER'].includes(role) || ['ADMIN', 'DIRECTOR', 'SUPERADMIN', 'TEACHER', 'COORDINATOR', 'STAFF', 'COMMUNICATION', 'OWNER'].includes(user.staffRole);
+
+    let isPermitted = isStaffOrAdmin;
+
+    if (!isPermitted) {
+      const tutorStudents = (user.studentLinks || [])
+        .map(st => st.student)
+        .filter(s => s && (s.schoolId === targetSchoolId || !s.schoolId));
+
+      const tutorEnvIds = tutorStudents.map(s => s.environmentId).filter(Boolean);
+      const tutorStudentIds = tutorStudents.map(s => s.id);
+      const tutorUserId = user.id;
+
+      if (gallery.isDefault) {
+        isPermitted = true;
+      } else if (gallery.shareScope === 'ALL_SCHOOL') {
+        isPermitted = true;
+      } else if (gallery.shareScope === 'ENVIRONMENTS') {
+        let sharedEnvs = [];
+        try {
+          sharedEnvs = typeof gallery.sharedEnvironmentIds === 'string' ? JSON.parse(gallery.sharedEnvironmentIds || '[]') : (gallery.sharedEnvironmentIds || []);
+        } catch {}
+        isPermitted = sharedEnvs.some(envId => tutorEnvIds.includes(envId));
+      } else if (gallery.shareScope === 'SPECIFIC_PARENTS') {
+        let sharedParents = [];
+        try {
+          sharedParents = typeof gallery.sharedParentIds === 'string' ? JSON.parse(gallery.sharedParentIds || '[]') : (gallery.sharedParentIds || []);
+        } catch {}
+        isPermitted = sharedParents.some(id => id === tutorUserId || tutorStudentIds.includes(id));
+      }
+    }
+
+    if (!isPermitted) {
+      return res.json({
+        requiresAuth: false,
+        permitted: false,
+        error: 'No tienes permisos para ver esta galería. El acceso está reservado para miembros específicos.',
+        gallery: publicGalleryInfo,
+        school: publicSchool,
+        user: {
+          id: user.id,
+          name: user.fullName || user.email,
+          email: user.email,
+          role
+        }
+      });
+    }
+
+    // Fetch full images for permitted user
+    const rawImages = await prisma.galleryImage.findMany({
+      where: {
+        galleryId: gallery.id
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    // Sanitize images for shared gallery viewer:
+    // 1. Serve blurred version for images with consent issues
+    // 2. Strip internal face detection and coordinate metadata
+    const images = rawImages.map(img => {
+      let finalSrc = img.src;
+      if (img.hasConsentIssues && img.blurredSrc) {
+        if (role === 'TUTOR' && !isStaffOrAdmin) {
+          const tutorStudents = (user.studentLinks || [])
+            .map(st => st.student)
+            .filter(s => s && (s.schoolId === targetSchoolId || !s.schoolId));
+          const tutorStudentIds = tutorStudents.map(s => s.id);
+
+          let detectedFaces = [];
+          try {
+            detectedFaces = typeof img.detectedFaces === 'string' ? JSON.parse(img.detectedFaces || '[]') : (img.detectedFaces || []);
+          } catch {}
+
+          const hasOtherRestrictedFaces = detectedFaces.some(f => f.hasConsent === false && (!f.studentId || !tutorStudentIds.includes(f.studentId)));
+          if (hasOtherRestrictedFaces) {
+            finalSrc = img.blurredSrc;
+          }
+        } else if (!isStaffOrAdmin) {
+          finalSrc = img.blurredSrc;
+        }
+      }
+
+      let publicFaces = [];
+      try {
+        const rawParsed = typeof img.detectedFaces === 'string' ? JSON.parse(img.detectedFaces || '[]') : (img.detectedFaces || []);
+        publicFaces = rawParsed.map(f => {
+          if (f.isBlurred || f.hasConsent === false) {
+            return {
+              box: f.box,
+              isIdentified: false,
+              isBlurred: true,
+              personType: 'unknown',
+              name: 'Rostro protegido',
+              studentName: 'Rostro protegido'
+            };
+          }
+          return {
+            box: f.box,
+            isIdentified: Boolean(f.isIdentified && (f.studentName || f.parentName || f.name)),
+            personType: f.personType || (f.childrenSummary || f.parentName ? 'parent' : f.studentId ? 'student' : 'unknown'),
+            name: f.studentName || f.parentName || f.name || 'Persona no identificada',
+            studentName: f.studentName || f.name,
+            parentName: f.parentName,
+            childrenSummary: f.childrenSummary,
+            environmentName: f.environmentName,
+            avatarUrl: f.avatarUrl,
+            confidence: f.confidence
+          };
+        });
+      } catch {}
+
+      return {
+        id: img.id,
+        galleryId: img.galleryId,
+        schoolId: img.schoolId,
+        title: img.title,
+        titleEn: img.titleEn,
+        description: img.description,
+        descriptionEn: img.descriptionEn,
+        src: finalSrc,
+        originalSrc: isStaffOrAdmin ? img.src : finalSrc,
+        blurredSrc: img.blurredSrc,
+        hasConsentIssues: img.hasConsentIssues,
+        consentStatus: img.consentStatus,
+        detectedFaces: publicFaces,
+        createdAt: img.createdAt
+      };
+    });
+
+    res.json({
+      requiresAuth: false,
+      permitted: true,
+      gallery: {
+        ...publicGalleryInfo,
+        images
+      },
+      school: publicSchool,
+      user: {
+        id: user.id,
+        name: user.fullName || user.email,
+        email: user.email,
+        role
+      }
+    });
+  } catch (e) {
+    console.error('getSharedGalleryView error:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/galleries', async (req, res) => {
+  try {
+    const canManage = await checkGalleryManagePermission(req);
+    if (!canManage) {
+      return res.status(403).json({ error: 'No tienes permisos para crear o gestionar galerías.' });
+    }
+
+    const {
+      name,
+      description = '',
+      coverImage = '',
+      shareScope = 'PRIVATE',
+      sharedEnvironmentIds = [],
+      sharedParentIds = []
+    } = req.body || {};
+
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({ error: 'El nombre de la galería es obligatorio' });
+    }
+
+    const parsedEnvs = Array.isArray(sharedEnvironmentIds) ? JSON.stringify(sharedEnvironmentIds) : (typeof sharedEnvironmentIds === 'string' ? sharedEnvironmentIds : '[]');
+    const parsedParents = Array.isArray(sharedParentIds) ? JSON.stringify(sharedParentIds) : (typeof sharedParentIds === 'string' ? sharedParentIds : '[]');
+
+    const gallery = await prisma.gallery.create({
+      data: {
+        schoolId: req.school.id,
+        name: name.trim(),
+        description: typeof description === 'string' ? description.trim() : '',
+        coverImage: typeof coverImage === 'string' ? coverImage.trim() : '',
+        isDefault: false,
+        showOnWeb: false, // Custom galleries are strictly internal
+        shareScope: ['PRIVATE', 'ALL_SCHOOL', 'ENVIRONMENTS', 'SPECIFIC_PARENTS'].includes(shareScope) ? shareScope : 'PRIVATE',
+        sharedEnvironmentIds: parsedEnvs,
+        sharedParentIds: parsedParents
+      }
+    });
+
+    res.json({
+      ...gallery,
+      imageCount: 0
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.put('/api/galleries/:id', async (req, res) => {
+  try {
+    const canManage = await checkGalleryManagePermission(req);
+    if (!canManage) {
+      return res.status(403).json({ error: 'No tienes permisos para editar galerías.' });
+    }
+
+    const existing = await prisma.gallery.findUnique({
+      where: { id: req.params.id }
+    });
+    if (!existing || existing.schoolId !== req.school.id) {
+      return res.status(404).json({ error: 'Galería no encontrada' });
+    }
+
+    const {
+      name,
+      description,
+      coverImage,
+      shareScope,
+      sharedEnvironmentIds,
+      sharedParentIds
+    } = req.body || {};
+
+    const updateData = {};
+    if (name !== undefined && typeof name === 'string' && name.trim()) {
+      updateData.name = name.trim();
+    }
+    if (description !== undefined) {
+      updateData.description = typeof description === 'string' ? description.trim() : '';
+    }
+    if (coverImage !== undefined) {
+      updateData.coverImage = typeof coverImage === 'string' ? coverImage.trim() : '';
+    }
+    updateData.showOnWeb = Boolean(existing.isDefault);
+    if (shareScope !== undefined && ['PRIVATE', 'ALL_SCHOOL', 'ENVIRONMENTS', 'SPECIFIC_PARENTS'].includes(shareScope)) {
+      updateData.shareScope = shareScope;
+    }
+    if (sharedEnvironmentIds !== undefined) {
+      updateData.sharedEnvironmentIds = Array.isArray(sharedEnvironmentIds) ? JSON.stringify(sharedEnvironmentIds) : String(sharedEnvironmentIds);
+    }
+    if (sharedParentIds !== undefined) {
+      updateData.sharedParentIds = Array.isArray(sharedParentIds) ? JSON.stringify(sharedParentIds) : String(sharedParentIds);
+    }
+
+    const updated = await prisma.gallery.update({
+      where: { id: req.params.id },
+      data: updateData,
+      include: {
+        _count: { select: { images: true } }
+      }
+    });
+
+    res.json({
+      ...updated,
+      imageCount: updated._count?.images || 0
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/galleries/:id/share', async (req, res) => {
+  try {
+    const canManage = await checkGalleryManagePermission(req);
+    if (!canManage) {
+      return res.status(403).json({ error: 'No tienes permisos para compartir galerías.' });
+    }
+
+    const existing = await prisma.gallery.findUnique({
+      where: { id: req.params.id }
+    });
+    if (!existing || existing.schoolId !== req.school.id) {
+      return res.status(404).json({ error: 'Galería no encontrada' });
+    }
+
+    const { shareScope = 'PRIVATE', sharedEnvironmentIds = [], sharedParentIds = [] } = req.body || {};
+    const parsedEnvs = Array.isArray(sharedEnvironmentIds) ? JSON.stringify(sharedEnvironmentIds) : String(sharedEnvironmentIds || '[]');
+    const parsedParents = Array.isArray(sharedParentIds) ? JSON.stringify(sharedParentIds) : String(sharedParentIds || '[]');
+
+    const updated = await prisma.gallery.update({
+      where: { id: req.params.id },
+      data: {
+        shareScope: ['PRIVATE', 'ALL_SCHOOL', 'ENVIRONMENTS', 'SPECIFIC_PARENTS'].includes(shareScope) ? shareScope : 'PRIVATE',
+        sharedEnvironmentIds: parsedEnvs,
+        sharedParentIds: parsedParents
+      },
+      include: {
+        _count: { select: { images: true } }
+      }
+    });
+
+    res.json({
+      ...updated,
+      imageCount: updated._count?.images || 0
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.delete('/api/galleries/:id', async (req, res) => {
+  try {
+    const canManage = await checkGalleryManagePermission(req);
+    if (!canManage) {
+      return res.status(403).json({ error: 'No tienes permisos para eliminar galerías.' });
+    }
+
+    const existing = await prisma.gallery.findUnique({
+      where: { id: req.params.id }
+    });
+    if (!existing || existing.schoolId !== req.school.id) {
+      return res.status(404).json({ error: 'Galería no encontrada' });
+    }
+
+    if (existing.isDefault) {
+      return res.status(400).json({
+        error: 'La "Galería Web" del sistema es permanente y no puede ser eliminada.'
+      });
+    }
+
+    // Delete photos files from storage/disk and db
+    const images = await prisma.galleryImage.findMany({
+      where: { galleryId: req.params.id }
+    });
+    const storage = await storageServiceFor(req.school.id, prisma);
+    for (const img of images) {
+      if (img.src) {
+        const relativePath = extractStorageRelativePath(img.src);
+        if (relativePath) {
+          await storage.deleteFile(relativePath).catch(() => {});
+        } else if (img.src.startsWith('/gallery/') || img.src.startsWith('/documents/')) {
+          const targetPath = path.join(publicDir, img.src.slice(1));
+          if (fs.existsSync(targetPath)) {
+            try { fs.unlinkSync(targetPath); } catch {}
+          }
+        }
+      }
+    }
+
+    await prisma.galleryImage.deleteMany({
+      where: { galleryId: req.params.id }
+    });
+
+    await prisma.gallery.delete({
+      where: { id: req.params.id }
+    });
+
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // GALLERY CATEGORIES & IMAGES
 app.get('/api/gallery/categories', async (req, res) => {
   try {
@@ -7782,6 +8639,17 @@ Responde ÚNICAMENTE un objeto JSON válido con la siguiente estructura exacta:
   }
 
   const data = await aiRes.json();
+  const usage = data?.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
+  if (schoolId) {
+    await recordSchoolAiTokenUsage({
+      schoolId,
+      promptTokens: usage.prompt_tokens || 0,
+      completionTokens: usage.completion_tokens || 0,
+      totalTokens: usage.total_tokens || 0,
+      prisma
+    });
+  }
+
   const parsed = JSON.parse(data.choices?.[0]?.message?.content || '{}');
   const trans = parsed.translations || parsed;
 
@@ -7883,18 +8751,24 @@ function triggerGalleryAiProcess(imageId, schoolId) {
 
 app.get('/api/gallery/images', async (req, res) => {
   try {
-    const { categoryId, target, studentId } = req.query;
+    const { categoryId, galleryId, target, studentId } = req.query;
     const isPublicWeb = target === 'web';
     const userEmail = req.headers['x-user-email'] || req.query.email;
 
     const where = {
       schoolId: req.school.id,
       ...(categoryId && categoryId !== 'all' && { categoryId: String(categoryId) }),
+      ...(galleryId && galleryId !== 'all' && { galleryId: String(galleryId) }),
       ...(target === 'web' && { showOnWeb: true }),
       ...(target === 'portal' && { showOnPortal: true })
     };
     const images = await prisma.galleryImage.findMany({
       where,
+      include: {
+        gallery: {
+          select: { id: true, name: true, isDefault: true, showOnWeb: true }
+        }
+      },
       orderBy: { createdAt: 'desc' }
     });
 
@@ -7913,7 +8787,7 @@ app.get('/api/gallery/images', async (req, res) => {
       return res.json(sanitized);
     }
 
-    // If requester is a Tutor/Parent, filter images so they ONLY see images where at least one of their children appears
+    // If requester is a Tutor/Parent, filter images so they ONLY see images from galleries shared with them
     if (userEmail) {
       const user = await prisma.user.findUnique({
         where: { email: String(userEmail).trim().toLowerCase() },
@@ -7929,27 +8803,71 @@ app.get('/api/gallery/images', async (req, res) => {
       const role = membership?.role || user?.staffRole;
 
       if (role === 'TUTOR') {
-        const tutorStudentIds = (user.studentLinks || [])
+        const tutorStudents = (user.studentLinks || [])
           .map(st => st.student)
-          .filter(s => s && s.schoolId === req.school.id)
-          .map(s => s.id);
+          .filter(s => s && s.schoolId === req.school.id);
 
-        if (tutorStudentIds.length === 0) {
-          return res.json([]);
-        }
+        const tutorEnvIds = tutorStudents.map(s => s.environmentId).filter(Boolean);
+        const tutorStudentIds = tutorStudents.map(s => s.id);
+        const tutorUserId = user.id;
+
+        // Fetch all galleries of this school to check sharing permissions
+        const schoolGalleries = await prisma.gallery.findMany({
+          where: { schoolId: req.school.id }
+        });
+
+        const allowedGalleryIds = schoolGalleries.filter(gal => {
+          if (gal.isDefault) return true; // Galería Web siempre visible
+          if (gal.shareScope === 'ALL_SCHOOL') return true;
+
+          let sharedEnvs = [];
+          try {
+            sharedEnvs = typeof gal.sharedEnvironmentIds === 'string' ? JSON.parse(gal.sharedEnvironmentIds || '[]') : (gal.sharedEnvironmentIds || []);
+          } catch {}
+
+          if (gal.shareScope === 'ENVIRONMENTS' && sharedEnvs.some(envId => tutorEnvIds.includes(envId))) {
+            return true;
+          }
+
+          let sharedParents = [];
+          try {
+            sharedParents = typeof gal.sharedParentIds === 'string' ? JSON.parse(gal.sharedParentIds || '[]') : (gal.sharedParentIds || []);
+          } catch {}
+
+          if (gal.shareScope === 'SPECIFIC_PARENTS' && sharedParents.some(id => id === tutorUserId || tutorStudentIds.includes(id))) {
+            return true;
+          }
+
+          return false;
+        }).map(g => g.id);
 
         const effectiveStudentIds = (studentId && tutorStudentIds.includes(String(studentId)))
           ? [String(studentId)]
           : tutorStudentIds;
 
+        const defaultWebGallery = schoolGalleries.find(g => g.isDefault);
+        const defaultWebGalleryId = defaultWebGallery?.id;
+
         const tutorImages = images.filter(img => {
-          let faces = [];
-          try {
-            faces = typeof img.detectedFaces === 'string' ? JSON.parse(img.detectedFaces || '[]') : (img.detectedFaces || []);
-          } catch {
-            faces = [];
+          const isGalleryAllowed = !img.galleryId || allowedGalleryIds.includes(img.galleryId);
+          if (!isGalleryAllowed) return false;
+
+          const isImageFromDefaultWebGallery = (!img.galleryId && defaultWebGalleryId) || img.galleryId === defaultWebGalleryId;
+
+          // For Galería Web: shared ONLY with parents whose children are identified in the photo by facematch!
+          if (isImageFromDefaultWebGallery) {
+            let faces = [];
+            try {
+              faces = typeof img.detectedFaces === 'string' ? JSON.parse(img.detectedFaces || '[]') : (img.detectedFaces || []);
+            } catch {
+              faces = [];
+            }
+            const isChildInPhoto = faces.some(f => f.studentId && effectiveStudentIds.includes(f.studentId));
+            return isChildInPhoto;
           }
-          return faces.some(f => f.studentId && effectiveStudentIds.includes(f.studentId));
+
+          // For Custom Internal Galleries: ALL photos in that gallery are visible to the shared audience group!
+          return true;
         });
 
         return res.json(tutorImages);
@@ -7964,7 +8882,13 @@ app.get('/api/gallery/images', async (req, res) => {
 
 app.post('/api/gallery/images', async (req, res) => {
   try {
+    const canManage = await checkGalleryManagePermission(req);
+    if (!canManage) {
+      return res.status(403).json({ error: 'No tienes permisos para agregar fotografías a la galería.' });
+    }
+
     const {
+      galleryId,
       categoryId,
       src,
       title,
@@ -8005,10 +8929,22 @@ app.post('/api/gallery/images', async (req, res) => {
       }).catch(() => null);
     }
 
+    let targetGalleryId = galleryId;
+    let isTargetDefaultGal = true;
+    if (!targetGalleryId) {
+      const defGal = await ensureDefaultGallery(req.school.id);
+      targetGalleryId = defGal ? defGal.id : null;
+      isTargetDefaultGal = true;
+    } else {
+      const g = await prisma.gallery.findUnique({ where: { id: targetGalleryId } });
+      isTargetDefaultGal = g?.isDefault ?? false;
+    }
+
     const img = await prisma.galleryImage.create({
       data: {
         school: { connect: { id: req.school.id } },
         category: { connect: { id: safeCatId } },
+        ...(targetGalleryId ? { gallery: { connect: { id: targetGalleryId } } } : {}),
         src,
         title: finalTitle,
         titleEn: finalTitleEn,
@@ -8021,8 +8957,13 @@ app.post('/api/gallery/images', async (req, res) => {
         detectedFaces: '[]',
         blurredSrc: null,
         hasConsentIssues: false,
-        showOnWeb: showOnWeb !== false,
-        showOnPortal: showOnPortal !== false
+        showOnWeb: isTargetDefaultGal, // Only Galería Web is published to web
+        showOnPortal: true // Always visible in portal for the authorized audience
+      },
+      include: {
+        gallery: {
+          select: { id: true, name: true, isDefault: true, showOnWeb: true }
+        }
       }
     });
 
@@ -8040,6 +8981,99 @@ app.post('/api/gallery/images', async (req, res) => {
 
     res.json(img);
   } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/gallery/images/batch', async (req, res) => {
+  try {
+    const canManage = await checkGalleryManagePermission(req);
+    if (!canManage) {
+      return res.status(403).json({ error: 'No tienes permisos para agregar fotografías a la galería.' });
+    }
+
+    const { images = [], galleryId } = req.body || {};
+    if (!Array.isArray(images) || images.length === 0) {
+      return res.status(400).json({ error: 'No se enviaron imágenes para procesar.' });
+    }
+
+    let targetGalleryId = galleryId;
+    let isTargetDefaultGal = true;
+    if (!targetGalleryId && images[0]?.galleryId) {
+      targetGalleryId = images[0].galleryId;
+    }
+
+    if (!targetGalleryId) {
+      const defGal = await ensureDefaultGallery(req.school.id);
+      targetGalleryId = defGal ? defGal.id : null;
+      isTargetDefaultGal = true;
+    } else {
+      const g = await prisma.gallery.findUnique({ where: { id: targetGalleryId } });
+      isTargetDefaultGal = g?.isDefault ?? false;
+    }
+
+    const safeCatId = 'other';
+    let catExists = await prisma.galleryCategory.findUnique({
+      where: { id: safeCatId }
+    });
+    if (!catExists) {
+      catExists = await prisma.galleryCategory.create({
+        data: {
+          id: safeCatId,
+          schoolId: req.school.id,
+          label: 'Otras',
+          labelEn: 'Other',
+          translations: JSON.stringify({ es: 'Otras', en: 'Other' })
+        }
+      }).catch(() => null);
+    }
+
+    const createdImages = [];
+    for (const item of images) {
+      if (!item.src) continue;
+      const title = item.title || 'Fotografía';
+      const img = await prisma.galleryImage.create({
+        data: {
+          school: { connect: { id: req.school.id } },
+          category: { connect: { id: item.categoryId || safeCatId } },
+          ...(targetGalleryId ? { gallery: { connect: { id: targetGalleryId } } } : {}),
+          src: item.src,
+          title,
+          titleEn: item.titleEn || title,
+          description: item.description || '',
+          descriptionEn: item.descriptionEn || '',
+          translations: JSON.stringify(item.translations || { es: { title, description: '' }, en: { title, description: '' } }),
+          aiStatus: 'COMPLETED',
+          aiError: null,
+          consentStatus: 'unchecked',
+          detectedFaces: '[]',
+          blurredSrc: null,
+          hasConsentIssues: false,
+          showOnWeb: isTargetDefaultGal,
+          showOnPortal: true
+        },
+        include: {
+          gallery: {
+            select: { id: true, name: true, isDefault: true, showOnWeb: true }
+          }
+        }
+      });
+
+      const isVideo = /\.(mp4|webm|mov|m4v|avi|mkv)($|\?)/i.test(item.src) || String(item.src).startsWith('data:video');
+      if (!isVideo) {
+        enqueueGalleryConsentJob(img.id, req.school.id).catch(() => {
+          processGalleryImageFaceConsent(img.id, req.school.id, prisma).catch(err => {
+            console.warn('[FACE CONSENT ASYNC ERROR]', err.message);
+          });
+        });
+      }
+
+      createdImages.push(img);
+    }
+
+    res.json(createdImages);
+  } catch (e) {
+    console.error('Error in /api/gallery/images/batch:', e);
     res.status(500).json({ error: e.message });
   }
 });
@@ -8066,6 +9100,26 @@ app.post('/api/gallery/scan-all-consents', async (req, res) => {
     const result = await scanAllGalleryImagesForConsents(req.school.id, prisma);
     res.json({ success: true, total: result.total, results: result.results });
   } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.put('/api/gallery/images/:id/faces', async (req, res) => {
+  try {
+    const canManage = await checkGalleryManagePermission(req);
+    if (!canManage) {
+      return res.status(403).json({ error: 'No tienes permisos para modificar rostros de la galería.' });
+    }
+
+    const { faces } = req.body || {};
+    if (!Array.isArray(faces)) {
+      return res.status(400).json({ error: 'Se requiere una lista válida de rostros (faces array).' });
+    }
+
+    const updated = await updateGalleryImageFaces(req.params.id, faces, req.school.id, prisma);
+    res.json({ success: true, image: updated });
+  } catch (e) {
+    console.error('Error in PUT /api/gallery/images/:id/faces:', e);
     res.status(500).json({ error: e.message });
   }
 });
@@ -8192,6 +9246,11 @@ app.post('/api/gallery/images/:id/report-by-parent', async (req, res) => {
 
 app.put('/api/gallery/images/:id', async (req, res) => {
   try {
+    const canManage = await checkGalleryManagePermission(req);
+    if (!canManage) {
+      return res.status(403).json({ error: 'No tienes permisos para editar fotografías de la galería.' });
+    }
+
     const existing = await prisma.galleryImage.findUnique({
       where: { id: req.params.id }
     });
@@ -8201,6 +9260,7 @@ app.put('/api/gallery/images/:id', async (req, res) => {
     }
 
     const {
+      galleryId,
       categoryId,
       src,
       title,
@@ -8224,6 +9284,14 @@ app.put('/api/gallery/images/:id', async (req, res) => {
     }
 
     const updateData = {};
+
+    if (galleryId !== undefined) {
+      if (galleryId && typeof galleryId === 'string' && galleryId.trim()) {
+        updateData.gallery = { connect: { id: galleryId.trim() } };
+      } else {
+        updateData.gallery = { disconnect: true };
+      }
+    }
 
     if (categoryId !== undefined && typeof categoryId === 'string' && categoryId.trim()) {
       const safeCatId = categoryId.trim();
@@ -8258,12 +9326,27 @@ app.put('/api/gallery/images/:id', async (req, res) => {
     }
     if (aiStatus !== undefined) updateData.aiStatus = aiStatus;
     if (aiError !== undefined) updateData.aiError = aiError;
-    if (showOnWeb !== undefined && !existing.isReportedByParent) updateData.showOnWeb = Boolean(showOnWeb);
-    if (showOnPortal !== undefined && !existing.isReportedByParent) updateData.showOnPortal = Boolean(showOnPortal);
+
+    const effectiveGalleryId = (galleryId !== undefined) ? (galleryId ? String(galleryId).trim() : null) : existing.galleryId;
+    let isTargetDefaultGal = true;
+    if (effectiveGalleryId) {
+      const g = await prisma.gallery.findUnique({ where: { id: effectiveGalleryId } });
+      isTargetDefaultGal = g?.isDefault ?? false;
+    }
+
+    if (!existing.isReportedByParent) {
+      updateData.showOnWeb = isTargetDefaultGal;
+      updateData.showOnPortal = true;
+    }
 
     const img = await prisma.galleryImage.update({
       where: { id: req.params.id },
-      data: updateData
+      data: updateData,
+      include: {
+        gallery: {
+          select: { id: true, name: true, isDefault: true, showOnWeb: true }
+        }
+      }
     });
     res.json(img);
   } catch (e) {
@@ -8273,6 +9356,11 @@ app.put('/api/gallery/images/:id', async (req, res) => {
 
 app.delete('/api/gallery/images/:id', async (req, res) => {
   try {
+    const canManage = await checkGalleryManagePermission(req);
+    if (!canManage) {
+      return res.status(403).json({ error: 'No tienes permisos para eliminar fotografías de la galería.' });
+    }
+
     const existing = await prisma.galleryImage.findUnique({
       where: { id: req.params.id }
     });
@@ -13372,6 +14460,18 @@ IMPORTANTE:
 
         if (response.ok) {
           const aiJson = await response.json();
+          const usage = aiJson?.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
+          const schoolId = req.school?.id || req.headers['x-school-id'];
+          if (schoolId) {
+            await recordSchoolAiTokenUsage({
+              schoolId,
+              promptTokens: usage.prompt_tokens || 0,
+              completionTokens: usage.completion_tokens || 0,
+              totalTokens: usage.total_tokens || 0,
+              prisma
+            });
+          }
+
           const content = aiJson.choices?.[0]?.message?.content;
           if (content) {
             const cleanContent = content.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -15862,9 +16962,11 @@ async function executeSchoolAiChatCompletion({
   temperature = 0.7,
   maxTokens = 600,
   responseFormat = null,
-  customModel = null
+  customModel = null,
+  prisma: customPrisma = null
 }) {
-  const aiConfig = await getSchoolFeedAiConfig(schoolId);
+  const db = customPrisma || prisma;
+  const aiConfig = await getSchoolFeedAiConfig(schoolId, db);
   const platformApiKey = (process.env.DEFAULT_AI_API_KEY || process.env.OPENAI_API_KEY || process.env.AI_API_KEY || '').trim();
   const platformBaseUrl = (process.env.DEFAULT_AI_BASE_URL || process.env.OPENAI_BASE_URL || process.env.AI_BASE_URL || 'https://api.openai.com/v1').replace(/\/+$/, '');
   const platformModel = (process.env.DEFAULT_AI_MODEL || process.env.OPENAI_TEXT_MODEL || process.env.AI_MODEL || 'gpt-4o-mini').replace(/^models\//, '');
@@ -15890,7 +16992,8 @@ async function executeSchoolAiChatCompletion({
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${keyToUse}`
+      'Authorization': `Bearer ${keyToUse}`,
+      'x-goog-api-key': keyToUse
     },
     body: JSON.stringify(reqBody)
   });
@@ -15909,7 +17012,8 @@ async function executeSchoolAiChatCompletion({
     schoolId,
     promptTokens: usage.prompt_tokens || 0,
     completionTokens: usage.completion_tokens || 0,
-    totalTokens: usage.total_tokens || 0
+    totalTokens: usage.total_tokens || 0,
+    prisma: db
   });
 
   return {
@@ -18342,6 +19446,75 @@ app.use(async (req, res) => {
       html = html.replace(/<meta name="twitter:description" content="[^"]*"\s*\/?>/, `<meta name="twitter:description" content="${meta.description}" />`);
       html = html.replace(/<meta name="twitter:image" content="[^"]*"\s*\/?>/, `<meta name="twitter:image" content="${fullOgImageUrl}" />`);
 
+      // School & Umami resolution for multi-tenant subdomains & custom domains
+      const rawHost = String(host).split(':')[0].toLowerCase().trim();
+      let matchedSchool = null;
+
+      if (rawHost && rawHost !== 'localhost' && rawHost !== '127.0.0.1' && rawHost !== 'montessorinexus.com' && rawHost !== 'www.montessorinexus.com') {
+        try {
+          const customDomainSetting = await prisma.siteSetting.findFirst({
+            where: { key: 'custom_domain', value: rawHost },
+            include: { school: true }
+          });
+          if (customDomainSetting?.school) {
+            matchedSchool = customDomainSetting.school;
+          } else {
+            const parts = rawHost.split('.');
+            if (parts.length >= 2) {
+              const sub = parts[0];
+              const cleanSub = cleanSubdomainSlug(sub);
+              const ignoredSubs = ['www', 'api', 'app', 'panel', 'admin', 'console', 'staging', 'dev', 'blog'];
+              if (!ignoredSubs.includes(sub)) {
+                // 1. Check siteSetting subdomain
+                const subSetting = await prisma.siteSetting.findFirst({
+                  where: {
+                    key: 'subdomain',
+                    value: { in: [sub, cleanSub] }
+                  },
+                  include: { school: true }
+                });
+                if (subSetting?.school) {
+                  matchedSchool = subSetting.school;
+                } else {
+                  // 2. Check school slug
+                  matchedSchool = await prisma.school.findFirst({
+                    where: {
+                      OR: [
+                        { slug: sub },
+                        { slug: cleanSub },
+                        { slug: `${cleanSub}-montessori` },
+                        { slug: `colegio-${cleanSub}` },
+                        { slug: `${cleanSub}-school` }
+                      ]
+                    }
+                  });
+                }
+              }
+            }
+          }
+        } catch (sErr) {
+          console.warn('[SPA-SCHOOL-LOOKUP] Error looking up school:', sErr.message);
+        }
+      }
+
+      if (matchedSchool) {
+        let siteId = matchedSchool.umamiSiteId;
+        if (!siteId) {
+          try {
+            siteId = await ensureSchoolUmamiSiteId(matchedSchool, prisma, redisClient, rawHost);
+          } catch (e) {
+            console.warn('[UMAMI-SPA] Error provisioning Umami siteId:', e.message);
+          }
+        }
+        if (siteId) {
+          const { host: umamiHost } = getUmamiConfig();
+          const trackerTag = `\n    <!-- Umami Analytics Tracking for ${matchedSchool.slug} -->\n    <script async defer src="${umamiHost}/script.js" data-website-id="${siteId}" data-umami-tracker="true"></script>`;
+          if (html.includes('</head>')) {
+            html = html.replace('</head>', `${trackerTag}\n  </head>`);
+          }
+        }
+      }
+
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       return res.send(html);
     } catch (err) {
@@ -18358,4 +19531,5 @@ app.listen(PORT, async () => {
   console.log(`📁 Physical Gallery Directory: ${galleryDir}`);
   console.log(`📁 Physical Documents Directory: ${documentsDir}`);
   await ensureSuperAdminUser();
+  await ensureGallerySchema();
 });

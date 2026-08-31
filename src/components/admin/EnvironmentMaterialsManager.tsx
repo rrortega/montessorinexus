@@ -1104,7 +1104,7 @@ export const EnvironmentMaterialsManager: React.FC<EnvironmentMaterialsManagerPr
                   </button>
                 </div>
               ) : (
-                <div className="relative w-full rounded-2xl overflow-hidden bg-black aspect-4/3 flex items-center justify-center border border-white/10">
+                <div className="relative w-full rounded-2xl overflow-hidden bg-black aspect-[4/3] flex items-center justify-center border border-white/10">
                   <video
                     ref={videoRef}
                     autoPlay

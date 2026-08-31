@@ -171,8 +171,14 @@ export const BlogAdminSection: React.FC<BlogAdminSectionProps> = ({ isPlatformMo
   const isGlobalSuperAdmin = user?.email?.toLowerCase() === superAdminEmail;
   const isGhostMode = typeof window !== 'undefined' && localStorage.getItem('ceiba_ghost_mode_active') === 'true';
 
+  // Explicitly respect isPlatformMode prop when provided, otherwise default to context
   const isPlatformBlog = isPlatformMode !== undefined ? isPlatformMode : (isGlobalSuperAdmin && !isGhostMode);
-  const currentSchoolId = isPlatformBlog ? null : activeMembership?.schoolId;
+  const effectiveSchoolId = !isPlatformBlog
+    ? (activeMembership?.schoolId || localStorage.getItem('ceiba_active_school_id') || settings?.school_id || null)
+    : null;
+  const effectiveSchoolSlug = !isPlatformBlog
+    ? (activeMembership?.school?.slug || localStorage.getItem('ceiba_active_school_slug') || null)
+    : null;
 
   // Available languages according to context (Platform gets all 7 languages, School gets configured languages)
   const availableLanguages: SupportedLanguage[] = useMemo(() => {
@@ -297,8 +303,14 @@ export const BlogAdminSection: React.FC<BlogAdminSectionProps> = ({ isPlatformMo
     };
     if (isPlatformBlog) {
       headers['x-is-platform'] = 'true';
-    } else if (currentSchoolId) {
-      headers['x-school-id'] = currentSchoolId;
+    } else {
+      headers['x-is-platform'] = 'false';
+      if (effectiveSchoolId) {
+        headers['x-school-id'] = effectiveSchoolId;
+      }
+      if (effectiveSchoolSlug) {
+        headers['x-school-slug'] = effectiveSchoolSlug;
+      }
     }
     return headers;
   };
@@ -360,7 +372,7 @@ export const BlogAdminSection: React.FC<BlogAdminSectionProps> = ({ isPlatformMo
 
   useEffect(() => {
     loadBlogData();
-  }, [currentSchoolId, isPlatformBlog]);
+  }, [effectiveSchoolId, isPlatformBlog]);
 
   // Current active translation in editor
   const currentTranslation = useMemo(() => {
@@ -1033,19 +1045,29 @@ export const BlogAdminSection: React.FC<BlogAdminSectionProps> = ({ isPlatformMo
       {/* Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-card p-6 rounded-3xl border border-border shadow-xs">
         <div className="space-y-1">
-          <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-2xl bg-forest/10 dark:bg-forest/20 text-forest flex items-center justify-center">
+          <div className="flex items-center gap-3">
+            <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shadow-xs shrink-0 ${
+              isPlatformBlog
+                ? 'bg-[#C4661F]/10 dark:bg-[#C4661F]/20 text-[#C4661F] border border-[#C4661F]/20'
+                : 'bg-forest/10 dark:bg-forest/20 text-forest border border-forest/20'
+            }`}>
               <BookOpen className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-xl font-bold font-display text-foreground flex items-center gap-2">
-                {isPlatformBlog ? 'Blog Oficial MontessoriNexus' : `Blog de ${schoolName}`}
-                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-forest/10 text-forest">
-                  Multi-tenant & SEO
+              <h1 className="text-xl font-bold font-display text-foreground flex items-center gap-2.5 flex-wrap">
+                <span>{isPlatformBlog ? 'Blog Global • MontessoriNexus' : `Blog Escolar • ${schoolName}`}</span>
+                <span className={`text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full ${
+                  isPlatformBlog
+                    ? 'bg-[#C4661F]/10 text-[#C4661F] border border-[#C4661F]/20'
+                    : 'bg-forest/10 text-forest border border-forest/20'
+                }`}>
+                  {isPlatformBlog ? 'SaaS Global' : 'Exclusivo Colegio'}
                 </span>
               </h1>
               <p className="text-xs text-muted-foreground">
-                Publica artículos pedagógicos, optimiza con IA y posiciona tu institución en buscadores.
+                {isPlatformBlog
+                  ? 'Gestionando los artículos oficiales del blog de la plataforma SaaS (visibles en blog.montessorinexus.com).'
+                  : `Gestionando los artículos pedagógicos y comunitarios publicados exclusivamente para ${schoolName}.`}
               </p>
             </div>
           </div>
@@ -1851,7 +1873,7 @@ export const BlogAdminSection: React.FC<BlogAdminSectionProps> = ({ isPlatformMo
                     placeholder="Escribe tu artículo aquí..."
                     articleTitle={currentTranslation.title || ''}
                     isPlatformBlog={isPlatformBlog}
-                    schoolId={currentSchoolId}
+                    schoolId={effectiveSchoolId}
                   />
                 </div>
 

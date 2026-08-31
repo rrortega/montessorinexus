@@ -15,6 +15,7 @@ import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from 'rec
 import { toast } from 'sonner';
 import { UmamiClient, UmamiStats, UmamiPageviewPoint, UmamiMetricItem } from '@/lib/umami';
 import { WorldMapMetrics, CountryMetric } from '@/components/admin/WorldMapMetrics';
+import { useAuth } from '@/context/AuthContext';
 
 // Fallback metrics if initial load or network offline
 const fallbackTrafficData = [
@@ -41,13 +42,16 @@ const fallbackTopPages = [
 type TimeFrame = '24h' | '7d' | '30d' | '90d' | '1y';
 
 export const WebTrafficSection: React.FC = () => {
+  const { activeMembership } = useAuth();
+  const school = activeMembership?.school;
+
   const envHost = import.meta.env.VITE_UMAMI_HOST || 'https://analytics.chamba.pro';
-  const envUser = import.meta.env.VITE_UMAMI_USERNAME || 'ceibamontessori';
+  const envUser = import.meta.env.VITE_UMAMI_USERNAME || 'montessorinexus';
   const envPass = import.meta.env.VITE_UMAMI_PASSWORD || 'L4cl4v3c31b4';
-  const envSiteId = import.meta.env.VITE_UMAMI_SITE_ID || '20f1eaa1-8a78-40bc-b428-615572fc96e1';
 
   const [timeFrame, setTimeFrame] = useState<TimeFrame>('24h');
   const [loading, setLoading] = useState(false);
+  const [currentSiteId, setCurrentSiteId] = useState<string | null>(school?.umamiSiteId || null);
 
   // Live Metrics
   const [activeVisitors, setActiveVisitors] = useState<number>(0);
@@ -57,8 +61,35 @@ export const WebTrafficSection: React.FC = () => {
   const [topPages, setTopPages] = useState<{ path: string; views: number }[]>(fallbackTopPages);
   const [countryData, setCountryData] = useState<CountryMetric[]>([]);
 
+  const resolveSchoolSiteId = async (): Promise<string | null> => {
+    if (currentSiteId) return currentSiteId;
+    if (school?.umamiSiteId) {
+      setCurrentSiteId(school.umamiSiteId);
+      return school.umamiSiteId;
+    }
+    try {
+      const res = await fetch('/api/schools/current/umami-site');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.umamiSiteId) {
+          setCurrentSiteId(data.umamiSiteId);
+          return data.umamiSiteId;
+        }
+      }
+    } catch (e) {
+      console.warn('Error resolviendo umamiSiteId en el servidor:', e);
+    }
+    return null;
+  };
+
   const fetchTrafficData = async (frame: TimeFrame = timeFrame) => {
     setLoading(true);
+
+    const siteId = await resolveSchoolSiteId();
+    if (!siteId) {
+      setLoading(false);
+      return;
+    }
 
     const client = new UmamiClient(envHost);
     const now = Date.now();
@@ -85,19 +116,19 @@ export const WebTrafficSection: React.FC = () => {
 
       // 2. Active visitors right now
       try {
-        const activeCount = await client.getActiveVisitors(envSiteId);
+        const activeCount = await client.getActiveVisitors(siteId);
         setActiveVisitors(activeCount);
       } catch (e) {
         console.warn('Active visitors fetch error', e);
       }
 
       // 3. Stats
-      const statsData = await client.getWebsiteStats(envSiteId, startAt, now);
+      const statsData = await client.getWebsiteStats(siteId, startAt, now);
       setStats(statsData);
 
       // 4. Pageviews series
       try {
-        const pvData = await client.getPageviews(envSiteId, startAt, now, unit);
+        const pvData = await client.getPageviews(siteId, startAt, now, unit);
         if (pvData && pvData.pageviews && pvData.pageviews.length > 0) {
           const formattedData = pvData.pageviews.map((pt: UmamiPageviewPoint) => {
             const dateObj = new Date(pt.x);
@@ -117,7 +148,7 @@ export const WebTrafficSection: React.FC = () => {
 
       // 5. Device metrics
       try {
-        const devMetrics = await client.getMetrics(envSiteId, 'device', startAt, now);
+        const devMetrics = await client.getMetrics(siteId, 'device', startAt, now);
         if (devMetrics && devMetrics.length > 0) {
           const total = devMetrics.reduce((acc, curr) => acc + curr.y, 0) || 1;
           const formattedDevs = devMetrics.map((item: UmamiMetricItem) => {
@@ -137,7 +168,7 @@ export const WebTrafficSection: React.FC = () => {
 
       // 6. Top pages metrics
       try {
-        const pathMetrics = await client.getMetrics(envSiteId, 'path', startAt, now);
+        const pathMetrics = await client.getMetrics(siteId, 'path', startAt, now);
         if (pathMetrics && pathMetrics.length > 0) {
           const formattedPages = pathMetrics.slice(0, 5).map((item: UmamiMetricItem) => ({
             path: item.x || '/',
@@ -151,7 +182,7 @@ export const WebTrafficSection: React.FC = () => {
 
       // 7. Country metrics (Map)
       try {
-        const countryMetrics = await client.getMetrics(envSiteId, 'country', startAt, now);
+        const countryMetrics = await client.getMetrics(siteId, 'country', startAt, now);
         if (countryMetrics && countryMetrics.length > 0) {
           const total = countryMetrics.reduce((acc, curr) => acc + curr.y, 0) || 1;
           const formattedCountries: CountryMetric[] = countryMetrics.map((item: UmamiMetricItem) => ({

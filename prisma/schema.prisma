@@ -43,6 +43,7 @@ model School {
   locale           String?  @default("es-MX")
   features         Json?    @default("{}")
   consentTemplates String?  @default("[]") @map("consent_templates")
+  umamiSiteId      String?  @map("umami_site_id")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
@@ -52,6 +53,7 @@ model School {
   folders           Folder[]
   documents         Document[]
   applications      Application[]
+  galleries         Gallery[]
   galleryCategories GalleryCategory[]
   galleryImages     GalleryImage[]
   globalAccessCodes GlobalAccessCode[]
@@ -328,6 +330,26 @@ model ApplicationLink {
   @@map("application_links")
 }
 
+model Gallery {
+  id                   String         @id @default(uuid())
+  schoolId             String         @map("school_id")
+  name                 String
+  description          String?        @default("")
+  coverImage           String?        @default("") @map("cover_image")
+  isDefault            Boolean        @default(false) @map("is_default")
+  showOnWeb            Boolean        @default(false) @map("show_on_web")
+  shareScope           String         @default("PRIVATE") @map("share_scope")
+  sharedEnvironmentIds String?        @default("[]") @map("shared_environment_ids")
+  sharedParentIds      String?        @default("[]") @map("shared_parent_ids")
+  createdAt            DateTime       @default(now()) @map("created_at")
+  updatedAt            DateTime       @updatedAt @map("updated_at")
+
+  school               School         @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  images               GalleryImage[]
+
+  @@map("galleries")
+}
+
 model GalleryCategory {
   id           String         @id
   schoolId     String         @map("school_id")
@@ -345,6 +367,7 @@ model GalleryCategory {
 model GalleryImage {
   id            String   @id @default(uuid())
   schoolId      String   @map("school_id")
+  galleryId     String?  @map("gallery_id")
   categoryId    String   @map("category_id")
   src           String
   title         String
@@ -365,6 +388,7 @@ model GalleryImage {
   createdAt        DateTime @default(now()) @map("created_at")
 
   school   School          @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  gallery  Gallery?        @relation(fields: [galleryId], references: [id], onDelete: Cascade)
   category GalleryCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@map("gallery_images")

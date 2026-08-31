@@ -97,6 +97,7 @@ export class UmamiClient {
   // GET /api/websites/:websiteId/active (Current live active visitors)
   async getActiveVisitors(siteId?: string): Promise<number> {
     const sid = siteId || import.meta.env.VITE_UMAMI_SITE_ID;
+    if (!sid) return 0;
     const res = await this.fetchAuth(`${this.host}/api/websites/${sid}/active`);
     if (!res.ok) return 0;
     const data = await res.json();
@@ -109,6 +110,7 @@ export class UmamiClient {
   // GET /api/websites/:websiteId/stats
   async getWebsiteStats(siteId?: string, startAt?: number, endAt?: number): Promise<UmamiStats> {
     const sid = siteId || import.meta.env.VITE_UMAMI_SITE_ID;
+    if (!sid) throw new Error('Se requiere el umamiSiteId del colegio para consultar estadísticas.');
     const now = Date.now();
     const start = startAt || now - 24 * 60 * 60 * 1000;
     const end = endAt || now;
@@ -128,6 +130,7 @@ export class UmamiClient {
     unit: 'minute' | 'hour' | 'day' | 'month' | 'year' = 'hour'
   ): Promise<{ pageviews: UmamiPageviewPoint[]; sessions: UmamiPageviewPoint[] }> {
     const sid = siteId || import.meta.env.VITE_UMAMI_SITE_ID;
+    if (!sid) throw new Error('Se requiere el umamiSiteId del colegio para consultar vistas de página.');
     const now = Date.now();
     const start = startAt || now - 24 * 60 * 60 * 1000;
     const end = endAt || now;
@@ -147,6 +150,7 @@ export class UmamiClient {
     endAt?: number
   ): Promise<UmamiMetricItem[]> {
     const sid = siteId || import.meta.env.VITE_UMAMI_SITE_ID;
+    if (!sid) throw new Error(`Se requiere el umamiSiteId del colegio para consultar métricas (${type}).`);
     const now = Date.now();
     const start = startAt || now - 24 * 60 * 60 * 1000;
     const end = endAt || now;

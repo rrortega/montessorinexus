@@ -3,6 +3,12 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 
+import prismaPkg from '@prisma/client';
+const { PrismaClient } = prismaPkg;
+import { PrismaPg } from '@prisma/adapter-pg';
+import pgPkg from 'pg';
+const { Pool } = pgPkg;
+
 import {
   extractStorageRelativePath,
   getCachedFilePath,
@@ -10,6 +16,21 @@ import {
   deleteFromLocalCache,
   storageServiceFor
 } from './storage-service.js';
+
+let defaultFeedPrisma = null;
+export function getFeedServicePrisma(customPrisma = null) {
+  if (customPrisma) return customPrisma;
+  if (!defaultFeedPrisma) {
+    const connectionString = process.env.DATABASE_URL;
+    const pool = new Pool({ connectionString });
+    const adapter = new PrismaPg(pool);
+    defaultFeedPrisma = new PrismaClient({ adapter });
+    defaultFeedPrisma.admissionStage = defaultFeedPrisma.processStage;
+    defaultFeedPrisma.admissionApplication = defaultFeedPrisma.processApplication;
+    defaultFeedPrisma.admissionFormTemplate = defaultFeedPrisma.processFormTemplate;
+  }
+  return defaultFeedPrisma;
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -231,7 +252,8 @@ export async function getAuthorSubtitleInfo(userId, schoolId, prisma) {
 /**
  * Fetches feed AI configuration for a given school
  */
-export async function getSchoolFeedAiConfig(schoolId, prisma) {
+export async function getSchoolFeedAiConfig(schoolId, customPrisma = null) {
+  const prisma = getFeedServicePrisma(customPrisma);
   const school = await prisma.school.findUnique({
     where: { id: schoolId },
     select: { id: true, name: true, logoUrl: true, slug: true, features: true }
@@ -404,12 +426,53 @@ export function getSchoolAiBillingCycle(school, now = new Date()) {
   };
 }
 
-export async function getSchoolAiUsageStats(schoolId, prisma) {
+export async function getSchoolAiUsageStats(schoolId, customPrisma = null) {
   try {
+    const prisma = getFeedServicePrisma(customPrisma);
+    if (!schoolId || !prisma) {
+      return {
+        providerMode: 'platform',
+        isFreeTrial: false,
+        totalPurchasedTokens: 0,
+        consumedTokens: 0,
+        remainingTokens: 0,
+        monthlyPlanUsd: 0,
+        tokenLimit: 0,
+        percentageUsed: 0,
+        isLimitReached: false,
+        cycleKey: '',
+        startOfCycle: new Date(),
+        endOfCycle: new Date(),
+        renewalDate: new Date(),
+        renewalDay: 1,
+        renewalDescription: ''
+      };
+    }
+
     const school = await prisma.school.findUnique({
       where: { id: schoolId },
       include: { environments: { select: { id: true } } }
     });
+
+    if (!school) {
+      return {
+        providerMode: 'platform',
+        isFreeTrial: false,
+        totalPurchasedTokens: 0,
+        consumedTokens: 0,
+        remainingTokens: 0,
+        monthlyPlanUsd: 0,
+        tokenLimit: 0,
+        percentageUsed: 0,
+        isLimitReached: false,
+        cycleKey: '',
+        startOfCycle: new Date(),
+        endOfCycle: new Date(),
+        renewalDate: new Date(),
+        renewalDay: 1,
+        renewalDescription: ''
+      };
+    }
 
     const now = new Date();
     const cycle = getSchoolAiBillingCycle(school, now);
@@ -442,8 +505,8 @@ export async function getSchoolAiUsageStats(schoolId, prisma) {
       }
     });
 
-    // Strictly count output completion tokens against quota
-    const usedTokens = usageRecord ? (usageRecord.completionTokens ?? usageRecord.totalTokens ?? 0) : 0;
+    // Count billable output tokens or total tokens against quota
+    const usedTokens = usageRecord ? (usageRecord.completionTokens || usageRecord.totalTokens || 0) : 0;
     const requestCount = usageRecord ? usageRecord.requestCount : 0;
     const remainingTokens = Math.max(0, includedLimit - usedTokens);
     const percentage = includedLimit > 0 ? Math.min(100, Math.round((usedTokens / includedLimit) * 100)) : 0;
@@ -495,9 +558,10 @@ export async function getSchoolAiUsageStats(schoolId, prisma) {
   }
 }
 
-export async function recordSchoolAiTokenUsage({ schoolId, promptTokens = 0, completionTokens = 0, totalTokens = 0, prisma }) {
+export async function recordSchoolAiTokenUsage({ schoolId, promptTokens = 0, completionTokens = 0, totalTokens = 0, prisma: customPrisma = null }) {
   try {
     if (!schoolId) return;
+    const prisma = getFeedServicePrisma(customPrisma);
     const school = await prisma.school.findUnique({
       where: { id: schoolId },
       select: { id: true, createdAt: true, features: true }
@@ -506,7 +570,7 @@ export async function recordSchoolAiTokenUsage({ schoolId, promptTokens = 0, com
     const now = new Date();
     const cycle = getSchoolAiBillingCycle(school, now);
     const yearMonth = cycle.cycleKey;
-    const billableTokens = completionTokens > 0 ? completionTokens : (totalTokens > 0 ? totalTokens : 0);
+    const billableTokens = completionTokens > 0 ? completionTokens : (totalTokens > 0 ? totalTokens : (promptTokens + completionTokens));
 
     await prisma.aiTokenUsage.upsert({
       where: {

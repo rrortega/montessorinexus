@@ -1,6 +1,7 @@
 import './env.js';
 import crypto from 'crypto';
 import { storageServiceFor, extractStorageRelativePath } from './storage-service.js';
+import { recordSchoolAiTokenUsage } from './feed-service.js';
 
 // Slugify helper
 export const slugify = (text) => {
@@ -207,6 +208,17 @@ Responde ÚNICAMENTE un objeto JSON válido con la siguiente estructura exacta:
   }
 
   const data = await response.json();
+  const usage = data?.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
+  if (schoolId) {
+    await recordSchoolAiTokenUsage({
+      schoolId,
+      promptTokens: usage.prompt_tokens || 0,
+      completionTokens: usage.completion_tokens || 0,
+      totalTokens: usage.total_tokens || 0,
+      prisma
+    });
+  }
+
   const contentStr = data.choices?.[0]?.message?.content || '{}';
   const parsed = JSON.parse(contentStr);
 
@@ -287,6 +299,17 @@ Responde ÚNICAMENTE un objeto JSON válido con esta estructura:
   }
 
   const data = await response.json();
+  const usage = data?.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
+  if (schoolId) {
+    await recordSchoolAiTokenUsage({
+      schoolId,
+      promptTokens: usage.prompt_tokens || 0,
+      completionTokens: usage.completion_tokens || 0,
+      totalTokens: usage.total_tokens || 0,
+      prisma
+    });
+  }
+
   const contentStr = data.choices?.[0]?.message?.content || '{}';
   
   let parsed = {};
@@ -402,6 +425,17 @@ Responde ÚNICAMENTE un objeto JSON con la siguiente estructura exacta:
   }
 
   const data = await response.json();
+  const usage = data?.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
+  if (schoolId) {
+    await recordSchoolAiTokenUsage({
+      schoolId,
+      promptTokens: usage.prompt_tokens || 0,
+      completionTokens: usage.completion_tokens || 0,
+      totalTokens: usage.total_tokens || 0,
+      prisma
+    });
+  }
+
   const contentStr = data.choices?.[0]?.message?.content || '{}';
   const parsed = JSON.parse(contentStr);
 

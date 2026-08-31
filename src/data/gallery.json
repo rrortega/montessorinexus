@@ -30,7 +30,7 @@
     {
       "id": 1,
       "category": "outdoors",
-      "src": "/gallery/ceiba-roots-hamaca-exterior-ninos.jpeg",
+      "src": "/api/storage/schools/school_ceiba/public/gallery/ceiba-roots-hamaca-exterior-ninos.jpeg",
       "title": {
         "es": "Diversión en la Hamaca",
         "en": "Hammock Fun"
@@ -47,7 +47,7 @@
     {
       "id": 2,
       "category": "practical",
-      "src": "/gallery/ceiba-roots-montessori-bloques-construccion.jpeg",
+      "src": "/api/storage/schools/school_ceiba/public/gallery/ceiba-roots-montessori-bloques-construccion.jpeg",
       "title": {
         "es": "Construcción Creativa",
         "en": "Creative Construction"
@@ -64,7 +64,7 @@
     {
       "id": 3,
       "category": "practical",
-      "src": "/gallery/ceiba-roots-vida-practica-clase.jpeg",
+      "src": "/api/storage/schools/school_ceiba/public/gallery/ceiba-roots-vida-practica-clase.jpeg",
       "title": {
         "es": "Vida Práctica en el Aula",
         "en": "Practical Life in the Classroom"
@@ -81,7 +81,7 @@
     {
       "id": 4,
       "category": "outdoors",
-      "src": "/gallery/ceiba-roots-conejos-mascotas.jpeg",
+      "src": "/api/storage/schools/school_ceiba/public/gallery/ceiba-roots-conejos-mascotas.jpeg",
       "title": {
         "es": "Cuidado de Animales",
         "en": "Animal Care"
@@ -98,7 +98,7 @@
     {
       "id": 5,
       "category": "outdoors",
-      "src": "/gallery/ceiba-roots-nina-conejo-jardin.jpeg",
+      "src": "/api/storage/schools/school_ceiba/public/gallery/ceiba-roots-nina-conejo-jardin.jpeg",
       "title": {
         "es": "Amistad con la Naturaleza",
         "en": "Friendship with Nature"
@@ -115,7 +115,7 @@
     {
       "id": 6,
       "category": "arts",
-      "src": "/gallery/ceiba-roots-guia-montessori-arte.jpeg",
+      "src": "/api/storage/schools/school_ceiba/public/gallery/ceiba-roots-guia-montessori-arte.jpeg",
       "title": {
         "es": "Expresión Artística Guiada",
         "en": "Guided Artistic Expression"
@@ -132,7 +132,7 @@
     {
       "id": 7,
       "category": "sensory",
-      "src": "/gallery/ceiba-roots-geometria-montessori-azul.jpeg",
+      "src": "/api/storage/schools/school_ceiba/public/gallery/ceiba-roots-geometria-montessori-azul.jpeg",
       "title": {
         "es": "Geometría Sensorial",
         "en": "Sensory Geometry"
@@ -149,7 +149,7 @@
     {
       "id": 8,
       "category": "practical",
-      "src": "/gallery/ceiba-roots-abaco-matematicas.jpeg",
+      "src": "/api/storage/schools/school_ceiba/public/gallery/ceiba-roots-abaco-matematicas.jpeg",
       "title": {
         "es": "Matemáticas Concretas",
         "en": "Concrete Mathematics"
@@ -166,7 +166,7 @@
     {
       "id": 9,
       "category": "arts",
-      "src": "/gallery/ceiba-roots-escritura-creativa.jpeg",
+      "src": "/api/storage/schools/school_ceiba/public/gallery/ceiba-roots-escritura-creativa.jpeg",
       "title": {
         "es": "Iniciación a la Escritura",
         "en": "Introduction to Writing"
@@ -183,7 +183,7 @@
     {
       "id": 10,
       "category": "practical",
-      "src": "/gallery/ceiba-roots-material-didactico-madera.jpeg",
+      "src": "/api/storage/schools/school_ceiba/public/gallery/ceiba-roots-material-didactico-madera.jpeg",
       "title": {
         "es": "Materiales de Aprendizaje",
         "en": "Learning Materials"
@@ -200,7 +200,7 @@
     {
       "id": 11,
       "category": "outdoors",
-      "src": "/gallery/ceiba-roots-herramientas-jardineria.jpeg",
+      "src": "/api/storage/schools/school_ceiba/public/gallery/ceiba-roots-herramientas-jardineria.jpeg",
       "title": {
         "es": "Herramientas de Pequeño Jardinero",
         "en": "Little Gardener's Tools"
@@ -217,7 +217,7 @@
     {
       "id": 12,
       "category": "sensory",
-      "src": "/gallery/ceiba-roots-semillas-exposicion.jpeg",
+      "src": "/api/storage/schools/school_ceiba/public/gallery/ceiba-roots-semillas-exposicion.jpeg",
       "title": {
         "es": "Tesoros de la Tierra",
         "en": "Earth's Treasures"
@@ -234,7 +234,7 @@
     {
       "id": 13,
       "category": "practical",
-      "src": "/gallery/ceiba-roots-ambiente-preparado-guia.jpeg",
+      "src": "/api/storage/schools/school_ceiba/public/gallery/ceiba-roots-ambiente-preparado-guia.jpeg",
       "title": {
         "es": "Nuestro Ambiente Preparado",
         "en": "Our Prepared Environment"
@@ -251,7 +251,7 @@
     {
       "id": 14,
       "category": "outdoors",
-      "src": "/gallery/ceiba-roots-montessori-hamaca-juego-exterior.jpeg",
+      "src": "/api/storage/schools/school_ceiba/public/gallery/ceiba-roots-montessori-hamaca-juego-exterior.jpeg",
       "title": {
         "es": "Movimiento y Colaboración en el Exterior",
         "en": "Movement and Collaboration Outdoors"
@@ -268,7 +268,7 @@
     {
       "id": 15,
       "category": "practical",
-      "src": "/gallery/ceiba-roots-vida-practica-cuidado-plantas.jpeg",
+      "src": "/api/storage/schools/school_ceiba/public/gallery/ceiba-roots-vida-practica-cuidado-plantas.jpeg",
       "title": {
         "es": "Cuidado del Ambiente Planta",
         "en": "Care of the Plant Environment"
@@ -285,7 +285,7 @@
     {
       "id": 16,
       "category": "sensory",
-      "src": "/gallery/ceiba-roots-montessori-rompecabezas-zoologia.jpeg",
+      "src": "/api/storage/schools/school_ceiba/public/gallery/ceiba-roots-montessori-rompecabezas-zoologia.jpeg",
       "title": {
         "es": "Exploración Científica y Sensorial",
         "en": "Scientific and Sensory Exploration"
@@ -302,7 +302,7 @@
     {
       "id": 17,
       "category": "sensory",
-      "src": "/gallery/ceiba-roots-montessori-geografia-globo-terraqueo.jpeg",
+      "src": "/api/storage/schools/school_ceiba/public/gallery/ceiba-roots-montessori-geografia-globo-terraqueo.jpeg",
       "title": {
         "es": "Educación Cósmica y Geografía",
         "en": "Cosmic Education and Geography"
@@ -319,7 +319,7 @@
     {
       "id": 18,
       "category": "practical",
-      "src": "/gallery/ceiba-roots-montessori-matematicas-abaco-madera.jpeg",
+      "src": "/api/storage/schools/school_ceiba/public/gallery/ceiba-roots-montessori-matematicas-abaco-madera.jpeg",
       "title": {
         "es": "Mente Matemática Concreta",
         "en": "Concrete Mathematical Mind"
@@ -336,7 +336,7 @@
     {
       "id": 19,
       "category": "sensory",
-      "src": "/gallery/ceiba-roots-montessori-cubo-binomial-sensorial.jpeg",
+      "src": "/api/storage/schools/school_ceiba/public/gallery/ceiba-roots-montessori-cubo-binomial-sensorial.jpeg",
       "title": {
         "es": "Exploración del Cubo Binomial",
         "en": "Binomial Cube Exploration"
@@ -353,7 +353,7 @@
     {
       "id": 20,
       "category": "sensory",
-      "src": "/gallery/ceiba-roots-montessori-geografia-mapa-globo.jpeg",
+      "src": "/api/storage/schools/school_ceiba/public/gallery/ceiba-roots-montessori-geografia-mapa-globo.jpeg",
       "title": {
         "es": "Geografía y Descubrimiento del Mundo",
         "en": "Geography and World Discovery"
@@ -370,7 +370,7 @@
     {
       "id": 21,
       "category": "practical",
-      "src": "/gallery/ceiba-roots-vida-practica-barrer-limpieza.jpeg",
+      "src": "/api/storage/schools/school_ceiba/public/gallery/ceiba-roots-vida-practica-barrer-limpieza.jpeg",
       "title": {
         "es": "Cuidado del Ambiente Barrer",
         "en": "Care of the Environment Sweeping"
@@ -387,7 +387,7 @@
     {
       "id": 22,
       "category": "sensory",
-      "src": "/gallery/ceiba-roots-montessori-cubo-trinomial-colaboracion.jpeg",
+      "src": "/api/storage/schools/school_ceiba/public/gallery/ceiba-roots-montessori-cubo-trinomial-colaboracion.jpeg",
       "title": {
         "es": "Construcción Colaborativa Sensorial",
         "en": "Sensory Collaborative Construction"
@@ -404,7 +404,7 @@
     {
       "id": 23,
       "category": "arts",
-      "src": "/gallery/ceiba-roots-montessori-socializacion-escritura-dibujo.jpeg",
+      "src": "/api/storage/schools/school_ceiba/public/gallery/ceiba-roots-montessori-socializacion-escritura-dibujo.jpeg",
       "title": {
         "es": "Concentración y Expresión Plástica",
         "en": "Concentration and Plastic Expression"

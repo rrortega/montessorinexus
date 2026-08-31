@@ -28,10 +28,20 @@ export default defineConfig(({ mode }) => {
         "/gallery": {
           target: "http://localhost:3001",
           changeOrigin: true,
+          bypass(req) {
+            if (req.headers.accept?.includes("text/html")) {
+              return "/index.html";
+            }
+          },
         },
         "/documents": {
           target: "http://localhost:3001",
           changeOrigin: true,
+          bypass(req) {
+            if (req.headers.accept?.includes("text/html")) {
+              return "/index.html";
+            }
+          },
         },
         "/feed": {
           target: "http://localhost:3001",

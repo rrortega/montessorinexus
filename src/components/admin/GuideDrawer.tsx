@@ -459,10 +459,10 @@ const PERMISSION_GROUPS: PermissionCategoryGroup[] = [
       },
       {
         id: 'gallery',
-        label: 'Galería de Fotos',
-        desc: 'Álbumes y fotografías de la bitácora escolar',
-        readDesc: 'Visualizar fotos',
-        writeDesc: 'Subir y gestionar fotos'
+        label: 'Galería de Fotos & Álbumes',
+        desc: 'Crear álbumes temáticos, subir fotografías y compartir con salones o familias',
+        readDesc: 'Ver fotos y álbumes',
+        writeDesc: 'Crear, subir y compartir'
       },
     ]
   },

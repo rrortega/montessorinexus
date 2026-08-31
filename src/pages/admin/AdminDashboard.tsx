@@ -413,56 +413,80 @@ export const AdminDashboard: React.FC = () => {
  });
  }, [environments, user?.id, userEmail]);
 
- const hasAssignedEnvs = userAssignedEnvs.length > 0;
+const KNOWN_DASHBOARD_TABS = new Set<string>([
+  'feed', 'dashboard', 'schools-hub', 'blog', 'global-billing', 'platform-infra',
+  'system-settings', 'account', 'portal', 'progress', 'finances', 'journal',
+  'attendance', 'montessori', 'curriculum', 'events', 'environments', 'processes',
+  'admissions', 'waitlist', 'forms', 'newsletters', 'announcements', 'tutors',
+  'graduated_students', 'students', 'guides', 'documents', 'applications',
+  'web-builder', 'gallery', 'settings', 'traffic', 'pricing', 'subscription',
+  'trackers', 'allergies', 'assessments', 'consents'
+]);
 
- const isAllowedTab = React.useCallback((tabId: string): boolean => {
- if (tabId === 'feed') return true;
- if (isGlobalSuperAdmin) return true;
- if (tabId === 'web-builder') {
- return isOwner;
- }
+  const hasAssignedEnvs = userAssignedEnvs.length > 0;
 
- if (isSuperAdmin) return true;
+  const isAllowedTab = React.useCallback((tabId: string): boolean => {
+    if (!tabId) return false;
+    const isKnown = KNOWN_DASHBOARD_TABS.has(tabId) || tabId.startsWith('process_');
+    if (!isKnown) return false;
 
- if (isTutor) {
- if (!isTutorActive && tabId !== 'feed' && tabId !== 'portal' && tabId !== 'progress' && tabId !== 'finances' && tabId !== 'account') {
- return false;
- }
- return ['feed', 'portal', 'progress', 'finances', 'events', 'documents', 'applications', 'account', 'students', 'tutors', 'guides'].includes(tabId);
- }
+    if (tabId === 'feed') return true;
+    if (isGlobalSuperAdmin && !isGhostMode) return true;
 
- const permissions = activeMembership?.permissions || [];
- if (
- permissions.includes(tabId) ||
- permissions.includes(`${tabId}:read`) ||
- permissions.includes(`${tabId}:write`)
- ) return true;
+    // Tráfico Web is only available if website builder module is active for the school
+    if (tabId === 'traffic') {
+      const isWebBuilderEnabled = Boolean(
+        subscriptionInfo.enabledModules?.['web-builder'] || 
+        subscriptionInfo.enabledModules?.['webBuilder']
+      );
+      if (!isWebBuilderEnabled) return false;
+    }
 
- if (tabId === 'admissions' || tabId.startsWith('process_')) {
- return permissions.includes('admissions') ||
- permissions.includes('admissions:read') ||
- permissions.includes('admissions:write') ||
- permissions.includes('processes') ||
- permissions.includes(tabId);
- }
+    if (tabId === 'web-builder') {
+      return isOwner;
+    }
 
- // Tutors directory requires explicit permission or at least one assigned salon
- if (tabId === 'tutors') {
- return (isTeacher || role === 'STAFF') && hasAssignedEnvs;
- }
+    if (isSuperAdmin) return true;
 
- if (isTeacher) {
- const teacherAllowed = ['feed', 'montessori', 'attendance', 'students', 'guides', 'events', 'documents', 'applications', 'account'];
- return teacherAllowed.includes(tabId);
- }
+    if (isTutor) {
+      if (!isTutorActive && tabId !== 'feed' && tabId !== 'portal' && tabId !== 'progress' && tabId !== 'finances' && tabId !== 'account') {
+        return false;
+      }
+      return ['feed', 'portal', 'progress', 'finances', 'events', 'documents', 'applications', 'account', 'students', 'tutors', 'guides'].includes(tabId);
+    }
 
- if (role === 'STAFF') {
- const staffAllowed = ['feed', 'dashboard', 'montessori', 'attendance', 'students', 'guides', 'account'];
- return staffAllowed.includes(tabId);
- }
+    const permissions = activeMembership?.permissions || [];
+    if (
+      permissions.includes(tabId) ||
+      permissions.includes(`${tabId}:read`) ||
+      permissions.includes(`${tabId}:write`)
+    ) return true;
 
- return false;
- }, [isGlobalSuperAdmin, isGhostMode, isSuperAdmin, isTutor, isTutorActive, activeMembership, isTeacher, role, hasAssignedEnvs]);
+    if (tabId === 'admissions' || tabId.startsWith('process_')) {
+      return permissions.includes('admissions') ||
+        permissions.includes('admissions:read') ||
+        permissions.includes('admissions:write') ||
+        permissions.includes('processes') ||
+        permissions.includes(tabId);
+    }
+
+    // Tutors directory requires explicit permission or at least one assigned salon
+    if (tabId === 'tutors') {
+      return (isTeacher || role === 'STAFF') && hasAssignedEnvs;
+    }
+
+    if (isTeacher) {
+      const teacherAllowed = ['feed', 'montessori', 'attendance', 'students', 'guides', 'events', 'documents', 'applications', 'account'];
+      return teacherAllowed.includes(tabId);
+    }
+
+    if (role === 'STAFF') {
+      const staffAllowed = ['feed', 'dashboard', 'montessori', 'attendance', 'students', 'guides', 'account'];
+      return staffAllowed.includes(tabId);
+    }
+
+    return false;
+  }, [isGlobalSuperAdmin, isGhostMode, isSuperAdmin, isOwner, isTutor, isTutorActive, activeMembership, isTeacher, role, hasAssignedEnvs, subscriptionInfo.enabledModules]);
 
  // Navigation groups and items configured by role and permissions
  const navGroupsList: NavGroup[] = useMemo(() => {
@@ -597,9 +621,9 @@ export const AdminDashboard: React.FC = () => {
  title: 'Sitio Web',
  items: [
  { id: 'web-builder', label: 'Diseñador Web', subLabel: 'Editor Visual del Sitio', icon: Globe },
- { id: 'blog', label: 'Blog Escolar', subLabel: 'Artículos, SEO & IA', icon: BookOpen },
- { id: 'gallery', label: 'Galería Web', subLabel: 'Fotografías y Pedagogía', icon: Images },
  { id: 'traffic', label: 'Tráfico Web', subLabel: 'Métricas y Analíticas', icon: BarChart2 },
+ { id: 'blog', label: 'Blog Escolar', subLabel: 'Artículos, SEO & IA', icon: BookOpen },
+ { id: 'gallery', label: 'Galería de fotos', subLabel: 'Álbumes y seguimiento', icon: Images },
  ]
  },
  {
@@ -632,84 +656,89 @@ export const AdminDashboard: React.FC = () => {
  return '/panel';
  }, [location.pathname]);
 
- // Determine current active tab from query params or pathname
+ // Determine current active tab from pathname or query params
  const activeTab: ActiveTab = useMemo(() => {
- const queryTab = searchParams.get('tab') || searchParams.get('section');
- if (queryTab) {
- const q = queryTab.toLowerCase();
- if (q === 'feed' || q === 'muro') return 'feed';
- if (q === 'dashboard' || q === 'inicio') return 'dashboard';
- if (isAllowedTab(q)) return q as ActiveTab;
- }
+   const path = location.pathname.toLowerCase();
+   
+   if (isGlobalSuperAdmin && !isGhostMode) {
+     if (path.includes('/feed') || path.includes('/muro')) return 'feed';
+     if (path.includes('/blog') || path.includes('/articulos')) return 'blog';
+     if (path.includes('/billing') || path.includes('/facturacion')) return 'global-billing';
+     if (path.includes('/infra') || path.includes('/servicios') || path.includes('/colas')) return 'platform-infra';
+     if (path.includes('/system-settings') || path.includes('/sistema')) return 'system-settings';
+     if (path.includes('/account') || path.includes('/cuenta') || path.includes('/perfil')) return 'account';
+     if (path.includes('/schools') || path.includes('/colegios')) return 'schools-hub';
+   }
 
- const path = location.pathname.toLowerCase();
- 
- if (isGlobalSuperAdmin && !isGhostMode) {
- if (path.includes('/feed') || path.includes('/muro')) return 'feed';
- if (path.includes('/blog') || path.includes('/articulos')) return 'blog';
- if (path.includes('/billing') || path.includes('/facturacion')) return 'global-billing';
- if (path.includes('/infra') || path.includes('/servicios') || path.includes('/colas')) return 'platform-infra';
- if (path.includes('/system-settings') || path.includes('/sistema')) return 'system-settings';
- if (path.includes('/account') || path.includes('/cuenta') || path.includes('/perfil')) return 'account';
- if (path.includes('/schools') || path.includes('/colegios')) return 'schools-hub';
- return 'schools-hub';
- }
+   if (path.includes('/feed') || path.includes('/muro')) return 'feed';
+   if (path.endsWith('/dashboard') || path.endsWith('/inicio')) return 'dashboard';
 
- if (path.includes('/feed') || path.includes('/muro')) return 'feed';
- if (path.endsWith('/dashboard') || path.endsWith('/inicio')) return 'dashboard';
+   if (isTutor) {
+     if (path.includes('/progress') || path.includes('/progreso')) return 'progress';
+     if (path.includes('/finances') || path.includes('/finanzas') || path.includes('/pagos') || path.includes('/estado-de-cuenta')) return 'finances';
+     if (path.includes('/students') || path.includes('/alumnos') || path.includes('/hijos')) return 'students';
+     if (path.includes('/tutors') || path.includes('/tutores') || path.includes('/padres') || path.includes('/familia')) return 'tutors';
+     if (path.includes('/guides') || path.includes('/guias') || path.includes('/docentes')) return 'guides';
+     if (!isTutorActive) return 'portal';
+     if (path.includes('/events') || path.includes('/calendario')) return 'events';
+     if (path.includes('/documents')) return 'documents';
+     if (path.includes('/applications') || path.includes('/aplicativos')) return 'applications';
+     return 'portal';
+   }
 
- if (isTutor) {
- if (path.includes('/progress') || path.includes('/progreso')) return 'progress';
- if (path.includes('/finances') || path.includes('/finanzas') || path.includes('/pagos') || path.includes('/estado-de-cuenta')) return 'finances';
- if (path.includes('/students') || path.includes('/alumnos') || path.includes('/hijos')) return 'students';
- if (path.includes('/tutors') || path.includes('/tutores') || path.includes('/padres') || path.includes('/familia')) return 'tutors';
- if (path.includes('/guides') || path.includes('/guias') || path.includes('/docentes')) return 'guides';
- if (!isTutorActive) return 'portal';
- if (path.includes('/events') || path.includes('/calendario')) return 'events';
- if (path.includes('/documents')) return 'documents';
- if (path.includes('/applications') || path.includes('/aplicativos')) return 'applications';
- return 'portal';
- }
+   if (path.includes('/curriculum') || path.includes('/lecciones') || path.includes('/fichas')) return isSuperAdmin ? 'curriculum' : (isTeacher ? 'montessori' : 'portal');
+   if (path.includes('/trackers') || path.includes('/rastreadores')) return isSuperAdmin ? 'trackers' : (isTeacher ? 'montessori' : 'portal');
+   if (path.includes('/allergies') || path.includes('/alergias')) return isSuperAdmin ? 'allergies' : (isTeacher ? 'montessori' : 'portal');
+   if (path.includes('/assessments') || path.includes('/evaluadores')) return isSuperAdmin ? 'assessments' : (isTeacher ? 'montessori' : 'portal');
+   if (path.includes('/consents') || path.includes('/consentimientos')) return isSuperAdmin ? 'consents' : (isTeacher ? 'montessori' : 'portal');
+   if (path.includes('/attendance') || path.includes('/asistencia')) return 'attendance';
+   if (path.includes('/montessori')) return 'montessori';
+   if (path.includes('/finances') || path.includes('/finanzas') || path.includes('/cobranza') || path.includes('/planes-de-pago')) return 'finances';
+   if (path.includes('/events') || path.includes('/calendario') || path.includes('/programaciones')) return 'events';
+   if (path.includes('/environments') || path.includes('/ambientes') || path.includes('/salones')) return 'environments';
+   // Check if path matches any dynamic process
+   const matchedProcess = processes.find(p => path.includes(`/process_${p.slug}`));
+   if (matchedProcess) return `process_${matchedProcess.slug}`;
+   if (path.includes('/processes') || path.includes('/configurar-procesos')) return 'processes';
 
- if (path.includes('/curriculum') || path.includes('/lecciones') || path.includes('/fichas')) return isSuperAdmin ? 'curriculum' : (isTeacher ? 'montessori' : 'portal');
- if (path.includes('/trackers') || path.includes('/rastreadores')) return isSuperAdmin ? 'trackers' : (isTeacher ? 'montessori' : 'portal');
- if (path.includes('/allergies') || path.includes('/alergias')) return isSuperAdmin ? 'allergies' : (isTeacher ? 'montessori' : 'portal');
- if (path.includes('/assessments') || path.includes('/evaluadores')) return isSuperAdmin ? 'assessments' : (isTeacher ? 'montessori' : 'portal');
- if (path.includes('/consents') || path.includes('/consentimientos')) return isSuperAdmin ? 'consents' : (isTeacher ? 'montessori' : 'portal');
- if (path.includes('/attendance') || path.includes('/asistencia')) return 'attendance';
- if (path.includes('/montessori')) return 'montessori';
- if (path.includes('/finances') || path.includes('/finanzas') || path.includes('/cobranza') || path.includes('/planes-de-pago')) return 'finances';
- if (path.includes('/events') || path.includes('/calendario') || path.includes('/programaciones')) return 'events';
- if (path.includes('/environments') || path.includes('/ambientes') || path.includes('/salones')) return 'environments';
- // Check if path matches any dynamic process
- const matchedProcess = processes.find(p => path.includes(`/process_${p.slug}`));
- if (matchedProcess) return `process_${matchedProcess.slug}`;
- if (path.includes('/processes') || path.includes('/configurar-procesos')) return 'processes';
+   if (path.includes('/admissions') || path.includes('/admision') || path.includes('/proceso-de-admision')) return 'admissions';
+   if (path.includes('/waitlist') || path.includes('/lista-de-espera') || path.includes('/prematricula')) return 'waitlist';
+   if (path.includes('/forms') || path.includes('/formularios')) return 'forms';
+   if (path.includes('/newsletters') || path.includes('/boletines') || path.includes('/comunicados')) return 'newsletters';
+   if (path.includes('/announcements') || path.includes('/anuncios')) return 'announcements';
+   if (path.includes('/tutors') || path.includes('/tutores') || path.includes('/padres')) return 'tutors';
+   if (path.includes('/graduated_students') || path.includes('/graduados')) return 'graduated_students';
+   if (path.includes('/students') || path.includes('/alumnos')) return 'students';
+   if (path.includes('/guides') || path.includes('/guias') || path.includes('/docentes')) return 'guides';
+   if (path.includes('/documents')) return 'documents';
+   if (path.includes('/applications') || path.includes('/aplicativos')) return 'applications';
+   if (path.includes('/blog') || path.includes('/articulos')) return 'blog';
+   if (path.includes('/web-builder') || path.includes('/disenador-web') || path.includes('/editor-web')) return isOwner ? 'web-builder' : 'dashboard';
+   if (path.includes('/gallery') || path.includes('/galeria')) return isSuperAdmin ? 'gallery' : (isTeacher ? 'montessori' : 'portal');
+   if (path.includes('/traffic') || path.includes('/webtrafic') || path.includes('/trafico')) return isSuperAdmin ? 'traffic' : (isTeacher ? 'montessori' : 'portal');
+   if (path.includes('/pricing') || path.includes('/suscripcion') || path.includes('/plan') || path.includes('/membership')) return 'pricing';
+   if (path.includes('/system-settings') || path.includes('/sistema')) return isSuperAdmin ? 'system-settings' : (isTeacher ? 'montessori' : 'portal');
+   if (path.includes('/settings') || path.includes('/configuracion')) return isSuperAdmin ? 'settings' : (isTeacher ? 'montessori' : 'portal');
+   if (path.includes('/account') || path.includes('/cuenta') || path.includes('/perfil') || path.includes('/mi-cuenta')) return 'account';
 
- if (path.includes('/admissions') || path.includes('/admision') || path.includes('/proceso-de-admision')) return 'admissions';
- if (path.includes('/waitlist') || path.includes('/lista-de-espera') || path.includes('/prematricula')) return 'waitlist';
- if (path.includes('/forms') || path.includes('/formularios')) return 'forms';
- if (path.includes('/newsletters') || path.includes('/boletines') || path.includes('/comunicados')) return 'newsletters';
- if (path.includes('/announcements') || path.includes('/anuncios')) return 'announcements';
- if (path.includes('/tutors') || path.includes('/tutores') || path.includes('/padres')) return 'tutors';
- if (path.includes('/graduated_students') || path.includes('/graduados')) return 'graduated_students';
- if (path.includes('/students') || path.includes('/alumnos')) return 'students';
- if (path.includes('/guides') || path.includes('/guias') || path.includes('/docentes')) return 'guides';
- if (path.includes('/documents')) return 'documents';
- if (path.includes('/applications') || path.includes('/aplicativos')) return 'applications';
- if (path.includes('/blog') || path.includes('/articulos')) return 'blog';
- if (path.includes('/web-builder') || path.includes('/disenador-web') || path.includes('/editor-web')) return isOwner ? 'web-builder' : 'dashboard';
- if (path.includes('/gallery') || path.includes('/galeria')) return isSuperAdmin ? 'gallery' : (isTeacher ? 'montessori' : 'portal');
- if (path.includes('/traffic') || path.includes('/webtrafic') || path.includes('/trafico')) return isSuperAdmin ? 'traffic' : (isTeacher ? 'montessori' : 'portal');
- if (path.includes('/pricing') || path.includes('/suscripcion') || path.includes('/plan') || path.includes('/membership')) return 'pricing';
- if (path.includes('/system-settings') || path.includes('/sistema')) return isSuperAdmin ? 'system-settings' : (isTeacher ? 'montessori' : 'portal');
- if (path.includes('/settings') || path.includes('/configuracion')) return isSuperAdmin ? 'settings' : (isTeacher ? 'montessori' : 'portal');
- if (path.includes('/account') || path.includes('/cuenta') || path.includes('/perfil') || path.includes('/mi-cuenta')) return 'account';
- if (path.endsWith('/panel') || path.endsWith('/admin') || path.endsWith('/console') || path.endsWith('/')) {
- return isTeacher ? 'montessori' : 'dashboard';
- }
- return isTeacher ? 'montessori' : 'montessori';
- }, [location.pathname, searchParams, isAllowedTab, isGlobalSuperAdmin, isGhostMode, isTutor, isTeacher, isTutorActive, isSuperAdmin, processes]);
+   // Only if pathname is generic root /admin or /panel, check query parameter for dashboard tab
+   const queryTab = searchParams.get('tab') || searchParams.get('section');
+   if (queryTab) {
+     const q = queryTab.toLowerCase();
+     if (q === 'feed' || q === 'muro') return 'feed';
+     if (q === 'dashboard' || q === 'inicio') return 'dashboard';
+     if (isAllowedTab(q)) return q as ActiveTab;
+   }
+
+   if (isGlobalSuperAdmin && !isGhostMode) {
+     return 'schools-hub';
+   }
+
+   if (path.endsWith('/panel') || path.endsWith('/admin') || path.endsWith('/console') || path.endsWith('/')) {
+     return isTeacher ? 'montessori' : 'dashboard';
+   }
+   return isTeacher ? 'montessori' : 'montessori';
+ }, [location.pathname, searchParams, isAllowedTab, isGlobalSuperAdmin, isGhostMode, isTutor, isTeacher, isTutorActive, isSuperAdmin, isOwner, processes]);
 
  // Auto-expand group containing active item
  React.useEffect(() => {

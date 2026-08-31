@@ -173,6 +173,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [isSchoolNotFound, setIsSchoolNotFound] = useState(false);
   const [unregisteredHost, setUnregisteredHost] = useState('');
   const [isPlatformRoot, setIsPlatformRoot] = useState<boolean>(() => checkIsPlatformRootSync());
+  const [resolvedSchool, setResolvedSchool] = useState<any>(null);
 
 
   const applyBrandingCss = (primaryHex?: string, secondaryHex?: string, accentHex?: string, radius?: string) => {
@@ -280,6 +281,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           setIsSchoolNotFound(false);
           setIsPlatformRoot(false);
           if (hostData.school?.id) {
+            setResolvedSchool(hostData.school);
             localStorage.setItem('ceiba_active_school_id', hostData.school.id);
             localStorage.setItem('ceiba_active_school_slug', hostData.school.slug);
           }
@@ -305,6 +307,24 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   useEffect(() => {
     loadSettings();
   }, [activeMembership?.schoolId]);
+
+  // Inject/Update school-specific Umami tracking script dynamically
+  useEffect(() => {
+    const umamiHost = import.meta.env.VITE_UMAMI_HOST || 'https://analytics.chamba.pro';
+    const siteId = resolvedSchool?.umamiSiteId || activeMembership?.school?.umamiSiteId || settings?.umami_site_id;
+
+    if (siteId && typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      let script = document.querySelector('script[data-umami-tracker]');
+      if (!script) {
+        script = document.createElement('script');
+        script.src = `${umamiHost.replace(/\/+$/, '')}/script.js`;
+        script.defer = true;
+        script.setAttribute('data-umami-tracker', 'true');
+        document.head.appendChild(script);
+      }
+      script.setAttribute('data-website-id', siteId);
+    }
+  }, [resolvedSchool?.umamiSiteId, activeMembership?.school?.umamiSiteId, settings?.umami_site_id]);
 
   const updateSettings = async (newSettings: Record<string, string>) => {
     const normalized: Record<string, string> = { ...newSettings };

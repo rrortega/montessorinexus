@@ -31,13 +31,15 @@ import {
   getApplications, 
   getTutorNewsletters,
   getGalleryImages,
+  getGalleries,
   updateStudent,
   reportGalleryImageByParent,
   StudentItem, 
   DocumentItem, 
   ApplicationItem,
   NewsletterItem,
-  GalleryImageItem
+  GalleryImageItem,
+  Gallery
 } from '@/lib/sqlite';
 
 export const TutorPortalSection: React.FC = () => {
@@ -49,6 +51,8 @@ export const TutorPortalSection: React.FC = () => {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [applications, setApplications] = useState<ApplicationItem[]>([]);
   const [newsletters, setNewsletters] = useState<NewsletterItem[]>([]);
+  const [galleries, setGalleries] = useState<Gallery[]>([]);
+  const [selectedGalleryFilter, setSelectedGalleryFilter] = useState<string>('all');
   const [galleryImages, setGalleryImages] = useState<GalleryImageItem[]>([]);
   const [readingNewsletter, setReadingNewsletter] = useState<NewsletterItem | null>(null);
   const [previewGalleryImage, setPreviewGalleryImage] = useState<GalleryImageItem | null>(null);
@@ -69,10 +73,11 @@ export const TutorPortalSection: React.FC = () => {
     setTimeout(() => setCopiedStudentId(null), 2000);
   };
 
-  const loadGallery = async () => {
+  const loadGallery = async (targetGalleryId?: string) => {
     setLoadingGallery(true);
     try {
-      const imgs = await getGalleryImages(undefined, 'portal');
+      const galId = targetGalleryId !== 'all' ? targetGalleryId : undefined;
+      const imgs = await getGalleryImages(undefined, 'portal', galId);
       setGalleryImages(imgs);
     } catch {
       setGalleryImages([]);
@@ -103,7 +108,7 @@ export const TutorPortalSection: React.FC = () => {
 
       // Refresh gallery after a few seconds to reflect newly identified photos
       setTimeout(() => {
-        loadGallery();
+        loadGallery(selectedGalleryFilter);
       }, 4000);
     } catch (err: any) {
       console.error('Error updating child avatar:', err);
@@ -120,11 +125,12 @@ export const TutorPortalSection: React.FC = () => {
     const loadData = async () => {
       if (!user?.email) return;
       setLoading(true);
-      const [studs, docs, apps, news, imgs] = await Promise.all([
+      const [studs, docs, apps, news, gals, imgs] = await Promise.all([
         getMyTutorStudents(user.email),
         getDocuments(),
         getApplications(),
         getTutorNewsletters().catch(() => []),
+        getGalleries().catch(() => []),
         getGalleryImages(undefined, 'portal').catch(() => [])
       ]);
       setStudents(studs);
@@ -134,6 +140,7 @@ export const TutorPortalSection: React.FC = () => {
       setDocuments(docs);
       setApplications(apps);
       setNewsletters(news);
+      setGalleries(gals);
       setGalleryImages(imgs);
       setLoading(false);
     };
@@ -518,12 +525,12 @@ export const TutorPortalSection: React.FC = () => {
             )}
           </div>
 
-          {/* Student Identified Gallery Photos */}
+          {/* Student Identified Gallery Photos & Shared Albums */}
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <h3 className="font-bold text-forest text-base flex items-center gap-2">
                 <Images className="w-5 h-5 text-forest" />
-                Fotografías Escolares de {activeStudent.full_name}
+                <span>Fotografías & Álbumes Compartidos</span>
               </h3>
               {galleryImages.length > 0 && (
                 <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-forest/10 text-forest border border-forest/15">
@@ -532,15 +539,59 @@ export const TutorPortalSection: React.FC = () => {
               )}
             </div>
 
+            {/* Album Tabs (if galleries available) */}
+            {galleries.length > 0 && (
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedGalleryFilter('all');
+                    loadGallery('all');
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                    selectedGalleryFilter === 'all'
+                      ? 'bg-forest text-white shadow-xs'
+                      : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200/80 hover:border-slate-300'
+                  }`}
+                >
+                  <span>Todos los Álbumes</span>
+                </button>
+                {galleries.map((gal) => (
+                  <button
+                    key={gal.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedGalleryFilter(gal.id);
+                      loadGallery(gal.id);
+                    }}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                      selectedGalleryFilter === gal.id
+                        ? 'bg-forest text-white shadow-xs'
+                        : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200/80 hover:border-slate-300'
+                    }`}
+                  >
+                    <span>{gal.name}</span>
+                    {gal.is_default && (
+                      <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-bold uppercase ${
+                        selectedGalleryFilter === gal.id ? 'bg-white/20 text-white' : 'bg-forest/10 text-forest'
+                      }`}>
+                        Web
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {loadingGallery ? (
               <div className="bg-white p-8 rounded-3xl border border-forest/10 flex items-center justify-center gap-2 text-xs text-muted-foreground">
                 <Loader2 className="w-4 h-4 animate-spin text-forest" />
-                <span>Cargando fotografías identificadas...</span>
+                <span>Cargando fotografías...</span>
               </div>
             ) : galleryImages.length === 0 ? (
               <div className="bg-white p-6 rounded-3xl border border-forest/10 text-center space-y-2">
                 <p className="text-xs text-muted-foreground">
-                  Aún no hay fotografías donde se haya identificado a <strong>{activeStudent.full_name}</strong>.
+                  Aún no hay fotografías en este álbum para <strong>{activeStudent.full_name}</strong>.
                 </p>
                 <p className="text-[11px] text-muted-foreground/80">
                   💡 Tip: Puedes subir o cambiar su foto de perfil arriba para que el sistema inteligente escanee y etiquete automáticamente a tu hijo en las fotos de la escuela.
@@ -552,7 +603,7 @@ export const TutorPortalSection: React.FC = () => {
                   <div
                     key={img.id}
                     onClick={() => setPreviewGalleryImage(img)}
-                    className="group relative aspect-4/3 rounded-2xl overflow-hidden border border-forest/10 bg-slate-100 shadow-xs cursor-pointer hover:shadow-md hover:border-forest/30 transition-all"
+                    className="group relative aspect-[4/3] rounded-2xl overflow-hidden border border-forest/10 bg-slate-100 shadow-xs cursor-pointer hover:shadow-md hover:border-forest/30 transition-all"
                   >
                     <img
                       src={img.src}

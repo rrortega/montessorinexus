@@ -851,7 +851,21 @@ export async function streamPrivateAsset({ schoolId, relativePath, req = null, r
   // 1. Check local cache or local filesystem first (High-speed zero-latency hit)
   const cachedFilePath = getCachedFilePath(cleanPath);
   const localFSPath = path.join(config.localRoot, cleanPath);
-  const resolvedLocalPath = fs.existsSync(cachedFilePath) ? cachedFilePath : (fs.existsSync(localFSPath) ? localFSPath : null);
+  const publicGalleryFallback = path.join(process.cwd(), 'public', 'gallery', path.basename(cleanPath));
+  const storagePublicFallback = path.join(process.cwd(), 'storage', 'public', 'gallery', path.basename(cleanPath));
+  const publicRootFallback = path.join(process.cwd(), 'public', path.basename(cleanPath));
+
+  const resolvedLocalPath = fs.existsSync(cachedFilePath)
+    ? cachedFilePath
+    : fs.existsSync(localFSPath)
+    ? localFSPath
+    : fs.existsSync(publicGalleryFallback)
+    ? publicGalleryFallback
+    : fs.existsSync(storagePublicFallback)
+    ? storagePublicFallback
+    : fs.existsSync(publicRootFallback)
+    ? publicRootFallback
+    : null;
 
   if (resolvedLocalPath) {
     // Automatic Watermarking EXCLUSIVELY for SaaS Blog (e.g. blog. subdomain)

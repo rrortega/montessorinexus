@@ -29,6 +29,7 @@ export interface School {
   accentColor?: string;
   phone?: string;
   email?: string;
+  umamiSiteId?: string | null;
   features?: Record<string, boolean>;
   createdAt?: string;
   updatedAt?: string;
@@ -206,6 +207,22 @@ export interface ApplicationItem {
   updated_at: string;
 }
 
+export interface Gallery {
+  id: string;
+  school_id: string;
+  name: string;
+  description?: string;
+  cover_image?: string;
+  is_default: boolean;
+  show_on_web: boolean;
+  share_scope?: 'PRIVATE' | 'ALL_SCHOOL' | 'ENVIRONMENTS' | 'SPECIFIC_PARENTS';
+  shared_environment_ids?: string[];
+  shared_parent_ids?: string[];
+  image_count?: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface GalleryCategory {
   id: string;
   label: string;
@@ -229,8 +246,11 @@ export interface DetectedFaceItem {
   box: DetectedFaceBox;
   score?: number;
   isIdentified?: boolean;
+  personType?: 'student' | 'parent' | 'staff' | 'user' | 'unknown';
   studentId?: string | null;
   studentName?: string;
+  parentName?: string | null;
+  childrenSummary?: string | null;
   avatarUrl?: string | null;
   environmentName?: string | null;
   confidence?: number | null;
@@ -243,6 +263,14 @@ export type FaceConsentStatus = 'unchecked' | 'processing' | 'verified_clean' | 
 
 export interface GalleryImageItem {
   id: string;
+  school_id?: string;
+  gallery_id?: string;
+  gallery?: {
+    id: string;
+    name: string;
+    isDefault?: boolean;
+    showOnWeb?: boolean;
+  };
   category_id: string;
   src: string;
   title: string;
@@ -991,6 +1019,40 @@ const mapApplication = (a: any): ApplicationItem => ({
   })),
 });
 
+const mapGallery = (g: any): Gallery => {
+  let parsedEnvs: string[] = [];
+  if (g.sharedEnvironmentIds || g.shared_environment_ids) {
+    const raw = g.sharedEnvironmentIds || g.shared_environment_ids;
+    try {
+      parsedEnvs = typeof raw === 'string' ? JSON.parse(raw) : (Array.isArray(raw) ? raw : []);
+    } catch {}
+  }
+
+  let parsedParents: string[] = [];
+  if (g.sharedParentIds || g.shared_parent_ids) {
+    const raw = g.sharedParentIds || g.shared_parent_ids;
+    try {
+      parsedParents = typeof raw === 'string' ? JSON.parse(raw) : (Array.isArray(raw) ? raw : []);
+    } catch {}
+  }
+
+  return {
+    id: g.id,
+    school_id: g.schoolId || g.school_id,
+    name: g.name,
+    description: g.description || '',
+    cover_image: g.coverImage || g.cover_image || '',
+    is_default: Boolean(g.isDefault ?? g.is_default ?? false),
+    show_on_web: Boolean(g.showOnWeb ?? g.show_on_web ?? false),
+    share_scope: g.shareScope || g.share_scope || (g.isDefault || g.is_default ? 'ALL_SCHOOL' : 'PRIVATE'),
+    shared_environment_ids: parsedEnvs,
+    shared_parent_ids: parsedParents,
+    image_count: g.imageCount ?? g.image_count ?? 0,
+    created_at: g.createdAt || g.created_at,
+    updated_at: g.updatedAt || g.updated_at,
+  };
+};
+
 const mapGalleryCategory = (c: any): GalleryCategory => {
   let parsedTranslations: Record<string, string> = {};
   if (c.translations) {
@@ -1030,6 +1092,14 @@ const mapGalleryImage = (i: any): GalleryImageItem => {
   }
   return {
     id: i.id,
+    school_id: i.schoolId || i.school_id,
+    gallery_id: i.galleryId || i.gallery_id,
+    gallery: i.gallery ? {
+      id: i.gallery.id,
+      name: i.gallery.name,
+      isDefault: Boolean(i.gallery.isDefault ?? i.gallery.is_default),
+      showOnWeb: Boolean(i.gallery.showOnWeb ?? i.gallery.show_on_web)
+    } : undefined,
     category_id: i.categoryId || i.category_id,
     src: i.src,
     title: i.title,
@@ -3340,7 +3410,150 @@ export async function deleteApplication(id: string): Promise<void> {
   await fetch(`/api/applications/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
 }
 
-// GALLERY API
+// GALLERY (ALBUMS & SETS) API
+export async function getGalleries(): Promise<Gallery[]> {
+  try {
+    const res = await fetch('/api/galleries', { headers: getAuthHeaders() });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.map(mapGallery);
+  } catch (e) {
+    console.error('getGalleries error', e);
+    return [];
+  }
+}
+
+export async function getSharedGalleryView(id: string): Promise<{
+  requiresAuth: boolean;
+  permitted: boolean;
+  error?: string;
+  gallery: (Gallery & { images?: GalleryImageItem[] }) | null;
+  school?: {
+    id: string;
+    name: string;
+    slug: string;
+    logo?: string | null;
+    primaryColor?: string;
+    secondaryColor?: string;
+  };
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    role?: string;
+  };
+} | null> {
+  try {
+    const res = await fetch(`/api/galleries/${id}/shared-view`, { headers: getAuthHeaders() });
+    if (!res.ok) {
+      if (res.status === 404) return null;
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || 'Error al cargar la galería compartida');
+    }
+    const data = await res.json();
+    return {
+      ...data,
+      gallery: data.gallery ? {
+        ...mapGallery(data.gallery),
+        images: (data.gallery.images || []).map(mapGalleryImage)
+      } : null
+    };
+  } catch (e) {
+    console.error('getSharedGalleryView error', e);
+    return null;
+  }
+}
+
+
+export async function createGallery(gal: {
+  name: string;
+  description?: string;
+  cover_image?: string;
+  show_on_web?: boolean;
+  share_scope?: 'PRIVATE' | 'ALL_SCHOOL' | 'ENVIRONMENTS' | 'SPECIFIC_PARENTS';
+  shared_environment_ids?: string[];
+  shared_parent_ids?: string[];
+}): Promise<Gallery> {
+  const res = await fetch('/api/galleries', {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({
+      name: gal.name,
+      description: gal.description || '',
+      coverImage: gal.cover_image || '',
+      showOnWeb: gal.show_on_web || false,
+      shareScope: gal.share_scope || 'PRIVATE',
+      sharedEnvironmentIds: gal.shared_environment_ids || [],
+      sharedParentIds: gal.shared_parent_ids || [],
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Error al crear la galería');
+  }
+  return mapGallery(data);
+}
+
+export async function updateGallery(id: string, gal: {
+  name?: string;
+  description?: string;
+  cover_image?: string;
+  show_on_web?: boolean;
+  share_scope?: 'PRIVATE' | 'ALL_SCHOOL' | 'ENVIRONMENTS' | 'SPECIFIC_PARENTS';
+  shared_environment_ids?: string[];
+  shared_parent_ids?: string[];
+}): Promise<Gallery> {
+  const payload: any = {};
+  if (gal.name !== undefined) payload.name = gal.name;
+  if (gal.description !== undefined) payload.description = gal.description;
+  if (gal.cover_image !== undefined) payload.coverImage = gal.cover_image;
+  if (gal.show_on_web !== undefined) payload.showOnWeb = gal.show_on_web;
+  if (gal.share_scope !== undefined) payload.shareScope = gal.share_scope;
+  if (gal.shared_environment_ids !== undefined) payload.sharedEnvironmentIds = gal.shared_environment_ids;
+  if (gal.shared_parent_ids !== undefined) payload.sharedParentIds = gal.shared_parent_ids;
+
+  const res = await fetch(`/api/galleries/${id}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Error al actualizar la galería');
+  }
+  return mapGallery(data);
+}
+
+export async function shareGallery(id: string, data: {
+  share_scope: 'PRIVATE' | 'ALL_SCHOOL' | 'ENVIRONMENTS' | 'SPECIFIC_PARENTS';
+  shared_environment_ids?: string[];
+  shared_parent_ids?: string[];
+}): Promise<Gallery> {
+  const res = await fetch(`/api/galleries/${id}/share`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({
+      shareScope: data.share_scope,
+      sharedEnvironmentIds: data.shared_environment_ids || [],
+      sharedParentIds: data.shared_parent_ids || []
+    })
+  });
+  const json = await res.json();
+  if (!res.ok) {
+    throw new Error(json.error || 'Error al compartir la galería');
+  }
+  return mapGallery(json);
+}
+
+export async function deleteGallery(id: string): Promise<void> {
+  const res = await fetch(`/api/galleries/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Error al eliminar la galería');
+  }
+}
+
+// GALLERY CATEGORIES API
 export async function getGalleryCategories(): Promise<GalleryCategory[]> {
   try {
     const res = await fetch('/api/gallery/categories', { headers: getAuthHeaders() });
@@ -3401,10 +3614,11 @@ export async function deleteGalleryCategory(id: string): Promise<void> {
   await fetch(`/api/gallery/categories/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
 }
 
-export async function getGalleryImages(categoryId?: string, target?: 'web' | 'portal'): Promise<GalleryImageItem[]> {
+export async function getGalleryImages(categoryId?: string, target?: 'web' | 'portal', galleryId?: string): Promise<GalleryImageItem[]> {
   try {
     const params = new URLSearchParams();
     if (categoryId && categoryId !== 'all') params.append('categoryId', categoryId);
+    if (galleryId && galleryId !== 'all') params.append('galleryId', galleryId);
     if (target) params.append('target', target);
     const qs = params.toString();
     const url = qs ? `/api/gallery/images?${qs}` : '/api/gallery/images';
@@ -3419,6 +3633,7 @@ export async function getGalleryImages(categoryId?: string, target?: 'web' | 'po
 }
 
 export async function createGalleryImage(img: {
+  gallery_id?: string;
   category_id: string;
   src: string;
   title?: string;
@@ -3435,6 +3650,7 @@ export async function createGalleryImage(img: {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify({
+      galleryId: img.gallery_id,
       categoryId: img.category_id,
       src: img.src,
       title: img.title || '',
@@ -3452,8 +3668,50 @@ export async function createGalleryImage(img: {
   return mapGalleryImage(data);
 }
 
+export async function createGalleryImagesBatch(images: Array<{
+  gallery_id?: string;
+  category_id?: string;
+  src: string;
+  title?: string;
+  title_en?: string;
+  description?: string;
+  description_en?: string;
+  translations?: Record<string, { title: string; description: string }>;
+  ai_status?: 'PENDING' | 'COMPLETED' | 'FAILED' | 'MANUAL';
+  aiAutoGenerate?: boolean;
+  show_on_web?: boolean;
+  show_on_portal?: boolean;
+}>, galleryId?: string): Promise<GalleryImageItem[]> {
+  const res = await fetch('/api/gallery/images/batch', {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({
+      galleryId,
+      images: images.map(img => ({
+        galleryId: img.gallery_id || galleryId,
+        categoryId: img.category_id || 'other',
+        src: img.src,
+        title: img.title || '',
+        titleEn: img.title_en || '',
+        description: img.description || '',
+        descriptionEn: img.description_en || '',
+        translations: img.translations || {},
+        aiStatus: img.ai_status || 'COMPLETED',
+        showOnWeb: Boolean(img.show_on_web),
+        showOnPortal: img.show_on_portal !== false,
+      }))
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Error al subir lote de imágenes');
+  }
+  return data.map(mapGalleryImage);
+}
+
 export async function updateGalleryImage(id: string, img: {
-  category_id: string;
+  gallery_id?: string;
+  category_id?: string;
   src?: string;
   title?: string;
   title_en?: string;
@@ -3464,9 +3722,9 @@ export async function updateGalleryImage(id: string, img: {
   show_on_web?: boolean;
   show_on_portal?: boolean;
 }): Promise<void> {
-  const payload: any = {
-    categoryId: img.category_id,
-  };
+  const payload: any = {};
+  if (img.gallery_id !== undefined) payload.galleryId = img.gallery_id;
+  if (img.category_id !== undefined) payload.categoryId = img.category_id;
   if (img.title !== undefined) payload.title = img.title;
   if (img.title_en !== undefined) payload.titleEn = img.title_en;
   if (img.description !== undefined) payload.description = img.description;
@@ -3551,6 +3809,22 @@ export async function scanAllGalleryConsents(): Promise<{ total: number; results
     throw new Error(data.error || 'Error al escanear consentimientos de la galería');
   }
   return data;
+}
+
+export async function updateGalleryImageFaces(id: string, faces: DetectedFaceItem[]): Promise<{ success: boolean; image?: GalleryImageItem }> {
+  const res = await fetch(`/api/gallery/images/${id}/faces`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ faces })
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Error al actualizar mapeo de rostros');
+  }
+  return {
+    success: data.success,
+    image: data.image ? mapGalleryImage(data.image) : undefined
+  };
 }
 
 export async function deleteGalleryImage(id: string): Promise<void> {

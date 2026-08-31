@@ -41,23 +41,34 @@ export function createBlogRouter(prisma) {
   async function resolveTargetSchoolId(req) {
     const rawSchoolId = req.headers['x-school-id'] || req.query.schoolId;
     const rawSchoolSlug = req.headers['x-school-slug'] || req.query.schoolSlug;
-    const isPlatform = req.headers['x-is-platform'] === 'true' || req.query.isPlatform === 'true';
+    const isPlatformHeader = req.headers['x-is-platform'];
+    const isPlatform = isPlatformHeader === 'true' || req.query.isPlatform === 'true';
 
-    if (isPlatform || (!rawSchoolId && !rawSchoolSlug && req.school?.slug === 'nexus')) {
+    // 1. If explicitly requested as platform / SaaS blog
+    if (isPlatform) {
       return null;
     }
 
+    // 2. If explicit school ID header or query parameter is provided
     if (rawSchoolId && rawSchoolId !== 'undefined' && rawSchoolId !== 'null' && rawSchoolId !== 'platform' && rawSchoolId !== 'saas') {
-      return rawSchoolId;
+      return String(rawSchoolId).trim();
     }
 
+    // 3. If explicit school slug header or query parameter is provided
     if (rawSchoolSlug && rawSchoolSlug !== 'platform' && rawSchoolSlug !== 'saas' && rawSchoolSlug !== 'nexus') {
-      const s = await prisma.school.findUnique({ where: { slug: rawSchoolSlug }, select: { id: true } });
+      const s = await prisma.school.findUnique({ where: { slug: String(rawSchoolSlug).trim() }, select: { id: true } });
       if (s) return s.id;
     }
 
+    // 4. If request context resolved a specific school via domain/subdomain
     if (req.school?.id && req.school.slug !== 'nexus' && req.school.id !== 'platform') {
       return req.school.id;
+    }
+
+    // 5. If client explicitly specified it is NOT platform (x-is-platform: false) but ID was missing in header, fallback to first school
+    if (isPlatformHeader === 'false') {
+      const fallbackSchool = await prisma.school.findFirst({ select: { id: true } });
+      if (fallbackSchool) return fallbackSchool.id;
     }
 
     return null;

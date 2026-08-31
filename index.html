@@ -37,16 +37,7 @@
         window.global = window;
       }
     </script>
-    <!-- Analytics Tracking -->
-    <script>
-      if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-        const script = document.createElement('script');
-        script.src = "https://analytics.chamba.pro/script.js";
-        script.defer = true;
-        script.setAttribute('data-website-id', '20f1eaa1-8a78-40bc-b428-615572fc96e1');
-        document.head.appendChild(script);
-      }
-    </script>
+    <!-- Analytics will be dynamically injected with school specific umamiSiteId -->
   </head>
 
   <body>

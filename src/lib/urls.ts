@@ -37,3 +37,42 @@ export function getPlatformHomeUrl(): string {
 
   return 'https://montessorinexus.com';
 }
+
+/**
+ * Returns the canonical absolute URL for a school's shared gallery link.
+ *
+ * Priority:
+ * 1. custom_domain (e.g. https://colegioceiba.edu.mx/gallery/:id)
+ * 2. subdomain (e.g. https://ceiba.montessorinexus.com/gallery/:id or http://ceiba.localhost:8080/gallery/:id)
+ * 3. school.slug (e.g. https://ceiba.montessorinexus.com/gallery/:id or http://ceiba.localhost:8080/gallery/:id)
+ * 4. Fallback to current window.location.origin
+ */
+export function getSchoolGalleryUrl(
+  galleryId: string,
+  school?: { slug?: string; custom_domain?: string; subdomain?: string } | null
+): string {
+  if (typeof window === 'undefined') return `/gallery/${galleryId}`;
+  const { hostname, port, protocol } = window.location;
+  const portSuffix = port ? `:${port}` : '';
+
+  const customDomain = school?.custom_domain?.trim();
+  if (customDomain) {
+    const cleanDomain = customDomain.replace(/^https?:\/\//i, '').replace(/\/+$/, '');
+    return `https://${cleanDomain}/gallery/${galleryId}`;
+  }
+
+  const sub = (school?.subdomain?.trim() || school?.slug?.trim() || '').toLowerCase();
+
+  if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.endsWith('.localhost')) {
+    if (sub) {
+      return `${protocol}//${sub}.localhost${portSuffix}/gallery/${galleryId}`;
+    }
+    return `${window.location.origin}/gallery/${galleryId}`;
+  }
+
+  if (sub) {
+    return `https://${sub}.montessorinexus.com/gallery/${galleryId}`;
+  }
+
+  return `${window.location.origin}/gallery/${galleryId}`;
+}

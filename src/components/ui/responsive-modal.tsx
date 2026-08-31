@@ -12,6 +12,7 @@ export interface ResponsiveModalProps {
   showCloseButton?: boolean;
   borderRadius?: 'none' | 'sm' | 'md' | 'lg' | 'full';
   roundedClass?: string;
+  disableDrag?: boolean;
 }
 
 export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
@@ -23,7 +24,8 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
   maxWidthClass = 'max-w-lg',
   showCloseButton = true,
   borderRadius,
-  roundedClass
+  roundedClass,
+  disableDrag = false
 }) => {
   // Handle ESC key press
   useEffect(() => {
@@ -72,11 +74,11 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
 
           {/* Modal / Mobile Drawer Container */}
           <motion.div
-            drag="y"
+            drag={disableDrag ? false : "y"}
             dragConstraints={{ top: 0, bottom: 0 }}
-            dragElastic={{ top: 0, bottom: 0.6 }}
-            dragSnapToOrigin
-            onDragEnd={handleDragEnd}
+            dragElastic={disableDrag ? false : { top: 0, bottom: 0.6 }}
+            dragSnapToOrigin={!disableDrag}
+            onDragEnd={disableDrag ? undefined : handleDragEnd}
             initial={{ y: '100%', opacity: 1 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}

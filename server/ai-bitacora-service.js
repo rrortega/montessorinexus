@@ -3,6 +3,7 @@ const { PrismaClient } = prismaPkg;
 import { PrismaPg } from '@prisma/adapter-pg';
 import pgPkg from 'pg';
 const { Pool } = pgPkg;
+import { recordSchoolAiTokenUsage } from './feed-service.js';
 
 let defaultPrisma = null;
 function getPrismaInstance(prisma) {
@@ -291,6 +292,17 @@ Genera el JSON estructurado:`;
     }
 
     const data = await resp.json();
+    const usage = data?.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
+    if (schoolId) {
+      await recordSchoolAiTokenUsage({
+        schoolId,
+        promptTokens: usage.prompt_tokens || 0,
+        completionTokens: usage.completion_tokens || 0,
+        totalTokens: usage.total_tokens || 0,
+        prisma
+      });
+    }
+
     const rawAnswer = data?.choices?.[0]?.message?.content || '{}';
     
     let parsed;
