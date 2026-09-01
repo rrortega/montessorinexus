@@ -443,13 +443,59 @@ function slugifyHeading(text: string): string {
           </figure>
         );
       },
+    p: ({ node, children, ...props }: any) => (
+      <p className="text-stone-800 dark:text-stone-100 leading-relaxed my-4 text-base sm:text-[17.5px]" {...props}>
+        {children}
+      </p>
+    ),
+    strong: ({ node, children, ...props }: any) => (
+      <strong className="font-bold text-stone-900 dark:text-white" {...props}>
+        {children}
+      </strong>
+    ),
+    em: ({ node, children, ...props }: any) => (
+      <em className="italic text-stone-800 dark:text-stone-200" {...props}>
+        {children}
+      </em>
+    ),
+    ul: ({ node, children, ...props }: any) => (
+      <ul className="list-disc list-outside pl-6 my-4 space-y-2 text-stone-800 dark:text-stone-100 text-base sm:text-[17px]" {...props}>
+        {children}
+      </ul>
+    ),
+    ol: ({ node, children, ...props }: any) => (
+      <ol className="list-decimal list-outside pl-6 my-4 space-y-2 text-stone-800 dark:text-stone-100 text-base sm:text-[17px]" {...props}>
+        {children}
+      </ol>
+    ),
+    li: ({ node, children, ...props }: any) => (
+      <li className="text-stone-800 dark:text-stone-100 leading-relaxed pl-1" {...props}>
+        {children}
+      </li>
+    ),
+    hr: ({ node, ...props }: any) => (
+      <hr className="my-8 border-stone-200 dark:border-stone-800" {...props} />
+    ),
+    h1: ({ node, children, ...props }: any) => {
+      const text = extractTextFromChildren(children);
+      const id = slugifyHeading(text);
+      return (
+        <h1
+          id={id}
+          className="text-2xl sm:text-3xl font-bold font-display text-stone-900 dark:text-slate-50 mt-8 mb-4 border-b border-border/60 pb-2"
+          {...props}
+        >
+          {children}
+        </h1>
+      );
+    },
     h2: ({ node, children, ...props }: any) => {
       const text = extractTextFromChildren(children);
       const id = slugifyHeading(text);
       return (
         <h2
           id={id}
-          className="text-xl sm:text-2xl font-bold font-display text-foreground mt-8 mb-4 scroll-mt-28 border-b border-border/60 pb-2"
+          className="text-xl sm:text-2xl font-bold font-display text-stone-900 dark:text-slate-50 mt-8 mb-4 scroll-mt-28 border-b border-border/60 pb-2"
           {...props}
         >
           {children}
@@ -462,25 +508,40 @@ function slugifyHeading(text: string): string {
       return (
         <h3
           id={id}
-          className="text-lg sm:text-xl font-bold font-display text-foreground mt-6 mb-3 scroll-mt-28"
+          className="text-lg sm:text-xl font-bold font-display text-stone-900 dark:text-slate-50 mt-6 mb-3 scroll-mt-28"
           {...props}
         >
           {children}
         </h3>
       );
     },
+    h4: ({ node, children, ...props }: any) => (
+      <h4 className="text-base sm:text-lg font-bold font-display text-stone-900 dark:text-slate-50 mt-5 mb-2" {...props}>
+        {children}
+      </h4>
+    ),
+    h5: ({ node, children, ...props }: any) => (
+      <h5 className="text-sm sm:text-base font-bold font-display text-stone-900 dark:text-slate-50 mt-4 mb-2" {...props}>
+        {children}
+      </h5>
+    ),
+    h6: ({ node, children, ...props }: any) => (
+      <h6 className="text-xs sm:text-sm font-bold font-display uppercase tracking-wider text-stone-700 dark:text-slate-300 mt-3 mb-1" {...props}>
+        {children}
+      </h6>
+    ),
     blockquote: ({ node, ...props }: any) => (
       <blockquote
         className={`border-l-4 ${
-          isSaaSBlog ? 'border-[#C4661F] bg-[#C4661F]/5' : 'border-forest bg-forest/5'
-        } p-4 rounded-r-2xl my-6 italic text-stone-800 dark:text-stone-200`}
+          isSaaSBlog ? 'border-[#C4661F] bg-[#C4661F]/10 dark:bg-[#C4661F]/15' : 'border-forest bg-forest/5 dark:bg-forest/15'
+        } p-4 rounded-r-2xl my-6 italic text-stone-800 dark:text-stone-100`}
         {...props}
       />
     ),
     a: ({ node, ...props }: any) => (
       <a
         className={`font-semibold underline ${
-          isSaaSBlog ? 'text-[#C4661F] hover:text-[#DE7424]' : 'text-forest hover:text-emerald-700'
+          isSaaSBlog ? 'text-[#C4661F] dark:text-[#DE7424] hover:text-[#DE7424]' : 'text-forest dark:text-emerald-400 hover:text-emerald-700'
         } transition-colors`}
         target="_blank"
         rel="noopener noreferrer"
@@ -511,10 +572,10 @@ function slugifyHeading(text: string): string {
       <tr className="transition-colors hover:bg-muted/40 even:bg-muted/15" {...props} />
     ),
     th: ({ node, ...props }: any) => (
-      <th className="py-3.5 px-4 font-bold text-xs uppercase tracking-wider align-middle border-b border-border" {...props} />
+      <th className="py-3.5 px-4 font-bold text-xs uppercase tracking-wider align-middle border-b border-border text-stone-900 dark:text-stone-100" {...props} />
     ),
     td: ({ node, ...props }: any) => (
-      <td className="py-3 px-4 text-stone-700 dark:text-stone-300 align-middle text-sm leading-relaxed" {...props} />
+      <td className="py-3 px-4 text-stone-700 dark:text-stone-200 align-middle text-sm leading-relaxed" {...props} />
     ),
     pre: ({ node, children, ...props }: any) => {
       return <>{children}</>;
@@ -543,14 +604,14 @@ function slugifyHeading(text: string): string {
       const isInline = !match && !rawCode.includes('\n');
       if (isInline) {
         return (
-          <span className="px-1.5 py-0.5 rounded-md bg-muted/70 text-foreground text-[0.9em] font-medium" {...props}>
+          <span className="px-1.5 py-0.5 rounded-md bg-muted/70 dark:bg-stone-800 text-stone-900 dark:text-stone-100 text-[0.9em] font-medium border border-border/40" {...props}>
             {children}
           </span>
         );
       }
 
       return (
-        <div className="my-6 rounded-2xl border border-border/80 bg-muted/30 p-4 sm:p-5 overflow-x-auto text-foreground text-sm leading-relaxed shadow-2xs">
+        <div className="my-6 rounded-2xl border border-border/80 bg-muted/30 dark:bg-stone-900 p-4 sm:p-5 overflow-x-auto text-stone-900 dark:text-stone-100 text-sm leading-relaxed shadow-2xs">
           {children}
         </div>
       );
@@ -793,7 +854,7 @@ function slugifyHeading(text: string): string {
               {/* Markdown Content Body with Clean Typography */}
               <div 
                 itemProp="articleBody"
-                className="prose prose-stone dark:prose-invert max-w-none text-foreground text-base sm:text-[17px] leading-relaxed space-y-5 pt-2"
+                className="prose prose-stone dark:prose-invert max-w-none text-stone-800 dark:text-stone-100 text-base sm:text-[17px] leading-relaxed space-y-5 pt-2"
               >
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}

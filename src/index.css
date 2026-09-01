@@ -29,6 +29,39 @@
   font-family: 'Pixelify Sans', 'Silkscreen', monospace;
 }
 
+/* Blog & Prose High-Contrast Dark Mode Typography */
+.dark .prose {
+  --tw-prose-body: #e2e8f0;
+  --tw-prose-headings: #f8fafc;
+  --tw-prose-lead: #cbd5e1;
+  --tw-prose-links: #DE7424;
+  --tw-prose-bold: #ffffff;
+  --tw-prose-counters: #94a3b8;
+  --tw-prose-bullets: #64748b;
+  --tw-prose-hr: #334155;
+  --tw-prose-quotes: #f1f5f9;
+  --tw-prose-quote-borders: #475569;
+  --tw-prose-captions: #94a3b8;
+  --tw-prose-code: #f8fafc;
+  --tw-prose-pre-code: #e2e8f0;
+  --tw-prose-pre-bg: #0f172a;
+  --tw-prose-th-borders: #334155;
+  --tw-prose-td-borders: #1e293b;
+  color: #e2e8f0 !important;
+}
+
+.dark .prose :is(p, li, span, em) {
+  color: #e2e8f0;
+}
+
+.dark .prose :is(h1, h2, h3, h4, h5, h6, strong) {
+  color: #f8fafc;
+}
+
+.dark .blog-root {
+  color: #e2e8f0;
+}
+
 /* Ceiba Montessori Design System
    Colors based on brand palette:
    - Forest Green (primary)
