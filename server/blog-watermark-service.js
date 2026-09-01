@@ -3,6 +3,7 @@ import path from 'path';
 import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import sharp from 'sharp';
+import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -318,7 +319,7 @@ export async function processSignedBlogImageBuffer(sourceBuffer, options = {}) {
 }
 
 /**
- * Gets or creates cached signed blog image file
+ * Gets or creates cached signed blog image file, persisting to S3/MinIO when enabled
  */
 export async function getOrGenerateSignedBlogFile({
   relativePath,
@@ -333,47 +334,117 @@ export async function getOrGenerateSignedBlogFile({
     fs.mkdirSync(cacheDir, { recursive: true });
   }
 
-  // Derive unique deterministic cache filename
+  // Derive unique deterministic cache filename and S3 key
   const baseName = path.basename(relativePath, path.extname(relativePath));
   const pathHash = crypto.createHash('md5').update(`${relativePath}:${WATERMARK_VERSION}`).digest('hex').substring(0, 10);
   const cachedFilePath = path.join(cacheDir, `${baseName}-${pathHash}.webp`);
+  const s3SignedKey = `public/blog/signed/${baseName}-${pathHash}.webp`;
 
-  // Check if already in cache and newer than source file
+  // 1. Check if already in local cache
   if (fs.existsSync(cachedFilePath)) {
-    if (sourceFSPath && fs.existsSync(sourceFSPath)) {
-      const srcStat = fs.statSync(sourceFSPath);
-      const cacheStat = fs.statSync(cachedFilePath);
-      if (cacheStat.mtimeMs >= srcStat.mtimeMs) {
+    const cacheStat = fs.statSync(cachedFilePath);
+    if (cacheStat.size > 0) {
+      if (sourceFSPath && fs.existsSync(sourceFSPath)) {
+        const srcStat = fs.statSync(sourceFSPath);
+        if (cacheStat.mtimeMs >= srcStat.mtimeMs) {
+          return {
+            filePath: cachedFilePath,
+            mimeType: 'image/webp',
+            isCacheHit: true
+          };
+        }
+      } else {
         return {
           filePath: cachedFilePath,
           mimeType: 'image/webp',
           isCacheHit: true
         };
       }
-    } else {
-      return {
-        filePath: cachedFilePath,
-        mimeType: 'image/webp',
-        isCacheHit: true
-      };
     }
   }
 
-  // Need to process: load source buffer
+  // 2. If using S3/MinIO, check if signed watermarked file is already stored in S3
+  const isS3 = config && (config.driver === 's3' || config.driver === 'minio') && config.s3Bucket && config.s3AccessKeyId;
+  let s3 = null;
+  if (isS3) {
+    s3 = new S3Client({
+      region: config.s3Region || 'us-east-1',
+      endpoint: config.s3Endpoint || undefined,
+      credentials: {
+        accessKeyId: config.s3AccessKeyId,
+        secretAccessKey: config.s3SecretAccessKey
+      },
+      forcePathStyle: config.s3ForcePathStyle
+    });
+
+    try {
+      const getSignedRes = await s3.send(new GetObjectCommand({
+        Bucket: config.s3Bucket,
+        Key: s3SignedKey
+      }));
+      if (getSignedRes && getSignedRes.Body) {
+        const byteArray = await getSignedRes.Body.transformToByteArray();
+        const downloadedBuffer = Buffer.from(byteArray);
+        fs.writeFileSync(cachedFilePath, downloadedBuffer);
+        return {
+          filePath: cachedFilePath,
+          buffer: downloadedBuffer,
+          mimeType: 'image/webp',
+          isCacheHit: true
+        };
+      }
+    } catch (s3GetErr) {
+      // Not yet on S3, will generate and upload
+    }
+  }
+
+  // 3. Need to process: load source buffer
   let inputBuffer = sourceBuffer;
   if (!inputBuffer && sourceFSPath && fs.existsSync(sourceFSPath)) {
     inputBuffer = fs.readFileSync(sourceFSPath);
+  }
+
+  // If source image is not in local disk, fetch original from S3
+  if (!inputBuffer && isS3 && s3) {
+    try {
+      const getOrigRes = await s3.send(new GetObjectCommand({
+        Bucket: config.s3Bucket,
+        Key: relativePath
+      }));
+      if (getOrigRes && getOrigRes.Body) {
+        const byteArray = await getOrigRes.Body.transformToByteArray();
+        inputBuffer = Buffer.from(byteArray);
+      }
+    } catch (origS3Err) {
+      console.warn(`[Blog Watermark] Could not fetch original image "${relativePath}" from S3:`, origS3Err.message);
+    }
   }
 
   if (!inputBuffer) {
     throw new Error(`Source image buffer not available for ${relativePath}`);
   }
 
-  // Process with sharp
+  // 4. Process with sharp
   const signedWebpBuffer = await processSignedBlogImageBuffer(inputBuffer);
 
-  // Write to cache
+  // 5. Write to local cache for instant zero-latency serving
   fs.writeFileSync(cachedFilePath, signedWebpBuffer);
+
+  // 6. Upload watermarked signed image to MinIO/S3 storage
+  if (isS3 && s3) {
+    try {
+      await s3.send(new PutObjectCommand({
+        Bucket: config.s3Bucket,
+        Key: s3SignedKey,
+        Body: signedWebpBuffer,
+        ContentType: 'image/webp',
+        CacheControl: 'public, max-age=31536000, immutable'
+      }));
+      console.log(`✨ [Blog Watermark] Watermarked signed image uploaded to S3/MinIO storage (${s3SignedKey})`);
+    } catch (uploadErr) {
+      console.warn(`⚠️ [Blog Watermark] Failed to persist watermarked image to S3:`, uploadErr.message);
+    }
+  }
 
   return {
     filePath: cachedFilePath,

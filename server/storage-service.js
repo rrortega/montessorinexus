@@ -245,7 +245,7 @@ export async function getStorageConfigForSchool(schoolId, prisma = null) {
   let s3Bucket = rootSaaSBucket;
   let s3AccessKeyId = process.env.S3_ACCESS_KEY_ID || '';
   let s3SecretAccessKey = process.env.S3_SECRET_ACCESS_KEY || '';
-  let s3ForcePathStyle = process.env.S3_FORCE_PATH_STYLE === 'true';
+  let s3ForcePathStyle = process.env.S3_FORCE_PATH_STYLE === 'true' || process.env.S3_FORCE_PATH_STYLE === '1' || process.env.S3_FORCE_PATH_STYLE === true;
 
   if (schoolId && prisma) {
     try {
