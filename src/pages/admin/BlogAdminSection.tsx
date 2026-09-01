@@ -9,6 +9,7 @@ import {
   MessageSquare, Send, Lightbulb, ArrowLeft, FileText, Sparkle, Paintbrush, Loader2
 } from 'lucide-react';
 import { MarkdownWysiwygEditor } from './MarkdownWysiwygEditor';
+import { MobileMenuButton } from './AdminDashboard';
 import { toast } from 'sonner';
 import { uploadPhysicalFile } from '@/lib/api';
 import { ALL_SUPPORTED_LANGUAGES, getLanguageByCode, SupportedLanguage } from '@/pages/admin/web-builder/languages';
@@ -174,10 +175,10 @@ export const BlogAdminSection: React.FC<BlogAdminSectionProps> = ({ isPlatformMo
   // Explicitly respect isPlatformMode prop when provided, otherwise default to context
   const isPlatformBlog = isPlatformMode !== undefined ? isPlatformMode : (isGlobalSuperAdmin && !isGhostMode);
   const effectiveSchoolId = !isPlatformBlog
-    ? (activeMembership?.schoolId || localStorage.getItem('ceiba_active_school_id') || settings?.school_id || null)
+    ? (activeMembership?.schoolId || activeMembership?.school?.id || localStorage.getItem('ceiba_active_school_id') || settings?.school_id || null)
     : null;
   const effectiveSchoolSlug = !isPlatformBlog
-    ? (activeMembership?.school?.slug || localStorage.getItem('ceiba_active_school_slug') || null)
+    ? (activeMembership?.school?.slug || localStorage.getItem('ceiba_active_school_slug') || settings?.school_slug || null)
     : null;
 
   // Available languages according to context (Platform gets all 7 languages, School gets configured languages)
@@ -192,6 +193,46 @@ export const BlogAdminSection: React.FC<BlogAdminSectionProps> = ({ isPlatformMo
     const list = schoolLangsRaw.map(code => getLanguageByCode(code));
     return list.length > 0 ? list : [getLanguageByCode('es'), getLanguageByCode('en')];
   }, [isPlatformBlog, settings?.header_enabled_langs]);
+
+  // Compute localized author role for school mode (Guía, Director, or Tutor/Padre en colaboración)
+  const userSchoolRole: Role = activeMembership?.role || 'STAFF';
+
+  const getLocalizedAuthorRole = (locale: string = 'es') => {
+    const loc = String(locale || 'es').toLowerCase();
+    const effectiveName = schoolName || 'Colegio Montessori';
+
+    if (userSchoolRole === 'TEACHER' || userSchoolRole === 'STAFF') {
+      if (loc === 'en') return 'Montessori Guide';
+      if (loc === 'fr') return 'Guide Montessori';
+      if (loc === 'pt') return 'Guia Montessori';
+      if (loc === 'de') return 'Montessori-Pädagoge/in';
+      if (loc === 'ru') return 'Монтессори-педагог';
+      if (loc === 'it') return 'Guida Montessori';
+      return 'Guía Montessori';
+    }
+
+    if (userSchoolRole === 'OWNER' || userSchoolRole === 'ADMIN') {
+      if (loc === 'en') return `School Director • ${effectiveName}`;
+      if (loc === 'fr') return `Direction de l'école • ${effectiveName}`;
+      if (loc === 'pt') return `Direção Escolar • ${effectiveName}`;
+      if (loc === 'de') return `Schulleitung • ${effectiveName}`;
+      if (loc === 'ru') return `Директор школы • ${effectiveName}`;
+      if (loc === 'it') return `Direzione scolastica • ${effectiveName}`;
+      return `Dirección Escolar • ${effectiveName}`;
+    }
+
+    if (userSchoolRole === 'TUTOR') {
+      if (loc === 'en') return `Writer in collaboration with ${effectiveName}`;
+      if (loc === 'fr') return `Auteur en collaboration avec ${effectiveName}`;
+      if (loc === 'pt') return `Escritor em colaboração com ${effectiveName}`;
+      if (loc === 'de') return `Autor in Zusammenarbeit mit ${effectiveName}`;
+      if (loc === 'ru') return `Автор в сотрудничестве с ${effectiveName}`;
+      if (loc === 'it') return `Autore in collaborazione con ${effectiveName}`;
+      return `Escritor en colaboración con ${effectiveName}`;
+    }
+
+    return 'Equipo Pedagógico';
+  };
 
   // State
   const [posts, setPosts] = useState<BlogItem[]>([]);
@@ -338,7 +379,15 @@ export const BlogAdminSection: React.FC<BlogAdminSectionProps> = ({ isPlatformMo
         if (postsRes.ok) {
           const postsData = await postsRes.json();
           if (Array.isArray(postsData)) {
-            setPosts(postsData);
+            // Strict client-side isolation
+            const strictlyFiltered = postsData.filter((p: any) => {
+              if (isPlatformBlog) {
+                return !p.schoolId;
+              } else {
+                return Boolean(p.schoolId) && (!effectiveSchoolId || p.schoolId === effectiveSchoolId);
+              }
+            });
+            setPosts(strictlyFiltered);
           }
         }
       } catch (e) {
@@ -372,7 +421,7 @@ export const BlogAdminSection: React.FC<BlogAdminSectionProps> = ({ isPlatformMo
 
   useEffect(() => {
     loadBlogData();
-  }, [effectiveSchoolId, isPlatformBlog]);
+  }, [effectiveSchoolId, effectiveSchoolSlug, isPlatformBlog]);
 
   // Current active translation in editor
   const currentTranslation = useMemo(() => {
@@ -468,8 +517,8 @@ export const BlogAdminSection: React.FC<BlogAdminSectionProps> = ({ isPlatformMo
     setEditingPostId(null);
     setCoverImage('');
     setCoverImageAlt('');
-    setCustomAuthorName('');
-    setCustomAuthorAvatar('');
+    setCustomAuthorName(isPlatformBlog ? '' : (user?.fullName || ''));
+    setCustomAuthorAvatar(isPlatformBlog ? '' : (user?.avatarUrl || ''));
     setStatus('DRAFT');
     setIsFeatured(false);
     setPublishedAt('');
@@ -497,8 +546,8 @@ export const BlogAdminSection: React.FC<BlogAdminSectionProps> = ({ isPlatformMo
     setEditingPostId(post.id);
     setCoverImage(post.coverImage || '');
     setCoverImageAlt(post.coverImageAlt || '');
-    setCustomAuthorName(post.customAuthorName || '');
-    setCustomAuthorAvatar(post.customAuthorAvatar || '');
+    setCustomAuthorName(isPlatformBlog ? (post.customAuthorName || '') : (user?.fullName || post.customAuthorName || ''));
+    setCustomAuthorAvatar(isPlatformBlog ? (post.customAuthorAvatar || '') : (user?.avatarUrl || post.customAuthorAvatar || ''));
     setStatus(post.status);
     setIsFeatured(post.isFeatured);
     setPublishedAt(post.publishedAt ? new Date(post.publishedAt).toISOString().slice(0, 16) : '');
@@ -914,8 +963,8 @@ export const BlogAdminSection: React.FC<BlogAdminSectionProps> = ({ isPlatformMo
       const payload = {
         coverImage,
         coverImageAlt,
-        customAuthorName,
-        customAuthorAvatar,
+        customAuthorName: isPlatformBlog ? customAuthorName : (user?.fullName || ''),
+        customAuthorAvatar: isPlatformBlog ? customAuthorAvatar : (user?.avatarUrl || ''),
         status,
         isFeatured,
         ...overridePayload,
@@ -1019,6 +1068,16 @@ export const BlogAdminSection: React.FC<BlogAdminSectionProps> = ({ isPlatformMo
   // Filtered Posts
   const filteredPosts = useMemo(() => {
     return posts.filter(post => {
+      // Multi-tenancy guard:
+      if (!isPlatformBlog) {
+        // In school admin mode, NEVER show SaaS platform posts (schoolId: null)
+        if (!post.schoolId) return false;
+        if (effectiveSchoolId && post.schoolId !== effectiveSchoolId) return false;
+      } else {
+        // In SaaS platform mode, ONLY show platform posts (schoolId: null)
+        if (post.schoolId) return false;
+      }
+
       const matchesStatus = statusFilter === 'ALL' || post.status === statusFilter;
       const matchesCat = categoryFilter === 'ALL' || post.categories.some(c => c.slug === categoryFilter);
       const titleMatch = post.translations.some(t =>
@@ -1028,7 +1087,7 @@ export const BlogAdminSection: React.FC<BlogAdminSectionProps> = ({ isPlatformMo
       const matchesSearch = !searchQuery || titleMatch;
       return matchesStatus && matchesCat && matchesSearch;
     });
-  }, [posts, statusFilter, categoryFilter, searchQuery]);
+  }, [posts, isPlatformBlog, effectiveSchoolId, statusFilter, categoryFilter, searchQuery]);
 
   // Pagination Calculations
   const totalItems = filteredPosts.length;
@@ -1041,55 +1100,47 @@ export const BlogAdminSection: React.FC<BlogAdminSectionProps> = ({ isPlatformMo
   }, [filteredPosts, validCurrentPage, pageSize]);
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
-      {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-card p-6 rounded-3xl border border-border shadow-xs">
-        <div className="space-y-1">
-          <div className="flex items-center gap-3">
-            <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shadow-xs shrink-0 ${
-              isPlatformBlog
-                ? 'bg-[#C4661F]/10 dark:bg-[#C4661F]/20 text-[#C4661F] border border-[#C4661F]/20'
-                : 'bg-forest/10 dark:bg-forest/20 text-forest border border-forest/20'
-            }`}>
-              <BookOpen className="w-5 h-5" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold font-display text-foreground flex items-center gap-2.5 flex-wrap">
-                <span>{isPlatformBlog ? 'Blog Global • MontessoriNexus' : `Blog Escolar • ${schoolName}`}</span>
-                <span className={`text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full ${
-                  isPlatformBlog
-                    ? 'bg-[#C4661F]/10 text-[#C4661F] border border-[#C4661F]/20'
-                    : 'bg-forest/10 text-forest border border-forest/20'
-                }`}>
+    <div className="space-y-6 font-body animate-in fade-in duration-300 pb-12">
+      {/* FULL-WIDTH HERO BANNER */}
+      <div className={`-mx-4 sm:-mx-6 md:-mx-8 -mt-4 sm:-mt-6 md:-mt-8 rounded-none px-4 sm:px-6 md:px-8 py-6 text-white shadow-md space-y-2 relative overflow-hidden border-b ${
+        isPlatformBlog
+          ? 'bg-gradient-to-r from-[#9A4C13] via-[#C4661F] to-[#9A4C13] border-[#C4661F]/40'
+          : 'bg-gradient-to-r from-forest via-forest-light to-forest border-forest-light/40'
+      }`}>
+        <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <MobileMenuButton className="!bg-white/20 !border-white/20 !text-white hover:!bg-white/30" />
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold font-display tracking-tight text-white leading-tight">
+                  {isPlatformBlog ? 'Blog Global • MontessoriNexus' : `Blog Escolar • ${schoolName}`}
+                </h1>
+                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-white/15 text-white font-mono border border-white/20">
+                  {filteredPosts.length} {filteredPosts.length === 1 ? 'artículo' : 'artículos'}
+                </span>
+                <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-white/20 text-white border border-white/30">
                   {isPlatformBlog ? 'SaaS Global' : 'Exclusivo Colegio'}
                 </span>
-              </h1>
-              <p className="text-xs text-muted-foreground">
+              </div>
+              <p className="hidden sm:block text-xs sm:text-sm text-white/80 mt-1 max-w-2xl leading-relaxed">
                 {isPlatformBlog
                   ? 'Gestionando los artículos oficiales del blog de la plataforma SaaS (visibles en blog.montessorinexus.com).'
                   : `Gestionando los artículos pedagógicos y comunitarios publicados exclusivamente para ${schoolName}.`}
               </p>
             </div>
           </div>
-        </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setIsTaxonomyModalOpen(true)}
-            className={`px-4 py-2 text-xs font-semibold border border-border hover:bg-muted/50 text-foreground ${btnRadiusClass} flex items-center gap-1.5 transition-all`}
-          >
-            <Folder className="w-3.5 h-3.5 text-muted-foreground" />
-            <span>Categorías & Tags</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleOpenCreate()}
-            className={`px-4 py-2 text-xs font-bold bg-forest hover:bg-forest-light text-white ${btnRadiusClass} shadow-xs flex items-center gap-1.5 transition-all cursor-pointer`}
-          >
-            <Plus className="w-4 h-4" />
-            <span>Nuevo Artículo</span>
-          </button>
+          <div className="relative z-10 flex items-center gap-2 flex-wrap shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsTaxonomyModalOpen(true)}
+              className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl text-xs flex items-center gap-2 border border-white/20 shadow-xs transition-all hover:scale-105 active:scale-95 cursor-pointer"
+            >
+              <Folder className="w-3.5 h-3.5 text-white/90" />
+              <span>Categorías & Tags</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1141,7 +1192,7 @@ export const BlogAdminSection: React.FC<BlogAdminSectionProps> = ({ isPlatformMo
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder="Buscar por título o slug..."
-            className="w-full pl-9 pr-3 py-1.5 text-xs bg-muted/40 border border-border rounded-xl focus:outline-none focus:ring-1 focus:ring-forest"
+            className="w-full pl-9 pr-3 py-1.5 text-xs bg-muted/40 border border-border rounded-xl focus:outline-none focus:ring-1 focus:ring-forest text-foreground placeholder:text-muted-foreground"
           />
         </div>
 
@@ -1149,19 +1200,19 @@ export const BlogAdminSection: React.FC<BlogAdminSectionProps> = ({ isPlatformMo
           <select
             value={statusFilter}
             onChange={e => setStatusFilter(e.target.value)}
-            className="px-3 py-1.5 text-xs bg-muted/40 border border-border rounded-xl focus:outline-none focus:ring-1 focus:ring-forest"
+            className="px-3 py-1.5 text-xs bg-muted/40 border border-border rounded-xl focus:outline-none focus:ring-1 focus:ring-forest text-foreground"
           >
-            <option value="ALL">Todos los Estados</option>
-            <option value="PUBLISHED">Publicados</option>
-            <option value="DRAFT">Borradores</option>
-            <option value="SCHEDULED">Programados</option>
-            <option value="ARCHIVED">Archivados</option>
+            <option value="ALL" className="bg-popover text-popover-foreground">Todos los Estados</option>
+            <option value="PUBLISHED" className="bg-popover text-popover-foreground">Publicados</option>
+            <option value="DRAFT" className="bg-popover text-popover-foreground">Borradores</option>
+            <option value="SCHEDULED" className="bg-popover text-popover-foreground">Programados</option>
+            <option value="ARCHIVED" className="bg-popover text-popover-foreground">Archivados</option>
           </select>
 
           <select
             value={categoryFilter}
             onChange={e => setCategoryFilter(e.target.value)}
-            className="px-3 py-1.5 text-xs bg-muted/40 border border-border rounded-xl focus:outline-none focus:ring-1 focus:ring-forest"
+            className="px-3 py-1.5 text-xs bg-muted/40 border border-border rounded-xl focus:outline-none focus:ring-1 focus:ring-forest text-foreground"
           >
             <option value="ALL">Todas las Categorías</option>
             {categories.map(c => (
@@ -2100,63 +2151,101 @@ export const BlogAdminSection: React.FC<BlogAdminSectionProps> = ({ isPlatformMo
                   </label>
                 </div>
 
-                {/* Custom Author */}
-                <div className="p-4 rounded-2xl border border-border bg-muted/20 space-y-3">
-                  <div>
-                    <label className="text-xs font-bold text-foreground">Autor del Artículo (Opcional)</label>
-                    <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
-                      Por defecto se usará tu perfil. Puedes usar un nombre y avatar distinto aquí.
+                {/* Author Section */}
+                {!isPlatformBlog ? (
+                  /* School Author: strictly the logged-in user in session with their institutional role */
+                  <div className="p-4 rounded-2xl border border-border bg-muted/20 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-foreground">Autor del Artículo</label>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-forest/10 text-forest border border-forest/15">
+                        Usuario en sesión
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-3 p-3 bg-white dark:bg-card rounded-xl border border-border">
+                      {user?.avatarUrl ? (
+                        <img
+                          src={user.avatarUrl}
+                          alt={user.fullName || user.email}
+                          className="w-10 h-10 rounded-full object-cover border border-border shrink-0"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-forest/10 text-forest font-bold flex items-center justify-center text-sm shrink-0 border border-forest/20">
+                          {user?.fullName?.charAt(0) || user?.email?.charAt(0) || 'U'}
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-bold text-foreground truncate">
+                          {user?.fullName || user?.email || 'Usuario'}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground truncate">
+                          {getLocalizedAuthorRole(activeLocaleTab)}
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground leading-tight">
+                      El artículo se publicará automáticamente con tu perfil y cargo institucional en <span className="font-semibold text-foreground">{schoolName}</span>.
                     </p>
                   </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-semibold text-muted-foreground">Nombre del Autor</label>
-                    <input
-                      type="text"
-                      value={customAuthorName}
-                      onChange={e => setCustomAuthorName(e.target.value)}
-                      placeholder="Ej. Dra. María Montessori..."
-                      className="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-card border border-border rounded-lg"
-                    />
-                  </div>
-
-                  <div className="space-y-2 mt-2">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[11px] font-semibold text-muted-foreground">Avatar de Profesional</label>
-                      <span className="text-[10px] text-muted-foreground">Clic para auto-llenar autor</span>
+                ) : (
+                  /* SaaS Global Platform Author Selector */
+                  <div className="p-4 rounded-2xl border border-border bg-muted/20 space-y-3">
+                    <div>
+                      <label className="text-xs font-bold text-foreground">Autor del Artículo (Plataforma Global)</label>
+                      <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
+                        Selecciona un autor pedagógico oficial o ingresa un nombre y avatar personalizado.
+                      </p>
                     </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setCustomAuthorAvatar('');
-                          setCustomAuthorName('');
-                        }}
-                        className={`w-7 h-7 rounded-full flex items-center justify-center border-2 transition-all cursor-pointer ${!customAuthorAvatar ? 'border-forest bg-forest/10 text-forest' : 'border-dashed border-border text-muted-foreground hover:bg-muted'
-                          }`}
-                        title="Limpiar autor / avatar"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                      {PRESET_AUTHORS.map(author => (
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-semibold text-muted-foreground">Nombre del Autor</label>
+                      <input
+                        type="text"
+                        value={customAuthorName}
+                        onChange={e => setCustomAuthorName(e.target.value)}
+                        placeholder="Ej. Dra. María Montessori..."
+                        className="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-card border border-border rounded-lg text-foreground"
+                      />
+                    </div>
+
+                    <div className="space-y-2 mt-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[11px] font-semibold text-muted-foreground">Biblioteca de Autores</label>
+                        <span className="text-[10px] text-muted-foreground">Clic para auto-llenar autor</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
                         <button
-                          key={author.avatar}
                           type="button"
                           onClick={() => {
-                            setCustomAuthorAvatar(author.avatar);
-                            setCustomAuthorName(author.name);
-                            toast.info(`Autor seleccionado: ${author.name}`);
+                            setCustomAuthorAvatar('');
+                            setCustomAuthorName('');
                           }}
-                          className={`w-7 h-7 rounded-full overflow-hidden border-2 transition-all cursor-pointer ${customAuthorAvatar === author.avatar ? 'border-forest ring-2 ring-forest/20 scale-105' : 'border-transparent opacity-70 hover:opacity-100 hover:scale-105'
+                          className={`w-7 h-7 rounded-full flex items-center justify-center border-2 transition-all cursor-pointer ${!customAuthorAvatar ? 'border-forest bg-forest/10 text-forest' : 'border-dashed border-border text-muted-foreground hover:bg-muted'
                             }`}
-                          title={`${author.name} (${author.role})`}
+                          title="Limpiar autor / avatar"
                         >
-                          <img src={author.avatar} alt={author.name} className="w-full h-full object-cover" />
+                          <X className="w-3.5 h-3.5" />
                         </button>
-                      ))}
+                        {PRESET_AUTHORS.map(author => (
+                          <button
+                            key={author.avatar}
+                            type="button"
+                            onClick={() => {
+                              setCustomAuthorAvatar(author.avatar);
+                              setCustomAuthorName(author.name);
+                              toast.info(`Autor seleccionado: ${author.name}`);
+                            }}
+                            className={`w-7 h-7 rounded-full overflow-hidden border-2 transition-all cursor-pointer ${customAuthorAvatar === author.avatar ? 'border-forest ring-2 ring-forest/20 scale-105' : 'border-transparent opacity-70 hover:opacity-100 hover:scale-105'
+                              }`}
+                            title={`${author.name} (${author.role})`}
+                          >
+                            <img src={author.avatar} alt={author.name} className="w-full h-full object-cover" />
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 {/* Taxonomies: Categories & Tags */}
                 <div className="p-4 rounded-2xl border border-border bg-muted/20 space-y-3">
@@ -2398,6 +2487,20 @@ export const BlogAdminSection: React.FC<BlogAdminSectionProps> = ({ isPlatformMo
           </div>
         </div>
       )}
+      {/* FLOATING ACTION BUTTON (ROUND FAB) */}
+      <button
+        type="button"
+        onClick={() => handleOpenCreate()}
+        aria-label="Crear nuevo artículo"
+        title="Crear nuevo artículo"
+        className={`fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full text-white shadow-2xl flex items-center justify-center border-2 border-white/20 transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer group focus:outline-hidden focus:ring-4 ${
+          isPlatformBlog
+            ? 'bg-[#9A4C13] hover:bg-[#C4661F] hover:shadow-[#C4661F]/30 focus:ring-[#C4661F]/30'
+            : 'bg-forest hover:bg-forest-light hover:shadow-forest/30 focus:ring-forest/30'
+        }`}
+      >
+        <Plus className="w-6 h-6 stroke-[2.5] transition-transform duration-300 group-hover:rotate-90" />
+      </button>
     </div>
   );
 };

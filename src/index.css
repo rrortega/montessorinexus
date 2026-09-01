@@ -157,11 +157,13 @@
   /* Allow text selection only inside form inputs, textareas and editable content */
   input,
   textarea,
+  select,
   [contenteditable="true"] {
     user-select: text;
     -webkit-user-select: text;
     -moz-user-select: text;
     -ms-user-select: text;
+    color: inherit;
   }
 
   html {

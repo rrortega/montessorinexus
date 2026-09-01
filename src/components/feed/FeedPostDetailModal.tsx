@@ -4,6 +4,10 @@ import {
   X,
   ArrowUp,
   Image as ImageIcon,
+  Images,
+  Play,
+  Eye,
+  Film,
   Loader2,
   MessageCircle,
   Pin,
@@ -17,6 +21,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { FeedItem, FeedCommentItem, uploadFeedImages } from '@/lib/sqlite';
+import { FeedGalleryViewerModal, FeedGalleryImageItem } from './FeedGalleryViewerModal';
+import { ExpandableFeedText } from '@/pages/admin/FeedSection';
 import {
   AnimatedReactionIcon,
   REACTION_LIST
@@ -46,6 +52,7 @@ interface FeedPostDetailModalProps {
   onReaction: (postId: string, reaction: string) => void;
   onAddComment: (postId: string, isPedagogical?: boolean, customText?: string, parentId?: string | null, mediaUrl?: string | null) => Promise<void>;
   onDeleteComment: (postId: string, commentId: string) => void;
+  onDeletePost?: (postId: string) => void;
   onVotePoll: (postId: string, optionId: string) => void;
   onOpenLightbox?: (imgUrl: string) => void;
   renderMentionsAndLinks: (content: string, agentName: string, candidates: MentionCandidate[]) => React.ReactNode;
@@ -66,6 +73,7 @@ export const FeedPostDetailModal: React.FC<FeedPostDetailModalProps> = ({
   onReaction,
   onAddComment,
   onDeleteComment,
+  onDeletePost,
   onVotePoll,
   onOpenLightbox,
   renderMentionsAndLinks,
@@ -79,6 +87,14 @@ export const FeedPostDetailModal: React.FC<FeedPostDetailModalProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [hoveredReaction, setHoveredReaction] = useState(false);
   const hoverTimerRef = useRef<any>(null);
+
+  // Gallery viewer state inside detail modal
+  const [activeViewerGallery, setActiveViewerGallery] = useState<{
+    title: string;
+    images: FeedGalleryImageItem[];
+    initialIndex?: number;
+    autoPlay?: boolean;
+  } | null>(null);
 
   // Replying state right under comment
   const [replyingTo, setReplyingTo] = useState<{ id: string; targetParentId: string; authorName: string } | null>(null);
@@ -350,56 +366,58 @@ export const FeedPostDetailModal: React.FC<FeedPostDetailModalProps> = ({
     }
   };
 
-  if (!isOpen || !post) return null;
-
-  const isAuthor = user && post.authorId === user.id;
+  const isAuthor = Boolean(user && (
+    post?.authorId === user.id ||
+    (post?.author?.email && user.email && post.author.email.toLowerCase() === user.email.toLowerCase())
+  ));
   const canDelete = isAuthor || isOwnerOrAdmin;
-  const isPedagogical = post.type === 'OBSERVATION' || post.type === 'PROGRESS';
+  const isPedagogical = post?.type === 'OBSERVATION' || post?.type === 'PROGRESS';
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[99999] flex items-center justify-center sm:p-4 md:p-6 overflow-hidden">
-        {/* Backdrop */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          onClick={handleCloseModal}
-          className="fixed inset-0 bg-black/65 backdrop-blur-md cursor-pointer"
-        />
+      {isOpen && post && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center sm:p-4 md:p-6 overflow-hidden">
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+            onClick={handleCloseModal}
+            className="fixed inset-0 bg-black/65 backdrop-blur-md cursor-pointer"
+          />
 
-        {/* Modal Window / Mobile Pull-down Sheet */}
-        <motion.div
-          drag="y"
-          dragConstraints={{ top: 0, bottom: 0 }}
-          dragElastic={{ top: 0, bottom: 0.4 }}
-          onDragStart={() => setIsDragging(true)}
-          onDrag={(_, info) => {
-            dragY.set(Math.max(0, info.offset.y));
-          }}
-          onDragEnd={(_, info) => {
-            setIsDragging(false);
-            if (info.offset.y > 110 || info.velocity.y > 400) {
-              handleCloseModal();
-            } else {
-              dragY.set(0);
-            }
-          }}
-          initial={{ opacity: 0, y: 60, scale: 0.96 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 80, scale: 0.94 }}
-          transition={{ type: 'spring', damping: 26, stiffness: 280 }}
-          className={`relative z-10 w-full sm:max-w-3xl md:max-w-4xl h-full sm:h-auto sm:max-h-[92vh] flex flex-col bg-white dark:bg-slate-900 shadow-2xl overflow-hidden border border-slate-200/80 dark:border-slate-800 sm:rounded-3xl transition-all duration-150 ${
-            isDragging ? 'rounded-t-[32px]' : 'rounded-none sm:rounded-3xl'
-          }`}
-        >
-          {/* Mobile Pull-Down Handle Bar */}
-          <div className="sm:hidden pt-2.5 pb-1 flex flex-col items-center justify-center shrink-0 cursor-grab active:cursor-grabbing">
-            <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full transition-colors" />
-          </div>
+          {/* Modal Window / Mobile Pull-down Sheet */}
+          <motion.div
+            drag="y"
+            dragConstraints={{ top: 0, bottom: 0 }}
+            dragElastic={{ top: 0, bottom: 0.4 }}
+            onDragStart={() => setIsDragging(true)}
+            onDrag={(_, info) => {
+              dragY.set(Math.max(0, info.offset.y));
+            }}
+            onDragEnd={(_, info) => {
+              setIsDragging(false);
+              if (info.offset.y > 110 || info.velocity.y > 400) {
+                handleCloseModal();
+              } else {
+                dragY.set(0);
+              }
+            }}
+            initial={{ opacity: 0, scale: 0.97, y: 14 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.97, y: 14 }}
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className={`relative z-10 w-full sm:max-w-3xl md:max-w-4xl h-full sm:h-auto sm:max-h-[92vh] flex flex-col bg-white dark:bg-slate-900 shadow-2xl overflow-hidden border border-slate-200/80 dark:border-slate-800 ${
+              isDragging ? 'rounded-t-[32px]' : 'rounded-none sm:rounded-3xl'
+            }`}
+          >
+            {/* Mobile Pull-Down Handle Bar */}
+            <div className="sm:hidden pt-2.5 pb-1 flex flex-col items-center justify-center shrink-0 cursor-grab active:cursor-grabbing">
+              <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full" />
+            </div>
 
-          {/* Desktop Close Button */}
+            {/* Desktop Close Button */}
           <button
             type="button"
             onClick={handleCloseModal}
@@ -441,14 +459,27 @@ export const FeedPostDetailModal: React.FC<FeedPostDetailModalProps> = ({
               </div>
             </div>
 
-            {/* Mobile close chevron / touch button */}
-            <button
-              type="button"
-              onClick={handleCloseModal}
-              className="sm:hidden p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
-            >
-              <ChevronDown className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-1.5">
+              {canDelete && onDeletePost && (
+                <button
+                  type="button"
+                  onClick={() => onDeletePost(post.id)}
+                  className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-colors cursor-pointer"
+                  title="Eliminar publicación"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+
+              {/* Mobile close chevron / touch button */}
+              <button
+                type="button"
+                onClick={handleCloseModal}
+                className="sm:hidden p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer"
+              >
+                <ChevronDown className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
           {/* Scrollable Main Body (Post Content + Comments Thread) */}
@@ -471,31 +502,173 @@ export const FeedPostDetailModal: React.FC<FeedPostDetailModalProps> = ({
                 </h2>
               )}
 
-              <p className="text-sm sm:text-base text-slate-700 dark:text-slate-300 whitespace-pre-line leading-relaxed">
-                {renderMentionsAndLinks(post.content, aiAgentName, mentionCandidates)}
-              </p>
+              <ExpandableFeedText
+                text={post.content}
+                maxWords={100}
+                aiAgentName={aiAgentName}
+                mentionCandidates={mentionCandidates}
+                className="text-sm sm:text-base text-slate-700 dark:text-slate-300 whitespace-pre-line leading-relaxed"
+                renderContentWithMentionsAndLinks={renderMentionsAndLinks}
+              />
 
-              {/* Media Images Gallery */}
-              {post.mediaUrls && post.mediaUrls.length > 0 && (
-                <div className={`grid gap-2 rounded-2xl overflow-hidden ${
-                  post.mediaUrls.length === 1 ? 'grid-cols-1' :
-                  post.mediaUrls.length === 2 ? 'grid-cols-2' :
-                  'grid-cols-2 sm:grid-cols-3'
-                }`}>
-                  {post.mediaUrls.map((url, idx) => (
-                    <div
-                      key={idx}
-                      onClick={() => onOpenLightbox && onOpenLightbox(url)}
-                      className="relative group aspect-square bg-slate-100 dark:bg-slate-800 overflow-hidden cursor-pointer"
-                    >
-                      <img
-                        src={url}
-                        alt={`Media ${idx + 1}`}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
+              {/* Shared Gallery Album 9-Photo Collage */}
+              {post.type === 'GALLERY' || post.refType === 'GALLERY' ? (() => {
+                const galleryItems: FeedGalleryImageItem[] = post.gallery?.images?.map(i => ({
+                  id: i.id,
+                  src: i.src,
+                  title: i.title,
+                  description: i.description,
+                  blurredSrc: i.blurred_src
+                })) || (Array.isArray(post.mediaUrls) ? post.mediaUrls.map(u => ({ src: u })) : []);
+
+                if (galleryItems.length === 0) return null;
+
+                const galleryTitle = post.title || post.gallery?.name || 'Álbum de Galería';
+                const maxDisplay = 8;
+                const displayItems = galleryItems.slice(0, maxDisplay);
+                const remainingCount = galleryItems.length - maxDisplay;
+
+                return (
+                  <div className="space-y-2 pt-1">
+                    {/* Album Header Banner */}
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 shadow-2xs">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0 border border-amber-500/20 shadow-xs">
+                          <Images className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                            {galleryTitle}
+                          </h4>
+                          <span className="text-[10.5px] text-slate-500 dark:text-slate-400 font-medium">
+                            {galleryItems.length} {galleryItems.length === 1 ? 'fotografía o video' : 'fotografías'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveViewerGallery({
+                            title: galleryTitle,
+                            images: galleryItems,
+                            initialIndex: 0,
+                            autoPlay: true
+                          });
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0"
+                        title="Iniciar reproducción automática de fotos"
+                      >
+                        <Play className="w-3 h-3 fill-current" />
+                        <span className="hidden sm:inline">Reproducir</span>
+                      </button>
                     </div>
-                  ))}
-                </div>
+
+                    {/* Compact 4-Column Photo Collage Grid */}
+                    <div className={`grid gap-1 sm:gap-1.5 rounded-xl overflow-hidden ${
+                      displayItems.length === 1
+                        ? 'grid-cols-1 aspect-video'
+                        : displayItems.length === 2
+                        ? 'grid-cols-2 aspect-video'
+                        : displayItems.length === 3
+                        ? 'grid-cols-3 aspect-video'
+                        : 'grid-cols-4'
+                    }`}>
+                      {displayItems.map((item, idx) => {
+                        const isLastTile = idx === maxDisplay - 1 && remainingCount > 0;
+                        const isVid = /\.(mp4|webm|mov|ogg|m4v)(\?.*)?$/i.test(item.src);
+
+                        return (
+                          <div
+                            key={idx}
+                            onClick={() => setActiveViewerGallery({
+                              title: galleryTitle,
+                              images: galleryItems,
+                              initialIndex: idx,
+                              autoPlay: false
+                            })}
+                            className={`group relative overflow-hidden bg-slate-100 dark:bg-slate-800 cursor-pointer aspect-square ${
+                              displayItems.length === 1 ? 'aspect-video' : ''
+                            }`}
+                          >
+                            <img
+                              src={item.blurredSrc || item.src}
+                              alt=""
+                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                              loading="lazy"
+                            />
+
+                            {isVid && (
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                <div className="w-6 h-6 rounded-full bg-black/60 backdrop-blur-md text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                                  <Play className="w-3 h-3 ml-0.5 fill-current" />
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Hover overlay with eye icon */}
+                            {!isLastTile && !isVid && (
+                              <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                                <Eye className="w-4 h-4" />
+                              </div>
+                            )}
+
+                            {/* +N More Overlay on last tile */}
+                            {isLastTile && (
+                              <div className="absolute inset-0 bg-slate-950/75 backdrop-blur-xs flex flex-col items-center justify-center text-white p-1 text-center transition-all group-hover:bg-slate-950/85">
+                                <span className="text-sm sm:text-base font-black font-mono leading-none">
+                                  +{remainingCount}
+                                </span>
+                                <span className="text-[9px] sm:text-[10px] font-semibold text-amber-300 mt-0.5">
+                                  más
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Full Album Action Trigger */}
+                    <button
+                      type="button"
+                      onClick={() => setActiveViewerGallery({
+                        title: galleryTitle,
+                        images: galleryItems,
+                        initialIndex: 0,
+                        autoPlay: false
+                      })}
+                      className="w-full py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer border border-slate-200/60 dark:border-slate-700/60"
+                    >
+                      <Images className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                      <span>Abrir Galería Completa ({galleryItems.length} elementos)</span>
+                    </button>
+                  </div>
+                );
+              })() : (
+                /* Media Images Gallery */
+                post.mediaUrls && post.mediaUrls.length > 0 && (
+                  <div className={`grid gap-2 rounded-2xl overflow-hidden ${
+                    post.mediaUrls.length === 1 ? 'grid-cols-1' :
+                    post.mediaUrls.length === 2 ? 'grid-cols-2' :
+                    'grid-cols-2 sm:grid-cols-3'
+                  }`}>
+                    {post.mediaUrls.map((url, idx) => (
+                      <div
+                        key={idx}
+                        onClick={() => onOpenLightbox && onOpenLightbox(url)}
+                        className="relative group aspect-square bg-slate-100 dark:bg-slate-800 overflow-hidden cursor-pointer"
+                      >
+                        <img
+                          src={url}
+                          alt={`Media ${idx + 1}`}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )
               )}
 
               {/* Poll Module if present */}
@@ -684,9 +857,14 @@ export const FeedPostDetailModal: React.FC<FeedPostDetailModalProps> = ({
                               </span>
                             </div>
 
-                            <p className="mt-1 text-xs text-slate-700 dark:text-slate-200 whitespace-pre-line leading-relaxed">
-                              {renderMentionsAndLinks(rootComment.content, aiAgentName, mentionCandidates)}
-                            </p>
+                            <ExpandableFeedText
+                              text={rootComment.content}
+                              maxWords={100}
+                              aiAgentName={aiAgentName}
+                              mentionCandidates={mentionCandidates}
+                              className="mt-1 text-xs text-slate-700 dark:text-slate-200 whitespace-pre-line leading-relaxed"
+                              renderContentWithMentionsAndLinks={renderMentionsAndLinks}
+                            />
 
                             {/* Root Comment Attached Image */}
                             {rootComment.mediaUrl && (
@@ -829,7 +1007,7 @@ export const FeedPostDetailModal: React.FC<FeedPostDetailModalProps> = ({
                                   </div>
 
                                   {effectiveShowAiCuration && (
-                                    <p className="text-[10.5px] text-slate-400 dark:text-slate-500 flex items-center gap-1 pt-1.5 px-0.5 select-none leading-tight border-t border-slate-100 dark:border-slate-800/60 mt-1">
+                                    <p className="hidden sm:flex text-[10.5px] text-slate-400 dark:text-slate-500 items-center gap-1 pt-1.5 px-0.5 select-none leading-tight border-t border-slate-100 dark:border-slate-800/60 mt-1">
                                       <Sparkles className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                                       <span>La IA revisará y corregirá la ortografía y el contenido al responder.</span>
                                     </p>
@@ -894,9 +1072,14 @@ export const FeedPostDetailModal: React.FC<FeedPostDetailModalProps> = ({
                                       </span>
                                     </div>
 
-                                    <p className="mt-1 text-xs text-slate-700 dark:text-slate-200 whitespace-pre-line leading-relaxed">
-                                      {renderMentionsAndLinks(reply.content, aiAgentName, mentionCandidates)}
-                                    </p>
+                                    <ExpandableFeedText
+                                      text={reply.content}
+                                      maxWords={100}
+                                      aiAgentName={aiAgentName}
+                                      mentionCandidates={mentionCandidates}
+                                      className="mt-1 text-xs text-slate-700 dark:text-slate-200 whitespace-pre-line leading-relaxed"
+                                      renderContentWithMentionsAndLinks={renderMentionsAndLinks}
+                                    />
 
                                     {/* Reply Comment Attached Image */}
                                     {reply.mediaUrl && (
@@ -1039,7 +1222,7 @@ export const FeedPostDetailModal: React.FC<FeedPostDetailModalProps> = ({
                                           </div>
 
                                           {effectiveShowAiCuration && (
-                                            <p className="text-[10.5px] text-slate-400 dark:text-slate-500 flex items-center gap-1 pt-1.5 px-0.5 select-none leading-tight border-t border-slate-100 dark:border-slate-800/60 mt-1">
+                                            <p className="hidden sm:flex text-[10.5px] text-slate-400 dark:text-slate-500 items-center gap-1 pt-1.5 px-0.5 select-none leading-tight border-t border-slate-100 dark:border-slate-800/60 mt-1">
                                               <Sparkles className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                                               <span>La IA revisará y corregirá la ortografía y el contenido al responder.</span>
                                             </p>
@@ -1182,7 +1365,7 @@ export const FeedPostDetailModal: React.FC<FeedPostDetailModalProps> = ({
               </div>
 
               {effectiveShowAiCuration && (
-                <p className="text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-1 pt-1.5 px-0.5 select-none leading-tight border-t border-slate-200/60 dark:border-slate-700/60 mt-1">
+                <p className="hidden sm:flex text-[11px] text-slate-400 dark:text-slate-500 items-center gap-1 pt-1.5 px-0.5 select-none leading-tight border-t border-slate-200/60 dark:border-slate-700/60 mt-1">
                   <Sparkles className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   <span>La IA revisará y corregirá automáticamente la ortografía y el contenido para mantener la calidad del muro.</span>
                 </p>
@@ -1191,6 +1374,19 @@ export const FeedPostDetailModal: React.FC<FeedPostDetailModalProps> = ({
           </div>
         </motion.div>
       </div>
+      )}
+
+      {/* In-Place Gallery Lightbox & Auto-Playback Modal */}
+      {activeViewerGallery && (
+        <FeedGalleryViewerModal
+          isOpen={Boolean(activeViewerGallery)}
+          onClose={() => setActiveViewerGallery(null)}
+          galleryTitle={activeViewerGallery.title}
+          images={activeViewerGallery.images}
+          initialIndex={activeViewerGallery.initialIndex || 0}
+          autoPlayOnOpen={activeViewerGallery.autoPlay || false}
+        />
+      )}
     </AnimatePresence>
   );
 };

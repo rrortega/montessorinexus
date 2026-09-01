@@ -13,7 +13,7 @@ import {
 import { MobileMenuButton } from './AdminDashboard';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from 'recharts';
 import { toast } from 'sonner';
-import { UmamiClient, UmamiStats, UmamiPageviewPoint, UmamiMetricItem } from '@/lib/umami';
+import { UmamiStats } from '@/lib/umami';
 import { WorldMapMetrics, CountryMetric } from '@/components/admin/WorldMapMetrics';
 import { useAuth } from '@/context/AuthContext';
 
@@ -45,10 +45,6 @@ export const WebTrafficSection: React.FC = () => {
   const { activeMembership } = useAuth();
   const school = activeMembership?.school;
 
-  const envHost = import.meta.env.VITE_UMAMI_HOST || 'https://analytics.chamba.pro';
-  const envUser = import.meta.env.VITE_UMAMI_USERNAME || 'montessorinexus';
-  const envPass = import.meta.env.VITE_UMAMI_PASSWORD || 'L4cl4v3c31b4';
-
   const [timeFrame, setTimeFrame] = useState<TimeFrame>('24h');
   const [loading, setLoading] = useState(false);
   const [currentSiteId, setCurrentSiteId] = useState<string | null>(school?.umamiSiteId || null);
@@ -61,145 +57,67 @@ export const WebTrafficSection: React.FC = () => {
   const [topPages, setTopPages] = useState<{ path: string; views: number }[]>(fallbackTopPages);
   const [countryData, setCountryData] = useState<CountryMetric[]>([]);
 
-  const resolveSchoolSiteId = async (): Promise<string | null> => {
-    if (currentSiteId) return currentSiteId;
-    if (school?.umamiSiteId) {
-      setCurrentSiteId(school.umamiSiteId);
-      return school.umamiSiteId;
-    }
-    try {
-      const res = await fetch('/api/schools/current/umami-site');
-      if (res.ok) {
-        const data = await res.json();
-        if (data.umamiSiteId) {
-          setCurrentSiteId(data.umamiSiteId);
-          return data.umamiSiteId;
-        }
-      }
-    } catch (e) {
-      console.warn('Error resolviendo umamiSiteId en el servidor:', e);
-    }
-    return null;
-  };
-
   const fetchTrafficData = async (frame: TimeFrame = timeFrame) => {
     setLoading(true);
 
-    const siteId = await resolveSchoolSiteId();
-    if (!siteId) {
-      setLoading(false);
-      return;
-    }
-
-    const client = new UmamiClient(envHost);
-    const now = Date.now();
-    let startAt = now - 24 * 60 * 60 * 1000;
-    let unit: 'hour' | 'day' | 'month' = 'hour';
-
-    if (frame === '7d') {
-      startAt = now - 7 * 24 * 60 * 60 * 1000;
-      unit = 'day';
-    } else if (frame === '30d') {
-      startAt = now - 30 * 24 * 60 * 60 * 1000;
-      unit = 'day';
-    } else if (frame === '90d') {
-      startAt = now - 90 * 24 * 60 * 60 * 1000;
-      unit = 'day';
-    } else if (frame === '1y') {
-      startAt = now - 365 * 24 * 60 * 60 * 1000;
-      unit = 'month';
-    }
-
     try {
-      // 1. Authenticate silently with environment credentials
-      await client.login(envUser, envPass);
-
-      // 2. Active visitors right now
-      try {
-        const activeCount = await client.getActiveVisitors(siteId);
-        setActiveVisitors(activeCount);
-      } catch (e) {
-        console.warn('Active visitors fetch error', e);
+      // Secure BFF Call: Server handles authentication, site provisioning and metric aggregation
+      const res = await fetch(`/api/schools/current/traffic/summary?timeframe=${frame}`);
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
       }
 
-      // 3. Stats
-      const statsData = await client.getWebsiteStats(siteId, startAt, now);
-      setStats(statsData);
+      const data = await res.json();
 
-      // 4. Pageviews series
-      try {
-        const pvData = await client.getPageviews(siteId, startAt, now, unit);
-        if (pvData && pvData.pageviews && pvData.pageviews.length > 0) {
-          const formattedData = pvData.pageviews.map((pt: UmamiPageviewPoint) => {
-            const dateObj = new Date(pt.x);
-            let timeStr = pt.x;
-            if (!isNaN(dateObj.getTime())) {
-              timeStr = frame === '24h' 
-                ? dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                : dateObj.toLocaleDateString([], { month: 'short', day: 'numeric' });
-            }
-            return { time: timeStr, views: pt.y };
-          });
-          setChartData(formattedData);
-        }
-      } catch (e) {
-        console.warn('Pageviews chart fetch error', e);
+      if (data.siteId) {
+        setCurrentSiteId(data.siteId);
       }
 
-      // 5. Device metrics
-      try {
-        const devMetrics = await client.getMetrics(siteId, 'device', startAt, now);
-        if (devMetrics && devMetrics.length > 0) {
-          const total = devMetrics.reduce((acc, curr) => acc + curr.y, 0) || 1;
-          const formattedDevs = devMetrics.map((item: UmamiMetricItem) => {
-            const devName = item.x.toLowerCase();
-            const icon = devName.includes('mobile') || devName.includes('móvil') ? Smartphone : devName.includes('tablet') ? Globe : Laptop;
-            return {
-              device: item.x.charAt(0).toUpperCase() + item.x.slice(1),
-              percentage: Math.round((item.y / total) * 100),
-              icon,
-            };
-          });
-          setDevicesData(formattedDevs);
-        }
-      } catch (e) {
-        console.warn('Device metrics fetch error', e);
+      if (typeof data.activeVisitors === 'number') {
+        setActiveVisitors(data.activeVisitors);
       }
 
-      // 6. Top pages metrics
-      try {
-        const pathMetrics = await client.getMetrics(siteId, 'path', startAt, now);
-        if (pathMetrics && pathMetrics.length > 0) {
-          const formattedPages = pathMetrics.slice(0, 5).map((item: UmamiMetricItem) => ({
-            path: item.x || '/',
-            views: item.y,
-          }));
-          setTopPages(formattedPages);
-        }
-      } catch (e) {
-        console.warn('Path metrics fetch error', e);
+      if (data.stats) {
+        setStats(data.stats);
       }
 
-      // 7. Country metrics (Map)
-      try {
-        const countryMetrics = await client.getMetrics(siteId, 'country', startAt, now);
-        if (countryMetrics && countryMetrics.length > 0) {
-          const total = countryMetrics.reduce((acc, curr) => acc + curr.y, 0) || 1;
-          const formattedCountries: CountryMetric[] = countryMetrics.map((item: UmamiMetricItem) => ({
-            code: item.x,
-            name: item.x,
-            views: item.y,
-            percentage: Math.round((item.y / total) * 100),
-          }));
-          setCountryData(formattedCountries);
-        }
-      } catch (e) {
-        console.warn('Country metrics fetch error', e);
+      if (data.chartData && Array.isArray(data.chartData) && data.chartData.length > 0) {
+        setChartData(data.chartData);
       }
 
+      if (data.devices && Array.isArray(data.devices) && data.devices.length > 0) {
+        const formattedDevs = data.devices.map((item: any) => {
+          const raw = (item.rawType || item.device || '').toLowerCase();
+          const icon = raw.includes('mobile') || raw.includes('móvil') 
+            ? Smartphone 
+            : raw.includes('tablet') 
+            ? Globe 
+            : Laptop;
+          return {
+            device: item.device || 'Otros',
+            percentage: item.percentage || 0,
+            icon,
+          };
+        });
+        setDevicesData(formattedDevs);
+      }
+
+      if (data.topPages && Array.isArray(data.topPages) && data.topPages.length > 0) {
+        setTopPages(data.topPages);
+      }
+
+      if (data.countries && Array.isArray(data.countries) && data.countries.length > 0) {
+        const formattedCountries: CountryMetric[] = data.countries.map((item: any) => ({
+          code: item.country || 'Global',
+          name: item.country || 'Global',
+          percentage: item.percentage || 0,
+          views: item.count || 0
+        }));
+        setCountryData(formattedCountries);
+      }
       toast.success('Métricas actualizadas.');
-    } catch (err: any) {
-      console.error('Traffic metrics fetch error', err);
+    } catch (e) {
+      console.warn('Error fetching traffic metrics via BFF:', e);
     } finally {
       setLoading(false);
     }

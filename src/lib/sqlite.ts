@@ -6383,6 +6383,7 @@ export interface FeedItem {
     siteName?: string;
   } | null;
   poll?: FeedPoll | null;
+  gallery?: (Gallery & { images?: GalleryImageItem[] }) | null;
   school?: { id: string; name: string; logoUrl?: string; slug: string };
 }
 
@@ -6409,6 +6410,9 @@ export interface FeedResponse {
   success: boolean;
   items: FeedItem[];
   total: number;
+  totalCount?: number;
+  hasMore?: boolean;
+  nextOffset?: number | null;
   userRole: Role;
   assignedEnvIds: string[];
   tutorChildIds: string[];
@@ -6443,6 +6447,9 @@ export async function getFeed(params?: {
 }
 
 export async function createFeedPost(data: {
+  type?: string;
+  refId?: string | null;
+  refType?: string | null;
   title?: string;
   content: string;
   mediaUrls?: string[];

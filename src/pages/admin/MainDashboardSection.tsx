@@ -877,45 +877,107 @@ export const MainDashboardSection: React.FC<MainDashboardSectionProps> = ({ onNa
             </div>
           </div>
 
-          {/* UPCOMING CALENDER EVENTS */}
+          {/* UPCOMING CALENDAR EVENTS */}
           <div className="p-5 md:p-6 bg-white border border-forest/10 rounded-3xl shadow-xs space-y-4">
             <div className="flex items-center justify-between border-b border-forest/5 pb-3">
-              <h3 className="font-bold text-forest text-base font-display">Próximos Eventos</h3>
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-emerald-50 text-forest rounded-xl">
+                  <Calendar className="w-4 h-4" />
+                </div>
+                <h3 className="font-bold text-forest text-base font-display">Próximos Eventos</h3>
+              </div>
               <button 
                 type="button" 
                 onClick={() => onNavigateTab('events')}
-                className="text-xs font-bold text-forest hover:underline"
+                className="text-xs font-bold text-forest hover:text-forest/80 hover:underline transition-colors flex items-center gap-1 group/link"
               >
-                Ver agenda
+                <span>Ver agenda</span>
+                <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover/link:translate-x-0.5" />
               </button>
             </div>
 
-            <div className="space-y-3">
+            <div>
               {events.length === 0 ? (
-                <p className="text-xs text-muted-foreground py-6 text-center">No hay eventos próximos agendados.</p>
+                <div className="py-6 text-center px-4 bg-slate-50/50 rounded-2xl border border-dashed border-forest/10">
+                  <div className="w-9 h-9 mx-auto mb-2 rounded-xl bg-forest/5 flex items-center justify-center text-forest/50">
+                    <Calendar className="w-4 h-4" />
+                  </div>
+                  <p className="text-xs font-semibold text-foreground/80">No hay eventos próximos</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Los eventos agendados aparecerán aquí.</p>
+                </div>
               ) : (
-                events.map(ev => {
-                  const evDate = new Date(ev.startDate);
-                  const day = evDate.getDate();
-                  const monthStr = evDate.toLocaleDateString('es-MX', { month: 'short' }).toUpperCase().replace('.', '');
-                  
-                  return (
-                    <div key={ev.id} className="flex gap-3.5 items-start">
-                      <div className="w-11 h-11 bg-forest/5 border border-forest/10 rounded-2xl shrink-0 flex flex-col items-center justify-center font-mono p-1">
-                        <span className="text-[10px] text-forest/80 font-bold leading-none">{monthStr}</span>
-                        <span className="text-sm text-forest font-bold leading-tight">{day}</span>
-                      </div>
-                      <div className="truncate flex-1">
-                        <h4 className="text-xs font-bold text-foreground truncate leading-tight">
-                          {ev.title}
-                        </h4>
-                        <span className="text-[10px] text-muted-foreground block truncate">
-                          {ev.location || 'Ceiba Roots'} • {ev.startTime || 'Todo el día'}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })
+                <div className="space-y-2.5">
+                  {events
+                    .filter(ev => ev.status !== 'CANCELLED')
+                    .slice(0, 4)
+                    .map(ev => {
+                      const rawDate = ev.startDateTime || (ev as any).startDate;
+                      let day = '--';
+                      let monthStr = '---';
+                      let timeStr = 'Todo el día';
+
+                      if (rawDate) {
+                        const d = new Date(rawDate);
+                        if (!isNaN(d.getTime())) {
+                          day = String(d.getDate());
+                          monthStr = d.toLocaleDateString('es-MX', { month: 'short' }).toUpperCase().replace('.', '');
+                          const hours = d.getHours();
+                          const minutes = d.getMinutes();
+                          if (hours !== 0 || minutes !== 0) {
+                            timeStr = d.toLocaleTimeString('es-MX', { hour: 'numeric', minute: '2-digit', hour12: true });
+                          }
+                        }
+                      }
+
+                      return (
+                        <button
+                          key={ev.id}
+                          type="button"
+                          onClick={() => onNavigateTab('events')}
+                          className="w-full p-2.5 bg-slate-50/50 hover:bg-slate-50 border border-slate-100 rounded-2xl transition-all duration-200 flex items-center gap-3 text-left group/item cursor-pointer"
+                        >
+                          {/* Mini Calendar Badge */}
+                          <div className="w-11 h-12 bg-white group-hover/item:bg-forest/5 border border-forest/10 rounded-xl shrink-0 flex flex-col items-center justify-center shadow-2xs transition-colors">
+                            <span className="text-[9px] text-forest/75 font-bold tracking-wider leading-none">
+                              {monthStr}
+                            </span>
+                            <span className="text-sm font-bold text-forest font-mono leading-tight mt-0.5">
+                              {day}
+                            </span>
+                          </div>
+
+                          {/* Event Details */}
+                          <div className="truncate flex-1 min-w-0">
+                            <h4 className="text-xs font-bold text-foreground group-hover/item:text-forest transition-colors truncate leading-snug">
+                              {ev.title}
+                            </h4>
+                            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mt-0.5 truncate">
+                              <span className="truncate text-forest/70 font-medium">{ev.location || 'Campus'}</span>
+                              <span className="text-slate-300">•</span>
+                              <span className="shrink-0">{timeStr}</span>
+                              {ev.category?.name && (
+                                <>
+                                  <span className="text-slate-300">•</span>
+                                  <span 
+                                    className="px-1.5 py-0.2 rounded-md text-[9px] font-semibold shrink-0"
+                                    style={{
+                                      backgroundColor: ev.category.color ? `${ev.category.color}15` : 'rgba(46, 125, 50, 0.1)',
+                                      color: ev.category.color || '#2e7d32'
+                                    }}
+                                  >
+                                    {ev.category.name}
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Action indicator */}
+                          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/40 group-hover/item:text-forest group-hover/item:translate-x-0.5 transition-transform shrink-0" />
+                        </button>
+                      );
+                    })}
+                </div>
               )}
             </div>
           </div>

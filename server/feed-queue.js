@@ -57,7 +57,7 @@ export async function enqueueFeedPostJob({ postId, schoolId, authorRole, fallbac
         authorRole,
         enqueuedAt: new Date().toISOString()
       }, {
-        jobId: `post-${postId}-${Date.now()}`
+        jobId: `feed-post-${postId}`
       });
       return { enqueued: true, jobId: job.id };
     }
@@ -92,7 +92,7 @@ export async function enqueueFeedCommentJob({ commentId, postId, schoolId, autho
         authorRole,
         enqueuedAt: new Date().toISOString()
       }, {
-        jobId: `comment-${commentId}-${Date.now()}`
+        jobId: `feed-comment-${commentId}`
       });
       return { enqueued: true, jobId: job.id };
     }

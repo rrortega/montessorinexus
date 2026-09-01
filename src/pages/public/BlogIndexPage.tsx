@@ -232,14 +232,14 @@ export const BlogIndexPage: React.FC = () => {
           {/* Search Box */}
           <div className="max-w-lg mx-auto pt-4">
             <div className="relative">
-              <Search className="w-4 h-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-stone-400 dark:text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Buscar temas, autonomía, límites, materiales..."
-                className={`w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm bg-white dark:bg-card border border-border shadow-xs rounded-2xl text-stone-900 dark:text-slate-100 placeholder:text-stone-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 ${
-                  isSaaSBlog ? 'focus:ring-[#C4661F]' : 'focus:ring-forest'
+                className={`w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm bg-white dark:bg-[#152418] border border-stone-200 dark:border-stone-700/80 shadow-xs rounded-2xl text-stone-900 dark:text-white placeholder:text-stone-400 dark:placeholder:text-stone-400 focus:outline-none focus:ring-2 ${
+                  isSaaSBlog ? 'focus:ring-[#C4661F] dark:focus:ring-[#C4661F]' : 'focus:ring-forest dark:focus:ring-forest'
                 }`}
               />
             </div>

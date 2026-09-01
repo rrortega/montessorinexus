@@ -302,3 +302,153 @@ export async function ensureSchoolUmamiSiteId(school, prisma, redisClient, curre
     }
   }
 }
+
+/**
+ * Generic authenticated fetch helper for Umami API
+ */
+async function fetchUmamiAuth(endpoint, retry = true) {
+  const { host } = getUmamiConfig();
+  const token = await getUmamiToken();
+
+  const url = `${host}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
+  const res = await fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+
+  if (res.status === 401 && retry) {
+    // Token might have expired, force refresh once
+    const freshToken = await getUmamiToken(true);
+    return fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${freshToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+  }
+
+  return res;
+}
+
+/**
+ * BFF Endpoint Handler: Fetches aggregated traffic metrics for a school safely on the server
+ */
+export async function getSchoolTrafficSummary(school, prisma, redisClient, query = {}) {
+  const siteId = await ensureSchoolUmamiSiteId(school, prisma, redisClient);
+  if (!siteId) {
+    return {
+      success: false,
+      error: 'No se pudo obtener o aprovisionar el ID de métricas del colegio.',
+      siteId: null,
+      activeVisitors: 0,
+      stats: null,
+      chartData: [],
+      devices: [],
+      topPages: [],
+      countries: []
+    };
+  }
+
+  const now = Date.now();
+  const timeFrame = query.timeframe || '24h';
+  let startAt = now - 24 * 60 * 60 * 1000;
+  let unit = 'hour';
+
+  if (timeFrame === '7d') {
+    startAt = now - 7 * 24 * 60 * 60 * 1000;
+    unit = 'day';
+  } else if (timeFrame === '30d') {
+    startAt = now - 30 * 24 * 60 * 60 * 1000;
+    unit = 'day';
+  } else if (timeFrame === '90d') {
+    startAt = now - 90 * 24 * 60 * 60 * 1000;
+    unit = 'day';
+  } else if (timeFrame === '1y') {
+    startAt = now - 365 * 24 * 60 * 60 * 1000;
+    unit = 'month';
+  }
+
+  // Execute metrics requests in parallel via server BFF
+  const [activeRes, statsRes, pvRes, deviceRes, pathRes, countryRes] = await Promise.allSettled([
+    fetchUmamiAuth(`/api/websites/${siteId}/active`).then(r => r.ok ? r.json() : null),
+    fetchUmamiAuth(`/api/websites/${siteId}/stats?startAt=${startAt}&endAt=${now}`).then(r => r.ok ? r.json() : null),
+    fetchUmamiAuth(`/api/websites/${siteId}/pageviews?startAt=${startAt}&endAt=${now}&unit=${unit}`).then(r => r.ok ? r.json() : null),
+    fetchUmamiAuth(`/api/websites/${siteId}/metrics?startAt=${startAt}&endAt=${now}&type=device`).then(r => r.ok ? r.json() : null),
+    fetchUmamiAuth(`/api/websites/${siteId}/metrics?startAt=${startAt}&endAt=${now}&type=path`).then(r => r.ok ? r.json() : null),
+    fetchUmamiAuth(`/api/websites/${siteId}/metrics?startAt=${startAt}&endAt=${now}&type=country`).then(r => r.ok ? r.json() : null)
+  ]);
+
+  // 1. Process active visitors
+  let activeVisitors = 0;
+  if (activeRes.status === 'fulfilled' && activeRes.value) {
+    const raw = activeRes.value;
+    if (typeof raw === 'number') activeVisitors = raw;
+    else if (Array.isArray(raw)) activeVisitors = raw.length;
+    else if (raw && typeof raw.x === 'number') activeVisitors = raw.x;
+    else activeVisitors = raw.visitors || raw.count || 0;
+  }
+
+  // 2. Process stats
+  const stats = (statsRes.status === 'fulfilled' && statsRes.value) ? statsRes.value : null;
+
+  // 3. Process chart data
+  let chartData = [];
+  if (pvRes.status === 'fulfilled' && pvRes.value?.pageviews) {
+    chartData = pvRes.value.pageviews.map(pt => {
+      const dateObj = new Date(pt.x);
+      let timeStr = pt.x;
+      if (!isNaN(dateObj.getTime())) {
+        timeStr = timeFrame === '24h'
+          ? dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          : dateObj.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      }
+      return { time: timeStr, views: pt.y || 0 };
+    });
+  }
+
+  // 4. Process device metrics
+  let devices = [];
+  if (deviceRes.status === 'fulfilled' && Array.isArray(deviceRes.value)) {
+    const total = deviceRes.value.reduce((acc, curr) => acc + (curr.y || 0), 0) || 1;
+    devices = deviceRes.value.map(item => ({
+      device: item.x ? (item.x.charAt(0).toUpperCase() + item.x.slice(1)) : 'Otros',
+      rawType: (item.x || '').toLowerCase(),
+      percentage: Math.round(((item.y || 0) / total) * 100),
+      count: item.y || 0
+    }));
+  }
+
+  // 5. Process top pages
+  let topPages = [];
+  if (pathRes.status === 'fulfilled' && Array.isArray(pathRes.value)) {
+    topPages = pathRes.value.slice(0, 10).map(item => ({
+      path: item.x || '/',
+      views: item.y || 0
+    }));
+  }
+
+  // 6. Process country metrics
+  let countries = [];
+  if (countryRes.status === 'fulfilled' && Array.isArray(countryRes.value)) {
+    const total = countryRes.value.reduce((acc, curr) => acc + (curr.y || 0), 0) || 1;
+    countries = countryRes.value.slice(0, 10).map(item => ({
+      country: item.x || 'Global',
+      percentage: Math.round(((item.y || 0) / total) * 100),
+      count: item.y || 0
+    }));
+  }
+
+  return {
+    success: true,
+    siteId,
+    timeframe: timeFrame,
+    activeVisitors,
+    stats,
+    chartData,
+    devices,
+    topPages,
+    countries
+  };
+}

@@ -280,7 +280,6 @@ export const AdminGallerySection: React.FC = () => {
 
   // Image Modal State
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
-  const [editingImage, setEditingImage] = useState<GalleryImageItem | null>(null);
   const [selectedGalleryId, setSelectedGalleryId] = useState<string>("");
   const [selectedCatId, setSelectedCatId] = useState<string>("");
   const [title, setTitle] = useState("");
@@ -735,57 +734,33 @@ export const AdminGallerySection: React.FC = () => {
     }
   };
 
-  const handleOpenImageModal = (img?: GalleryImageItem) => {
-    if (!canManageGallery) {
-      if (img) setPreviewImage(img);
-      return;
-    }
+  const handleOpenImageModal = () => {
+    if (!canManageGallery) return;
 
     setAiGeneratedBadge(false);
     setBatchFiles([]);
     setIsUploadingBatch(false);
+    setEditingImage(null);
 
-    if (img) {
-      setEditingImage(img);
-      setSelectedGalleryId(img.gallery_id || (galleries.find(g => g.is_default)?.id || ""));
-      setSelectedCatId(img.category_id || categories[0]?.id || "other");
-      setTitle(img.title);
-      setTitleEn(img.title_en || "");
-      setDescription(img.description || "");
-      setDescriptionEn(img.description_en || "");
+    const defaultGalId = (activeGalleryId !== "all" && activeGalleryId)
+      ? activeGalleryId
+      : (galleries.find(g => g.is_default)?.id || (galleries.length > 0 ? galleries[0].id : ""));
+    setSelectedGalleryId(defaultGalId);
 
-      const initialTrans: Record<string, { title: string; description: string }> = {
-        es: { title: img.title, description: img.description || "" },
-        en: { title: img.title_en || "", description: img.description_en || "" },
-        ...(img.translations || {})
-      };
-      setTranslations(initialTrans);
+    const isTargetWeb = Boolean(galleries.find(g => g.id === defaultGalId)?.is_default);
+    const defaultCategory = isTargetWeb
+      ? ((activeCat !== "all" && activeCat) ? activeCat : (categories.length > 0 ? categories[0].id : "practical"))
+      : (categories.find(c => c.id === "other" || c.id === "outdoor")?.id || categories[0]?.id || "other");
 
-      setSrcUrl(img.src);
-      setSrcFile(null);
-      setIsAiAutoGenerate(false);
-    } else {
-      setEditingImage(null);
-      const defaultGalId = (activeGalleryId !== "all" && activeGalleryId)
-        ? activeGalleryId
-        : (galleries.find(g => g.is_default)?.id || (galleries.length > 0 ? galleries[0].id : ""));
-      setSelectedGalleryId(defaultGalId);
-
-      const isTargetWeb = Boolean(galleries.find(g => g.id === defaultGalId)?.is_default);
-      const defaultCategory = isTargetWeb
-        ? ((activeCat !== "all" && activeCat) ? activeCat : (categories.length > 0 ? categories[0].id : "practical"))
-        : (categories.find(c => c.id === "other" || c.id === "outdoor")?.id || categories[0]?.id || "other");
-
-      setSelectedCatId(defaultCategory);
-      setTitle("");
-      setTitleEn("");
-      setDescription("");
-      setDescriptionEn("");
-      setTranslations({});
-      setSrcUrl("");
-      setSrcFile(null);
-      setIsAiAutoGenerate(isTargetWeb);
-    }
+    setSelectedCatId(defaultCategory);
+    setTitle("");
+    setTitleEn("");
+    setDescription("");
+    setDescriptionEn("");
+    setTranslations({});
+    setSrcUrl("");
+    setSrcFile(null);
+    setIsAiAutoGenerate(isTargetWeb);
     setLangTab(activeLangs[0]?.code || "es");
     setIsImageModalOpen(true);
   };
@@ -833,7 +808,7 @@ export const AdminGallerySection: React.FC = () => {
     const effectiveShowOnWeb = Boolean(isTargetDefaultWebGal);
 
     // BATCH MULTI-UPLOAD FOR INTERNAL ALBUMS
-    if (!isTargetDefaultWebGal && !editingImage && batchFiles.length > 0) {
+    if (!isTargetDefaultWebGal && batchFiles.length > 0) {
       setIsUploadingBatch(true);
       const total = batchFiles.length;
       setUploadProgress({ current: 0, total, percentage: 0 });
@@ -930,44 +905,25 @@ export const AdminGallerySection: React.FC = () => {
     }
 
     try {
-      if (editingImage) {
-        const previousSrc = editingImage.src;
-        await updateGalleryImage(editingImage.id, {
-          gallery_id: selectedGalleryId || undefined,
-          category_id: safeCatId,
-          src: finalSrc,
-          title: isTargetDefaultWebGal ? (finalTranslations.es?.title || primaryTitle) : title.trim(),
-          title_en: isTargetDefaultWebGal ? (finalTranslations.en?.title || primaryTitle) : title.trim(),
-          description: isTargetDefaultWebGal ? (finalTranslations.es?.description || description.trim()) : description.trim(),
-          description_en: isTargetDefaultWebGal ? (finalTranslations.en?.description || descriptionEn.trim()) : description.trim(),
-          translations: finalTranslations,
-          show_on_web: effectiveShowOnWeb,
-          show_on_portal: true,
-        });
-        if (previousSrc && previousSrc !== finalSrc) {
-          deletePhysicalFile(previousSrc).catch(() => {});
-        }
-        toast.success("Fotografía actualizada.");
+      await createGalleryImage({
+        gallery_id: selectedGalleryId || undefined,
+        category_id: safeCatId,
+        src: finalSrc,
+        title: (isTargetDefaultWebGal && isAiAutoGenerate) ? "Procesando con IA..." : (finalTranslations.es?.title || primaryTitle),
+        title_en: (isTargetDefaultWebGal && isAiAutoGenerate) ? "Processing with AI..." : (finalTranslations.en?.title || primaryTitle),
+        description: (isTargetDefaultWebGal && isAiAutoGenerate) ? "" : (finalTranslations.es?.description || description.trim()),
+        description_en: (isTargetDefaultWebGal && isAiAutoGenerate) ? "" : (finalTranslations.en?.description || descriptionEn.trim()),
+        translations: (isTargetDefaultWebGal && isAiAutoGenerate) ? {} : finalTranslations,
+        aiAutoGenerate: isTargetDefaultWebGal && isAiAutoGenerate,
+        ai_status: (isTargetDefaultWebGal && isAiAutoGenerate) ? "PENDING" : "COMPLETED",
+        show_on_web: effectiveShowOnWeb,
+        show_on_portal: true,
+      });
+
+      if (isTargetDefaultWebGal && isAiAutoGenerate) {
+        toast.success("Fotografía subida. Generando metadatos pedagógicos con IA en segundo plano...");
       } else {
-        await createGalleryImage({
-          gallery_id: selectedGalleryId || undefined,
-          category_id: safeCatId,
-          src: finalSrc,
-          title: (isTargetDefaultWebGal && isAiAutoGenerate) ? "Procesando con IA..." : (finalTranslations.es?.title || primaryTitle),
-          title_en: (isTargetDefaultWebGal && isAiAutoGenerate) ? "Processing with AI..." : (finalTranslations.en?.title || primaryTitle),
-          description: (isTargetDefaultWebGal && isAiAutoGenerate) ? "" : (finalTranslations.es?.description || description.trim()),
-          description_en: (isTargetDefaultWebGal && isAiAutoGenerate) ? "" : (finalTranslations.en?.description || descriptionEn.trim()),
-          translations: (isTargetDefaultWebGal && isAiAutoGenerate) ? {} : finalTranslations,
-          aiAutoGenerate: isTargetDefaultWebGal && isAiAutoGenerate,
-          ai_status: (isTargetDefaultWebGal && isAiAutoGenerate) ? "PENDING" : "COMPLETED",
-          show_on_web: effectiveShowOnWeb,
-          show_on_portal: true,
-        });
-        if (isTargetDefaultWebGal && isAiAutoGenerate) {
-          toast.success("Fotografía subida. Generando metadatos pedagógicos con IA en segundo plano...");
-        } else {
-          toast.success("Fotografía agregada al álbum.");
-        }
+        toast.success("Fotografía agregada al álbum.");
       }
 
       await loadData(true);
@@ -1460,24 +1416,29 @@ export const AdminGallerySection: React.FC = () => {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-300">
-      {/* HERO BANNER & MAIN ACTIONS */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-forest via-forest-light to-forest p-6 sm:p-8 text-white shadow-md">
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-2xl">
-            <div className="flex items-center gap-2 text-white/80 text-xs font-semibold uppercase tracking-wider">
-              <Images className="w-4 h-4 text-white" />
-              <span>Gestión de Galerías & Álbumes</span>
+    <div className="space-y-6 font-body animate-in fade-in duration-300">
+      {/* FULL-WIDTH GREEN HERO BANNER */}
+      <div className="-mx-4 sm:-mx-6 md:-mx-8 -mt-4 sm:-mt-6 md:-mt-8 rounded-none bg-gradient-to-r from-forest via-forest-light to-forest px-4 sm:px-6 md:px-8 py-6 text-white shadow-md space-y-2 relative overflow-hidden border-b border-forest-light/40">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <MobileMenuButton className="!bg-white/20 !border-white/20 !text-white hover:!bg-white/30" />
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold font-display tracking-tight text-white leading-tight">
+                  Galerías de Fotos y Videos
+                </h1>
+                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-white/15 text-white font-mono border border-white/20">
+                  {images.length} {images.length === 1 ? "archivo" : "archivos"}
+                </span>
+              </div>
+              <p className="hidden sm:block text-xs sm:text-sm text-white/80 mt-1 max-w-2xl leading-relaxed">
+                Administra la galería pública web y organiza álbumes internos para subir fotos y videos y difundir con salones o familias de la comunidad escolar.
+              </p>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
-              Galerías de Fotos y Videos
-            </h1>
-            <p className="text-sm text-white/80 leading-relaxed">
-              Administra la galería pública web y organiza álbumes internos para subir fotos y videos y difundir con salones o familias de la comunidad escolar.
-            </p>
           </div>
 
-          <div className="flex items-center gap-2.5 flex-wrap shrink-0">
+          <div className="relative z-10 flex items-center gap-2 flex-wrap shrink-0">
             {canManageGallery && (
               <>
                 <button
@@ -2317,14 +2278,6 @@ export const AdminGallerySection: React.FC = () => {
                       )}
                       <button
                         type="button"
-                        onClick={() => handleOpenImageModal(img)}
-                        className="p-1.5 text-forest/80 hover:text-forest hover:bg-forest/10 rounded-lg transition-colors cursor-pointer"
-                        title="Editar Archivo"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        type="button"
                         onClick={() => setConfirmDelete({ isOpen: true, type: "image", id: img.id, title: img.title })}
                         className="p-1.5 text-destructive hover:bg-destructive/10 rounded-lg transition-colors cursor-pointer"
                         title="Eliminar Archivo"
@@ -2561,9 +2514,7 @@ export const AdminGallerySection: React.FC = () => {
           }}
           maxWidthClass="max-w-2xl"
           title={
-            editingImage
-              ? "Editar Archivo de Galería"
-              : Boolean(galleries.find(g => g.id === selectedGalleryId)?.is_default)
+            Boolean(galleries.find(g => g.id === selectedGalleryId)?.is_default)
               ? "Agregar Fotografía a la Galería Web"
               : "Subir Fotos y Videos al Álbum"
           }
@@ -2667,7 +2618,7 @@ export const AdminGallerySection: React.FC = () => {
                 const currentGal = galleries.find(g => g.id === selectedGalleryId);
                 const isDefaultWebGal = currentGal ? currentGal.is_default : (selectedGalleryId === (galleries.find(g => g.is_default)?.id || ""));
 
-                if (isDefaultWebGal || editingImage) {
+                if (isDefaultWebGal) {
                   return (
                     <div>
                       <ImageUploadDropzone
@@ -2807,8 +2758,8 @@ export const AdminGallerySection: React.FC = () => {
               const currentGal = galleries.find(g => g.id === selectedGalleryId);
               const isDefaultWebGal = currentGal ? currentGal.is_default : (selectedGalleryId === (galleries.find(g => g.is_default)?.id || ""));
 
-              // For new uploads in internal albums, no metadata section is needed
-              if (!isDefaultWebGal && !editingImage) {
+              // For uploads in internal albums, no metadata section is needed
+              if (!isDefaultWebGal) {
                 return null;
               }
 
@@ -2820,34 +2771,16 @@ export const AdminGallerySection: React.FC = () => {
                         2
                       </span>
                       <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                        {isDefaultWebGal ? "Información & Metadatos Montessori" : "Información de la Fotografía"}
+                        Información & Metadatos Montessori
                       </span>
                     </div>
 
-                    {isDefaultWebGal && aiGeneratedBadge && (
+                    {aiGeneratedBadge && (
                       <span className="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-2.5 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
                         <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Generado con IA
                       </span>
                     )}
                   </div>
-
-                  {isDefaultWebGal ? (
-                    <>
-                      {/* Failed AI Status Alert Box */}
-                      {editingImage?.ai_status === "FAILED" && (
-                        <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200/90 text-amber-950 text-xs space-y-1.5 animate-in fade-in">
-                          <div className="flex items-center gap-2 font-bold text-amber-900">
-                            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                            <span>Falló la generación automática de metadatos con IA</span>
-                          </div>
-                          <p className="text-[11px] text-amber-800 leading-relaxed">
-                            {editingImage.ai_error || "No se ha configurado la API Key o el proveedor LLM en los ajustes del colegio (Ajustes → Inteligencia Artificial)."}
-                          </p>
-                          <p className="text-[11px] text-amber-900 font-semibold pt-0.5">
-                            Por favor escribe los títulos y descripciones manualmente abajo, o configura la clave de IA en Ajustes.
-                          </p>
-                        </div>
-                      )}
 
                       {/* AI Auto-Generation Toggle Switch */}
                       <div className="flex items-center justify-between p-3.5 rounded-2xl bg-forest/5 border border-forest/15">
@@ -2978,57 +2911,6 @@ export const AdminGallerySection: React.FC = () => {
                           })()}
                         </div>
                       )}
-                    </>
-                  ) : (
-                    <div className="space-y-3.5 animate-in fade-in">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">
-                          Título (Opcional)
-                        </label>
-                        <input
-                          type="text"
-                          value={title}
-                          onChange={(e) => setTitle(e.target.value)}
-                          placeholder="ej. Taller al aire libre"
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-forest bg-white shadow-3xs"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">
-                          Descripción o Nota (Opcional)
-                        </label>
-                        <textarea
-                          value={description}
-                          onChange={(e) => setDescription(e.target.value)}
-                          rows={2}
-                          placeholder="Nota o descripción manual sobre este archivo..."
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-forest bg-white shadow-3xs resize-none"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Parent Report Warning (if reported) */}
-                  {editingImage?.is_reported_by_parent && (
-                    <div className="p-3.5 rounded-2xl bg-rose-500/10 border-2 border-rose-500/30 text-xs space-y-1 animate-in fade-in">
-                      <div className="flex items-center gap-2 text-rose-700 font-bold">
-                        <ShieldAlert className="w-4 h-4" />
-                        <span>Archivo retirado por privacidad del padre / tutor</span>
-                      </div>
-                      <p className="text-rose-900/80 leading-relaxed text-[11px]">
-                        El padre o tutor de uno de los alumnos identificados reportó este archivo solicitando su retiro. Está bloqueado y oculto tanto de la web como del portal familiar.
-                      </p>
-                      {editingImage.parent_report?.comment && (
-                        <div className="mt-2 p-2 bg-white/80 rounded-xl border border-rose-200 text-[11px]">
-                          <span className="font-bold text-rose-800 block">
-                            Motivo indicado por el tutor ({editingImage.parent_report.reporter_name || "Padre de familia"}):
-                          </span>
-                          <p className="italic text-slate-700">"{editingImage.parent_report.comment}"</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
               );
             })()}
@@ -3045,7 +2927,7 @@ export const AdminGallerySection: React.FC = () => {
               </button>
               <button
                 type="submit"
-                disabled={isUploadingBatch || (!Boolean(galleries.find(g => g.id === selectedGalleryId)?.is_default) && !editingImage && batchFiles.length === 0 && !srcUrl)}
+                disabled={isUploadingBatch || (!Boolean(galleries.find(g => g.id === selectedGalleryId)?.is_default) && batchFiles.length === 0 && !srcUrl)}
                 className="px-6 py-2.5 bg-forest hover:bg-forest/90 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer hover:scale-105 active:scale-95 flex items-center gap-1.5 disabled:opacity-50 disabled:scale-100"
               >
                 {isUploadingBatch ? (
@@ -3057,9 +2939,7 @@ export const AdminGallerySection: React.FC = () => {
                   <>
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     <span>
-                      {editingImage
-                        ? "Guardar Cambios"
-                        : Boolean(galleries.find(g => g.id === selectedGalleryId)?.is_default)
+                      {Boolean(galleries.find(g => g.id === selectedGalleryId)?.is_default)
                         ? "Publicar en Galería Web"
                         : batchFiles.length > 0
                         ? `Subir ${batchFiles.length} ${batchFiles.length === 1 ? "Archivo" : "Archivos"} al Álbum`

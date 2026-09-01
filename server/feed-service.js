@@ -850,6 +850,10 @@ Devuelve ÚNICAMENTE un objeto JSON válido con este formato exacto:
   }
 }
 
+// In-memory worker & AI mention deduplication tracking
+const activeJobLocks = new Set();
+const activeAiMentionLocks = new Map();
+
 /**
  * Triggers the School AI Agent when mentioned (@AgentName)
  */
@@ -866,17 +870,48 @@ export async function checkAndTriggerSchoolAiAgent({
 }) {
   try {
     const aiConfig = await getSchoolFeedAiConfig(schoolId, prisma);
-    if (!aiConfig.agentEnabled) return;
+    if (!aiConfig.agentEnabled) return { triggered: false, reason: 'agent_disabled' };
 
     const rawAgentName = (aiConfig.agentName || 'Ceiba').trim();
     const agentName = rawAgentName.replace(/^@+/, '').trim() || 'Ceiba';
-    if (!agentName) return;
+    if (!agentName) return { triggered: false, reason: 'no_agent_name' };
 
     // Check if content mentions @AgentName (e.g. @Ceiba, @ceiba, @ceiba:, etc.)
     const escapedName = agentName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const mentionRegex = new RegExp(`@${escapedName}(?:\\b|[\\s,.:;!?)]|$)`, 'i');
     if (!mentionRegex.test(content)) {
-      return;
+      return { triggered: false, reason: 'not_mentioned' };
+    }
+
+    // 1. In-flight memory lock: avoid concurrent duplicate execution across workers
+    const mentionLockKey = `${postId}:${parentCommentId || 'root'}`;
+    const existingLockTime = activeAiMentionLocks.get(mentionLockKey);
+    const nowMs = Date.now();
+    if (existingLockTime && (nowMs - existingLockTime) < 30000) {
+      console.log(`🔒 [AI AGENT LOCK] Already processing mention for ${mentionLockKey}, skipping duplicate trigger.`);
+      return { triggered: false, reason: 'in_flight' };
+    }
+    activeAiMentionLocks.set(mentionLockKey, nowMs);
+
+    // Occasional cleanup of old locks
+    if (activeAiMentionLocks.size > 1000) {
+      for (const [k, ts] of activeAiMentionLocks.entries()) {
+        if (nowMs - ts > 60000) activeAiMentionLocks.delete(k);
+      }
+    }
+
+    // 2. Database Deduplication: verify if an AI response already exists for this post/thread within last 60s
+    const recentExistingAiComment = await prisma.feedComment.findFirst({
+      where: {
+        postId,
+        parentId: parentCommentId || null,
+        isAiAgent: true,
+        createdAt: { gte: new Date(nowMs - 60000) }
+      }
+    });
+    if (recentExistingAiComment) {
+      console.log(`🛑 [AI AGENT DEDUP] AI comment already created for ${mentionLockKey} recently (${recentExistingAiComment.id}). Skipping.`);
+      return { triggered: false, reason: 'already_responded' };
     }
 
     const post = await prisma.feedPost.findUnique({
@@ -906,7 +941,7 @@ export async function checkAndTriggerSchoolAiAgent({
         school: { select: { id: true, name: true, logoUrl: true } }
       }
     });
-    if (!post) return;
+    if (!post) return { status: 'post_not_found' };
 
     // Check school token balance when using platform API key (or if no key is configured)
     if (!aiConfig.isCustom) {
@@ -1412,6 +1447,13 @@ ${post.student ? `Estudiante mencionado: ${post.student.fullName}\n` : ''}${post
  * Worker Processor: Process Feed Post Moderation and Agent Trigger
  */
 export async function processFeedPostModerationJob(postId, prisma) {
+  const lockKey = `post:${postId}`;
+  if (activeJobLocks.has(lockKey)) {
+    console.log(`🔒 [JOB LOCK] Feed Post Job already in progress for ${postId}. Skipping duplicate run.`);
+    return { success: true, status: 'already_processing' };
+  }
+  activeJobLocks.add(lockKey);
+
   try {
     const post = await prisma.feedPost.findUnique({
       where: { id: postId },
@@ -1526,6 +1568,8 @@ export async function processFeedPostModerationJob(postId, prisma) {
   } catch (err) {
     console.error('[PROCESS FEED POST JOB ERROR]', err);
     throw err;
+  } finally {
+    setTimeout(() => activeJobLocks.delete(lockKey), 5000);
   }
 }
 
@@ -1533,6 +1577,13 @@ export async function processFeedPostModerationJob(postId, prisma) {
  * Worker Processor: Process Feed Comment Moderation and Agent Trigger
  */
 export async function processFeedCommentModerationJob(commentId, prisma) {
+  const lockKey = `comment:${commentId}`;
+  if (activeJobLocks.has(lockKey)) {
+    console.log(`🔒 [JOB LOCK] Feed Comment Job already in progress for ${commentId}. Skipping duplicate run.`);
+    return { success: true, status: 'already_processing' };
+  }
+  activeJobLocks.add(lockKey);
+
   try {
     const comment = await prisma.feedComment.findUnique({
       where: { id: commentId },
@@ -1632,5 +1683,7 @@ export async function processFeedCommentModerationJob(commentId, prisma) {
   } catch (err) {
     console.error('[PROCESS FEED COMMENT JOB ERROR]', err);
     throw err;
+  } finally {
+    setTimeout(() => activeJobLocks.delete(lockKey), 5000);
   }
 }

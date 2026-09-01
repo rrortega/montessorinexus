@@ -92,7 +92,7 @@ import {
   resolveBlogUrls
 } from './blog-service.js';
 import { transformBlogImageUrl } from './blog-watermark-service.js';
-import { ensureSchoolUmamiSiteId, getUmamiConfig, cleanSubdomainSlug } from './umami-service.js';
+import { ensureSchoolUmamiSiteId, getUmamiConfig, cleanSubdomainSlug, getSchoolTrafficSummary } from './umami-service.js';
 
 let redisClient = null;
 try {
@@ -1824,6 +1824,31 @@ app.get('/api/schools/current/umami-site', async (req, res) => {
   } catch (err) {
     console.error('Error fetching/creating Umami siteId:', err);
     res.status(500).json({ error: err.message });
+  }
+});
+
+// BFF Traffic Metrics Endpoint: Safely fetches aggregated analytics for the school without client-side credentials
+app.get('/api/schools/current/traffic/summary', async (req, res) => {
+  try {
+    const school = req.school;
+    if (!school || !school.id) {
+      return res.status(404).json({ error: 'Colegio no encontrado' });
+    }
+
+    const summary = await getSchoolTrafficSummary(school, prisma, redisClient, req.query);
+    res.json(summary);
+  } catch (err) {
+    console.error('Error fetching traffic summary in BFF:', err);
+    res.status(500).json({
+      success: false,
+      error: err.message,
+      activeVisitors: 0,
+      stats: null,
+      chartData: [],
+      devices: [],
+      topPages: [],
+      countries: []
+    });
   }
 });
 
@@ -9392,16 +9417,56 @@ app.delete('/api/gallery/images/:id', async (req, res) => {
       }
     }
 
-    if (existing?.src) {
-      const storage = await storageServiceFor(req.school.id, prisma);
+    const storage = await storageServiceFor(req.school.id, prisma);
+
+    // 1. Physically delete original image (S3/MinIO/Storage + local disk/cache)
+    if (existing.src) {
       const relativePath = extractStorageRelativePath(existing.src);
       if (relativePath) {
         await storage.deleteFile(relativePath).catch(err => {
-          console.warn('[STORAGE DELETE ERROR] Could not delete image physical asset:', err.message);
+          console.warn('[STORAGE DELETE ERROR] Could not delete primary image asset:', err.message);
         });
       } else if (existing.src.startsWith('/gallery/') || existing.src.startsWith('/documents/')) {
         const targetPath = path.join(publicDir, existing.src.slice(1));
-        if (fs.existsSync(targetPath)) fs.unlinkSync(targetPath);
+        if (fs.existsSync(targetPath)) {
+          try { fs.unlinkSync(targetPath); } catch {}
+        }
+      }
+    }
+
+    // 2. Physically delete secondary blurred image if present (S3/MinIO/Storage + local disk/cache)
+    if (existing.blurredSrc) {
+      const blurredRelativePath = extractStorageRelativePath(existing.blurredSrc);
+      if (blurredRelativePath) {
+        await storage.deleteFile(blurredRelativePath).catch(err => {
+          console.warn('[STORAGE DELETE ERROR] Could not delete blurred image asset:', err.message);
+        });
+      } else if (existing.blurredSrc.startsWith('/gallery/')) {
+        const targetBlurredPath = path.join(publicDir, existing.blurredSrc.slice(1));
+        if (fs.existsSync(targetBlurredPath)) {
+          try { fs.unlinkSync(targetBlurredPath); } catch {}
+        }
+      }
+    }
+
+    // 3. Fallback disk sweep for any lingering blurred files matching this image ID
+    const cleanId = req.params.id.replace(/[^a-zA-Z0-9_-]/g, '');
+    const searchDirs = [
+      path.join(process.cwd(), 'storage', 'schools', req.school.id, 'public', 'gallery'),
+      path.join(process.cwd(), 'storage', 'public', 'gallery'),
+      path.join(process.cwd(), 'public', 'gallery'),
+      path.join(process.cwd(), 'storage', 'cache', 'schools', req.school.id, 'public', 'gallery')
+    ];
+    for (const sDir of searchDirs) {
+      if (fs.existsSync(sDir)) {
+        try {
+          const files = fs.readdirSync(sDir);
+          for (const f of files) {
+            if (f.startsWith('blurred_') && f.includes(`_${cleanId}`)) {
+              try { fs.unlinkSync(path.join(sDir, f)); } catch {}
+            }
+          }
+        } catch {}
       }
     }
 
@@ -17623,7 +17688,7 @@ app.get('/api/feed', async (req, res) => {
   try {
     const userEmail = req.headers['x-user-email'] || req.query.email;
     const requestedSchoolId = req.headers['x-school-id'] || req.query.schoolId || req.school?.id;
-    const { environmentId, studentId, type, search, limit = 50, offset = 0 } = req.query;
+    const { environmentId, studentId, type, search, limit = 15, offset = 0 } = req.query;
 
     const superAdminEmail = (process.env.SUPERADMIN_EMAIL || 'admin@montessorinexus.com').trim().toLowerCase();
     let currentUser = null;
@@ -17650,8 +17715,8 @@ app.get('/api/feed', async (req, res) => {
 
     const role = isGlobalSuperAdmin ? 'OWNER' : (membership?.role || 'TUTOR');
 
-    // Auto-sync recent observations, announcements, and newsletters if schoolId is known
-    if (schoolId) {
+    // Auto-sync recent observations, announcements, and newsletters only on initial load (offset === 0)
+    if (schoolId && Number(offset) === 0) {
       await syncSystemActivityToFeed(schoolId);
     }
 
@@ -17798,6 +17863,25 @@ app.get('/api/feed', async (req, res) => {
 
     const isOwnerOrAdminOrSuper = isGlobalSuperAdmin || role === 'OWNER' || role === 'ADMIN';
 
+    // Resolve attached galleries for GALLERY posts
+    const galleryIdsToFetch = [...new Set(posts.filter(p => (p.type === 'GALLERY' || p.refType === 'GALLERY') && p.refId).map(p => p.refId))];
+    const galleriesMap = new Map();
+    if (galleryIdsToFetch.length > 0) {
+      try {
+        const fetchedGalleries = await prisma.gallery.findMany({
+          where: { id: { in: galleryIdsToFetch } },
+          include: {
+            images: {
+              orderBy: { createdAt: 'asc' }
+            }
+          }
+        });
+        fetchedGalleries.forEach(g => galleriesMap.set(g.id, g));
+      } catch (gErr) {
+        console.warn('Error fetching gallery details for feed:', gErr.message);
+      }
+    }
+
     // Map & filter comments for tutors and aggregate reactions
     const mappedPosts = posts.map(p => {
       const userLike = currentUser ? p.likes.find(l => l.userId === currentUser.id) : null;
@@ -17847,8 +17931,11 @@ app.get('/api/feed', async (req, res) => {
         };
       }
 
+      const attachedGallery = p.refId && galleriesMap.has(p.refId) ? galleriesMap.get(p.refId) : null;
+
       return {
         ...p,
+        gallery: attachedGallery,
         poll: formattedPoll,
         isLikedByMe,
         myReaction,
@@ -17858,10 +17945,18 @@ app.get('/api/feed', async (req, res) => {
       };
     });
 
+    const totalCount = await prisma.feedPost.count({ where: feedWhere });
+    const currentOffset = Number(offset);
+    const hasMore = (currentOffset + mappedPosts.length) < totalCount;
+    const nextOffset = hasMore ? (currentOffset + mappedPosts.length) : null;
+
     res.json({
       success: true,
       items: mappedPosts,
       total: mappedPosts.length,
+      totalCount,
+      hasMore,
+      nextOffset,
       userRole: role,
       assignedEnvIds,
       tutorChildIds
@@ -18024,8 +18119,25 @@ app.get('/api/feed/posts/:id', async (req, res) => {
       };
     }
 
+    let attachedGallery = null;
+    if ((p.type === 'GALLERY' || p.refType === 'GALLERY') && p.refId) {
+      try {
+        attachedGallery = await prisma.gallery.findUnique({
+          where: { id: p.refId },
+          include: {
+            images: {
+              orderBy: { createdAt: 'asc' }
+            }
+          }
+        });
+      } catch (gErr) {
+        console.warn('Error fetching gallery for single post:', gErr.message);
+      }
+    }
+
     const mappedPost = {
       ...p,
+      gallery: attachedGallery,
       poll: formattedPoll,
       isLikedByMe,
       myReaction,
@@ -18041,6 +18153,25 @@ app.get('/api/feed/posts/:id', async (req, res) => {
   }
 });
 
+// In-memory sliding window request deduplication cache to prevent duplicate posts and comments
+const recentFeedHttpRequests = new Map();
+function checkFeedRequestDedup(key, ttlMs = 3500) {
+  const now = Date.now();
+  const entry = recentFeedHttpRequests.get(key);
+  if (entry && (now - entry.timestamp) < ttlMs) {
+    return entry.response;
+  }
+  if (recentFeedHttpRequests.size > 2000) {
+    for (const [k, v] of recentFeedHttpRequests.entries()) {
+      if (now - v.timestamp > 30000) recentFeedHttpRequests.delete(k);
+    }
+  }
+  return null;
+}
+function storeFeedRequestResponse(key, response) {
+  recentFeedHttpRequests.set(key, { timestamp: Date.now(), response });
+}
+
 // POST /api/feed/posts - Create a new community or generic post (Photo, Text, or Poll)
 app.post('/api/feed/posts', async (req, res) => {
   try {
@@ -18049,6 +18180,9 @@ app.post('/api/feed/posts', async (req, res) => {
     const {
       title,
       content,
+      type = 'POST',
+      refId,
+      refType,
       mediaUrls = [],
       poll = null,
       allowComments = true,
@@ -18083,10 +18217,50 @@ app.post('/api/feed/posts', async (req, res) => {
       return res.status(400).json({ error: 'Colegio no identificado para publicar.' });
     }
 
+    // Request-level anti-duplication / idempotency check (within 3.5 seconds)
+    const dedupKey = `post:${schoolId}:${currentUser?.id || userEmail}:${(content || '').trim().slice(0, 150)}:${targetAudience}`;
+    const cachedResponse = checkFeedRequestDedup(dedupKey);
+    if (cachedResponse) {
+      console.log(`⚡ [API POST DEDUP] Returning cached response for duplicate POST /api/feed/posts (${dedupKey})`);
+      return res.json(cachedResponse);
+    }
+
     const role = isGlobalSuperAdmin ? 'OWNER' : (membership?.role || 'TUTOR');
+    const isOwnerOrAdmin = isGlobalSuperAdmin || role === 'OWNER' || role === 'ADMIN';
+
+    let finalType = type;
+    let finalRefId = refId || null;
+    let finalRefType = refType || null;
+    let finalTitle = title || '';
+    let finalMediaUrls = Array.isArray(mediaUrls) ? [...mediaUrls] : [];
+
+    // If sharing a whole gallery
+    let attachedGallery = null;
+    if ((type === 'GALLERY' || refType === 'GALLERY') && refId) {
+      if (!isOwnerOrAdmin) {
+        return res.status(403).json({ error: 'Solo administradores u owners pueden compartir álbumes completos en el feed.' });
+      }
+      attachedGallery = await prisma.gallery.findUnique({
+        where: { id: refId },
+        include: {
+          images: {
+            orderBy: { createdAt: 'asc' }
+          }
+        }
+      });
+      if (attachedGallery) {
+        finalType = 'GALLERY';
+        finalRefId = attachedGallery.id;
+        finalRefType = 'GALLERY';
+        if (!finalTitle) finalTitle = attachedGallery.name;
+        if (finalMediaUrls.length === 0 && Array.isArray(attachedGallery.images)) {
+          finalMediaUrls = attachedGallery.images.map(img => img.src);
+        }
+      }
+    }
 
     // Storage capacity check if media is attached
-    if (Array.isArray(mediaUrls) && mediaUrls.length > 0) {
+    if (Array.isArray(finalMediaUrls) && finalMediaUrls.length > 0 && finalType !== 'GALLERY') {
       const storageStats = await getSchoolStorageStats(schoolId);
       if (storageStats.isFull) {
         return res.status(400).json({
@@ -18102,7 +18276,10 @@ app.post('/api/feed/posts', async (req, res) => {
     }
 
     const { cleanText, urls, mediaUrls: extractedMedia } = stripHtmlAndExtractLinks(content);
-    let finalMediaUrls = Array.isArray(mediaUrls) && mediaUrls.length > 0 ? mediaUrls : extractedMedia;
+    if (finalMediaUrls.length === 0 && extractedMedia.length > 0) {
+      finalMediaUrls = extractedMedia;
+    }
+
     let linkPreview = null;
     if (finalMediaUrls.length === 0 && urls.length > 0) {
       linkPreview = await discoverOpenGraph(urls[0]);
@@ -18147,8 +18324,10 @@ app.post('/api/feed/posts', async (req, res) => {
         schoolId,
         authorId: currentUser?.id || null,
         authorRole: role,
-        type: finalPoll ? 'POLL' : 'POST',
-        title: title || '',
+        type: finalPoll ? 'POLL' : (finalType || 'POST'),
+        refId: finalRefId,
+        refType: finalRefType,
+        title: finalTitle,
         content: cleanText || content.trim(),
         mediaUrls: finalMediaUrls,
         linkPreview: linkPreview || undefined,
@@ -18157,7 +18336,7 @@ app.post('/api/feed/posts', async (req, res) => {
         targetAudience: sanitizedAudience,
         environmentId: environmentId || null,
         studentId: studentId || null,
-        pinned: Boolean(pinned && (role === 'OWNER' || role === 'ADMIN' || isGlobalSuperAdmin)),
+        pinned: Boolean(pinned && isOwnerOrAdmin),
         moderationStatus: initialStatus,
         moderationReason: null
       },
@@ -18202,25 +18381,20 @@ app.post('/api/feed/posts', async (req, res) => {
       isLikedByMe: false
     };
 
-    res.json({
+    const finalJsonResponse = {
       success: true,
       post: responsePost
-    });
+    };
+
+    storeFeedRequestResponse(dedupKey, finalJsonResponse);
+
+    res.json(finalJsonResponse);
 
     // Publish Realtime Event via Deepstream
     publishDeepstreamRealtimeEvent(`feed-post-created:${schoolId}`, { post: responsePost, schoolId });
     publishDeepstreamRealtimeEvent('feed-post-created', { post: responsePost, schoolId });
 
-    // Direct background processing for post moderation and AI Agent mention triggering
-    setImmediate(async () => {
-      try {
-        await processFeedPostModerationJob(post.id, prisma);
-      } catch (procErr) {
-        console.error('[DIRECT POST AI TRIGGER ERROR]', procErr);
-      }
-    });
-
-    // Enqueue background processing (moderation integrity + AI Agent mention response)
+    // Enqueue background processing once (moderation integrity + AI Agent mention response)
     enqueueFeedPostJob({
       postId: post.id,
       schoolId,
@@ -18427,6 +18601,7 @@ app.delete('/api/feed/posts/:id', async (req, res) => {
     const post = await prisma.feedPost.findUnique({
       where: { id },
       include: {
+        author: { select: { id: true, email: true } },
         comments: { select: { id: true, mediaUrl: true } }
       }
     });
@@ -18441,17 +18616,20 @@ app.delete('/api/feed/posts/:id', async (req, res) => {
     }
 
     const isGlobalSuperAdmin = currentUser && currentUser.email.toLowerCase() === superAdminEmail;
-    const isAuthor = currentUser && currentUser.id === post.authorId;
+    const isAuthor = currentUser && (
+      currentUser.id === post.authorId ||
+      (currentUser.email && post.author?.email && currentUser.email.toLowerCase() === post.author.email.toLowerCase())
+    );
     const membership = currentUser?.memberships.find(m => m.schoolId === post.schoolId);
-    const isOwnerOrAdmin = membership && (membership.role === 'OWNER' || membership.role === 'ADMIN');
+    const isOwnerOrAdmin = isGlobalSuperAdmin || (membership && (membership.role === 'OWNER' || membership.role === 'ADMIN'));
 
-    if (!isAuthor && !isOwnerOrAdmin && !isGlobalSuperAdmin) {
+    if (!isAuthor && !isOwnerOrAdmin) {
       return res.status(403).json({ error: 'No tienes permiso para eliminar esta publicación.' });
     }
 
-    // Physically delete all media assets belonging to the post and all its comments from school storage
+    // Physically delete media assets only if not a shared permanent Gallery album
     const allMediaUrls = [];
-    if (Array.isArray(post.mediaUrls)) {
+    if (Array.isArray(post.mediaUrls) && post.type !== 'GALLERY' && post.refType !== 'GALLERY') {
       allMediaUrls.push(...post.mediaUrls);
     }
     if (post.comments && post.comments.length > 0) {
@@ -18502,6 +18680,14 @@ app.post('/api/feed/posts/:id/comments', async (req, res) => {
 
     if (!currentUser) {
       return res.status(401).json({ error: 'Usuario no autenticado.' });
+    }
+
+    // Request-level anti-duplication / idempotency check (within 3.5 seconds)
+    const dedupKey = `comment:${id}:${currentUser.id}:${(content || '').trim().slice(0, 150)}:${parentId || 'root'}:${mediaUrl || ''}`;
+    const cachedResponse = checkFeedRequestDedup(dedupKey);
+    if (cachedResponse) {
+      console.log(`⚡ [API COMMENT DEDUP] Returning cached response for duplicate POST /api/feed/posts/:id/comments (${dedupKey})`);
+      return res.json(cachedResponse);
     }
 
     const isGlobalSuperAdmin = currentUser.email.toLowerCase() === superAdminEmail;
@@ -18572,10 +18758,14 @@ app.post('/api/feed/posts/:id/comments', async (req, res) => {
       });
     }
 
-    res.json({
+    const finalJsonResponse = {
       success: true,
       comment
-    });
+    };
+
+    storeFeedRequestResponse(dedupKey, finalJsonResponse);
+
+    res.json(finalJsonResponse);
 
     // Publish Realtime Event via Deepstream
     publishDeepstreamRealtimeEvent(`feed-post-comment:${id}`, { postId: id, comment, schoolId: post.schoolId, action: 'created' });
@@ -18602,16 +18792,7 @@ app.post('/api/feed/posts/:id/comments', async (req, res) => {
       }).catch(err => console.warn('[NOTIF COMMENT ERROR]', err.message));
     }
 
-    // Direct background processing for comment moderation and AI Agent mention triggering
-    setImmediate(async () => {
-      try {
-        await processFeedCommentModerationJob(comment.id, prisma);
-      } catch (procErr) {
-        console.error('[DIRECT COMMENT AI TRIGGER ERROR]', procErr);
-      }
-    });
-
-    // Enqueue background processing (moderation integrity + AI Agent mention response)
+    // Enqueue background processing once (moderation integrity + AI Agent mention response)
     enqueueFeedCommentJob({
       commentId: comment.id,
       postId: id,

@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import pico from 'picojs';
 import sharp from 'sharp';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
-import { getStorageConfigForSchool } from './storage-service.js';
+import { getStorageConfigForSchool, storageServiceFor } from './storage-service.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,8 +30,8 @@ try {
  * Loads configurable parameters for Face Recognition and Matching from environment variables.
  */
 export function getFaceMatchConfig() {
-  const threshold = parseFloat(process.env.FACEMATCH_SIMILARITY_THRESHOLD) || 0.45;
-  const minDetectionScore = parseFloat(process.env.FACEMATCH_MIN_DETECTION_SCORE) || 1.2;
+  const threshold = parseFloat(process.env.FACEMATCH_SIMILARITY_THRESHOLD) || 0.58;
+  const minDetectionScore = parseFloat(process.env.FACEMATCH_MIN_DETECTION_SCORE) || 20.0;
   const marginPercent = parseFloat(process.env.FACEMATCH_MARGIN_PERCENT) || 0.12;
   const debug = process.env.FACEMATCH_DEBUG !== 'false';
 
@@ -267,30 +267,67 @@ export async function detectFacesInImage(imageBuffer) {
       };
     });
 
-    // Sort by score descending and apply Non-Maximum Suppression (IoU) + Skin-chroma validation
+    // 1. Sort raw boxes by score descending and deduplicate by IoU and skin texture
     rawBoxes.sort((a, b) => b.score - a.score);
-    const faces = [];
+    const validCandidateBoxes = [];
+
     for (const item of rawBoxes) {
       const b1 = item.box;
       let hasOverlap = false;
-      for (const kept of faces) {
+
+      for (const kept of validCandidateBoxes) {
         const b2 = kept.box;
         const xOverlap = Math.max(0, Math.min(b1.x + b1.width, b2.x + b2.width) - Math.max(b1.x, b2.x));
         const yOverlap = Math.max(0, Math.min(b1.y + b1.height, b2.y + b2.height) - Math.max(b1.y, b2.y));
         const intersection = xOverlap * yOverlap;
         const union = (b1.width * b1.height) + (b2.width * b2.height) - intersection;
         const iou = union > 0 ? intersection / union : 0;
-        if (iou > 0.35) {
+        if (iou > 0.25) {
           hasOverlap = true;
           break;
         }
       }
-      if (!hasOverlap) {
-        // High confidence scores pass directly; lower scores check skin presence
-        const isGenuineFaceSkin = item.score >= 2.5 ? true : await validateFaceSkinAndTexture(rotatedBuffer, b1);
+
+      if (!hasOverlap && b1.width >= 16 && b1.height >= 16) {
+        const isGenuineFaceSkin = await validateFaceSkinAndTexture(rotatedBuffer, b1);
         if (isGenuineFaceSkin) {
-          faces.push(item);
+          validCandidateBoxes.push(item);
         }
+      }
+    }
+
+    // 2. Anatomical Body & Torso Suppression:
+    // When multiple detections are aligned on the same vertical body column, the uppermost detection (smaller y)
+    // is the real head, while any lower detection at chest/torso/belly height is a false positive artifact on clothing.
+    const faces = [];
+    // Sort spatially from top to bottom (by y ascending)
+    validCandidateBoxes.sort((a, b) => a.box.y - b.box.y);
+
+    for (let i = 0; i < validCandidateBoxes.length; i++) {
+      const current = validCandidateBoxes[i];
+      const curBox = current.box;
+      let isTorsoFalsePositive = false;
+
+      for (let j = 0; j < faces.length; j++) {
+        const headBox = faces[j].box;
+        // Check horizontal alignment (X center distance)
+        const curCenterX = curBox.x + curBox.width / 2;
+        const headCenterX = headBox.x + headBox.width / 2;
+        const xDist = Math.abs(curCenterX - headCenterX);
+        const maxAllowedXOffset = Math.max(headBox.width, curBox.width) * 0.75;
+
+        // Check vertical distance below head (y distance between 0.8x and 3.0x head height)
+        const yDistBelowHead = curBox.y - headBox.y;
+
+        if (xDist <= maxAllowedXOffset && yDistBelowHead > (headBox.height * 0.7) && yDistBelowHead < (headBox.height * 3.2)) {
+          // This candidate is physically on the neck/chest/belly/torso of the person above it
+          isTorsoFalsePositive = true;
+          break;
+        }
+      }
+
+      if (!isTorsoFalsePositive) {
+        faces.push(current);
       }
     }
 
@@ -303,6 +340,7 @@ export async function detectFacesInImage(imageBuffer) {
 
 /**
  * Validates whether a candidate face bounding box contains human skin tone pixels (YCbCr chrominance)
+ * and rejects reflective vest / fabric artifacts.
  */
 async function validateFaceSkinAndTexture(imageBuffer, box) {
   try {
@@ -320,6 +358,7 @@ async function validateFaceSkinAndTexture(imageBuffer, box) {
       .toBuffer({ resolveWithObject: true });
 
     let skinPixels = 0;
+    let reflectiveVestPixels = 0;
     const totalPixels = 32 * 32;
 
     for (let i = 0; i < data.length; i += 3) {
@@ -327,38 +366,67 @@ async function validateFaceSkinAndTexture(imageBuffer, box) {
       const g = data[i + 1];
       const b = data[i + 2];
 
+      // Detect synthetic high-saturation safety neon orange/yellow vest colors
+      if (r > 200 && g > 70 && g < 180 && b < 50 && (r - g) > 50) {
+        reflectiveVestPixels++;
+      }
+
       // YCbCr skin chrominance formula
       const cb = 128 - 0.168736 * r - 0.331264 * g + 0.5 * b;
       const cr = 128 + 0.5 * r - 0.418688 * g - 0.081312 * b;
 
-      // Check skin gamut across all complexions
-      if (cb >= 65 && cb <= 145 && cr >= 120 && cr <= 190 && (r > g * 0.8 || (r - b) > 5)) {
+      // Check skin gamut across all natural human complexions
+      if (cb >= 75 && cb <= 135 && cr >= 130 && cr <= 175 && (r > g * 0.9 && (r - b) > 8)) {
         skinPixels++;
       }
     }
 
+    // If candidate crop is predominantly a reflective orange safety vest, reject it
+    if (reflectiveVestPixels / totalPixels > 0.30) {
+      return false;
+    }
+
     const skinRatio = skinPixels / totalPixels;
-    return skinRatio >= 0.04;
+    return skinRatio >= 0.12;
   } catch (err) {
     return true; // Default to pass on extraction edge cases
   }
 }
 
+// Lookup table for Uniform LBP (59 bins: 58 uniform bit transitions + 1 non-uniform bin)
+const uniformLBPMap = new Uint8Array(256);
+(function initUniformLBP() {
+  let uniformIdx = 0;
+  for (let i = 0; i < 256; i++) {
+    let transitions = 0;
+    for (let b = 0; b < 8; b++) {
+      const bit1 = (i >> b) & 1;
+      const bit2 = (i >> ((b + 1) % 8)) & 1;
+      if (bit1 !== bit2) transitions++;
+    }
+    if (transitions <= 2) {
+      uniformLBPMap[i] = uniformIdx++;
+    } else {
+      uniformLBPMap[i] = 58; // non-uniform fallback bin
+    }
+  }
+})();
+
 /**
- * Computes a 16-bin Local Binary Patterns (LBP) microtexture histogram across 4x4 spatial cells (256 dimensions)
- * LBP captures facial textures (eyes, nose contours, lip lines) invariant to monotonic lighting & skin tone variations.
+ * Computes a 59-bin Uniform Local Binary Patterns (LBP) microtexture histogram across 4x4 spatial cells
+ * Provides high-precision facial microtexture analysis invariant to lighting shifts.
  */
 function computeLBPHistogram(pixels, width = 64, height = 64) {
   const blocksX = 4;
   const blocksY = 4;
   const blockW = width / blocksX; // 16
   const blockH = height / blocksY; // 16
-  const hist = new Float32Array(blocksX * blocksY * 16);
+  const hist = new Float32Array(blocksX * blocksY * 59);
 
   for (let by = 0; by < blocksY; by++) {
     for (let bx = 0; bx < blocksX; bx++) {
       const blockIdx = by * blocksX + bx;
-      const histOffset = blockIdx * 16;
+      const histOffset = blockIdx * 59;
       let blockPixelCount = 0;
 
       for (let y = 1; y < blockH - 1; y++) {
@@ -378,16 +446,15 @@ function computeLBPHistogram(pixels, width = 64, height = 64) {
           if (pixels[(py + 1) * width + (px - 1)] >= center) code |= 64;
           if (pixels[py * width + (px - 1)] >= center) code |= 128;
 
-          // Map 8-bit code to 16 principal bins
-          const bin = code >> 4;
-          hist[histOffset + bin]++;
+          const uBin = uniformLBPMap[code];
+          hist[histOffset + uBin]++;
           blockPixelCount++;
         }
       }
 
       // Normalize histogram per block
       if (blockPixelCount > 0) {
-        for (let b = 0; b < 16; b++) {
+        for (let b = 0; b < 59; b++) {
           hist[histOffset + b] /= blockPixelCount;
         }
       }
@@ -430,49 +497,40 @@ export async function extractNormalizedFaceFeature(imageBuffer, box, marginPerce
       });
     }
 
-    // Resize to standard 64x64 grayscale
+    // Resize to standard 64x64 grayscale with adaptive normalization
     const { data: rawPixels } = await pipeline
       .resize(64, 64, { fit: 'fill' })
       .grayscale()
-      .normalize() // contrast normalization
+      .normalize()
       .raw()
       .toBuffer({ resolveWithObject: true });
 
-    // Compute mean and standard deviation
+    // Compute center-weighted Gaussian normalization for eye-nose-mouth region
+    const centerNorm = new Float32Array(64 * 64);
     let sum = 0;
-    const n = rawPixels.length;
-    for (let i = 0; i < n; i++) {
-      sum += rawPixels[i];
+    const n = 64 * 64;
+    for (let y = 0; y < 64; y++) {
+      for (let x = 0; x < 64; x++) {
+        const dx = (x - 31.5) / 20;
+        const dy = (y - 31.5) / 24;
+        const weight = Math.exp(-(dx * dx + dy * dy) / 2);
+        centerNorm[y * 64 + x] = rawPixels[y * 64 + x] * weight;
+        sum += centerNorm[y * 64 + x];
+      }
     }
     const mean = sum / n;
 
     let varSum = 0;
     for (let i = 0; i < n; i++) {
-      const diff = rawPixels[i] - mean;
+      const diff = centerNorm[i] - mean;
       varSum += diff * diff;
     }
     const std = Math.sqrt(varSum / n) || 1;
 
-    // 4x4 spatial block averages (16 cells)
-    const blockMeans = new Float32Array(16);
-    const blockSize = 16;
-    for (let by = 0; by < 4; by++) {
-      for (let bx = 0; bx < 4; bx++) {
-        let bSum = 0;
-        for (let py = 0; py < blockSize; py++) {
-          for (let px = 0; px < blockSize; px++) {
-            const idx = (by * blockSize + py) * 64 + (bx * blockSize + px);
-            bSum += rawPixels[idx];
-          }
-        }
-        blockMeans[by * 4 + bx] = bSum / (blockSize * blockSize);
-      }
-    }
-
-    // Compute LBP microtexture histogram across 16 blocks
+    // Compute Uniform LBP microtexture histogram across 16 blocks
     const lbpHist = computeLBPHistogram(rawPixels, 64, 64);
 
-    return { rawPixels, mean, std, blockMeans, lbpHist };
+    return { rawPixels, centerNorm, mean, std, lbpHist };
   } catch (err) {
     return null;
   }
@@ -481,9 +539,8 @@ export async function extractNormalizedFaceFeature(imageBuffer, box, marginPerce
 /**
  * Computes face similarity between two extracted face descriptors (0 to 1.0)
  * Uses a weighted combination of:
- * 1. Shift-Invariant Normalized Cross-Correlation (tolerant to minor cropping & alignment shifts)
- * 2. Local Binary Patterns (LBP) Histogram Cosine/Intersection (lighting invariant microtexture)
- * 3. Spatial Luminance Layout
+ * 1. Shift-Invariant Gaussian-Weighted Cross-Correlation (tolerant to minor cropping & alignment shifts)
+ * 2. 59-bin Uniform Local Binary Patterns (LBP) with center cell prioritization
  */
 export function computeFaceSimilarity(featA, featB) {
   if (!featA || !featB) return 0;
@@ -491,9 +548,9 @@ export function computeFaceSimilarity(featA, featB) {
   const w = 64;
   const h = 64;
 
-  // 1. Shift-Invariant Normalized Cross-Correlation (searches optimal alignment over small shifts)
+  // 1. Shift-Invariant Center-Weighted Cross-Correlation (-2 to +2 pixels)
   let bestNCC = 0;
-  const shifts = [-3, -2, -1, 0, 1, 2, 3];
+  const shifts = [-2, -1, 0, 1, 2];
 
   for (const dy of shifts) {
     for (const dx of shifts) {
@@ -511,8 +568,8 @@ export function computeFaceSimilarity(featA, featB) {
         const rowB = yB * w;
         for (let x = xStart; x < xEnd; x++) {
           const xB = x - dx;
-          const valA = featA.rawPixels[rowA + x] - featA.mean;
-          const valB = featB.rawPixels[rowB + xB] - featB.mean;
+          const valA = featA.centerNorm[rowA + x] - featA.mean;
+          const valB = featB.centerNorm[rowB + xB] - featB.mean;
           dot += valA * valB;
           count++;
         }
@@ -528,28 +585,32 @@ export function computeFaceSimilarity(featA, featB) {
   }
   const ncc = Math.max(0, Math.min(1, bestNCC));
 
-  // 2. Local Binary Patterns (LBP) Histogram Intersection Similarity
+  // 2. Uniform LBP Histogram Intersection across 16 blocks (central facial blocks receive 1.5x weight)
   let lbpSim = 0;
   if (featA.lbpHist && featB.lbpHist) {
     let intersectionSum = 0;
-    const len = featA.lbpHist.length; // 256
-    for (let i = 0; i < len; i++) {
-      intersectionSum += Math.min(featA.lbpHist[i], featB.lbpHist[i]);
+    let totalWeight = 0;
+
+    for (let by = 0; by < 4; by++) {
+      for (let bx = 0; bx < 4; bx++) {
+        const bIdx = by * 4 + bx;
+        const offset = bIdx * 59;
+        const isCenter = (by === 1 || by === 2) && (bx === 1 || bx === 2);
+        const weight = isCenter ? 1.5 : 0.8;
+        totalWeight += weight;
+
+        let blockIntersect = 0;
+        for (let b = 0; b < 59; b++) {
+          blockIntersect += Math.min(featA.lbpHist[offset + b], featB.lbpHist[offset + b]);
+        }
+        intersectionSum += blockIntersect * weight;
+      }
     }
-    // With 16 normalized blocks, max sum is 16.0
-    lbpSim = Math.max(0, Math.min(1, intersectionSum / 16));
+    lbpSim = Math.max(0, Math.min(1, intersectionSum / totalWeight));
   }
 
-  // 3. Spatial Block Layout Distance
-  let blockDiffSum = 0;
-  for (let b = 0; b < 16; b++) {
-    blockDiffSum += Math.abs(featA.blockMeans[b] - featB.blockMeans[b]);
-  }
-  const avgBlockDiff = blockDiffSum / 16;
-  const blockSim = Math.max(0, 1 - avgBlockDiff / 90);
-
-  // Weighted Combination: 40% Shift-Invariant NCC + 45% Microtexture LBP + 15% Spatial Layout
-  const combined = (0.40 * ncc) + (0.45 * lbpSim) + (0.15 * blockSim);
+  // Weighted Combination: 50% Shift-Invariant Center NCC + 50% Uniform Microtexture LBP
+  const combined = (0.50 * ncc) + (0.50 * lbpSim);
   return Math.min(1, Math.max(0, combined));
 }
 
@@ -597,7 +658,7 @@ export function checkStudentPhotoConsent(consentsRaw) {
 /**
  * Generates an edited version of the image with circular Gaussian blur on faces without consent
  */
-export async function generateBlurredGalleryImage(originalBuffer, facesToBlur, imageId, schoolId = 'school_ceiba') {
+export async function generateBlurredGalleryImage(originalBuffer, facesToBlur, imageId, schoolId = 'school_ceiba', prisma = null) {
   if (!originalBuffer || !Array.isArray(facesToBlur) || facesToBlur.length === 0) {
     return null;
   }
@@ -686,31 +747,17 @@ export async function generateBlurredGalleryImage(originalBuffer, facesToBlur, i
 
     const cleanSchoolId = schoolId || 'school_ceiba';
     const filename = `blurred_${Date.now()}_${imageId.replace(/[^a-zA-Z0-9_-]/g, '')}.jpg`;
-    
-    // Write blurred file to all storage and public locations to ensure reliable serving
-    const targetDirs = [
-      path.join(process.cwd(), 'storage', 'schools', cleanSchoolId, 'public', 'gallery'),
-      path.join(process.cwd(), 'storage', 'public', 'gallery'),
-      path.join(process.cwd(), 'public', 'gallery')
-    ];
+    const relativePath = `schools/${cleanSchoolId}/public/gallery/${filename}`;
 
-    for (const dir of targetDirs) {
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-      try {
-        const existingFiles = fs.readdirSync(dir);
-        const idClean = imageId.replace(/[^a-zA-Z0-9_-]/g, '');
-        for (const f of existingFiles) {
-          if (f.startsWith('blurred_') && f.includes(`_${idClean}`)) {
-            try { fs.unlinkSync(path.join(dir, f)); } catch {}
-          }
-        }
-      } catch {}
-      fs.writeFileSync(path.join(dir, filename), blurredResultBuffer);
-    }
+    // Upload using school's configured storage provider (S3/MinIO, system storage, or local disk fallback with cache)
+    const storage = await storageServiceFor(cleanSchoolId, prisma);
+    const uploadResult = await storage.upload({
+      relativePath,
+      buffer: blurredResultBuffer,
+      mimeType: 'image/jpeg'
+    });
 
-    return `/api/storage/schools/${cleanSchoolId}/public/gallery/${filename}`;
+    return uploadResult?.url || `/api/storage/schools/${cleanSchoolId}/public/gallery/${filename}`;
   } catch (err) {
     console.error('[FACE CONSENT] Error generating blurred image:', err);
     return null;
@@ -880,35 +927,68 @@ export async function processGalleryImageFaceConsent(imageId, schoolId, prisma) 
       console.warn('[FACE CONSENT] Warning loading user avatars:', uErr.message);
     }
 
-    // 4. Compare each detected face in gallery image against candidate descriptors
-    const processedFaces = [];
-    let hasAnyConsentIssue = false;
-    const facesToBlur = [];
+    // 4. Compare each detected face and apply 1-to-1 Maximum Similarity Greedy Assignment
     const config = getFaceMatchConfig();
-
+    const faceFeatures = [];
     for (let i = 0; i < detectedFacesList.length; i++) {
-      const faceDet = detectedFacesList[i];
-      const faceFeature = await extractNormalizedFaceFeature(imgBuffer, faceDet.box, config.marginPercent);
+      const feat = await extractNormalizedFaceFeature(imgBuffer, detectedFacesList[i].box, config.marginPercent);
+      faceFeatures.push(feat);
+    }
 
-      let bestMatch = null;
-      let highestSimilarity = 0;
+    // Collect all candidate pairings meeting the threshold
+    const candidateMatches = [];
+    if (candidateDescriptors.length > 0) {
+      for (let fIdx = 0; fIdx < detectedFacesList.length; fIdx++) {
+        const feat = faceFeatures[fIdx];
+        if (!feat) continue;
 
-      if (faceFeature && candidateDescriptors.length > 0) {
-        for (const candidate of candidateDescriptors) {
-          const sim = computeFaceSimilarity(faceFeature, candidate.feature);
-          if (sim > highestSimilarity) {
-            highestSimilarity = sim;
-            bestMatch = candidate;
+        for (let cIdx = 0; cIdx < candidateDescriptors.length; cIdx++) {
+          const cand = candidateDescriptors[cIdx];
+          const sim = computeFaceSimilarity(feat, cand.feature);
+          if (sim >= config.threshold) {
+            candidateMatches.push({
+              faceIndex: fIdx,
+              candidateIndex: cIdx,
+              candidate: cand,
+              similarity: sim
+            });
           }
         }
       }
+    }
 
-      // Configurable auto-match threshold (from FACEMATCH_SIMILARITY_THRESHOLD, default 0.55)
-      const isMatched = highestSimilarity >= config.threshold && bestMatch !== null;
-      const bestCandidateName = bestMatch?.student?.fullName || bestMatch?.user?.fullName || 'N/A';
+    // Sort all candidate matches descending by similarity score
+    candidateMatches.sort((a, b) => b.similarity - a.similarity);
+
+    // Greedily assign: 1 person cannot appear more than once in the same photo
+    const assignedFaces = new Map(); // faceIndex -> { candidate, similarity }
+    const usedCandidates = new Set(); // candidateIndex
+
+    for (const match of candidateMatches) {
+      if (!assignedFaces.has(match.faceIndex) && !usedCandidates.has(match.candidateIndex)) {
+        assignedFaces.set(match.faceIndex, { candidate: match.candidate, similarity: match.similarity });
+        usedCandidates.add(match.candidateIndex);
+      }
+    }
+
+    const processedFaces = [];
+    let hasAnyConsentIssue = false;
+    const facesToBlur = [];
+
+    for (let i = 0; i < detectedFacesList.length; i++) {
+      const faceDet = detectedFacesList[i];
+      const match = assignedFaces.get(i);
+      const isMatched = Boolean(match);
+      const bestMatch = match ? match.candidate : null;
+      const highestSimilarity = match ? match.similarity : 0;
+      const candidateName = bestMatch?.student?.fullName || bestMatch?.user?.fullName || 'N/A';
 
       if (config.debug) {
-        console.log(`👤 [FACEMATCH] Face #${i + 1}: Best Candidate="${bestCandidateName}" | Score=${(highestSimilarity * 100).toFixed(1)}% | Threshold=${(config.threshold * 100).toFixed(1)}% -> ${isMatched ? 'MATCHED ✅' : 'BELOW THRESHOLD ❌'}`);
+        if (isMatched) {
+          console.log(`👤 [FACEMATCH] Face #${i + 1}: Assigned to="${candidateName}" | Score=${(highestSimilarity * 100).toFixed(1)}% | Threshold=${(config.threshold * 100).toFixed(1)}% -> MATCHED ✅`);
+        } else {
+          console.log(`👤 [FACEMATCH] Face #${i + 1}: Unidentified / Below threshold or identity claimed by higher confidence face -> UNASSIGNED ❌`);
+        }
       }
 
       let personInfo = null;
@@ -973,7 +1053,7 @@ export async function processGalleryImageFaceConsent(imageId, schoolId, prisma) 
     let blurredSrc = null;
     if (hasAnyConsentIssue && facesToBlur.length > 0) {
       console.log(`🛡️ [FACE CONSENT] Generating blurred privacy version for ${facesToBlur.length} student(s) without consent...`);
-      blurredSrc = await generateBlurredGalleryImage(imgBuffer, facesToBlur, imageId, schoolId);
+      blurredSrc = await generateBlurredGalleryImage(imgBuffer, facesToBlur, imageId, schoolId, prisma);
     }
 
     const consentStatus = hasAnyConsentIssue ? 'has_violations' : 'verified_clean';
@@ -1162,7 +1242,7 @@ export async function updateGalleryImageFaces(imageId, facesArray, schoolId, pri
   if (hasAnyConsentIssue && facesToBlur.length > 0) {
     const imgBuffer = await resolveImageBuffer(galleryImage.src, schoolId, prisma);
     if (imgBuffer) {
-      blurredSrc = await generateBlurredGalleryImage(imgBuffer, facesToBlur, imageId, schoolId);
+      blurredSrc = await generateBlurredGalleryImage(imgBuffer, facesToBlur, imageId, schoolId, prisma);
     }
   }
 

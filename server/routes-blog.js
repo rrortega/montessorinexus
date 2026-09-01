@@ -31,6 +31,49 @@ import {
   streamPrivateAsset
 } from './storage-service.js';
 
+export function resolveAuthorJobTitle(author, school, locale = 'es') {
+  if (!school) {
+    return author?.jobTitle || (locale === 'en' ? 'Montessori Specialist' : 'Especialista Montessori');
+  }
+
+  const schoolName = school.name || 'Colegio Montessori';
+  const membership = author?.memberships?.find(m => m.schoolId === school.id);
+  const role = membership?.role || 'STAFF';
+  const loc = String(locale || 'es').toLowerCase();
+
+  if (role === 'TEACHER' || role === 'STAFF') {
+    if (loc === 'en') return 'Montessori Guide';
+    if (loc === 'fr') return 'Guide Montessori';
+    if (loc === 'pt') return 'Guia Montessori';
+    if (loc === 'de') return 'Montessori-Pädagoge/in';
+    if (loc === 'ru') return 'Монтессори-педагог';
+    if (loc === 'it') return 'Guida Montessori';
+    return 'Guía Montessori';
+  }
+
+  if (role === 'OWNER' || role === 'ADMIN') {
+    if (loc === 'en') return `School Director • ${schoolName}`;
+    if (loc === 'fr') return `Direction de l'école • ${schoolName}`;
+    if (loc === 'pt') return `Direção Escolar • ${schoolName}`;
+    if (loc === 'de') return `Schulleitung • ${schoolName}`;
+    if (loc === 'ru') return `Директор школы • ${schoolName}`;
+    if (loc === 'it') return `Direzione scolastica • ${schoolName}`;
+    return `Dirección Escolar • ${schoolName}`;
+  }
+
+  if (role === 'TUTOR') {
+    if (loc === 'en') return `Writer in collaboration with ${schoolName}`;
+    if (loc === 'fr') return `Auteur en collaboration avec ${schoolName}`;
+    if (loc === 'pt') return `Escritor em colaboração com ${schoolName}`;
+    if (loc === 'de') return `Autor in Zusammenarbeit mit ${schoolName}`;
+    if (loc === 'ru') return `Автор в сотрудничестве с ${schoolName}`;
+    if (loc === 'it') return `Autore in collaborazione com ${schoolName}`;
+    return `Escritor en colaboración con ${schoolName}`;
+  }
+
+  return author?.jobTitle || 'Equipo Pedagógico';
+}
+
 export function createBlogRouter(prisma) {
   const router = express.Router();
 
@@ -65,10 +108,9 @@ export function createBlogRouter(prisma) {
       return req.school.id;
     }
 
-    // 5. If client explicitly specified it is NOT platform (x-is-platform: false) but ID was missing in header, fallback to first school
-    if (isPlatformHeader === 'false') {
-      const fallbackSchool = await prisma.school.findFirst({ select: { id: true } });
-      if (fallbackSchool) return fallbackSchool.id;
+    // 5. If client explicitly specified it is NOT platform (x-is-platform: false) but ID was missing or unresolved
+    if (isPlatformHeader === 'false' || req.query.isPlatform === 'false') {
+      return '__NO_SCHOOL_MATCHED__';
     }
 
     return null;
@@ -294,12 +336,16 @@ export function createBlogRouter(prisma) {
                 tag: true
               }
             },
+            school: { select: { id: true, name: true, slug: true } },
             author: {
               select: {
                 id: true,
                 fullName: true,
                 avatarUrl: true,
-                jobTitle: true
+                jobTitle: true,
+                memberships: {
+                  select: { schoolId: true, role: true }
+                }
               }
             }
           }
@@ -324,7 +370,10 @@ export function createBlogRouter(prisma) {
           author: {
             ...(p.author || {}),
             fullName: p.customAuthorName || p.author?.fullName || 'Equipo Pedagógico',
-            avatarUrl: p.customAuthorAvatar || p.author?.avatarUrl || ''
+            avatarUrl: p.customAuthorAvatar || p.author?.avatarUrl || '',
+            jobTitle: p.schoolId
+              ? resolveAuthorJobTitle(p.author, p.school, locale)
+              : (p.author?.jobTitle || 'Especialista Montessori')
           },
           categories: p.categories.map(c => c.category),
           tags: p.tags.map(t => t.tag)
@@ -374,7 +423,10 @@ export function createBlogRouter(prisma) {
                   fullName: true,
                   avatarUrl: true,
                   jobTitle: true,
-                  bio: true
+                  bio: true,
+                  memberships: {
+                    select: { schoolId: true, role: true }
+                  }
                 }
               },
               translations: true,
@@ -413,7 +465,18 @@ export function createBlogRouter(prisma) {
           include: {
             post: {
               include: {
-                author: { select: { id: true, fullName: true, avatarUrl: true, jobTitle: true, bio: true } },
+                author: {
+                  select: {
+                    id: true,
+                    fullName: true,
+                    avatarUrl: true,
+                    jobTitle: true,
+                    bio: true,
+                    memberships: {
+                      select: { schoolId: true, role: true }
+                    }
+                  }
+                },
                 translations: true,
                 categories: { include: { category: true } },
                 tags: { include: { tag: true } },
@@ -548,7 +611,10 @@ export function createBlogRouter(prisma) {
         author: {
           ...(post.author || {}),
           fullName: post.customAuthorName || post.author?.fullName || '',
-          avatarUrl: post.customAuthorAvatar || post.author?.avatarUrl || ''
+          avatarUrl: post.customAuthorAvatar || post.author?.avatarUrl || '',
+          jobTitle: post.schoolId
+            ? resolveAuthorJobTitle(post.author, post.school, translation.locale)
+            : (post.author?.jobTitle || 'Especialista Montessori')
         },
         translations: post.translations.map(t => ({
           locale: t.locale,
