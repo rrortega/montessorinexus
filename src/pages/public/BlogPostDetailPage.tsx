@@ -946,7 +946,7 @@ function slugifyHeading(text: string): string {
 
                 {/* Related Posts Widget */}
                 {post.relatedPosts && post.relatedPosts.length > 0 && (
-                  <div className="p-5 rounded-3xl bg-white dark:bg-card border border-border shadow-xs space-y-3">
+                  <div className="p-5 rounded-3xl bg-white dark:bg-[#152418] border border-stone-200 dark:border-stone-800 shadow-xs space-y-3">
                     <h4 className="text-xs font-bold font-mono uppercase tracking-wider text-stone-500 dark:text-stone-400">
                       {t.relatedReads}
                     </h4>
@@ -957,7 +957,7 @@ function slugifyHeading(text: string): string {
                           to={getPostUrl(rel.slug)}
                           className="block group p-2.5 rounded-2xl hover:bg-muted/50 transition-colors"
                         >
-                          <h5 className={`text-xs font-bold text-stone-900 dark:text-[#DE7424] ${
+                          <h5 className={`text-xs font-bold text-stone-900 dark:text-slate-100 ${
                             isSaaSBlog ? 'group-hover:text-[#C4661F] dark:group-hover:text-[#FFA05C]' : 'group-hover:text-forest dark:group-hover:text-emerald-400'
                           } transition-colors line-clamp-2 leading-snug`}>
                             {rel.title}
@@ -1006,18 +1006,18 @@ function slugifyHeading(text: string): string {
 
       {/* Related & Latest Articles Carousel Section */}
       {post && post.relatedPosts && post.relatedPosts.length > 0 && (
-        <section className="w-full border-t border-border/80 bg-stone-100/60 dark:bg-stone-900/40 py-12 sm:py-16">
+        <section className="w-full border-t border-border/80 bg-stone-100/60 dark:bg-[#0c140e] py-12 sm:py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {/* Header with Title and Nav Controls */}
             <div className="flex items-end justify-between mb-8 gap-4">
               <div>
                 <div className="flex items-center gap-2 mb-1.5">
                   <span className={`w-2 h-2 rounded-full ${isSaaSBlog ? 'bg-[#C4661F]' : 'bg-forest'} animate-pulse`} />
-                  <span className="font-mono text-xs uppercase tracking-wider text-muted-foreground font-semibold">
+                  <span className="font-mono text-xs uppercase tracking-wider text-stone-500 dark:text-stone-400 font-semibold">
                     {t.relatedReads}
                   </span>
                 </div>
-                <h3 className="text-2xl sm:text-3xl font-bold font-display text-foreground">
+                <h3 className="text-2xl sm:text-3xl font-bold font-display text-stone-900 dark:text-slate-100">
                   {t.relatedSectionTitle}
                 </h3>
               </div>
@@ -1027,7 +1027,7 @@ function slugifyHeading(text: string): string {
                 <button
                   type="button"
                   onClick={() => scrollCarousel('left')}
-                  className="h-10 w-10 rounded-2xl bg-card border border-border flex items-center justify-center text-foreground hover:bg-muted transition-colors cursor-pointer shadow-2xs active:scale-95"
+                  className="h-10 w-10 rounded-2xl bg-white dark:bg-[#152418] border border-stone-200 dark:border-stone-800 flex items-center justify-center text-stone-800 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors cursor-pointer shadow-2xs active:scale-95"
                   aria-label="Desplazar a la izquierda"
                 >
                   <ChevronLeft className="w-5 h-5" />
@@ -1035,7 +1035,7 @@ function slugifyHeading(text: string): string {
                 <button
                   type="button"
                   onClick={() => scrollCarousel('right')}
-                  className="h-10 w-10 rounded-2xl bg-card border border-border flex items-center justify-center text-foreground hover:bg-muted transition-colors cursor-pointer shadow-2xs active:scale-95"
+                  className="h-10 w-10 rounded-2xl bg-white dark:bg-[#152418] border border-stone-200 dark:border-stone-800 flex items-center justify-center text-stone-800 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors cursor-pointer shadow-2xs active:scale-95"
                   aria-label="Desplazar a la derecha"
                 >
                   <ChevronRight className="w-5 h-5" />
@@ -1052,7 +1052,7 @@ function slugifyHeading(text: string): string {
                 <Link
                   key={rel.id}
                   to={getPostUrl(rel.slug)}
-                  className={`group/card min-w-[280px] sm:min-w-[320px] md:min-w-[350px] max-w-[360px] snap-start shrink-0 rounded-3xl bg-card border border-border/80 overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col hover:-translate-y-1 ${
+                  className={`group/card min-w-[280px] sm:min-w-[320px] md:min-w-[350px] max-w-[360px] snap-start shrink-0 rounded-3xl bg-white dark:bg-[#152418] border border-stone-200 dark:border-stone-800 overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col hover:-translate-y-1 ${
                     isSaaSBlog ? 'hover:border-[#C4661F]/40' : 'hover:border-forest/40'
                   }`}
                 >
@@ -1087,7 +1087,7 @@ function slugifyHeading(text: string): string {
                   {/* Card Body Content */}
                   <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                     <div className="space-y-2">
-                      <div className="flex items-center gap-3 text-[11px] font-mono text-muted-foreground">
+                      <div className="flex items-center gap-3 text-[11px] font-mono text-stone-500 dark:text-stone-400">
                         <span className="flex items-center gap-1">
                           <Clock className="w-3.5 h-3.5" />
                           {rel.readingTimeMinutes || 3} {t.minRead}
@@ -1101,14 +1101,14 @@ function slugifyHeading(text: string): string {
                         </span>
                       </div>
 
-                      <h4 className={`text-base font-bold font-display text-foreground leading-snug line-clamp-2 ${
-                        isSaaSBlog ? 'group-hover/card:text-[#C4661F]' : 'group-hover/card:text-forest'
+                      <h4 className={`text-base font-bold font-display text-stone-900 dark:text-slate-100 leading-snug line-clamp-2 ${
+                        isSaaSBlog ? 'group-hover/card:text-[#C4661F] dark:group-hover/card:text-[#FFA05C]' : 'group-hover/card:text-forest dark:group-hover/card:text-emerald-400'
                       } transition-colors`}>
                         {rel.title}
                       </h4>
 
                       {rel.excerpt && (
-                        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                        <p className="text-xs text-stone-600 dark:text-stone-300 line-clamp-2 leading-relaxed">
                           {rel.excerpt}
                         </p>
                       )}

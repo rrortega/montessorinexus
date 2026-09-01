@@ -329,7 +329,7 @@ export const BlogIndexPage: React.FC = () => {
                         </div>
                       )}
 
-                      <h2 className={`text-xl sm:text-2xl lg:text-3xl font-bold font-display text-stone-900 dark:text-[#DE7424] leading-snug ${
+                      <h2 className={`text-xl sm:text-2xl lg:text-3xl font-bold font-display text-stone-900 dark:text-slate-100 leading-snug ${
                         isSaaSBlog ? 'group-hover:text-[#C4661F] dark:group-hover:text-[#FFA05C]' : 'group-hover:text-forest dark:group-hover:text-emerald-400'
                       } transition-colors`}>
                         <Link to={getPostDetailUrl(featuredPost.slug)}>
@@ -426,7 +426,7 @@ export const BlogIndexPage: React.FC = () => {
                             </div>
                           )}
 
-                          <h4 className={`text-base font-bold font-display text-stone-900 dark:text-[#DE7424] line-clamp-2 ${
+                          <h4 className={`text-base font-bold font-display text-stone-900 dark:text-slate-100 line-clamp-2 ${
                             isSaaSBlog ? 'group-hover:text-[#C4661F] dark:group-hover:text-[#FFA05C]' : 'group-hover:text-forest dark:group-hover:text-emerald-400'
                           } transition-colors leading-snug`}>
                             <Link to={getPostDetailUrl(post.slug)}>
